@@ -8,7 +8,7 @@ import (
 	"io"
 	"fmt"
 	"strings"
-//	"io/ioutil"
+	"io/ioutil"
 )
 
 type OAuthBase struct {
@@ -195,7 +195,8 @@ func (o *OAuthClient) SendRequest(request *http.Request) (io.ReadCloser, error) 
 	}
 
 	if resp.StatusCode / 100 != 2 {
-		return resp.Body, fmt.Errorf(resp.Status)
+		p, _ := ioutil.ReadAll(resp.Body)
+		return resp.Body, fmt.Errorf("%s(%s)", string(p), resp.Status)
 	}
 
 	return resp.Body, nil
