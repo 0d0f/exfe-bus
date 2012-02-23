@@ -7,6 +7,7 @@ import (
 	"github.com/garyburd/go-oauth"
 	"net/url"
 	"encoding/json"
+	"io/ioutil"
 )
 
 func TestBaseCreate(t *testing.T) {
@@ -33,7 +34,7 @@ func TestClientLoad(t *testing.T) {
 		fmt.Println("Please run helper to generate oauth_client.json")
 		t.Error("Open oauth_client.json error: ", err)
 	}
-	_, err = CreateWithJson(f)
+	_, err = LoadClientFromJson(f)
 	if (err != nil) {
 		fmt.Println("Please run helper to generate oauth_client.json")
 		t.Error(err)
@@ -42,7 +43,7 @@ func TestClientLoad(t *testing.T) {
 
 func TestClient(t *testing.T) {
 	f, _ := os.Open("oauth_client.json")
-	client, err := CreateWithJson(f)
+	client, err := LoadClientFromJson(f)
 	if (err != nil) {
 		fmt.Println("Please run helper to generate oauth_client.json")
 		t.Error(err)
@@ -67,12 +68,10 @@ func TestClient(t *testing.T) {
 
 	params = make(url.Values)
 	params.Add("status", "test测试")
-	request, err = client.GetRequest("POST", "statuses/update.json", params)
+	ret, err = client.Do("POST", "statuses/update.json", params)
 	if (err != nil) {
-		t.Error(err)
-	}
-	ret, err = client.SendRequest(request)
-	if (err != nil) {
+		p, _ := ioutil.ReadAll(ret)
+		fmt.Println(string(p))
 		t.Error(err)
 	}
 	decoder = json.NewDecoder(ret)
@@ -82,11 +81,7 @@ func TestClient(t *testing.T) {
 		t.Error(err)
 	}
 
-	request, err = client.GetRequest("POST", "statuses/destroy/" + buf2["id_str"].(string) + ".json", nil)
-	if (err != nil) {
-		t.Error(err)
-	}
-	ret, err = client.SendRequest(request)
+	ret, err = client.Do("POST", "statuses/destroy/" + buf2["id_str"].(string) + ".json", nil)
 	if (err != nil) {
 		t.Error(err)
 	}

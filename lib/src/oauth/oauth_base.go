@@ -59,7 +59,6 @@ func CreateOAuthRequest(token, secret, requestTokenUri, authorzationUri, accessT
 	}
 }
 
-
 func (o *OAuthRequest) getClient() (client oauth.Client) {
 	client = oauth.Client{
 		Credentials: o.ClientToken,
@@ -108,7 +107,7 @@ func isExistKey(m map[string]interface{}, key string) (ok bool) {
 	return
 }
 
-func CreateWithJson(r io.Reader) (*OAuthClient, error) {
+func LoadClientFromJson(r io.Reader) (*OAuthClient, error) {
 	decoder := json.NewDecoder(r)
 	var t map[string]interface{}
 	decoder.Decode(&t)
@@ -135,6 +134,22 @@ func CreateWithJson(r io.Reader) (*OAuthClient, error) {
 		ApiBaseUri: t["ApiBaseUri"].(string),
 		Headers: headers,
 	}, nil
+}
+
+func CreateClient(clientToken, clientSecret, accessToken, accessSecret, baseApi string) *OAuthClient {
+	return &OAuthClient{
+		OAuthBase: OAuthBase{
+			ClientToken: oauth.Credentials{
+				Token: clientToken,
+				Secret: clientSecret,
+			},
+		},
+		AccessToken: oauth.Credentials{
+			Token: accessToken,
+			Secret: accessSecret,
+		},
+		ApiBaseUri: baseApi,
+	}
 }
 
 func (o *OAuthClient) Dump(w io.Writer) error {
@@ -184,4 +199,12 @@ func (o *OAuthClient) SendRequest(request *http.Request) (io.ReadCloser, error) 
 	}
 
 	return resp.Body, nil
+}
+
+func (o *OAuthClient) Do(method, path string, params url.Values) (io.ReadCloser, error) {
+	request, err := o.GetRequest(method, path, params)
+	if err != nil {
+		return nil, err
+	}
+	return o.SendRequest(request)
 }
