@@ -97,7 +97,6 @@ func TestPerJobWork(t *testing.T) {
 		client := CreateClient("", 0, "", queue, ValueGenerator)
 		defer func() { client.Close() }()
 
-
 		d := 2
 		ret_, err := client.Do(d)
 		ret := *ret_.(*int)
@@ -151,14 +150,14 @@ func TestPerJobTime(t *testing.T) {
 
 	retChan := make(chan int)
 	start := time.Now()
-	for i:=0; i< 10; i++ {
+	for i := 0; i < 10; i++ {
 		go func() {
 			ret, _ := client.Do(2)
-			retChan<-(*ret.(*int))
+			retChan <- (*ret.(*int))
 		}()
 	}
 
-	for i:=0; i< 10; i++ {
+	for i := 0; i < 10; i++ {
 		ret := <-retChan
 		if ret != 4 {
 			t.Error("Got %d, expect: 4", ret)
@@ -168,7 +167,7 @@ func TestPerJobTime(t *testing.T) {
 	stop := time.Now()
 
 	duration := stop.Sub(start)
-	if duration > 2 * 1e9 {
+	if duration > 2*1e9 {
 		t.Fatal("Run time too long")
 	}
 }
@@ -265,42 +264,42 @@ func TestPer4JobsTime(t *testing.T) {
 	retChan := make(chan int)
 	{
 		start := time.Now()
-		for i:=0; i< 4; i++ {
+		for i := 0; i < 4; i++ {
 			go func() {
 				ret, _ := client.Do(2)
-				retChan<-(*ret.(*int))
+				retChan <- (*ret.(*int))
 			}()
 		}
 
-		for i:=0; i< 4; i++ {
+		for i := 0; i < 4; i++ {
 			<-retChan
 		}
 
 		stop := time.Now()
 
 		duration := stop.Sub(start)
-		if duration > 2 * 1e9 {
+		if duration > 2*1e9 {
 			t.Fatal("Run time too long")
 		}
 	}
 
 	{
 		start := time.Now()
-		for i:=0; i< 10; i++ {
+		for i := 0; i < 10; i++ {
 			go func() {
 				ret, _ := client.Do(2)
-				retChan<-(*ret.(*int))
+				retChan <- (*ret.(*int))
 			}()
 		}
 
-		for i:=0; i< 10; i++ {
+		for i := 0; i < 10; i++ {
 			<-retChan
 		}
 
 		stop := time.Now()
 
 		duration := stop.Sub(start)
-		if duration > 4 * 1e9 {
+		if duration > 4*1e9 {
 			t.Fatal("Run time too long")
 		}
 	}
