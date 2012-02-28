@@ -80,6 +80,7 @@ func (s *Service) Stop() error {
 
 func (s *Service) Clear() {
 	s.redis.Del(s.queueName)
+	s.redis.Del(s.queueName + ":idcount")
 	keys, _ := s.redis.Keys(s.queueName + ":*")
 	for _, k := range keys {
 		s.redis.Del(k)
