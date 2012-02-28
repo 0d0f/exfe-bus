@@ -30,12 +30,9 @@ func main() {
 		os.Exit(-1)
 	}
 
-	f, err := os.Create("./oauth_client.json")
-	defer func () { f.Close() }()
-	if (err != nil) {
-		fmt.Println(err)
-		os.Exit(-1)
-	}
-
-	client.Dump(f)
+	fmt.Println("\nClient token: ", client.ClientToken.Token)
+	fmt.Println("Client secret:", client.ClientToken.Secret)
+	fmt.Println("Access token: ", client.AccessToken.Token)
+	fmt.Println("Access secret:", client.AccessToken.Secret)
+	fmt.Println("Api base uri: ", client.ApiBaseUri)
 }
