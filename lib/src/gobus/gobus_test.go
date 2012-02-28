@@ -37,7 +37,10 @@ func TestCreateService(t *testing.T) {
 	queue := "gobus:queue:empty"
 	service := CreateService("", 0, "", queue, &EmptyService{})
 	defer func() { service.Close() }()
-	_ = service.Run(1e9)
+	go func() {
+		service.Run(1e9)
+	}()
+	time.Sleep(0.5e9)
 	if !service.IsRunning() {
 		t.Fatal("Service doesn't run")
 	}
@@ -91,7 +94,10 @@ func TestPerJobWork(t *testing.T) {
 		service.Close()
 		service.Empty()
 	}()
-	_ = service.Run(1e9)
+
+	go func() {
+		service.Run(1e9)
+	}()
 
 	{
 		client := CreateClient("", 0, "", queue, ValueGenerator)
@@ -146,7 +152,9 @@ func TestPerJobTime(t *testing.T) {
 	client := CreateClient("", 0, "", queue, ValueGenerator)
 	defer func() { client.Close() }()
 
-	_ = service.Run(1e9)
+	go func() {
+		service.Run(1e9)
+	}()
 
 	retChan := make(chan int)
 	start := time.Now()
@@ -213,7 +221,9 @@ func TestPer4JobsWork(t *testing.T) {
 	client := CreateClient("", 0, "", queue, ValueGenerator)
 	defer func() { client.Close() }()
 
-	_ = service.Run(1e9)
+	go func() {
+		service.Run(1e9)
+	}()
 
 	{
 		d := 2
@@ -259,7 +269,9 @@ func TestPer4JobsTime(t *testing.T) {
 	client := CreateClient("", 0, "", queue, ValueGenerator)
 	defer func() { client.Close() }()
 
-	_ = service.Run(1e9)
+	go func() {
+		service.Run(1e9)
+	}()
 
 	retChan := make(chan int)
 	{

@@ -48,22 +48,20 @@ func (s *Service) Close() error {
 	return s.redis.Quit()
 }
 
-func (s *Service) Run(timeOut time.Duration) error {
+func (s *Service) Run(timeOut time.Duration) {
 	s.status = Running
-	go func() {
-	Loop:
-		for {
-			select {
-			case <-s.quitChan:
-				break Loop
-			case <-time.After(timeOut):
-				s.handleQueue()
-			}
+
+Loop:
+	for {
+		select {
+		case <-s.quitChan:
+			break Loop
+		case <-time.After(timeOut):
+			s.handleQueue()
 		}
-		s.status = Stopped
-		s.isQuitChan <- 1
-	}()
-	return nil
+	}
+	s.status = Stopped
+	s.isQuitChan <- 1
 }
 
 func (s *Service) IsRunning() bool {
