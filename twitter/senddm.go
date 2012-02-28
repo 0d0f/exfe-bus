@@ -2,9 +2,10 @@ package main
 
 import (
 	"oauth"
-	"gosque"
+	"gobus"
 	"net/url"
 	"fmt"
+	"io/ioutil"
 )
 
 type Message struct {
@@ -22,17 +23,8 @@ func (m *Message) GoString() string {
 		m.ClientToken, m.ClientSecret, m.AccessToken, m.AccessSecret, m.ToUserName, m.ToUserId, m.Message)
 }
 
-const (
-	queue = "resque:twitter:directmessage"
-	maxJobs = 10
-	timeOut = 5e9 // 5 seconds
-)
-
-func generateEmptyMessage() interface{} {
-	return &Message{}
-}
-
-func sendDirectMessage(message *Message) error {
+func (m *Message) Do(messages []interface{}) []interface{} {
+	message := messages[0].(*Message)
 	client := oauth.CreateClient(message.ClientToken, message.ClientSecret, message.AccessToken, message.AccessSecret, "https://api.twitter.com/1/")
 	params := make(url.Values)
 	if message.ToUserId != "" {
@@ -41,22 +33,38 @@ func sendDirectMessage(message *Message) error {
 		params.Add("screen_name", message.ToUserName)
 	}
 	params.Add("text", message.Message)
-	_, err := client.Do("POST", "/direct_messages/new.json", params)
-	return err
+	retReader, err := client.Do("POST", "/direct_messages/new.json", params)
+	if err != nil {
+		return []interface{}{map[string]string{"error": err.Error()}}
+	}
+
+	retBytes, err := ioutil.ReadAll(retReader)
+	if err != nil {
+		return []interface{}{map[string]string{"error": err.Error()}}
+	}
+
+	return []interface{}{map[string]string{"result": string(retBytes)}}
 }
 
+func (m *Message) MaxJobsCount() int {
+	return 1
+}
+
+func (m *Message) JobGenerator() interface{} {
+	return &Message{}
+}
+
+const (
+	queue = "gobus:queue:twitter:directmessage"
+	timeOut = 5e9 // 5 seconds
+)
+
 func main() {
-	gosque := gosque.CreateQueue("", 0, "", queue)
-	defer func() { gosque.Close() }()
+	service := gobus.CreateService("", 0, "", queue, &Message{})
+	defer func() {
+		service.Close()
+		service.Clear()
+	}()
 
-	jobRecv := gosque.IncomingJob(generateEmptyMessage, timeOut)
-	for {
-		job := (<-jobRecv).(*Message)
-		fmt.Println("Process job: ", job.Message)
-
-		err := sendDirectMessage(job)
-		if err != nil {
-			fmt.Printf("Send message (%s) failed: %s\n", job, err)
-		}
-	}
+	service.Run(timeOut)
 }
