@@ -50,7 +50,7 @@ func TestCreateService(t *testing.T) {
 		t.Fatal("Service is still running")
 	}
 
-	service.Empty()
+	service.Clear()
 }
 
 func TestCreateClient(t *testing.T) {
@@ -92,7 +92,7 @@ func TestPerJobWork(t *testing.T) {
 	service := CreateService("", 0, "", queue, &PerJobService{})
 	defer func() {
 		service.Close()
-		service.Empty()
+		service.Clear()
 	}()
 
 	go func() {
@@ -146,7 +146,7 @@ func TestPerJobTime(t *testing.T) {
 	service := CreateService("", 0, "", queue, &PerJobService{})
 	defer func() {
 		service.Close()
-		service.Empty()
+		service.Clear()
 	}()
 
 	client := CreateClient("", 0, "", queue, ValueGenerator)
@@ -215,7 +215,7 @@ func TestPer4JobsWork(t *testing.T) {
 	service := CreateService("", 0, "", queue, &Per4JobsService{})
 	defer func() {
 		service.Close()
-		service.Empty()
+		service.Clear()
 	}()
 
 	client := CreateClient("", 0, "", queue, ValueGenerator)
@@ -263,7 +263,7 @@ func TestPer4JobsTime(t *testing.T) {
 	service := CreateService("", 0, "", queue, &Per4JobsService{})
 	defer func() {
 		service.Close()
-		service.Empty()
+		service.Clear()
 	}()
 
 	client := CreateClient("", 0, "", queue, ValueGenerator)

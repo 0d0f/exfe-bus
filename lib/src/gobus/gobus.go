@@ -78,7 +78,7 @@ func (s *Service) Stop() error {
 	return nil
 }
 
-func (s *Service) Empty() {
+func (s *Service) Clear() {
 	s.redis.Del(s.queueName)
 	keys, _ := s.redis.Keys(s.queueName + ":*")
 	for _, k := range keys {
