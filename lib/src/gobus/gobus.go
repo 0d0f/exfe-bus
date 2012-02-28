@@ -79,9 +79,11 @@ func (s *Service) Stop() error {
 }
 
 func (s *Service) Empty() {
-	idCountName := fmt.Sprintf("%s:idcount", s.queueName)
-	s.redis.Del(idCountName)
 	s.redis.Del(s.queueName)
+	keys, _ := s.redis.Keys(s.queueName + ":*")
+	for _, k := range keys {
+		s.redis.Del(k)
+	}
 }
 
 func (s *Service) handleQueue() {
