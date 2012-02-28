@@ -93,17 +93,13 @@ func (s *Service) handleQueue() {
 			break
 		}
 
-		jobs, meta := s.getJobs(s.worker.MaxJobsCount())
-		if len(meta) == 0 {
+		jobs, metas := s.getJobs(s.worker.MaxJobsCount())
+		if len(metas) == 0 {
 			fmt.Println("Can't get jobs, unknown error")
 			continue
 		}
-		rets := s.worker.Do(jobs)
-		if rets != nil {
-			for i, ret := range rets {
-				s.sendBack(ret, meta[i])
-			}
-		}
+
+		go s.doJobs(jobs, metas)
 	}
 }
 
@@ -124,6 +120,15 @@ func (s *Service) getJobs(max int) (jobs []interface{}, metas []metaType) {
 		jobs, metas = append(jobs, meta.Data), append(metas, meta)
 	}
 	return
+}
+
+func (s *Service) doJobs(jobs []interface{}, metas []metaType) {
+	rets := s.worker.Do(jobs)
+	if rets != nil {
+		for i, ret := range rets {
+			s.sendBack(ret, metas[i])
+		}
+	}
 }
 
 func (s *Service) sendBack(ret interface{}, meta metaType) {
