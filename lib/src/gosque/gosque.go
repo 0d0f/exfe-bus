@@ -25,9 +25,12 @@ func (c *Client) Close() {
 }
 
 func (c *Client) PutJob(v interface{}) error {
+	meta := metaType {
+		Value: v,
+	}
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
-	encoder.Encode(v)
+	encoder.Encode(meta)
 	_, err := c.redis.Rpush(c.queueName, buf.String())
 	return err
 }
@@ -53,14 +56,16 @@ func (c *Client) jobLoop(jobRecv chan<- interface{}, generateFunc func() interfa
 		buffer := bytes.NewBuffer(elem)
 		decoder := json.NewDecoder(buffer)
 
-		value := generateFunc()
-		err = decoder.Decode(value)
+		value := metaType{
+			Value: generateFunc(),
+		}
+		err = decoder.Decode(&value)
 		if err != nil {
 			fmt.Printf("Error parse value: %s\n", string(elem))
 			continue
 		}
 
-		jobRecv <- value
+		jobRecv <- value.Value
 	}
 }
 
@@ -68,4 +73,10 @@ func (c *Client) IncomingJob(generateFunc func() interface{}, timeOut time.Durat
 	jobChan := make(chan interface{})
 	go c.jobLoop(jobChan, generateFunc, timeOut)
 	return jobChan
+}
+
+type metaType struct {
+	Class string
+	Value interface{}
+	Id string
 }
