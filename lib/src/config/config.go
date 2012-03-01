@@ -4,6 +4,7 @@ import (
 	"github.com/kylelemons/go-gypsy"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type Configure struct {
@@ -27,7 +28,7 @@ func (c *Configure) String(key string) string{
 	if err != nil {
 		panic(fmt.Sprintf("Load configure key(%s) error: %s", key, err.Error()))
 	}
-	return value
+	return strings.Trim(value, "\"'")
 }
 
 func (c *Configure) Uint(key string) uint {
@@ -37,4 +38,13 @@ func (c *Configure) Uint(key string) uint {
 		panic(fmt.Sprintf("Configure key(%s)'s value(%s) can't convert to int: %s", key, value, err.Error()))
 	}
 	return uint(i)
+}
+
+func (c *Configure) Int(key string) int {
+	value := c.String(key)
+	i, err := strconv.Atoi(value)
+	if err != nil {
+		panic(fmt.Sprintf("Configure key(%s)'s value(%s) can't convert to int: %s", key, value, err.Error()))
+	}
+	return i
 }
