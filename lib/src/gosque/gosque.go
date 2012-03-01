@@ -26,7 +26,7 @@ func (c *Client) Close() {
 
 func (c *Client) PutJob(v interface{}) error {
 	meta := metaType {
-		Value: v,
+		Args: v,
 	}
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
@@ -57,7 +57,7 @@ func (c *Client) jobLoop(jobRecv chan<- interface{}, generateFunc func() interfa
 		decoder := json.NewDecoder(buffer)
 
 		value := metaType{
-			Value: generateFunc(),
+			Args: generateFunc(),
 		}
 		err = decoder.Decode(&value)
 		if err != nil {
@@ -65,7 +65,7 @@ func (c *Client) jobLoop(jobRecv chan<- interface{}, generateFunc func() interfa
 			continue
 		}
 
-		jobRecv <- value.Value
+		jobRecv <- value.Args
 	}
 }
 
@@ -77,6 +77,6 @@ func (c *Client) IncomingJob(generateFunc func() interface{}, timeOut time.Durat
 
 type metaType struct {
 	Class string
-	Value interface{}
+	Args interface{}
 	Id string
 }
