@@ -1,0 +1,13 @@
+redis:
+  netaddr: "tcp:127.0.0.1:6379"
+  db: 0
+  password: ""
+
+twitter:
+  client_token:
+  client_secret:
+  access_token:
+  access_secret:
+  screen_name:
+
+site_url: ""
