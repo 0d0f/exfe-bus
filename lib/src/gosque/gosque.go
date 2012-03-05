@@ -65,7 +65,9 @@ func (c *Client) jobLoop(jobRecv chan<- interface{}, generateFunc func() interfa
 			continue
 		}
 
-		jobRecv <- value.Args
+		go func() {
+			jobRecv <- value.Args
+		}()
 	}
 }
 
