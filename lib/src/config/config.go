@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/kylelemons/go-gypsy"
 	"fmt"
+	"github.com/kylelemons/go-gypsy"
 	"strconv"
 	"strings"
 )
@@ -23,7 +23,7 @@ func LoadString(data string) *Configure {
 	}
 }
 
-func (c *Configure) String(key string) string{
+func (c *Configure) String(key string) string {
 	value, err := c.file.Get(key)
 	if err != nil {
 		panic(fmt.Sprintf("Load configure key(%s) error: %s", key, err.Error()))

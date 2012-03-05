@@ -1,8 +1,8 @@
 package main
 
 import (
-	"oauth"
 	"fmt"
+	"oauth"
 	"os"
 )
 
@@ -11,7 +11,7 @@ func main() {
 		"http://api.twitter.com/oauth/request_token", "http://api.twitter.com/oauth/authenticate", "http://api.twitter.com/oauth/access_token")
 
 	temp_token, auth_url, err := request.AuthorizeUrl("http://callback", nil, nil)
-	if (err != nil) {
+	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
@@ -19,13 +19,13 @@ func main() {
 	fmt.Println(auth_url)
 	var verifier string
 	_, err = fmt.Scan(&verifier)
-	if (err != nil) {
+	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
 
 	client, err := request.AccessClient(temp_token, verifier, "http://api.twitter.com/1/")
-	if (err != nil) {
+	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}

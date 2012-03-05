@@ -1,21 +1,21 @@
 package gosque
 
 import (
-	"encoding/json"
-	"github.com/simonz05/godis"
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"github.com/simonz05/godis"
 	"time"
 )
 
 type Client struct {
-	redis *godis.Client
+	redis     *godis.Client
 	queueName string
 }
 
 func CreateQueue(netaddr string, db int, password, queueName string) *Client {
 	return &Client{
-		redis: godis.New(netaddr, db, password),
+		redis:     godis.New(netaddr, db, password),
 		queueName: queueName,
 	}
 }
@@ -25,7 +25,7 @@ func (c *Client) Close() {
 }
 
 func (c *Client) PutJob(v interface{}) error {
-	meta := metaType {
+	meta := metaType{
 		Args: v,
 	}
 	buf := bytes.NewBuffer(nil)
@@ -77,6 +77,6 @@ func (c *Client) IncomingJob(generateFunc func() interface{}, timeOut time.Durat
 
 type metaType struct {
 	Class string
-	Args interface{}
-	Id string
+	Args  interface{}
+	Id    string
 }

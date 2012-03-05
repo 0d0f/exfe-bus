@@ -1,14 +1,14 @@
 package oauth
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/garyburd/go-oauth"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
-	"encoding/json"
-	"io"
-	"fmt"
 	"strings"
-	"io/ioutil"
 )
 
 type OAuthBase struct {
@@ -20,51 +20,48 @@ type OAuthBase struct {
 type OAuthRequest struct {
 	OAuthBase
 
-	RequestTokenUri string
+	RequestTokenUri  string
 	AuthorizationUri string
-	AccessTokenUri string
+	AccessTokenUri   string
 }
 
 type OAuthClient struct {
 	OAuthBase
 	AccessToken oauth.Credentials
-	ApiBaseUri string
-	Headers url.Values
+	ApiBaseUri  string
+	Headers     url.Values
 }
-
 
 func SetHttpClient(oauth *OAuthBase, client *http.Client) {
 	oauth.client = client
 }
 
-
 func (o *OAuthBase) init() {
-	if (o.client == nil) {
+	if o.client == nil {
 		SetHttpClient(o, http.DefaultClient)
 	}
 }
-
 
 func CreateOAuthRequest(token, secret, requestTokenUri, authorzationUri, accessTokenUri string) *OAuthRequest {
 	return &OAuthRequest{
 		OAuthBase: OAuthBase{
 			ClientToken: oauth.Credentials{
-				Token: token,
+				Token:  token,
 				Secret: secret,
 			},
 		},
-		RequestTokenUri: requestTokenUri,
+		RequestTokenUri:  requestTokenUri,
 		AuthorizationUri: authorzationUri,
-		AccessTokenUri: accessTokenUri,
+		AccessTokenUri:   accessTokenUri,
 	}
 }
 
 func (o *OAuthRequest) getClient() (client oauth.Client) {
 	client = oauth.Client{
-		Credentials: o.ClientToken,
+		Credentials:                   o.ClientToken,
 		TemporaryCredentialRequestURI: o.RequestTokenUri,
 		ResourceOwnerAuthorizationURI: o.AuthorizationUri,
-		TokenRequestURI: o.AccessTokenUri,
+		TokenRequestURI:               o.AccessTokenUri,
 	}
 	return
 }
@@ -73,7 +70,7 @@ func (o *OAuthRequest) AuthorizeUrl(callback string, request_params url.Values, 
 	o.init()
 	client := o.getClient()
 	token, err = client.RequestTemporaryCredentials(o.client, callback, request_params)
-	if (err != nil) {
+	if err != nil {
 		return
 	}
 
@@ -85,14 +82,14 @@ func (o *OAuthRequest) AccessClient(token *oauth.Credentials, verifier string, a
 	o.init()
 	c := o.getClient()
 	t, _, err := c.RequestToken(o.client, token, verifier)
-	if (err != nil) {
+	if err != nil {
 		return
 	}
 
 	client = &OAuthClient{
 		OAuthBase: o.OAuthBase,
 		AccessToken: oauth.Credentials{
-			Token: t.Token,
+			Token:  t.Token,
 			Secret: t.Secret,
 		},
 		ApiBaseUri: apiBaseUri,
@@ -100,7 +97,6 @@ func (o *OAuthRequest) AccessClient(token *oauth.Credentials, verifier string, a
 
 	return
 }
-
 
 func isExistKey(m map[string]interface{}, key string) (ok bool) {
 	_, ok = m[key]
@@ -112,27 +108,33 @@ func LoadClientFromJson(r io.Reader) (*OAuthClient, error) {
 	var t map[string]interface{}
 	decoder.Decode(&t)
 
-	if !isExistKey(t, "OAuthBase") { return nil, fmt.Errorf("Can't find OAuthBase") }
-	if !isExistKey(t, "AccessToken") { return nil, fmt.Errorf("Can't find AccessToken") }
-	if !isExistKey(t, "ApiBaseUri") { return nil, fmt.Errorf("Can't find ApiBaseUri") }
+	if !isExistKey(t, "OAuthBase") {
+		return nil, fmt.Errorf("Can't find OAuthBase")
+	}
+	if !isExistKey(t, "AccessToken") {
+		return nil, fmt.Errorf("Can't find AccessToken")
+	}
+	if !isExistKey(t, "ApiBaseUri") {
+		return nil, fmt.Errorf("Can't find ApiBaseUri")
+	}
 	headers, err := url.ParseQuery(t["Headers"].(string))
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 
 	return &OAuthClient{
 		OAuthBase: OAuthBase{
 			ClientToken: oauth.Credentials{
-				Token: t["OAuthBase"].(map[string]interface{})["ClientToken"].(map[string]interface{})["Token"].(string),
+				Token:  t["OAuthBase"].(map[string]interface{})["ClientToken"].(map[string]interface{})["Token"].(string),
 				Secret: t["OAuthBase"].(map[string]interface{})["ClientToken"].(map[string]interface{})["Secret"].(string),
 			},
 		},
 		AccessToken: oauth.Credentials{
-			Token: t["AccessToken"].(map[string]interface{})["Token"].(string),
+			Token:  t["AccessToken"].(map[string]interface{})["Token"].(string),
 			Secret: t["AccessToken"].(map[string]interface{})["Secret"].(string),
 		},
 		ApiBaseUri: t["ApiBaseUri"].(string),
-		Headers: headers,
+		Headers:    headers,
 	}, nil
 }
 
@@ -140,12 +142,12 @@ func CreateClient(clientToken, clientSecret, accessToken, accessSecret, baseApi 
 	return &OAuthClient{
 		OAuthBase: OAuthBase{
 			ClientToken: oauth.Credentials{
-				Token: clientToken,
+				Token:  clientToken,
 				Secret: clientSecret,
 			},
 		},
 		AccessToken: oauth.Credentials{
-			Token: accessToken,
+			Token:  accessToken,
 			Secret: accessSecret,
 		},
 		ApiBaseUri: baseApi,
@@ -177,12 +179,12 @@ func (o *OAuthClient) GetRequest(method, path string, params url.Values) (*http.
 	header.Add("Authorization", o.getClient().AuthorizationHeader(&o.AccessToken, method, uri, params))
 
 	u, err := url.Parse(uri + "?" + params.Encode())
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	return &http.Request{
 		Method: strings.ToUpper(method),
-		URL: u,
+		URL:    u,
 		Header: header,
 	}, nil
 }
@@ -190,11 +192,11 @@ func (o *OAuthClient) GetRequest(method, path string, params url.Values) (*http.
 func (o *OAuthClient) SendRequest(request *http.Request) (io.ReadCloser, error) {
 	o.init()
 	resp, err := o.client.Do(request)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 
-	if resp.StatusCode / 100 != 2 {
+	if resp.StatusCode/100 != 2 {
 		p, _ := ioutil.ReadAll(resp.Body)
 		return resp.Body, fmt.Errorf("%s(%s)", string(p), resp.Status)
 	}

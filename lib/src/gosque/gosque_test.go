@@ -1,8 +1,8 @@
 package gosque
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 type Job struct {
@@ -10,7 +10,7 @@ type Job struct {
 }
 
 func GenerateJobs(gosque *Client, max int) {
-	for i:=0; i<max; i++ {
+	for i := 0; i < max; i++ {
 		job := Job{
 			fmt.Sprintf("Job-%d", i),
 		}
@@ -33,7 +33,7 @@ func TestGetJob(t *testing.T) {
 	GenerateJobs(gosque, maxJobs)
 
 	jobRecv := gosque.IncomingJob(GenerateJobTemplate, 5e9)
-	for i:=0; i<10; i++ {
+	for i := 0; i < 10; i++ {
 		job := (<-jobRecv).(*Job)
 		expectName := fmt.Sprintf("Job-%d", i)
 		if job.Name != expectName {
