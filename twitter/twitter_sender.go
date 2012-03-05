@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"gobus"
+	"text/template"
+	"bytes"
 )
 
 type ExfeTime struct {
@@ -95,23 +97,6 @@ func (s *TwitterSender) CrossLink(withToken bool) string {
 	return link
 }
 
-func (s *TwitterSender) Time() string {
-	if s.Begin_at.Datetime == "" {
-		return ""
-	}
-	return fmt.Sprintf(" %s", s.Begin_at.Datetime)
-}
-
-func (s *TwitterSender) Place() string {
-	if s.Place_line1 == "" {
-		return ""
-	}
-	if s.Place_line2 == "" {
-		return fmt.Sprintf(" at %s", s.Place_line1)
-	}
-	return fmt.Sprintf(" at %s, %s", s.Place_line1, s.Place_line2)
-}
-
 func (s *TwitterSender) isHost() bool {
 	identity_id, _ := strconv.ParseInt(s.Identity_id, 10, 0)
 	return identity_id == s.Host_identity_id
@@ -134,6 +119,36 @@ type Friendship struct {
 	UserB string
 }
 
+type TemplateData struct {
+	ToUserName string
+	IsHost bool
+	Title string
+	Time string
+	Place1 string
+	Place2 string
+	SiteUrl string
+	CrossIdBase62 string
+	Token string
+}
+
+func CreateData(sender *TwitterSender) *TemplateData {
+	return &TemplateData{
+		ToUserName: sender.To_identity.External_username,
+		IsHost: sender.isHost(),
+		Title: sender.Title,
+		Time: sender.Begin_at.Datetime,
+		Place1: sender.Place_line1,
+		Place2: sender.Place_line2,
+		SiteUrl: sender.config.String("site_url"),
+		CrossIdBase62: sender.Cross_id_base62,
+		Token: sender.Token,
+	}
+}
+
+func LoadTemplate(name string) *template.Template {
+	return template.Must(template.ParseFiles(fmt.Sprintf("./template/default/%s", name)))
+}
+
 func (s *TwitterSender) Do() {
 	if (s.External_identity != "") ||
 			(strings.ToLower(s.External_identity) == strings.ToLower(fmt.Sprintf("@%s@twitter", s.To_identity.External_username))) {
@@ -151,25 +166,23 @@ func (s *TwitterSender) Do() {
 	})
 	isFriend := response.(*TwitterResponse).Result == "true"
 
-	// build tweet
-	var tweet string
-	if s.isHost() {
-		tweet = "You're successfully gathering this X"
+	data := CreateData(s)
+
+	var tmpl *template.Template
+	if isFriend {
+		tmpl = LoadTemplate("twitter_sender_dm.tmpl")
 	} else {
-		tweet = "Invitation"
+		tmpl = LoadTemplate("twitter_sender_tweet.tmpl")
 	}
+	buf := bytes.NewBuffer(nil)
+	tmpl.Execute(buf, data)
 
-	tweet = fmt.Sprintf("%s: %s.%s%s", tweet, s.Title, s.Time(), s.Place())
-
-	if !isFriend {
-		tweet = fmt.Sprintf("@%s %s", s.To_identity.External_username, tweet)
-	}
-
-	tweet = ShortTweet(tweet) + s.CrossLink(isFriend)
+	tweet := ShortTweet(strings.Trim(buf.String(), "\n \t")) + s.CrossLink(isFriend)
+	fmt.Println(tweet)
 
 	if isFriend {
 		fmt.Println("in dm")
-		s.sendDM(s.To_identity.External_username, tweet)
+		s.sendDM(data.ToUserName, tweet)
 	} else {
 		fmt.Println("in tweet")
 		s.sendTweet(tweet)
