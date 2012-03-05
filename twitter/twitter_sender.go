@@ -119,6 +119,14 @@ type Friendship struct {
 	UserB string
 }
 
+type UserInfo struct {
+	ClientToken string
+	ClientSecret string
+	AccessToken string
+	AccessSecret string
+	ScreenName string
+}
+
 type TemplateData struct {
 	ToUserName string
 	IsHost bool
@@ -153,6 +161,13 @@ func (s *TwitterSender) Do() {
 	if (s.External_identity != "") ||
 			(strings.ToLower(s.External_identity) == strings.ToLower(fmt.Sprintf("@%s@twitter", s.To_identity.External_username))) {
 		// update user info
+		s.getinfo.Send(&UserInfo{
+			ClientToken: s.config.String("twitter.client_token"),
+			ClientSecret: s.config.String("twitter.client_secret"),
+			AccessToken: s.config.String("twitter.access_token"),
+			AccessSecret: s.config.String("twitter.access_secret"),
+			ScreenName: s.To_identity.External_username,
+		})
 	}
 
 	// check friendship
@@ -178,13 +193,10 @@ func (s *TwitterSender) Do() {
 	tmpl.Execute(buf, data)
 
 	tweet := ShortTweet(strings.Trim(buf.String(), "\n \t")) + s.CrossLink(isFriend)
-	fmt.Println(tweet)
 
 	if isFriend {
-		fmt.Println("in dm")
 		s.sendDM(data.ToUserName, tweet)
 	} else {
-		fmt.Println("in tweet")
 		s.sendTweet(tweet)
 	}
 }
@@ -270,7 +282,7 @@ func main() {
 		config.String("redis.netaddr"),
 		config.Int("redis.db"),
 		config.String("redis.password"),
-		"gobus:queue:twitter:usershow",
+		"gobus:queue:twitter:userinfo",
 		TwitterResponseGenerator)
 
 	getfriendship := gobus.CreateClient(
