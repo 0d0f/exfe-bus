@@ -316,3 +316,98 @@ func TestPer4JobsTime(t *testing.T) {
 		}
 	}
 }
+
+//////////////////////////////////////////
+
+type SendService struct {
+	out chan int
+}
+
+func (s *SendService) Do(jobs []interface{}) []interface{} {
+	if len(jobs) > 1 {
+		fmt.Println("SendService get jobs count > 1")
+	}
+
+	data := *jobs[0].(*int)
+	s.out <- (data * data)
+	return nil
+}
+
+func (s *SendService) MaxJobsCount() int {
+	return 1
+}
+
+func (s *SendService) JobGenerator() interface{} {
+	var ret int
+	return &ret
+}
+
+func TestSendWork(t *testing.T) {
+	fmt.Println("Test send work")
+
+	queue := "gobus:queue:sendwork"
+	out := make(chan int)
+	service := CreateService("", 0, "", queue, &SendService{out: out})
+	defer func() {
+		service.Close()
+		service.Clear()
+	}()
+
+	client := CreateClient("", 0, "", queue, ValueGenerator)
+	defer func() { client.Close() }()
+
+	go func() {
+		service.Run(1e9)
+	}()
+
+	{
+		d := 2
+		err := client.Send(d)
+		if err != nil {
+			t.Fatal("Send error:", err)
+		}
+		i := <-out
+		if i != 4 {
+			t.Error("expect: 4, got:", i)
+		}
+	}
+}
+
+func TestSendTime(t *testing.T) {
+	fmt.Println("Test send time")
+
+	queue := "gobus:queue:sendtime"
+	out := make(chan int)
+	service := CreateService("", 0, "", queue, &SendService{out: out})
+	defer func() {
+		service.Close()
+		service.Clear()
+	}()
+
+	client := CreateClient("", 0, "", queue, ValueGenerator)
+	defer func() { client.Close() }()
+
+	go func() {
+		service.Run(1e9)
+	}()
+
+	{
+		start := time.Now()
+		for i := 0; i < 10; i++ {
+			go func() {
+				client.Send(2)
+			}()
+		}
+
+		stop := time.Now()
+
+		duration := stop.Sub(start)
+		if duration > 1e9 {
+			t.Fatal("Run time too long")
+		}
+
+		for i := 0; i < 10; i++ {
+			<-out
+		}
+	}
+}

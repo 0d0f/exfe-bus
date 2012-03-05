@@ -127,13 +127,15 @@ func (s *Service) doJobs(jobs []interface{}, metas []metaType) {
 	rets := s.worker.Do(jobs)
 	if rets != nil {
 		for i, ret := range rets {
-			s.sendBack(ret, metas[i])
+			if metas[i].NeedReturn {
+				s.sendBack(ret, metas[i])
+			}
 		}
 	}
 }
 
 func (s *Service) sendBack(ret interface{}, meta metaType) {
-	key := meta.ResponseKey
+	key := meta.Id
 	str, err := valueToJson(ret)
 	if s.isErr(err, "JSON Encode value(%v)", ret) {
 		return
@@ -187,48 +189,74 @@ func (c *Client) Close() error {
 	return c.redis.Quit()
 }
 
-func (c *Client) Send(v interface{}) (string, error) {
+func (c *Client) Do(v interface{}) (interface{}, error) {
+	meta, err := c.makeMeta(v)
+	if err != nil {
+		return nil, err
+	}
+	meta.NeedReturn = true
+	err = c.send(meta)
+	if err != nil {
+		return nil, err
+	}
+	return c.waitResponse(meta.Id)
+}
+
+func (c *Client) Send(v interface{}) error {
+	meta, err := c.makeMeta(v)
+	if err != nil {
+		return err
+	}
+	meta.NeedReturn = false
+	return c.send(meta)
+}
+
+func (c *Client) makeMeta(v interface{}) (*metaType, error) {
 	idCountName := c.getIdCountName()
 	idCount, err := c.redis.Incr(idCountName)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	key := c.getResponseKey(idCount)
+	key := c.getId(idCount)
 
-	value := metaType{
-		ResponseKey: key,
-		Data:        v,
+	value := &metaType{
+		Id:   key,
+		Data: v,
 	}
 
-	j, err := valueToJson(value)
+	return value, nil
+}
+
+func (c *Client) send(m *metaType) error {
+	j, err := valueToJson(m)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	_, err = c.redis.Rpush(c.queueName, j)
 	if err != nil {
-		return "", err
+		return err
 	}
 	_, err = c.redis.Publish(c.queueName, 0)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return key, nil
+	return nil
 }
 
-func (c *Client) WaitResponse(key string) (interface{}, error) {
+func (c *Client) waitResponse(id string) (interface{}, error) {
 	sub := godis.NewSub(c.netaddr, c.db, c.password)
-	sub.Subscribe(key)
+	sub.Subscribe(id)
 	_ = <-sub.Messages
 	sub.Close()
 
-	retBytes, err := c.redis.Get(key)
+	retBytes, err := c.redis.Get(id)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = c.redis.Del(key)
+	_, err = c.redis.Del(id)
 	if err != nil {
 		return nil, err
 	}
@@ -238,15 +266,7 @@ func (c *Client) WaitResponse(key string) (interface{}, error) {
 	return ret, err
 }
 
-func (c *Client) Do(v interface{}) (interface{}, error) {
-	key, err := c.Send(v)
-	if err != nil {
-		return nil, err
-	}
-	return c.WaitResponse(key)
-}
-
-func (c *Client) getResponseKey(id int64) string {
+func (c *Client) getId(id int64) string {
 	return fmt.Sprintf("%s:%d", c.queueName, id)
 }
 
@@ -268,8 +288,9 @@ func (c *Client) IsErr(err error, format string, a ...interface{}) bool {
 type valueGeneratorFunc func() interface{}
 
 type metaType struct {
-	ResponseKey string
-	Data        interface{}
+	Id         string
+	Data       interface{}
+	NeedReturn bool
 }
 
 func jsonToValue(input []byte, value interface{}) error {
