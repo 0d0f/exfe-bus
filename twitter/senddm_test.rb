@@ -6,7 +6,7 @@ require 'redis'
 
 queue = "gobus:queue:twitter:directmessage"
 tweet_name = {
-  :ResponseKey => "#{queue}:1",
+  :Id => "#{queue}:1",
   :Data => {
     :ClientToken => "VC3OxLBNSGPLOZ2zkgisA",
     :ClientSecret => "Lg6b5eHdPLFPsy4pI2aXPn6qEX6oxTwPyS0rr2g4A",
@@ -18,7 +18,7 @@ tweet_name = {
 }
 
 tweet_id = {
-  :ResponseKey => "#{queue}:2",
+  :Id => "#{queue}:2",
   :Data => {
     :ClientToken => "VC3OxLBNSGPLOZ2zkgisA",
     :ClientSecret => "Lg6b5eHdPLFPsy4pI2aXPn6qEX6oxTwPyS0rr2g4A",
