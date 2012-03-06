@@ -50,10 +50,11 @@ func (t *TweetService) JobGenerator() interface{} {
 const (
 	queue = "gobus:queue:twitter:tweet"
 	timeOut = 5e9 // 5 seconds
+	limit = 10
 )
 
 func main() {
-	service := gobus.CreateService("", 0, "", queue, &TweetService{})
+	service := gobus.CreateService("", 0, "", queue, &TweetService{}, limit)
 	defer service.Close()
 
 	service.Run(timeOut)
