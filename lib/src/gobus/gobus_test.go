@@ -35,7 +35,7 @@ func TestCreateService(t *testing.T) {
 	fmt.Println("Test create service")
 
 	queue := "gobus:queue:empty"
-	service := CreateService("", 0, "", queue, &EmptyService{})
+	service := CreateService("", 0, "", queue, &EmptyService{}, -1)
 	defer func() { service.Close() }()
 	go func() {
 		service.Run(1e9)
@@ -89,7 +89,7 @@ func TestPerJobWork(t *testing.T) {
 	fmt.Println("Test per job work")
 
 	queue := "gobus:queue:perjobwork"
-	service := CreateService("", 0, "", queue, &PerJobService{})
+	service := CreateService("", 0, "", queue, &PerJobService{}, -1)
 	defer func() {
 		service.Close()
 		service.Clear()
@@ -143,7 +143,7 @@ func TestPerJobTime(t *testing.T) {
 	fmt.Println("Test per job time")
 
 	queue := "gobus:queue:perjobtime"
-	service := CreateService("", 0, "", queue, &PerJobService{})
+	service := CreateService("", 0, "", queue, &PerJobService{}, -1)
 	defer func() {
 		service.Close()
 		service.Clear()
@@ -212,7 +212,7 @@ func TestPer4JobsWork(t *testing.T) {
 	fmt.Println("Test per 4 jobs work")
 
 	queue := "gobus:queue:per4jobswork"
-	service := CreateService("", 0, "", queue, &Per4JobsService{})
+	service := CreateService("", 0, "", queue, &Per4JobsService{}, -1)
 	defer func() {
 		service.Close()
 		service.Clear()
@@ -260,7 +260,7 @@ func TestPer4JobsTime(t *testing.T) {
 	fmt.Println("Test per 4 jobs time")
 
 	queue := "gobus:queue:per4jobstime"
-	service := CreateService("", 0, "", queue, &Per4JobsService{})
+	service := CreateService("", 0, "", queue, &Per4JobsService{}, -1)
 	defer func() {
 		service.Close()
 		service.Clear()
@@ -347,7 +347,7 @@ func TestSendWork(t *testing.T) {
 
 	queue := "gobus:queue:sendwork"
 	out := make(chan int)
-	service := CreateService("", 0, "", queue, &SendService{out: out})
+	service := CreateService("", 0, "", queue, &SendService{out: out}, -1)
 	defer func() {
 		service.Close()
 		service.Clear()
@@ -378,7 +378,7 @@ func TestSendTime(t *testing.T) {
 
 	queue := "gobus:queue:sendtime"
 	out := make(chan int)
-	service := CreateService("", 0, "", queue, &SendService{out: out})
+	service := CreateService("", 0, "", queue, &SendService{out: out}, -1)
 	defer func() {
 		service.Close()
 		service.Clear()
@@ -408,6 +408,67 @@ func TestSendTime(t *testing.T) {
 
 		for i := 0; i < 10; i++ {
 			<-out
+		}
+	}
+}
+
+//////////////////////////////////////////////
+
+type LimitService struct {
+}
+
+func (s *LimitService) Do(jobs []interface{}) []interface{} {
+	time.Sleep(0.5 * 1e9)
+	i := 2
+	return []interface{}{&i}
+}
+
+func (s *LimitService) MaxJobsCount() int {
+	return 1
+}
+
+func (s *LimitService) JobGenerator() interface{} {
+	var i int
+	return &i
+}
+
+func TestLimitWork(t *testing.T) {
+	fmt.Println("Test limit work")
+
+	queue := "gobus:queue:limitwork"
+	service := CreateService("", 0, "", queue, &LimitService{}, 4)
+	defer func() {
+		service.Close()
+		service.Clear()
+	}()
+
+	client := CreateClient("", 0, "", queue, ValueGenerator)
+	defer func() { client.Close() }()
+
+	go func() {
+		service.Run(1e9)
+	}()
+
+	c := make(chan int)
+	for i := 0; i < 10; i++ {
+		go func() {
+			client.Do(1)
+			c <- 1
+		}()
+	}
+
+	{
+		start := time.Now()
+		for i := 0; i < 10; i++ {
+			<-c
+		}
+		stop := time.Now()
+		duration := stop.Sub(start)
+		if duration > 5*1e9 {
+			t.Fatal("Run time too long")
+		}
+		if duration < 4*1e9 {
+			t.Fatal("Run time too fast")
 		}
 	}
 }

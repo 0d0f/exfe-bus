@@ -22,22 +22,28 @@ const (
 )
 
 type Service struct {
-	redis      *godis.Client
-	queueName  string
-	worker     Worker
-	status     int
-	quitChan   chan int
-	isQuitChan chan int
+	redis       *godis.Client
+	queueName   string
+	worker      Worker
+	status      int
+	quitChan    chan int
+	isQuitChan  chan int
+	countChan   chan int
+	limit       int
+	runningJobs int
 }
 
-func CreateService(netaddr string, db int, password, queueName string, worker Worker) *Service {
+func CreateService(netaddr string, db int, password, queueName string, worker Worker, workerLimit int) *Service {
 	return &Service{
-		redis:      godis.New(netaddr, db, password),
-		queueName:  queueName,
-		worker:     worker,
-		status:     Stopped,
-		quitChan:   make(chan int),
-		isQuitChan: make(chan int),
+		redis:       godis.New(netaddr, db, password),
+		queueName:   queueName,
+		worker:      worker,
+		status:      Stopped,
+		quitChan:    make(chan int),
+		isQuitChan:  make(chan int),
+		countChan:   make(chan int),
+		limit:       workerLimit,
+		runningJobs: 0,
 	}
 }
 
@@ -54,6 +60,8 @@ func (s *Service) Run(timeOut time.Duration) {
 Loop:
 	for {
 		select {
+		case <-s.countChan:
+			s.runningJobs--
 		case <-s.quitChan:
 			break Loop
 		case <-time.After(timeOut):
@@ -94,13 +102,21 @@ func (s *Service) handleQueue() {
 			break
 		}
 
+		if s.limit > 0 && s.runningJobs >= s.limit {
+			break
+		}
+
 		jobs, metas := s.getJobs(s.worker.MaxJobsCount())
 		if len(metas) == 0 {
 			fmt.Println("Can't get jobs, unknown error")
 			continue
 		}
 
-		go s.doJobs(jobs, metas)
+		s.runningJobs++
+		go func() {
+			s.doJobs(jobs, metas)
+			s.countChan <- 1
+		}()
 	}
 }
 
