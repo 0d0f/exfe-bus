@@ -13,7 +13,8 @@ tweet = {
     :AccessToken => "491159882-urND5ZaHmUPWNgvpr5coIifkApmKsmjGtX69Bn51",
     :AccessSecret => "5kwJdfqd6xL93BvPisYaRVzk5VlOEMhQwAk2aPMxy6s",
     :Tweet => "就是测个试",
-  }
+  },
+  :NeedReturn => true,
 }
 
 redis = Redis.new

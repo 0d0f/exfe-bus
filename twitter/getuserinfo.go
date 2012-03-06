@@ -1,20 +1,21 @@
 package main
 
 import (
-	"oauth"
-	"gobus"
-	"net/url"
 	"fmt"
+	"gobus"
 	"io/ioutil"
+	"log"
+	"net/url"
+	"oauth"
 )
 
 type UserInfo struct {
-	ClientToken string
+	ClientToken  string
 	ClientSecret string
-	AccessToken string
+	AccessToken  string
 	AccessSecret string
 
-	UserId string
+	UserId     string
 	ScreenName string
 }
 
@@ -24,7 +25,14 @@ func (i *UserInfo) GoString() string {
 }
 
 func (i *UserInfo) Do(messages []interface{}) []interface{} {
-	message := messages[0].(*UserInfo)
+	message, ok := messages[0].(*UserInfo)
+	if !ok {
+		log.Printf("Can't convert input into UserInfo: %s", messages)
+		return nil
+	}
+
+	log.Printf("Try to get %s(%s) userinfo...", message.ScreenName, message.UserId)
+
 	client := oauth.CreateClient(message.ClientToken, message.ClientSecret, message.AccessToken, message.AccessSecret, "https://api.twitter.com/1/")
 	params := make(url.Values)
 	if message.ScreenName != "" {
@@ -34,11 +42,13 @@ func (i *UserInfo) Do(messages []interface{}) []interface{} {
 	}
 	retReader, err := client.Do("GET", "/users/show.json", params)
 	if err != nil {
+		log.Printf("Twitter access error: %s", err)
 		return []interface{}{map[string]string{"error": err.Error()}}
 	}
 
 	retBytes, err := ioutil.ReadAll(retReader)
 	if err != nil {
+		log.Printf("Can't load twitter response: %s", err)
 		return []interface{}{map[string]string{"error": err.Error()}}
 	}
 
@@ -56,14 +66,17 @@ func (i *UserInfo) JobGenerator() interface{} {
 }
 
 const (
-	queue = "gobus:queue:twitter:userinfo"
+	queue   = "gobus:queue:twitter:userinfo"
 	timeOut = 5e9 // 5 seconds
-	limit = 10
+	limit   = 10
 )
 
 func main() {
+	log.SetPrefix("[UserInfo]")
+	log.Printf("Service start, queue: %s", queue)
 	service := gobus.CreateService("", 0, "", queue, &UserInfo{}, limit)
 	defer func() {
+		log.Printf("Service stop, queue: %s", queue)
 		service.Close()
 		service.Clear()
 	}()

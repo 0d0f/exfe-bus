@@ -1,92 +1,93 @@
 package main
 
 import (
-	"fmt"
-	"gosque"
+	"bytes"
 	"config"
+	"fmt"
+	"gobus"
+	"gosque"
+	"log"
 	"strconv"
 	"strings"
-	"gobus"
 	"text/template"
-	"bytes"
 )
 
 type ExfeTime struct {
-	Time string
-	Data string
-	Datetime string
+	Time      string
+	Data      string
+	Datetime  string
 	Time_type string
 }
 
 type TwitterSender struct {
-	Title string
-	Description string
-	Begin_at ExfeTime
-	Place_line1 string
-	Place_line2 string
-	Cross_id int64
-	Cross_id_base62 string
-	Invitation_id string
-	Token string
-	Identity_id string
-	Host_identity_id int64
-	Provider string
+	Title             string
+	Description       string
+	Begin_at          ExfeTime
+	Place_line1       string
+	Place_line2       string
+	Cross_id          int64
+	Cross_id_base62   string
+	Invitation_id     string
+	Token             string
+	Identity_id       string
+	Host_identity_id  int64
+	Provider          string
 	External_identity string
-	Name string
-	Avatar_file_name string
-	Host_identity struct {
-		Name string
+	Name              string
+	Avatar_file_name  string
+	Host_identity     struct {
+		Name             string
 		Avatar_file_name string
 	}
 	Rsvp_status int64
 	By_identity struct {
-		Id string
+		Id                string
 		External_identity string
-		Name string
-		Bio string
-		Avatar_file_name string
+		Name              string
+		Bio               string
+		Avatar_file_name  string
 		External_username string
-		Provider string
+		Provider          string
 	}
 	To_identity struct {
-		Id string
+		Id                string
 		External_identity string
-		Name string
-		Bio string
-		Avatar_file_name string
+		Name              string
+		Bio               string
+		Avatar_file_name  string
 		External_username string
-		Provider string
+		Provider          string
 	}
 	Invitations []struct {
-		Invitation_id string
-		State int64
-		By_identity_id string
-		Token string
-		Updated_at string
-		Identity_id string
-		Provider string
+		Invitation_id     string
+		State             int64
+		By_identity_id    string
+		Token             string
+		Updated_at        string
+		Identity_id       string
+		Provider          string
 		External_identity string
-		Name string
-		Bio string
-		Avatar_file_name string
+		Name              string
+		Bio               string
+		Avatar_file_name  string
 		External_username string
-		Identities []struct {
-			Identity_id string
-			Status string
-			Provider string
+		Identities        []struct {
+			Identity_id       string
+			Status            string
+			Provider          string
 			External_identity string
-			Name string
-			Bio string
-			Avatar_file_name string
+			Name              string
+			Bio               string
+			Avatar_file_name  string
 			External_username string
 		}
 		User_id int64
 	}
-	config *config.Configure
+	config        *config.Configure
 	getfriendship *gobus.Client
-	getinfo *gobus.Client
-	sendtweet *gobus.Client
-	senddm *gobus.Client
+	getinfo       *gobus.Client
+	sendtweet     *gobus.Client
+	senddm        *gobus.Client
 }
 
 func (s *TwitterSender) CrossLink(withToken bool) string {
@@ -111,45 +112,45 @@ func ShortTweet(tweet string) string {
 }
 
 type Friendship struct {
-	ClientToken string
+	ClientToken  string
 	ClientSecret string
-	AccessToken string
+	AccessToken  string
 	AccessSecret string
-	UserA string
-	UserB string
+	UserA        string
+	UserB        string
 }
 
 type UserInfo struct {
-	ClientToken string
+	ClientToken  string
 	ClientSecret string
-	AccessToken string
+	AccessToken  string
 	AccessSecret string
-	ScreenName string
+	ScreenName   string
 }
 
 type TemplateData struct {
-	ToUserName string
-	IsHost bool
-	Title string
-	Time string
-	Place1 string
-	Place2 string
-	SiteUrl string
+	ToUserName    string
+	IsHost        bool
+	Title         string
+	Time          string
+	Place1        string
+	Place2        string
+	SiteUrl       string
 	CrossIdBase62 string
-	Token string
+	Token         string
 }
 
 func CreateData(sender *TwitterSender) *TemplateData {
 	return &TemplateData{
-		ToUserName: sender.To_identity.External_username,
-		IsHost: sender.isHost(),
-		Title: sender.Title,
-		Time: sender.Begin_at.Datetime,
-		Place1: sender.Place_line1,
-		Place2: sender.Place_line2,
-		SiteUrl: sender.config.String("site_url"),
+		ToUserName:    sender.To_identity.External_username,
+		IsHost:        sender.isHost(),
+		Title:         sender.Title,
+		Time:          sender.Begin_at.Datetime,
+		Place1:        sender.Place_line1,
+		Place2:        sender.Place_line2,
+		SiteUrl:       sender.config.String("site_url"),
 		CrossIdBase62: sender.Cross_id_base62,
-		Token: sender.Token,
+		Token:         sender.Token,
 	}
 }
 
@@ -158,27 +159,34 @@ func LoadTemplate(name string) *template.Template {
 }
 
 func (s *TwitterSender) Do() {
+	log.Printf("Get a job")
+
 	if (s.External_identity != "") ||
-			(strings.ToLower(s.External_identity) == strings.ToLower(fmt.Sprintf("@%s@twitter", s.To_identity.External_username))) {
+		(strings.ToLower(s.External_identity) == strings.ToLower(fmt.Sprintf("@%s@twitter", s.To_identity.External_username))) {
 		// update user info
 		s.getinfo.Send(&UserInfo{
-			ClientToken: s.config.String("twitter.client_token"),
+			ClientToken:  s.config.String("twitter.client_token"),
 			ClientSecret: s.config.String("twitter.client_secret"),
-			AccessToken: s.config.String("twitter.access_token"),
+			AccessToken:  s.config.String("twitter.access_token"),
 			AccessSecret: s.config.String("twitter.access_secret"),
-			ScreenName: s.To_identity.External_username,
+			ScreenName:   s.To_identity.External_username,
 		})
 	}
 
 	// check friendship
-	response, _ := s.getfriendship.Do(&Friendship{
-		ClientToken: s.config.String("twitter.client_token"),
+	f := &Friendship{
+		ClientToken:  s.config.String("twitter.client_token"),
 		ClientSecret: s.config.String("twitter.client_secret"),
-		AccessToken: s.config.String("twitter.access_token"),
+		AccessToken:  s.config.String("twitter.access_token"),
 		AccessSecret: s.config.String("twitter.access_secret"),
-		UserA: s.To_identity.External_username,
-		UserB: s.config.String("twitter.screen_name"),
-	})
+		UserA:        s.To_identity.External_username,
+		UserB:        s.config.String("twitter.screen_name"),
+	}
+	response, err := s.getfriendship.Do(f)
+	if err != nil {
+		log.Printf("Twitter check friendship(%s/%s) fail: %s", f.UserA, f.UserB, err)
+		return
+	}
 	isFriend := response.(*TwitterResponse).Result == "true"
 
 	data := CreateData(s)
@@ -202,44 +210,70 @@ func (s *TwitterSender) Do() {
 }
 
 type Tweet struct {
-	ClientToken string
+	ClientToken  string
 	ClientSecret string
-	AccessToken string
+	AccessToken  string
 	AccessSecret string
-	Tweet string
+	Tweet        string
 }
 
 func (s *TwitterSender) sendTweet(t string) {
 	tweet := &Tweet{
-		ClientToken: s.config.String("twitter.client_token"),
+		ClientToken:  s.config.String("twitter.client_token"),
 		ClientSecret: s.config.String("twitter.client_secret"),
-		AccessToken: s.config.String("twitter.access_token"),
+		AccessToken:  s.config.String("twitter.access_token"),
 		AccessSecret: s.config.String("twitter.access_secret"),
-		Tweet: t,
+		Tweet:        t,
 	}
-	s.sendtweet.Do(tweet)
+	ret, err := s.sendtweet.Do(tweet)
+	if err != nil {
+		log.Printf("Can't send tweet: %s", err)
+		return
+	}
+	resp, ok := ret.(*TwitterResponse)
+	if !ok {
+		log.Printf("Twitter response error: %s", ret)
+		return
+	}
+	if resp.Error != "" {
+		log.Printf("Send tweet fail: %s", resp.Error)
+		return
+	}
 }
 
 type DM struct {
-	ClientToken string
+	ClientToken  string
 	ClientSecret string
-	AccessToken string
+	AccessToken  string
 	AccessSecret string
-	Message string
-	ToUserName string
-	ToUserId string
+	Message      string
+	ToUserName   string
+	ToUserId     string
 }
 
 func (s *TwitterSender) sendDM(to_user string, t string) {
 	dm := &DM{
-		ClientToken: s.config.String("twitter.client_token"),
+		ClientToken:  s.config.String("twitter.client_token"),
 		ClientSecret: s.config.String("twitter.client_secret"),
-		AccessToken: s.config.String("twitter.access_token"),
+		AccessToken:  s.config.String("twitter.access_token"),
 		AccessSecret: s.config.String("twitter.access_secret"),
-		Message: t,
-		ToUserName: to_user,
+		Message:      t,
+		ToUserName:   to_user,
 	}
-	s.senddm.Do(dm)
+	ret, err := s.senddm.Do(dm)
+	if err != nil {
+		log.Printf("Can't send tweet: %s", err)
+		return
+	}
+	resp, ok := ret.(*TwitterResponse)
+	if !ok {
+		log.Printf("Twitter response error: %s", ret)
+		return
+	}
+	if resp.Error != "" {
+		log.Printf("Send tweet fail: %s", resp.Error)
+		return
+	}
 }
 
 func TwitterSenderGenerator() interface{} {
@@ -247,7 +281,7 @@ func TwitterSenderGenerator() interface{} {
 }
 
 type TwitterResponse struct {
-	Error string
+	Error  string
 	Result string
 }
 
@@ -256,6 +290,8 @@ func TwitterResponseGenerator() interface{} {
 }
 
 func main() {
+	log.SetPrefix("[TwitterSender]")
+	log.Printf("Service start")
 	config := config.LoadFile("twitter_sender.yaml")
 
 	client := gosque.CreateQueue(
@@ -302,7 +338,10 @@ func main() {
 			twitterSender.senddm = senddm
 			twitterSender.getinfo = getinfo
 			twitterSender.getfriendship = getfriendship
-			twitterSender.Do()
+			go func() {
+				twitterSender.Do()
+			}()
 		}
 	}
+	log.Printf("Service stop")
 }

@@ -14,7 +14,8 @@ tweet_name = {
     :AccessSecret => "5kwJdfqd6xL93BvPisYaRVzk5VlOEMhQwAk2aPMxy6s",
     :Message => "就是测个试Name",
     :ToUserName => "lzh429",
-  }
+  },
+  :NeedReturn => true,
 }
 
 tweet_id = {
@@ -26,7 +27,8 @@ tweet_id = {
     :AccessSecret => "5kwJdfqd6xL93BvPisYaRVzk5VlOEMhQwAk2aPMxy6s",
     :Message => "就是测个试ID",
     :ToUserId => "56591660",
-  }
+  },
+  :NeedReturn => true,
 }
 
 redis = Redis.new

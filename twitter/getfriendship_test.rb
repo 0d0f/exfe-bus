@@ -14,7 +14,8 @@ job1 = {
     :AccessSecret => "5kwJdfqd6xL93BvPisYaRVzk5VlOEMhQwAk2aPMxy6s",
     :UserA => "googollee",
     :UserB => "lzh429",
-  }
+  },
+  :NeedReturn => true,
 }
 
 job2 = {
@@ -26,7 +27,8 @@ job2 = {
     :AccessSecret => "5kwJdfqd6xL93BvPisYaRVzk5VlOEMhQwAk2aPMxy6s",
     :UserA => "56591660",
     :UserB => "491159882",
-  }
+  },
+  :NeedReturn => true,
 }
 
 redis = Redis.new
