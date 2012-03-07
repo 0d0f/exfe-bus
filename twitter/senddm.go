@@ -1,12 +1,15 @@
 package main
 
 import (
+	"config"
+	"flag"
 	"fmt"
 	"gobus"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"oauth"
+	"time"
 )
 
 type Message struct {
@@ -64,20 +67,31 @@ func (m *Message) JobGenerator() interface{} {
 }
 
 const (
-	queue   = "gobus:queue:twitter:directmessage"
-	timeOut = 5e9 // 5 seconds
-	limit   = 10
+	queue = "gobus:queue:twitter:directmessage"
 )
 
 func main() {
 	log.SetPrefix("[DirectMessage]")
 	log.Printf("Service start, queue: %s", queue)
-	service := gobus.CreateService("", 0, "", queue, &Message{}, limit)
+
+	var configFile string
+	flag.StringVar(&configFile, "config", "twitter_sender.yaml", "Specify the configuration file")
+	flag.Parse()
+
+	config := config.LoadFile(configFile)
+
+	service := gobus.CreateService(
+		config.String("redis.netaddr"),
+		config.Int("redis.db"),
+		config.String("redis.password"),
+		queue,
+		&Message{},
+		config.Int("service.limit"))
 	defer func() {
 		log.Printf("Service stop, queue: %s", queue)
 		service.Close()
 		service.Clear()
 	}()
 
-	service.Run(timeOut)
+	service.Run(time.Duration(config.Int("service.time_out")))
 }

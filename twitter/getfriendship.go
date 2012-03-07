@@ -1,12 +1,15 @@
 package main
 
 import (
+	"config"
+	"flag"
 	"fmt"
 	"gobus"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"oauth"
+	"time"
 )
 
 type Friendship struct {
@@ -62,21 +65,31 @@ func (f *Friendship) JobGenerator() interface{} {
 }
 
 const (
-	queue   = "gobus:queue:twitter:friendship"
-	timeOut = 5e9 // 5 seconds
-	limit   = 10
+	queue = "gobus:queue:twitter:friendship"
 )
 
 func main() {
 	log.SetPrefix("[Friendship]")
 	log.Printf("Service start, queue: %s", queue)
 
-	service := gobus.CreateService("", 0, "", queue, &Friendship{}, limit)
+	var configFile string
+	flag.StringVar(&configFile, "config", "twitter_sender.yaml", "Specify the configuration file")
+	flag.Parse()
+
+	config := config.LoadFile(configFile)
+
+	service := gobus.CreateService(
+		config.String("redis.netaddr"),
+		config.Int("redis.db"),
+		config.String("redis.password"),
+		queue,
+		&Friendship{},
+		config.Int("service.limit"))
 	defer func() {
 		log.Printf("Service stop, queue: %s", queue)
 		service.Close()
 		service.Clear()
 	}()
 
-	service.Run(timeOut)
+	service.Run(time.Duration(config.Int("service.time_out")))
 }
