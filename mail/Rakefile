@@ -1,0 +1,18 @@
+task :default => [:compile]
+
+GO = FileList["*.go"]
+BIN = GO.ext("")
+
+task :compile => BIN
+
+BIN.each do |bin|
+  rule bin => "#{bin}.go" do |t|
+    sh %{go build "#{t.source}"}
+  end
+end
+
+task :clean do
+  BIN.each do |bin|
+    sh %{[ -e #{bin} ] && rm #{bin} || [ 1 == 1 ]}
+  end
+end
