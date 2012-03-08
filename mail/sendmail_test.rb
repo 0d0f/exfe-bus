@@ -14,7 +14,7 @@ job = {
         :Name => "Li Zhaohai",
       },
       {
-        :Mail => "googollee@gmail.com",
+        :Mail => "googollee@hotmail.com",
         :Name => "Googol Lee",
       }
     ],
