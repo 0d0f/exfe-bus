@@ -23,7 +23,14 @@ job = {
       :Name => "Googol Lee",
     },
     :Subject => "A Test",
-    :Message => "Just a mail test",
+    :Text => "Just a mail test",
+    :Html => "<h1>Just mail test</h1>",
+    :FileParts => [
+      {
+        :Name => "file.txt",
+        :Content => "file data",
+      },
+    ]
   },
   :NeedReturn => true
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"net/textproto"
 	"flag"
 	"config"
 	"time"
@@ -9,6 +11,7 @@ import (
 	"log"
 	"fmt"
 	"strings"
+	"mime/multipart"
 )
 
 type MailUser struct {
@@ -20,11 +23,18 @@ func (m MailUser) ToString() string {
 	return fmt.Sprintf("\"%s\" <%s>", m.Name, m.Mail)
 }
 
+type FilePart struct {
+	Name string
+	Content string
+}
+
 type Mail struct {
 	To []MailUser
 	From MailUser
 	Subject string
-	Message string
+	Text string
+	Html string
+	FileParts []FilePart
 }
 
 func (m *Mail) GoString() string {
@@ -55,7 +65,48 @@ func (m *Mail) ToMail() (mails []string) {
 }
 
 func (m *Mail) Body() []byte {
-	return []byte(fmt.Sprintf("From: %s\r\nSubject: %s\r\nTo: %s\r\n\r\n%s\r\n", m.From.ToString(), m.Subject, m.ToHeader(), m.Message))
+	buf := bytes.NewBuffer(nil)
+	w := multipart.NewWriter(buf)
+	defer w.Close()
+
+	if m.Text != "" {
+		header := textproto.MIMEHeader{}
+		header.Add("Content-Type", "text/plain; charset=utf-8")
+		w1, err := w.CreatePart(header)
+		if err != nil {
+			log.Printf("Create multipart plain text fail: %s", err.Error())
+			return nil
+		}
+		w1.Write([]byte(m.Text))
+	}
+
+	if m.Html != "" {
+		header := textproto.MIMEHeader{}
+		header.Add("Content-Type", "text/html; charset=utf-8")
+		w1, err := w.CreatePart(header)
+		if err != nil {
+			log.Printf("Create multipart html fail: %s", err.Error())
+			return nil
+		}
+		w1.Write([]byte(m.Html))
+	}
+
+	for _, f := range m.FileParts {
+		w1, err := w.CreateFormFile(f.Name, f.Name)
+		if err != nil {
+			log.Printf("Create multipart file(%s) fail: %s", f.Name, err.Error())
+			return nil
+		}
+		w1.Write([]byte(f.Content))
+	}
+	w.Close()
+
+	return []byte(fmt.Sprintf("Content-Type: multipart/mixed; boundary=\"%s\"\r\nFrom: %s\r\nSubject: %s\r\nTo: %s\r\n\r\n%s",
+		w.Boundary(),
+		m.From.ToString(),
+		m.Subject,
+		m.ToHeader(),
+		buf.String()))
 }
 
 type MailSender struct {
