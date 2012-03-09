@@ -328,7 +328,7 @@ func main() {
 		"gobus:queue:twitter:friendship",
 		TwitterResponseGenerator)
 
-	recv := client.IncomingJob(TwitterSenderGenerator, 5e9)
+	recv := client.IncomingJob("twitter_job", TwitterSenderGenerator, 5e9)
 	for {
 		select {
 		case job := <-recv:
