@@ -26,7 +26,7 @@ func (c *Client) Close() {
 
 func (c *Client) PutJob(name string, v interface{}) error {
 	meta := metaType{
-		Name: name,
+		Class: name,
 		Args: v,
 	}
 	buf := bytes.NewBuffer(nil)
@@ -66,7 +66,7 @@ func (c *Client) jobLoop(jobRecv chan<- interface{}, name string, generateFunc f
 			continue
 		}
 
-		if value.Name != name {
+		if value.Class != name {
 			c.redis.Rpush(c.queueName, string(elem))
 			continue
 		}
@@ -84,7 +84,7 @@ func (c *Client) IncomingJob(name string, generateFunc func() interface{}, timeO
 }
 
 type metaType struct {
-	Name string
+	Class string
 	Args interface{}
 	Id   string
 }
