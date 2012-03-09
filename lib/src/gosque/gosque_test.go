@@ -14,7 +14,7 @@ func GenerateJobs(gosque *Client, max int) {
 		job := Job{
 			fmt.Sprintf("Job-%d", i),
 		}
-		err := gosque.PutJob(job)
+		err := gosque.PutJob("test_job", job)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -32,7 +32,7 @@ func TestGetJob(t *testing.T) {
 	defer func() { gosque.Close() }()
 	GenerateJobs(gosque, maxJobs)
 
-	jobRecv := gosque.IncomingJob(GenerateJobTemplate, 5e9)
+	jobRecv := gosque.IncomingJob("test_job", GenerateJobTemplate, 5e9)
 	for i := 0; i < 10; i++ {
 		job := (<-jobRecv).(*Job)
 		expectName := fmt.Sprintf("Job-%d", i)

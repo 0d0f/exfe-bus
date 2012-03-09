@@ -24,8 +24,9 @@ func (c *Client) Close() {
 	c.redis.Quit()
 }
 
-func (c *Client) PutJob(v interface{}) error {
+func (c *Client) PutJob(name string, v interface{}) error {
 	meta := metaType{
+		Name: name,
 		Args: v,
 	}
 	buf := bytes.NewBuffer(nil)
@@ -35,7 +36,7 @@ func (c *Client) PutJob(v interface{}) error {
 	return err
 }
 
-func (c *Client) jobLoop(jobRecv chan<- interface{}, generateFunc func() interface{}, timeOut time.Duration) {
+func (c *Client) jobLoop(jobRecv chan<- interface{}, name string, generateFunc func() interface{}, timeOut time.Duration) {
 	for {
 		queueLen, err := c.redis.Llen(c.queueName)
 		if err != nil {
@@ -65,20 +66,25 @@ func (c *Client) jobLoop(jobRecv chan<- interface{}, generateFunc func() interfa
 			continue
 		}
 
+		if value.Name != name {
+			c.redis.Rpush(c.queueName, string(elem))
+			continue
+		}
+
 		go func() {
 			jobRecv <- value.Args
 		}()
 	}
 }
 
-func (c *Client) IncomingJob(generateFunc func() interface{}, timeOut time.Duration) <-chan interface{} {
+func (c *Client) IncomingJob(name string, generateFunc func() interface{}, timeOut time.Duration) <-chan interface{} {
 	jobChan := make(chan interface{})
-	go c.jobLoop(jobChan, generateFunc, timeOut)
+	go c.jobLoop(jobChan, name, generateFunc, timeOut)
 	return jobChan
 }
 
 type metaType struct {
-	Class string
-	Args  interface{}
-	Id    string
+	Name string
+	Args interface{}
+	Id   string
 }
