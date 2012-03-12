@@ -8,6 +8,7 @@ import (
 	"gosque"
 	"log"
 	"text/template"
+	"./pkg/mail"
 )
 
 type WelcomeAndActiveData struct {
@@ -21,19 +22,6 @@ type WelcomeAndActiveData struct {
 	SiteUrl string
 	config *config.Configure
 	sendmail *gobus.Client
-}
-
-type MailUser struct {
-	Mail string
-	Name string
-}
-
-type SendMail struct {
-	To []MailUser
-	From MailUser
-	Subject string
-	Text string
-	Html string
 }
 
 func LoadTemplate(name string) *template.Template {
@@ -57,14 +45,14 @@ func (d *WelcomeAndActiveData) Do() {
 	tmpl.Execute(buf, d)
 	message := buf.String()
 
-	d.sendmail.Do(&SendMail{
-		To: []MailUser{
+	d.sendmail.Do(&mail.Mail{
+		To: []mail.MailUser{
 			{
 				Mail: d.External_identity,
 				Name: d.Name,
 			},
 		},
-		From: MailUser{
+		From: mail.MailUser{
 			Mail: "x@exfe.com",
 			Name: "exfe",
 		},
