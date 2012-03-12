@@ -27,8 +27,8 @@ job = {
     :Html => "<h1>Just mail test</h1>",
     :FileParts => [
       {
-        :Name => "file.txt",
-        :Content => "file data",
+        :Name => "test.txt",
+        :Content => "dGVzdCBkYXRh",
       },
     ]
   },

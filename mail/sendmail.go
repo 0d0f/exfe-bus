@@ -25,7 +25,7 @@ func (m MailUser) ToString() string {
 
 type FilePart struct {
 	Name string
-	Content string
+	Content []byte
 }
 
 type Mail struct {
@@ -64,49 +64,89 @@ func (m *Mail) ToMail() (mails []string) {
 	return
 }
 
-func (m *Mail) Body() []byte {
+func (m *Mail) MakeMessage() (textproto.MIMEHeader, string) {
 	buf := bytes.NewBuffer(nil)
 	w := multipart.NewWriter(buf)
 	defer w.Close()
 
-	if m.Text != "" {
-		header := textproto.MIMEHeader{}
-		header.Add("Content-Type", "text/plain; charset=utf-8")
-		w1, err := w.CreatePart(header)
-		if err != nil {
-			log.Printf("Create multipart plain text fail: %s", err.Error())
-			return nil
-		}
-		w1.Write([]byte(m.Text))
+	header := textproto.MIMEHeader{}
+	header.Add("Content-Type", "text/plain; charset=utf-8")
+	w1, err := w.CreatePart(header)
+	if err != nil {
+		log.Printf("Create multipart plain text fail: %s", err.Error())
+		return nil, ""
+	}
+	w1.Write([]byte(m.Text))
+
+	header = textproto.MIMEHeader{}
+	header.Add("Content-Type", "text/html; charset=utf-8")
+	w1, err = w.CreatePart(header)
+	if err != nil {
+		log.Printf("Create multipart html fail: %s", err.Error())
+		return nil, ""
+	}
+	w1.Write([]byte(m.Html))
+
+	w.Close()
+	header = textproto.MIMEHeader{}
+	header.Add("Content-Type", fmt.Sprintf("multipart/alternative; boundary=\"%s\"", w.Boundary()))
+
+	return header, buf.String()
+}
+
+func (m *Mail) MakeMessageWithAttachments() (textproto.MIMEHeader, string) {
+	header, message := m.MakeMessage()
+	if header == nil {
+		log.Printf("Can't create message part")
+		return nil, ""
+	}
+	if len(m.FileParts) == 0 {
+		return header, message
 	}
 
-	if m.Html != "" {
-		header := textproto.MIMEHeader{}
-		header.Add("Content-Type", "text/html; charset=utf-8")
-		w1, err := w.CreatePart(header)
-		if err != nil {
-			log.Printf("Create multipart html fail: %s", err.Error())
-			return nil
-		}
-		w1.Write([]byte(m.Html))
+	buf := bytes.NewBuffer(nil)
+	w := multipart.NewWriter(buf)
+	defer w.Close()
+
+	messagePart, err := w.CreatePart(header)
+	if err != nil {
+		w.Close()
+		log.Printf("Create multipart message part fail: %s", err.Error())
+		return nil, ""
 	}
+	messagePart.Write([]byte(message))
 
 	for _, f := range m.FileParts {
 		w1, err := w.CreateFormFile(f.Name, f.Name)
 		if err != nil {
 			log.Printf("Create multipart file(%s) fail: %s", f.Name, err.Error())
-			return nil
+			return nil, ""
 		}
 		w1.Write([]byte(f.Content))
 	}
 	w.Close()
 
-	return []byte(fmt.Sprintf("Content-Type: multipart/mixed; boundary=\"%s\"\r\nFrom: %s\r\nSubject: %s\r\nTo: %s\r\n\r\n%s",
-		w.Boundary(),
+	header = textproto.MIMEHeader{}
+	header.Add("Content-Type", fmt.Sprintf("multipart/mixed; boundary=\"%s\"", w.Boundary()))
+
+	return header, buf.String()
+}
+
+func (m *Mail) Body() []byte {
+	header := textproto.MIMEHeader{}
+	body := ""
+	if len(m.FileParts) == 0 {
+		header, body = m.MakeMessage()
+	} else {
+		header, body = m.MakeMessageWithAttachments()
+	}
+
+	return []byte(fmt.Sprintf("Content-Type: %s\r\nFrom: %s\r\nSubject: %s\r\nTo: %s\r\n%s",
+		header.Get("Content-Type"),
 		m.From.ToString(),
 		m.Subject,
 		m.ToHeader(),
-		buf.String()))
+		body))
 }
 
 type MailSender struct {
