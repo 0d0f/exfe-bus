@@ -3,45 +3,34 @@ package main
 import (
 	"config"
 	"flag"
-	"fmt"
 	"gobus"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"oauth"
 	"time"
+	"./pkg/twitter"
 )
 
-type UserInfo struct {
-	ClientToken  string
-	ClientSecret string
-	AccessToken  string
-	AccessSecret string
-
-	UserId     string
-	ScreenName string
+type UserInfoService struct {
+	info *twitter.UserInfo
 }
 
-func (i *UserInfo) GoString() string {
-	return fmt.Sprintf("{Client:(%s %s) Access:(%s %s) User %s(%s)}",
-		i.ClientToken, i.ClientSecret, i.AccessToken, i.AccessSecret, i.ScreenName, i.UserId)
-}
-
-func (i *UserInfo) Do(messages []interface{}) []interface{} {
-	message, ok := messages[0].(*UserInfo)
+func (i *UserInfoService) Do(messages []interface{}) []interface{} {
+	data, ok := messages[0].(*UserInfoService)
 	if !ok {
 		log.Printf("Can't convert input into UserInfo: %s", messages)
 		return nil
 	}
 
-	log.Printf("Try to get %s(%s) userinfo...", message.ScreenName, message.UserId)
+	log.Printf("Try to get %s(%s) userinfo...", data.info.ScreenName, data.info.UserId)
 
-	client := oauth.CreateClient(message.ClientToken, message.ClientSecret, message.AccessToken, message.AccessSecret, "https://api.twitter.com/1/")
+	client := oauth.CreateClient(data.info.ClientToken, data.info.ClientSecret, data.info.AccessToken, data.info.AccessSecret, "https://api.twitter.com/1/")
 	params := make(url.Values)
-	if message.ScreenName != "" {
-		params.Add("screen_name", message.ScreenName)
+	if data.info.ScreenName != "" {
+		params.Add("screen_name", data.info.ScreenName)
 	} else {
-		params.Add("user_id", message.UserId)
+		params.Add("user_id", data.info.UserId)
 	}
 	retReader, err := client.Do("GET", "/users/show.json", params)
 	if err != nil {
@@ -60,12 +49,12 @@ func (i *UserInfo) Do(messages []interface{}) []interface{} {
 	return []interface{}{map[string]string{"result": string(retBytes)}}
 }
 
-func (i *UserInfo) MaxJobsCount() int {
+func (i *UserInfoService) MaxJobsCount() int {
 	return 1
 }
 
-func (i *UserInfo) JobGenerator() interface{} {
-	return &UserInfo{}
+func (i *UserInfoService) JobGenerator() interface{} {
+	return &UserInfoService{}
 }
 
 const (
@@ -87,7 +76,7 @@ func main() {
 		config.Int("redis.db"),
 		config.String("redis.password"),
 		queue,
-		&UserInfo{},
+		&UserInfoService{},
 		config.Int("service.limit"))
 	defer func() {
 		log.Printf("Service stop, queue: %s", queue)

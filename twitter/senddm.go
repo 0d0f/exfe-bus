@@ -3,46 +3,35 @@ package main
 import (
 	"config"
 	"flag"
-	"fmt"
 	"gobus"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"oauth"
 	"time"
+	"./pkg/twitter"
 )
 
-type Message struct {
-	ClientToken  string
-	ClientSecret string
-	AccessToken  string
-	AccessSecret string
-	Message      string
-	ToUserName   string
-	ToUserId     string
+type MessageService struct {
+	message *twitter.DirectMessage
 }
 
-func (m *Message) GoString() string {
-	return fmt.Sprintf("{Client:(%s %s) Access:(%s %s) ToUser:%s(%s) Message:%s}",
-		m.ClientToken, m.ClientSecret, m.AccessToken, m.AccessSecret, m.ToUserName, m.ToUserId, m.Message)
-}
-
-func (m *Message) Do(messages []interface{}) []interface{} {
-	message, ok := messages[0].(*Message)
+func (m *MessageService) Do(messages []interface{}) []interface{} {
+	data, ok := messages[0].(*MessageService)
 	if !ok {
 		log.Printf("Can't convert input into Message: %s", messages)
 	}
 
-	log.Printf("Try to send dm(%s) to user(%s/%s)...", message.Message, message.ToUserName, message.ToUserId)
+	log.Printf("Try to send dm(%s) to user(%s/%s)...", data.message.Message, data.message.ToUserName, data.message.ToUserId)
 
-	client := oauth.CreateClient(message.ClientToken, message.ClientSecret, message.AccessToken, message.AccessSecret, "https://api.twitter.com/1/")
+	client := oauth.CreateClient(data.message.ClientToken, data.message.ClientSecret, data.message.AccessToken, data.message.AccessSecret, "https://api.twitter.com/1/")
 	params := make(url.Values)
-	if message.ToUserId != "" {
-		params.Add("user_id", message.ToUserId)
+	if data.message.ToUserId != "" {
+		params.Add("user_id", data.message.ToUserId)
 	} else {
-		params.Add("screen_name", message.ToUserName)
+		params.Add("screen_name", data.message.ToUserName)
 	}
-	params.Add("text", message.Message)
+	params.Add("text", data.message.Message)
 	retReader, err := client.Do("POST", "/direct_messages/new.json", params)
 	if err != nil {
 		log.Printf("Twitter access error: %s", err)
@@ -58,12 +47,12 @@ func (m *Message) Do(messages []interface{}) []interface{} {
 	return []interface{}{map[string]string{"result": string(retBytes)}}
 }
 
-func (m *Message) MaxJobsCount() int {
+func (m *MessageService) MaxJobsCount() int {
 	return 1
 }
 
-func (m *Message) JobGenerator() interface{} {
-	return &Message{}
+func (m *MessageService) JobGenerator() interface{} {
+	return &MessageService{}
 }
 
 const (
@@ -85,7 +74,7 @@ func main() {
 		config.Int("redis.db"),
 		config.String("redis.password"),
 		queue,
-		&Message{},
+		&MessageService{},
 		config.Int("service.limit"))
 	defer func() {
 		log.Printf("Service stop, queue: %s", queue)

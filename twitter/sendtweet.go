@@ -3,39 +3,31 @@ package main
 import (
 	"config"
 	"flag"
-	"fmt"
 	"gobus"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"oauth"
 	"time"
+	"./pkg/twitter"
 )
 
 type TweetService struct {
-	ClientToken  string
-	ClientSecret string
-	AccessToken  string
-	AccessSecret string
-	Tweet        string
-}
-
-func (t *TweetService) GoString() string {
-	return fmt.Sprintf("{Client:(%s %s) Access:(%s %s) Tweet:%s}", t.ClientToken, t.ClientSecret, t.AccessToken, t.AccessSecret, t.Tweet)
+	tweet twitter.Tweet
 }
 
 func (t *TweetService) Do(jobs []interface{}) []interface{} {
-	tweet, ok := jobs[0].(*TweetService)
+	data, ok := jobs[0].(*TweetService)
 	if !ok {
 		log.Println("Can't convert input into TweetService: %s", jobs)
 		return nil
 	}
 
-	log.Printf("Try to send tweet(%s)...", tweet.Tweet)
+	log.Printf("Try to send tweet(%s)...", data.tweet.Tweet)
 
-	client := oauth.CreateClient(tweet.ClientToken, tweet.ClientSecret, tweet.AccessToken, tweet.AccessSecret, "https://api.twitter.com/1/")
+	client := oauth.CreateClient(data.tweet.ClientToken, data.tweet.ClientSecret, data.tweet.AccessToken, data.tweet.AccessSecret, "https://api.twitter.com/1/")
 	params := make(url.Values)
-	params.Add("status", tweet.Tweet)
+	params.Add("status", data.tweet.Tweet)
 
 	retReader, err := client.Do("POST", "/statuses/update.json", params)
 	if err != nil {
@@ -49,7 +41,10 @@ func (t *TweetService) Do(jobs []interface{}) []interface{} {
 		return []interface{}{map[string]string{"result": "", "error": err.Error()}}
 	}
 
-	return []interface{}{map[string]string{"result": string(retBytes), "error": ""}}
+	return []interface{}{twitter.Response{
+		Error: "",
+		Result: string(retBytes),
+	}}
 }
 
 func (t *TweetService) MaxJobsCount() int {

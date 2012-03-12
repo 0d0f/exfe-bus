@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"./pkg/twitter"
 )
 
 type ExfeTime struct {
@@ -111,23 +112,6 @@ func ShortTweet(tweet string) string {
 	return tweet
 }
 
-type Friendship struct {
-	ClientToken  string
-	ClientSecret string
-	AccessToken  string
-	AccessSecret string
-	UserA        string
-	UserB        string
-}
-
-type UserInfo struct {
-	ClientToken  string
-	ClientSecret string
-	AccessToken  string
-	AccessSecret string
-	ScreenName   string
-}
-
 type TemplateData struct {
 	ToUserName    string
 	IsHost        bool
@@ -164,7 +148,7 @@ func (s *TwitterSender) Do() {
 	if (s.External_identity != "") ||
 		(strings.ToLower(s.External_identity) == strings.ToLower(fmt.Sprintf("@%s@twitter", s.To_identity.External_username))) {
 		// update user info
-		s.getinfo.Send(&UserInfo{
+		s.getinfo.Send(&twitter.UserInfo{
 			ClientToken:  s.config.String("twitter.client_token"),
 			ClientSecret: s.config.String("twitter.client_secret"),
 			AccessToken:  s.config.String("twitter.access_token"),
@@ -174,7 +158,7 @@ func (s *TwitterSender) Do() {
 	}
 
 	// check friendship
-	f := &Friendship{
+	f := &twitter.Friendship{
 		ClientToken:  s.config.String("twitter.client_token"),
 		ClientSecret: s.config.String("twitter.client_secret"),
 		AccessToken:  s.config.String("twitter.access_token"),
@@ -187,7 +171,7 @@ func (s *TwitterSender) Do() {
 		log.Printf("Twitter check friendship(%s/%s) fail: %s", f.UserA, f.UserB, err)
 		return
 	}
-	isFriend := response.(*TwitterResponse).Result == "true"
+	isFriend := response.(*twitter.Response).Result == "true"
 
 	data := CreateData(s)
 
@@ -209,16 +193,8 @@ func (s *TwitterSender) Do() {
 	}
 }
 
-type Tweet struct {
-	ClientToken  string
-	ClientSecret string
-	AccessToken  string
-	AccessSecret string
-	Tweet        string
-}
-
 func (s *TwitterSender) sendTweet(t string) {
-	tweet := &Tweet{
+	tweet := &twitter.Tweet{
 		ClientToken:  s.config.String("twitter.client_token"),
 		ClientSecret: s.config.String("twitter.client_secret"),
 		AccessToken:  s.config.String("twitter.access_token"),
@@ -230,7 +206,7 @@ func (s *TwitterSender) sendTweet(t string) {
 		log.Printf("Can't send tweet: %s", err)
 		return
 	}
-	resp, ok := ret.(*TwitterResponse)
+	resp, ok := ret.(*twitter.Response)
 	if !ok {
 		log.Printf("Twitter response error: %s", ret)
 		return
@@ -241,18 +217,8 @@ func (s *TwitterSender) sendTweet(t string) {
 	}
 }
 
-type DM struct {
-	ClientToken  string
-	ClientSecret string
-	AccessToken  string
-	AccessSecret string
-	Message      string
-	ToUserName   string
-	ToUserId     string
-}
-
 func (s *TwitterSender) sendDM(to_user string, t string) {
-	dm := &DM{
+	dm := &twitter.DirectMessage{
 		ClientToken:  s.config.String("twitter.client_token"),
 		ClientSecret: s.config.String("twitter.client_secret"),
 		AccessToken:  s.config.String("twitter.access_token"),
@@ -265,7 +231,7 @@ func (s *TwitterSender) sendDM(to_user string, t string) {
 		log.Printf("Can't send tweet: %s", err)
 		return
 	}
-	resp, ok := ret.(*TwitterResponse)
+	resp, ok := ret.(*twitter.Response)
 	if !ok {
 		log.Printf("Twitter response error: %s", ret)
 		return
@@ -280,13 +246,8 @@ func TwitterSenderGenerator() interface{} {
 	return &TwitterSender{}
 }
 
-type TwitterResponse struct {
-	Error  string
-	Result string
-}
-
 func TwitterResponseGenerator() interface{} {
-	return &TwitterResponse{}
+	return &twitter.Response{}
 }
 
 func main() {
