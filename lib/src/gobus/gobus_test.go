@@ -22,7 +22,7 @@ func TestCreateService(t *testing.T) {
 	queue := "empty"
 	service := CreateService("", 0, "", queue, &EmptyJob{})
 	defer func() { service.Close() }()
-	go service.Run(1e9)
+	go service.Serve(1e9)
 
 	time.Sleep(0.5e9)
 	if !service.IsRunning() {
@@ -47,7 +47,7 @@ func TestCreateClient(t *testing.T) {
 		service.Close()
 		service.Clear()
 	}()
-	go service.Run(1e9)
+	go service.Serve(1e9)
 
 	client := CreateClient("", 0, "", queue)
 	defer func() { client.Close() }()
@@ -83,7 +83,7 @@ func TestBatchService(t *testing.T) {
 	service := CreateBatchService("", 0, "", queue, job)
 	service.Clear()
 	defer service.Close()
-	go service.Run(1e9)
+	go service.Serve(1e9)
 
 	client := CreateClient("", 0, "", queue)
 	defer client.Close()

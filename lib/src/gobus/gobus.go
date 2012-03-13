@@ -16,7 +16,11 @@ const (
 	Stopped
 )
 
-type BaseService struct {
+type Runner interface {
+	Run()
+}
+
+type baseService struct {
 	redis      *godis.Client
 	queueName  string
 	status     int
@@ -24,32 +28,32 @@ type BaseService struct {
 	isQuitChan chan int
 	doFunc     reflect.Value
 	argType    reflect.Type
+	runner     Runner
 }
 
-func initBaseService(netaddr string, db int, password, queueName string) *BaseService {
-	return &BaseService{
-		redis:      godis.New(netaddr, db, password),
-		queueName:  fmt.Sprintf("gobus:queue:%s", queueName),
-		status:     Stopped,
-		quitChan:   make(chan int),
-		isQuitChan: make(chan int),
-	}
+func (b *baseService) init(netaddr string, db int, password, queueName string, runner Runner) {
+	b.redis = godis.New(netaddr, db, password)
+	b.queueName = fmt.Sprintf("gobus:queue:%s", queueName)
+	b.status = Stopped
+	b.quitChan = make(chan int)
+	b.isQuitChan = make(chan int)
+	b.runner = runner
 }
 
-func (s *BaseService) Close() error {
+func (s *baseService) Close() error {
 	if s.IsRunning() {
 		s.Stop()
 	}
 	return s.redis.Quit()
 }
 
-func (s *BaseService) IsRunning() bool {
+func (s *baseService) IsRunning() bool {
 	return s.status == Running
 }
 
-func (s *BaseService) Stop() error {
+func (s *baseService) Stop() error {
 	if !s.IsRunning() {
-		return fmt.Errorf("BaseService has stopped")
+		return fmt.Errorf("baseService has stopped")
 	}
 
 	s.quitChan <- 1
@@ -57,7 +61,7 @@ func (s *BaseService) Stop() error {
 	return nil
 }
 
-func (s *BaseService) Clear() {
+func (s *baseService) Clear() {
 	s.redis.Del(s.queueName)
 	s.redis.Del(s.queueName + ":idcount")
 	keys, _ := s.redis.Keys(s.queueName + ":*")
@@ -66,50 +70,7 @@ func (s *BaseService) Clear() {
 	}
 }
 
-func (s *BaseService) GetArg() (meta metaType, err error) {
-	retBytes, err := s.redis.Lpop(s.queueName)
-	if err != nil {
-		return
-	}
-
-	meta.Arg = reflect.New(s.argType).Interface()
-
-	err = jsonToValue(retBytes, &meta)
-	if s.IsErr(err, "JSON decode text(%s)", string(retBytes)) {
-		return
-	}
-
-	return
-}
-
-func (s *BaseService) IsErr(err error, format string, a ...interface{}) bool {
-	if err != nil {
-		fmt.Printf("gobus server(%s) ", s.queueName)
-		fmt.Printf(format, a...)
-		fmt.Println(" error:", err)
-	}
-	return err != nil
-}
-
-type Service struct {
-	BaseService
-	replyType  reflect.Type
-}
-
-func CreateService(netaddr string, db int, password, queueName string, job interface{}) *Service {
-	ret := &Service{
-		BaseService: initBaseService(netaddr, db, password, queueName),
-	}
-
-	v := reflect.ValueOf(job)
-	ret.doFunc := v.MethodByName("Do")
-	doType := ret.doFunc.Type()
-	ret.argType := doType.In(0)
-	ret.replyType := doType.In(1)
-	return ret
-}
-
-func (s *Service) Run(timeOut time.Duration) {
+func (s *baseService) Serve(timeOut time.Duration) {
 	s.status = Running
 
 Loop:
@@ -118,15 +79,59 @@ Loop:
 		case <-s.quitChan:
 			break Loop
 		case <-time.After(timeOut):
-			s.handleQueue()
+			s.runner.Run()
 		}
 	}
 	s.status = Stopped
 	s.isQuitChan <- 1
 }
 
-func (s *Service) handleQueue() {
-	meta, err := s.GetArg()
+func (s *baseService) getArg() (meta metaType, err error) {
+	retBytes, err := s.redis.Lpop(s.queueName)
+	if err != nil {
+		return
+	}
+
+	meta.Arg = reflect.New(s.argType).Interface()
+
+	err = jsonToValue(retBytes, &meta)
+	if s.isErr(err, "JSON decode text(%s)", string(retBytes)) {
+		return
+	}
+
+	return
+}
+
+func (s *baseService) isErr(err error, format string, a ...interface{}) bool {
+	if err != nil {
+		fmt.Printf("gobus server(%s) ", s.queueName)
+		fmt.Printf(format, a...)
+		fmt.Println(" error:", err)
+	}
+	return err != nil
+}
+
+///////////////////////////////////////////////////
+
+type Service struct {
+	baseService
+	replyType reflect.Type
+}
+
+func CreateService(netaddr string, db int, password, queueName string, job interface{}) *Service {
+	ret := &Service{}
+	ret.init(netaddr, db, password, queueName, ret)
+
+	v := reflect.ValueOf(job)
+	ret.doFunc = v.MethodByName("Do")
+	doType := ret.doFunc.Type()
+	ret.argType = doType.In(0)
+	ret.replyType = doType.In(1).Elem()
+	return ret
+}
+
+func (s *Service) Run() {
+	meta, err := s.getArg()
 	if err != nil && err.Error() == "Nonexisting key" {
 		return
 	}
@@ -179,79 +184,23 @@ func (s *Service) sendBack(err error, meta metaType, reply interface{}) {
 //////////////////////////////////////////
 
 type BatchService struct {
-	redis      *godis.Client
-	queueName  string
-	status     int
-	quitChan   chan int
-	isQuitChan chan int
-	doFunc     reflect.Value
-	argType    reflect.Type
-	argsType   reflect.Type
+	baseService
+	argsType reflect.Type
 }
 
 func CreateBatchService(netaddr string, db int, password, queueName string, job interface{}) *BatchService {
+	ret := &BatchService{}
+	ret.init(netaddr, db, password, queueName, ret)
+
 	v := reflect.ValueOf(job)
-	doFunc := v.MethodByName("Batch")
-	doType := doFunc.Type()
-	return &BatchService{
-		redis:      godis.New(netaddr, db, password),
-		queueName:  fmt.Sprintf("gobus:queue:%s", queueName),
-		status:     Stopped,
-		quitChan:   make(chan int),
-		isQuitChan: make(chan int),
-		doFunc:     doFunc,
-		argType:    doType.In(0).Elem(),
-		argsType:   doType.In(0),
-	}
+	ret.doFunc = v.MethodByName("Batch")
+	doType := ret.doFunc.Type()
+	ret.argType = doType.In(0).Elem()
+	ret.argsType = doType.In(0)
+	return ret
 }
 
-func (s *BatchService) Close() error {
-	if s.IsRunning() {
-		s.Stop()
-	}
-	return s.redis.Quit()
-}
-
-func (s *BatchService) Run(timeOut time.Duration) {
-	s.status = Running
-
-Loop:
-	for {
-		select {
-		case <-s.quitChan:
-			break Loop
-		case <-time.After(timeOut):
-			s.handleQueue()
-		}
-	}
-	s.status = Stopped
-	s.isQuitChan <- 1
-}
-
-func (s *BatchService) IsRunning() bool {
-	return s.status == Running
-}
-
-func (s *BatchService) Stop() error {
-	if !s.IsRunning() {
-		return fmt.Errorf("BatchService has stopped")
-	}
-
-	s.quitChan <- 1
-	<-s.isQuitChan
-	return nil
-}
-
-func (s *BatchService) Clear() {
-	s.redis.Del(s.queueName)
-	s.redis.Del(s.queueName + ":idcount")
-	keys, _ := s.redis.Keys(s.queueName + ":*")
-	for _, k := range keys {
-		s.redis.Del(k)
-	}
-}
-
-func (s *BatchService) handleQueue() {
+func (s *BatchService) Run() {
 	args := reflect.MakeSlice(s.argsType, 0, 0)
 	for {
 		meta, err := s.getArg()
@@ -266,33 +215,8 @@ func (s *BatchService) handleQueue() {
 	s.doJobs(args)
 }
 
-func (s *BatchService) getArg() (meta metaType, err error) {
-	retBytes, err := s.redis.Lpop(s.queueName)
-	if err != nil {
-		return
-	}
-
-	meta.Arg = reflect.New(s.argType).Interface()
-
-	err = jsonToValue(retBytes, &meta)
-	if s.isErr(err, "JSON decode text(%s)", string(retBytes)) {
-		return
-	}
-
-	return
-}
-
 func (s *BatchService) doJobs(args reflect.Value) {
 	s.doFunc.Call([]reflect.Value{args})
-}
-
-func (s *BatchService) isErr(err error, format string, a ...interface{}) bool {
-	if err != nil {
-		fmt.Printf("gobus server(%s) ", s.queueName)
-		fmt.Printf(format, a...)
-		fmt.Println(" error:", err)
-	}
-	return err != nil
 }
 
 /////////////////////////////////////////
