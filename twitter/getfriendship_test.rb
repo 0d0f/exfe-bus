@@ -7,7 +7,7 @@ require 'redis'
 queue = "gobus:queue:twitter:friendship"
 job1 = {
   :Id => "#{queue}:1",
-  :Data => {
+  :Arg => {
     :ClientToken => "VC3OxLBNSGPLOZ2zkgisA",
     :ClientSecret => "Lg6b5eHdPLFPsy4pI2aXPn6qEX6oxTwPyS0rr2g4A",
     :AccessToken => "491159882-urND5ZaHmUPWNgvpr5coIifkApmKsmjGtX69Bn51",
@@ -15,12 +15,12 @@ job1 = {
     :UserA => "googollee",
     :UserB => "lzh429",
   },
-  :NeedReturn => true,
+  :NeedReply => true,
 }
 
 job2 = {
   :Id => "#{queue}:2",
-  :Data => {
+  :Arg => {
     :ClientToken => "VC3OxLBNSGPLOZ2zkgisA",
     :ClientSecret => "Lg6b5eHdPLFPsy4pI2aXPn6qEX6oxTwPyS0rr2g4A",
     :AccessToken => "491159882-urND5ZaHmUPWNgvpr5coIifkApmKsmjGtX69Bn51",
@@ -28,7 +28,7 @@ job2 = {
     :UserA => "56591660",
     :UserB => "491159882",
   },
-  :NeedReturn => true,
+  :NeedReply => true,
 }
 
 redis = Redis.new

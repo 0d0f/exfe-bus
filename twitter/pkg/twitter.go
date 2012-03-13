@@ -4,11 +4,6 @@ import (
 	"fmt"
 )
 
-type Response struct {
-	Error string
-	Result string
-}
-
 type Tweet struct {
 	ClientToken  string
 	ClientSecret string
