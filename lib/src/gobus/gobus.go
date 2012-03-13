@@ -16,8 +16,8 @@ const (
 	Stopped
 )
 
-type Runner interface {
-	Run()
+type runner interface {
+	run()
 }
 
 type baseService struct {
@@ -28,16 +28,16 @@ type baseService struct {
 	isQuitChan chan int
 	doFunc     reflect.Value
 	argType    reflect.Type
-	runner     Runner
+	r          runner
 }
 
-func (b *baseService) init(netaddr string, db int, password, queueName string, runner Runner) {
+func (b *baseService) init(netaddr string, db int, password, queueName string, r runner) {
 	b.redis = godis.New(netaddr, db, password)
 	b.queueName = fmt.Sprintf("gobus:queue:%s", queueName)
 	b.status = Stopped
 	b.quitChan = make(chan int)
 	b.isQuitChan = make(chan int)
-	b.runner = runner
+	b.r = r
 }
 
 func (s *baseService) Close() error {
@@ -79,7 +79,7 @@ Loop:
 		case <-s.quitChan:
 			break Loop
 		case <-time.After(timeOut):
-			s.runner.Run()
+			s.r.run()
 		}
 	}
 	s.status = Stopped
@@ -130,7 +130,7 @@ func CreateService(netaddr string, db int, password, queueName string, job inter
 	return ret
 }
 
-func (s *Service) Run() {
+func (s *Service) run() {
 	meta, err := s.getArg()
 	if err != nil && err.Error() == "Nonexisting key" {
 		return
@@ -200,7 +200,7 @@ func CreateBatchService(netaddr string, db int, password, queueName string, job 
 	return ret
 }
 
-func (s *BatchService) Run() {
+func (s *BatchService) run() {
 	args := reflect.MakeSlice(s.argsType, 0, 0)
 	for {
 		meta, err := s.getArg()
