@@ -1,0 +1,22 @@
+LIB = FileList["./lib/src/*"]
+SERVICE = FileList["mail", "twitter"]
+
+task :default => [:lib, :service]
+
+task :lib do
+  LIB.each do |lib|
+    sh "cd #{lib} && go build && go install"
+  end
+end
+
+task :service do
+  SERVICE.each do |service|
+    sh "cd #{service} && rake"
+  end
+end
+
+task :clean do
+  SERVICE.each do |service|
+    sh "cd #{service} && rake clean"
+  end
+end
