@@ -1,0 +1,6 @@
+*.6
+*.a
+lib/src/oauth/helper/helper
+*.json
+*.yaml
+lib/src/github.com/
