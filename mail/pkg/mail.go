@@ -1,11 +1,11 @@
 package mail
 
 import (
-	"mime/multipart"
-	"net/textproto"
 	"bytes"
 	"fmt"
 	"log"
+	"mime/multipart"
+	"net/textproto"
 	"strings"
 )
 
@@ -19,16 +19,16 @@ func (m MailUser) ToString() string {
 }
 
 type FilePart struct {
-	Name string
+	Name    string
 	Content []byte
 }
 
 type Mail struct {
-	To []MailUser
-	From MailUser
-	Subject string
-	Text string
-	Html string
+	To        []MailUser
+	From      MailUser
+	Subject   string
+	Text      string
+	Html      string
 	FileParts []FilePart
 }
 

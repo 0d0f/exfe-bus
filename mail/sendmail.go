@@ -1,19 +1,19 @@
 package main
 
 import (
-	"flag"
-	"config"
-	"time"
-	"gobus"
-	"net/smtp"
-	"log"
-	"fmt"
 	"./pkg/mail"
+	"config"
+	"flag"
+	"fmt"
+	"gobus"
+	"log"
+	"net/smtp"
+	"time"
 )
 
 type MailSenderService struct {
 	server string
-	auth smtp.Auth
+	auth   smtp.Auth
 }
 
 func (m *MailSenderService) Do(arg mail.Mail, reply *string) error {
@@ -50,7 +50,7 @@ func main() {
 		queue,
 		&MailSenderService{
 			server: fmt.Sprintf("%s:%d", config.String("mail.host"), config.Int("mail.port")),
-			auth: smtp.PlainAuth("", config.String("mail.user"), config.String("mail.password"), config.String("mail.host")),
+			auth:   smtp.PlainAuth("", config.String("mail.user"), config.String("mail.password"), config.String("mail.host")),
 		})
 	defer func() {
 		log.Printf("Service stop, queue: %s", queue)

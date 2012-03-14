@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./pkg/twitter"
 	"config"
 	"flag"
 	"gobus"
@@ -9,7 +10,6 @@ import (
 	"net/url"
 	"oauth"
 	"time"
-	"./pkg/twitter"
 )
 
 type TweetService struct {

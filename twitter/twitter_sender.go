@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./pkg/twitter"
 	"bytes"
 	"config"
 	"fmt"
@@ -10,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
-	"./pkg/twitter"
 )
 
 type ExfeTime struct {

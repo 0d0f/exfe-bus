@@ -1,26 +1,26 @@
 package main
 
 import (
-	"gobus"
+	"./pkg/mail"
+	"bytes"
 	"config"
 	"fmt"
-	"bytes"
+	"gobus"
 	"gosque"
 	"log"
 	"text/template"
-	"./pkg/mail"
 )
 
 type WelcomeAndActiveData struct {
-	Identityid int64
+	Identityid        int64
 	External_identity string
-	Name string
-	Avatar_file_name string
-	Activecode string
-	Token string
+	Name              string
+	Avatar_file_name  string
+	Activecode        string
+	Token             string
 
-	SiteUrl string
-	config *config.Configure
+	SiteUrl  string
+	config   *config.Configure
 	sendmail *gobus.Client
 }
 
@@ -58,7 +58,7 @@ func (d *WelcomeAndActiveData) Do() {
 			Name: "exfe",
 		},
 		Subject: "Welcome to EXFE!",
-		Html: message,
+		Html:    message,
 	}, &response)
 	if err != nil {
 		log.Printf("Send mail failed: %s", err.Error())
