@@ -45,7 +45,8 @@ func (d *WelcomeAndActiveData) Do() {
 	tmpl.Execute(buf, d)
 	message := buf.String()
 
-	d.sendmail.Do(&mail.Mail{
+	var response string
+	err := d.sendmail.Do(&mail.Mail{
 		To: []mail.MailUser{
 			{
 				Mail: d.External_identity,
@@ -58,7 +59,10 @@ func (d *WelcomeAndActiveData) Do() {
 		},
 		Subject: "Welcome to EXFE!",
 		Html: message,
-	})
+	}, &response)
+	if err != nil {
+		log.Printf("Send mail failed: %s", err.Error())
+	}
 }
 
 func main() {
@@ -76,8 +80,7 @@ func main() {
 		config.String("redis.netaddr"),
 		config.Int("redis.db"),
 		config.String("redis.password"),
-		"gobus:queue:mail:sender",
-		MailResponseGenerator)
+		"mail:sender")
 
 	recv := client.IncomingJob("welcomeandactivecode_job", WelcomeAndActiveDataGenerator, 5e9)
 	for {

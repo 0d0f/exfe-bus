@@ -7,7 +7,7 @@ require 'json'
 queue = "gobus:queue:mail:sender"
 job = {
   :Id => "#{queue}:1",
-  :Data => {
+  :Arg => {
     :To => [
       {
         :Mail => "lzh@exfe.com",
@@ -32,7 +32,7 @@ job = {
       },
     ]
   },
-  :NeedReturn => true
+  :NeedReply => true
 }
 
 redis = Redis.new
