@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"github.com/kylelemons/go-gypsy"
+	"github.com/googollee/go-gypsy"
 	"strconv"
 	"strings"
 )
