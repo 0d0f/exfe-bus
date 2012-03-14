@@ -65,6 +65,48 @@ func TestCreateClient(t *testing.T) {
 
 /////////////////////////////////////////////////
 
+type Arg struct {
+	A string
+}
+
+type PtrJob struct {
+}
+
+func (j *PtrJob) Do(arg *Arg, reply *string) error {
+	*reply = arg.A
+	return nil
+}
+
+func TestPtrClient(t *testing.T) {
+	fmt.Println("Test pointer client")
+
+	queue := "empty"
+
+	service := CreateService("", 0, "", queue, &PtrJob{})
+	defer func() {
+		service.Close()
+		service.Clear()
+	}()
+	go service.Serve(1e9)
+
+	client := CreateClient("", 0, "", queue)
+	defer func() { client.Close() }()
+
+	var reply string
+	err := client.Do(&Arg{
+		A: "abc",
+	}, &reply)
+	if err != nil {
+		t.Errorf("Return call should no error: %s", err)
+	}
+	if reply != "abc" {
+		t.Errorf("Reply should be abc, but got: %d", reply)
+	}
+	service.Stop()
+}
+
+/////////////////////////////////////////////////
+
 type BatchJob struct {
 	data []int
 }
@@ -92,7 +134,7 @@ func TestBatchService(t *testing.T) {
 		client.Send(i)
 	}
 
-	time.Sleep(5e9)
+	time.Sleep(1e9)
 	service.Stop()
 
 	for i, d := range job.data {

@@ -158,7 +158,7 @@ func (s *TwitterSender) Do() {
 	}
 
 	// check friendship
-	f := twitter.Friendship{
+	f := &twitter.Friendship{
 		ClientToken:  s.config.String("twitter.client_token"),
 		ClientSecret: s.config.String("twitter.client_secret"),
 		AccessToken:  s.config.String("twitter.access_token"),
@@ -195,7 +195,7 @@ func (s *TwitterSender) Do() {
 }
 
 func (s *TwitterSender) sendTweet(t string) {
-	tweet := twitter.Tweet{
+	tweet := &twitter.Tweet{
 		ClientToken:  s.config.String("twitter.client_token"),
 		ClientSecret: s.config.String("twitter.client_secret"),
 		AccessToken:  s.config.String("twitter.access_token"),
@@ -210,7 +210,7 @@ func (s *TwitterSender) sendTweet(t string) {
 }
 
 func (s *TwitterSender) sendDM(to_user string, t string) {
-	dm := twitter.DirectMessage{
+	dm := &twitter.DirectMessage{
 		ClientToken:  s.config.String("twitter.client_token"),
 		ClientSecret: s.config.String("twitter.client_secret"),
 		AccessToken:  s.config.String("twitter.access_token"),

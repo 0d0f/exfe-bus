@@ -15,7 +15,7 @@ import (
 type FriendshipService struct {
 }
 
-func (f *FriendshipService) Do(arg twitter.Friendship, reply *string) error {
+func (f *FriendshipService) Do(arg *twitter.Friendship, reply *string) error {
 	log.Printf("Try to get %s/%s friendship...", arg.UserA, arg.UserB)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")

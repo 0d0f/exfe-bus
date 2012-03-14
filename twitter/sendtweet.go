@@ -15,7 +15,7 @@ import (
 type TweetService struct {
 }
 
-func (t *TweetService) Do(arg twitter.Tweet, reply *string) error {
+func (t *TweetService) Do(arg *twitter.Tweet, reply *string) error {
 	log.Printf("Try to send tweet(%s)...", arg.Tweet)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")

@@ -15,7 +15,7 @@ import (
 type MessageService struct {
 }
 
-func (m *MessageService) Do(arg twitter.DirectMessage, reply *string) error {
+func (m *MessageService) Do(arg *twitter.DirectMessage, reply *string) error {
 	log.Printf("Try to send dm(%s) to user(%s/%s)...", arg.Message, arg.ToUserName, arg.ToUserId)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")

@@ -16,7 +16,7 @@ type MailSenderService struct {
 	auth   smtp.Auth
 }
 
-func (m *MailSenderService) Do(arg mail.Mail, reply *string) error {
+func (m *MailSenderService) Do(arg *mail.Mail, reply *string) error {
 	log.Printf("Try to send subject(%s) mail from (%s) to (%s)...", arg.Subject, arg.From.ToString(), arg.ToLine())
 	err := smtp.SendMail(m.server, m.auth, arg.From.Mail, arg.ToMail(), arg.Body())
 

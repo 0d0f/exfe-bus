@@ -15,7 +15,7 @@ import (
 type UserInfoService struct {
 }
 
-func (i *UserInfoService) Do(arg twitter.UserInfo, reply *string) error {
+func (i *UserInfoService) Do(arg *twitter.UserInfo, reply *string) error {
 	log.Printf("Try to get %s(%s) userinfo...", arg.ScreenName, arg.UserId)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
