@@ -13,7 +13,6 @@ import (
 )
 
 type UserInfoService struct {
-	info *twitter.UserInfo
 }
 
 func (i *UserInfoService) Do(arg twitter.UserInfo, reply *string) error {

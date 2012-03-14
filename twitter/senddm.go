@@ -13,50 +13,37 @@ import (
 )
 
 type MessageService struct {
-	message *twitter.DirectMessage
 }
 
-func (m *MessageService) Do(messages []interface{}) []interface{} {
-	data, ok := messages[0].(*MessageService)
-	if !ok {
-		log.Printf("Can't convert input into Message: %s", messages)
-	}
+func (m *MessageService) Do(arg twitter.DirectMessage, reply *string) error {
+	log.Printf("Try to send dm(%s) to user(%s/%s)...", arg.Message, arg.ToUserName, arg.ToUserId)
 
-	log.Printf("Try to send dm(%s) to user(%s/%s)...", data.message.Message, data.message.ToUserName, data.message.ToUserId)
-
-	client := oauth.CreateClient(data.message.ClientToken, data.message.ClientSecret, data.message.AccessToken, data.message.AccessSecret, "https://api.twitter.com/1/")
+	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 	params := make(url.Values)
-	if data.message.ToUserId != "" {
-		params.Add("user_id", data.message.ToUserId)
+	if arg.ToUserId != "" {
+		params.Add("user_id", arg.ToUserId)
 	} else {
-		params.Add("screen_name", data.message.ToUserName)
+		params.Add("screen_name", arg.ToUserName)
 	}
-	params.Add("text", data.message.Message)
+	params.Add("text", arg.Message)
 	retReader, err := client.Do("POST", "/direct_messages/new.json", params)
 	if err != nil {
 		log.Printf("Twitter access error: %s", err)
-		return []interface{}{map[string]string{"error": err.Error()}}
+		return err
 	}
 
 	retBytes, err := ioutil.ReadAll(retReader)
 	if err != nil {
 		log.Printf("Can't load twitter response: %s", err)
-		return []interface{}{map[string]string{"error": err.Error()}}
+		return err
 	}
 
-	return []interface{}{map[string]string{"result": string(retBytes)}}
-}
-
-func (m *MessageService) MaxJobsCount() int {
-	return 1
-}
-
-func (m *MessageService) JobGenerator() interface{} {
-	return &MessageService{}
+	*reply = string(retBytes)
+	return nil
 }
 
 const (
-	queue = "gobus:queue:twitter:directmessage"
+	queue = "twitter:directmessage"
 )
 
 func main() {
@@ -74,13 +61,12 @@ func main() {
 		config.Int("redis.db"),
 		config.String("redis.password"),
 		queue,
-		&MessageService{},
-		config.Int("service.limit"))
+		&MessageService{})
 	defer func() {
 		log.Printf("Service stop, queue: %s", queue)
 		service.Close()
 		service.Clear()
 	}()
 
-	service.Run(time.Duration(config.Int("service.time_out")))
+	service.Serve(time.Duration(config.Int("service.time_out")))
 }

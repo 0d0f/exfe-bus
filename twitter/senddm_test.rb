@@ -7,7 +7,7 @@ require 'redis'
 queue = "gobus:queue:twitter:directmessage"
 tweet_name = {
   :Id => "#{queue}:1",
-  :Data => {
+  :Arg => {
     :ClientToken => "VC3OxLBNSGPLOZ2zkgisA",
     :ClientSecret => "Lg6b5eHdPLFPsy4pI2aXPn6qEX6oxTwPyS0rr2g4A",
     :AccessToken => "491159882-urND5ZaHmUPWNgvpr5coIifkApmKsmjGtX69Bn51",
@@ -15,12 +15,12 @@ tweet_name = {
     :Message => "就是测个试Name",
     :ToUserName => "lzh429",
   },
-  :NeedReturn => true,
+  :NeedReply => true,
 }
 
 tweet_id = {
   :Id => "#{queue}:2",
-  :Data => {
+  :Arg => {
     :ClientToken => "VC3OxLBNSGPLOZ2zkgisA",
     :ClientSecret => "Lg6b5eHdPLFPsy4pI2aXPn6qEX6oxTwPyS0rr2g4A",
     :AccessToken => "491159882-urND5ZaHmUPWNgvpr5coIifkApmKsmjGtX69Bn51",
@@ -28,7 +28,7 @@ tweet_id = {
     :Message => "就是测个试ID",
     :ToUserId => "56591660",
   },
-  :NeedReturn => true,
+  :NeedReply => true,
 }
 
 redis = Redis.new

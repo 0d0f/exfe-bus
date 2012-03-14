@@ -158,7 +158,7 @@ func (s *TwitterSender) Do() {
 	}
 
 	// check friendship
-	f := &twitter.Friendship{
+	f := twitter.Friendship{
 		ClientToken:  s.config.String("twitter.client_token"),
 		ClientSecret: s.config.String("twitter.client_secret"),
 		AccessToken:  s.config.String("twitter.access_token"),
@@ -166,12 +166,13 @@ func (s *TwitterSender) Do() {
 		UserA:        s.To_identity.External_username,
 		UserB:        s.config.String("twitter.screen_name"),
 	}
-	response, err := s.getfriendship.Do(f)
+	var response string
+	err := s.getfriendship.Do(f, &response)
 	if err != nil {
 		log.Printf("Twitter check friendship(%s/%s) fail: %s", f.UserA, f.UserB, err)
 		return
 	}
-	isFriend := response.(*twitter.Response).Result == "true"
+	isFriend := response == "true"
 
 	data := CreateData(s)
 
@@ -194,31 +195,22 @@ func (s *TwitterSender) Do() {
 }
 
 func (s *TwitterSender) sendTweet(t string) {
-	tweet := &twitter.Tweet{
+	tweet := twitter.Tweet{
 		ClientToken:  s.config.String("twitter.client_token"),
 		ClientSecret: s.config.String("twitter.client_secret"),
 		AccessToken:  s.config.String("twitter.access_token"),
 		AccessSecret: s.config.String("twitter.access_secret"),
 		Tweet:        t,
 	}
-	ret, err := s.sendtweet.Do(tweet)
+	var response string
+	err := s.sendtweet.Do(tweet, &response)
 	if err != nil {
 		log.Printf("Can't send tweet: %s", err)
-		return
-	}
-	resp, ok := ret.(*twitter.Response)
-	if !ok {
-		log.Printf("Twitter response error: %s", ret)
-		return
-	}
-	if resp.Error != "" {
-		log.Printf("Send tweet fail: %s", resp.Error)
-		return
 	}
 }
 
 func (s *TwitterSender) sendDM(to_user string, t string) {
-	dm := &twitter.DirectMessage{
+	dm := twitter.DirectMessage{
 		ClientToken:  s.config.String("twitter.client_token"),
 		ClientSecret: s.config.String("twitter.client_secret"),
 		AccessToken:  s.config.String("twitter.access_token"),
@@ -226,28 +218,15 @@ func (s *TwitterSender) sendDM(to_user string, t string) {
 		Message:      t,
 		ToUserName:   to_user,
 	}
-	ret, err := s.senddm.Do(dm)
+	var response string
+	err := s.senddm.Do(dm, &response)
 	if err != nil {
 		log.Printf("Can't send tweet: %s", err)
-		return
-	}
-	resp, ok := ret.(*twitter.Response)
-	if !ok {
-		log.Printf("Twitter response error: %s", ret)
-		return
-	}
-	if resp.Error != "" {
-		log.Printf("Send tweet fail: %s", resp.Error)
-		return
 	}
 }
 
 func TwitterSenderGenerator() interface{} {
 	return &TwitterSender{}
-}
-
-func TwitterResponseGenerator() interface{} {
-	return &twitter.Response{}
 }
 
 func main() {
@@ -265,29 +244,25 @@ func main() {
 		config.String("redis.netaddr"),
 		config.Int("redis.db"),
 		config.String("redis.password"),
-		"gobus:queue:twitter:tweet",
-		TwitterResponseGenerator)
+		"twitter:tweet")
 
 	senddm := gobus.CreateClient(
 		config.String("redis.netaddr"),
 		config.Int("redis.db"),
 		config.String("redis.password"),
-		"gobus:queue:twitter:directmessage",
-		TwitterResponseGenerator)
+		"twitter:directmessage")
 
 	getinfo := gobus.CreateClient(
 		config.String("redis.netaddr"),
 		config.Int("redis.db"),
 		config.String("redis.password"),
-		"gobus:queue:twitter:userinfo",
-		TwitterResponseGenerator)
+		"twitter:userinfo")
 
 	getfriendship := gobus.CreateClient(
 		config.String("redis.netaddr"),
 		config.Int("redis.db"),
 		config.String("redis.password"),
-		"gobus:queue:twitter:friendship",
-		TwitterResponseGenerator)
+		"twitter:friendship")
 
 	recv := client.IncomingJob("twitter_job", TwitterSenderGenerator, 5e9)
 	for {

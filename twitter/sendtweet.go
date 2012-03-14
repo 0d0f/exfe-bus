@@ -13,50 +13,33 @@ import (
 )
 
 type TweetService struct {
-	tweet twitter.Tweet
 }
 
-func (t *TweetService) Do(jobs []interface{}) []interface{} {
-	data, ok := jobs[0].(*TweetService)
-	if !ok {
-		log.Println("Can't convert input into TweetService: %s", jobs)
-		return nil
-	}
+func (t *TweetService) Do(arg twitter.Tweet, reply *string) error {
+	log.Printf("Try to send tweet(%s)...", arg.Tweet)
 
-	log.Printf("Try to send tweet(%s)...", data.tweet.Tweet)
-
-	client := oauth.CreateClient(data.tweet.ClientToken, data.tweet.ClientSecret, data.tweet.AccessToken, data.tweet.AccessSecret, "https://api.twitter.com/1/")
+	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 	params := make(url.Values)
-	params.Add("status", data.tweet.Tweet)
+	params.Add("status", arg.Tweet)
 
 	retReader, err := client.Do("POST", "/statuses/update.json", params)
 	if err != nil {
 		log.Printf("Twitter access error: %s", err)
-		return []interface{}{map[string]string{"result": "", "error": err.Error()}}
+		return err
 	}
 
 	retBytes, err := ioutil.ReadAll(retReader)
 	if err != nil {
 		log.Printf("Can't load twitter response: %s", err)
-		return []interface{}{map[string]string{"result": "", "error": err.Error()}}
+		return err
 	}
 
-	return []interface{}{twitter.Response{
-		Error: "",
-		Result: string(retBytes),
-	}}
-}
-
-func (t *TweetService) MaxJobsCount() int {
-	return 1
-}
-
-func (t *TweetService) JobGenerator() interface{} {
-	return &TweetService{}
+	*reply = string(retBytes)
+	return nil
 }
 
 const (
-	queue = "gobus:queue:twitter:tweet"
+	queue = "twitter:tweet"
 )
 
 func main() {
@@ -74,13 +57,12 @@ func main() {
 		config.Int("redis.db"),
 		config.String("redis.password"),
 		queue,
-		&TweetService{},
-		config.Int("service.limit"))
+		&TweetService{})
 	defer func() {
 		log.Printf("Service stop, queue: %s", queue)
 		service.Close()
 		service.Clear()
 	}()
 
-	service.Run(time.Duration(config.Int("service.time_out")))
+	service.Serve(time.Duration(config.Int("service.time_out")))
 }
