@@ -10,4 +10,8 @@ twitter:
   access_secret:
   screen_name:
 
+service:
+  time_out: 5
+  limit: 10
+
 site_url: ""
