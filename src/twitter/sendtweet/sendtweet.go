@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./pkg/twitter"
+	"twitter"
 	"config"
 	"flag"
 	"gobus"
@@ -12,17 +12,17 @@ import (
 	"time"
 )
 
-type FriendshipService struct {
+type TweetService struct {
 }
 
-func (f *FriendshipService) Do(arg *twitter.Friendship, reply *string) error {
-	log.Printf("Try to get %s/%s friendship...", arg.UserA, arg.UserB)
+func (t *TweetService) Do(arg *twitter.Tweet, reply *string) error {
+	log.Printf("Try to send tweet(%s)...", arg.Tweet)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 	params := make(url.Values)
-	params.Add("user_a", arg.UserA)
-	params.Add("user_b", arg.UserB)
-	retReader, err := client.Do("GET", "/friendships/exists.json", params)
+	params.Add("status", arg.Tweet)
+
+	retReader, err := client.Do("POST", "/statuses/update.json", params)
 	if err != nil {
 		log.Printf("Twitter access error: %s", err)
 		return err
@@ -39,11 +39,11 @@ func (f *FriendshipService) Do(arg *twitter.Friendship, reply *string) error {
 }
 
 const (
-	queue = "twitter:friendship"
+	queue = "twitter:tweet"
 )
 
 func main() {
-	log.SetPrefix("[Friendship]")
+	log.SetPrefix("[Tweet]")
 	log.Printf("Service start, queue: %s", queue)
 
 	var configFile string
@@ -57,7 +57,12 @@ func main() {
 		config.Int("redis.db"),
 		config.String("redis.password"),
 		queue,
-		&FriendshipService{})
+		&TweetService{})
+	defer func() {
+		log.Printf("Service stop, queue: %s", queue)
+		service.Close()
+		service.Clear()
+	}()
 
 	service.Serve(time.Duration(config.Int("service.time_out")))
 }

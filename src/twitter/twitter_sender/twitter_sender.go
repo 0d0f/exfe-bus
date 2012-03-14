@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./pkg/twitter"
+	"twitter"
 	"bytes"
 	"config"
 	"fmt"

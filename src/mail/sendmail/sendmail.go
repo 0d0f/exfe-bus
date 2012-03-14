@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./pkg/mail"
+	"mail"
 	"config"
 	"flag"
 	"fmt"

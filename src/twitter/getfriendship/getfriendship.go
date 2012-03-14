@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./pkg/twitter"
+	"twitter"
 	"config"
 	"flag"
 	"gobus"
@@ -12,20 +12,17 @@ import (
 	"time"
 )
 
-type UserInfoService struct {
+type FriendshipService struct {
 }
 
-func (i *UserInfoService) Do(arg *twitter.UserInfo, reply *string) error {
-	log.Printf("Try to get %s(%s) userinfo...", arg.ScreenName, arg.UserId)
+func (f *FriendshipService) Do(arg *twitter.Friendship, reply *string) error {
+	log.Printf("Try to get %s/%s friendship...", arg.UserA, arg.UserB)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 	params := make(url.Values)
-	if arg.ScreenName != "" {
-		params.Add("screen_name", arg.ScreenName)
-	} else {
-		params.Add("user_id", arg.UserId)
-	}
-	retReader, err := client.Do("GET", "/users/show.json", params)
+	params.Add("user_a", arg.UserA)
+	params.Add("user_b", arg.UserB)
+	retReader, err := client.Do("GET", "/friendships/exists.json", params)
 	if err != nil {
 		log.Printf("Twitter access error: %s", err)
 		return err
@@ -37,18 +34,16 @@ func (i *UserInfoService) Do(arg *twitter.UserInfo, reply *string) error {
 		return err
 	}
 
-	// TODO:
-	// twitter info update
 	*reply = string(retBytes)
 	return nil
 }
 
 const (
-	queue = "twitter:userinfo"
+	queue = "twitter:friendship"
 )
 
 func main() {
-	log.SetPrefix("[UserInfo]")
+	log.SetPrefix("[Friendship]")
 	log.Printf("Service start, queue: %s", queue)
 
 	var configFile string
@@ -62,12 +57,7 @@ func main() {
 		config.Int("redis.db"),
 		config.String("redis.password"),
 		queue,
-		&UserInfoService{})
-	defer func() {
-		log.Printf("Service stop, queue: %s", queue)
-		service.Close()
-		service.Clear()
-	}()
+		&FriendshipService{})
 
 	service.Serve(time.Duration(config.Int("service.time_out")))
 }
