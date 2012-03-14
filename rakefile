@@ -1,6 +1,8 @@
 LIB = FileList["./lib/src/*"]
 SERVICE = FileList["mail", "twitter"]
 
+LIB.exclude("./lib/src/github.com")
+
 task :default => [:lib, :service]
 
 task :lib do
