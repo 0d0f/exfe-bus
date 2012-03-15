@@ -1,6 +1,7 @@
 package twitter_job
 
 import (
+	"net/http"
 	"twitter/service"
 	"bytes"
 	"fmt"
@@ -90,6 +91,16 @@ type TwitterSender struct {
 	Senddm        *gobus.Client
 }
 
+func (s *TwitterSender) updateUserInfo(id uint64, i *twitter_service.TwitterUserInfo) {
+	url := fmt.Sprintf("%s/identity/update", s.Config.Site_url)
+	_, err := http.PostForm(url, i.MakeUrlValues(id))
+	if err != nil {
+		log.Printf("[Error]Update identity info fail: %s", err)
+	} else {
+		log.Printf("[Info]Update identity info success")
+	}
+}
+
 func (s *TwitterSender) CrossLink(withToken bool) string {
 	link := fmt.Sprintf(" %s/!%s", s.Config.Site_url, s.Cross_id_base62)
 	if withToken {
@@ -147,13 +158,18 @@ func (s *TwitterSender) Do() {
 	if (s.External_identity != "") ||
 		(strings.ToLower(s.External_identity) == strings.ToLower(fmt.Sprintf("@%s@twitter", s.To_identity.External_username))) {
 		// update user info
-		s.Getinfo.Send(&twitter_service.UsersShowArg{
+		var reply twitter_service.TwitterUserInfo
+		err := s.Getinfo.Do(&twitter_service.UsersShowArg{
 			ClientToken:  s.Config.Twitter.Client_token,
 			ClientSecret: s.Config.Twitter.Client_secret,
 			AccessToken:  s.Config.Twitter.Access_token,
 			AccessSecret: s.Config.Twitter.Access_secret,
 			ScreenName:   s.To_identity.External_username,
-		})
+		}, &reply)
+		if err == nil {
+			id, _ := strconv.ParseUint(s.Identity_id, 10, 64)
+			go s.updateUserInfo(id, &reply)
+		}
 	}
 
 	// check friendship
@@ -204,6 +220,7 @@ func (s *TwitterSender) sendTweet(t string) {
 	err := s.Sendtweet.Do(tweet, &response)
 	if err != nil {
 		log.Printf("Can't send tweet: %s", err)
+		return
 	}
 }
 
@@ -220,7 +237,11 @@ func (s *TwitterSender) sendDM(to_user string, t string) {
 	err := s.Senddm.Do(dm, &response)
 	if err != nil {
 		log.Printf("Can't send tweet: %s", err)
+		return
 	}
+
+	i, _ := strconv.ParseUint(s.To_identity.Id, 10, 64)
+	go s.updateUserInfo(i, &response.Recipient)
 }
 
 func TwitterSenderGenerator() interface{} {

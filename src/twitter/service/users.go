@@ -13,6 +13,7 @@ type UsersShowArg struct {
 	ClientSecret string
 	AccessToken  string
 	AccessSecret string
+	UpdateId     int64
 
 	UserId     string
 	ScreenName string
@@ -23,12 +24,10 @@ func (i *UsersShowArg) String() string {
 		i.ClientToken, i.ClientSecret, i.AccessToken, i.AccessSecret, i.ScreenName, i.UserId)
 }
 
-type UsersShowReply TwitterUserInfo
-
 type UsersShow struct {
 }
 
-func (i *UsersShow) Do(arg *UsersShowArg, reply *UsersShowReply) error {
+func (i *UsersShow) Do(arg *UsersShowArg, reply *TwitterUserInfo) error {
 	log.Printf("[Info][users/show]Call by arg %s", arg)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
@@ -44,9 +43,6 @@ func (i *UsersShow) Do(arg *UsersShowArg, reply *UsersShowReply) error {
 		return err
 	}
 
-	// TODO:
-	// twitter info update
-
 	decoder := json.NewDecoder(retReader)
 	err = decoder.Decode(reply)
 	if err != nil {
@@ -55,5 +51,6 @@ func (i *UsersShow) Do(arg *UsersShowArg, reply *UsersShowReply) error {
 		// log.Printf("[Error][users/show]Can't parse twitter reply: %s", err)
 		// return err
 	}
+
 	return nil
 }
