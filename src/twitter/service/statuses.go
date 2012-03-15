@@ -44,7 +44,8 @@ func (t *StatusesUpdate) Do(arg *StatusesUpdateArg, reply *StatusesUpdateReply) 
 	decoder := json.NewDecoder(retReader)
 	err = decoder.Decode(reply)
 	if err != nil {
-		// PUZZLE: if decode to reply directly, it will return "json: cannot unmarshal null into Go value of type string" error with right reply
+		// some user will not fill all field, and twitter responses of these fields  are null,
+		// which will cause decode error
 		// log.Printf("[Error][statuses/update]Parse twitter response error: %s", err)
 		// return err
 	}

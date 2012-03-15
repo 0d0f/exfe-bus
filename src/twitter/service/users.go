@@ -50,8 +50,10 @@ func (i *UsersShow) Do(arg *UsersShowArg, reply *UsersShowReply) error {
 	decoder := json.NewDecoder(retReader)
 	err = decoder.Decode(reply)
 	if err != nil {
-		log.Printf("[Error][users/show]Can't parse twitter reply: %s", err)
-		return err
+		// some user will not fill all field, and twitter responses of these fields  are null,
+		// which will cause decode error
+		// log.Printf("[Error][users/show]Can't parse twitter reply: %s", err)
+		// return err
 	}
 	return nil
 }
