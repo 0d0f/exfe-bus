@@ -1,12 +1,10 @@
-package main
+package twitter_job
 
 import (
-	"twitter"
+	"twitter/service"
 	"bytes"
-	"config"
 	"fmt"
 	"gobus"
-	"gosque"
 	"log"
 	"strconv"
 	"strings"
@@ -84,15 +82,16 @@ type TwitterSender struct {
 		}
 		User_id int64
 	}
-	config        *config.Configure
-	getfriendship *gobus.Client
-	getinfo       *gobus.Client
-	sendtweet     *gobus.Client
-	senddm        *gobus.Client
+
+	Config        *Config
+	Getfriendship *gobus.Client
+	Getinfo       *gobus.Client
+	Sendtweet     *gobus.Client
+	Senddm        *gobus.Client
 }
 
 func (s *TwitterSender) CrossLink(withToken bool) string {
-	link := fmt.Sprintf(" %s/!%s", s.config.String("site_url"), s.Cross_id_base62)
+	link := fmt.Sprintf(" %s/!%s", s.Config.Site_url, s.Cross_id_base62)
 	if withToken {
 		return fmt.Sprintf("%s?token=%s", link, s.Token)
 	}
@@ -132,7 +131,7 @@ func CreateData(sender *TwitterSender) *TemplateData {
 		Time:          sender.Begin_at.Datetime,
 		Place1:        sender.Place_line1,
 		Place2:        sender.Place_line2,
-		SiteUrl:       sender.config.String("site_url"),
+		SiteUrl:       sender.Config.Site_url,
 		CrossIdBase62: sender.Cross_id_base62,
 		Token:         sender.Token,
 	}
@@ -148,31 +147,30 @@ func (s *TwitterSender) Do() {
 	if (s.External_identity != "") ||
 		(strings.ToLower(s.External_identity) == strings.ToLower(fmt.Sprintf("@%s@twitter", s.To_identity.External_username))) {
 		// update user info
-		s.getinfo.Send(&twitter.UserInfo{
-			ClientToken:  s.config.String("twitter.client_token"),
-			ClientSecret: s.config.String("twitter.client_secret"),
-			AccessToken:  s.config.String("twitter.access_token"),
-			AccessSecret: s.config.String("twitter.access_secret"),
+		s.Getinfo.Send(&twitter_service.UsersShowArg{
+			ClientToken:  s.Config.Twitter.Client_token,
+			ClientSecret: s.Config.Twitter.Client_secret,
+			AccessToken:  s.Config.Twitter.Access_token,
+			AccessSecret: s.Config.Twitter.Access_secret,
 			ScreenName:   s.To_identity.External_username,
 		})
 	}
 
 	// check friendship
-	f := &twitter.Friendship{
-		ClientToken:  s.config.String("twitter.client_token"),
-		ClientSecret: s.config.String("twitter.client_secret"),
-		AccessToken:  s.config.String("twitter.access_token"),
-		AccessSecret: s.config.String("twitter.access_secret"),
+	f := &twitter_service.FriendshipsExistsArg{
+		ClientToken:  s.Config.Twitter.Client_token,
+		ClientSecret: s.Config.Twitter.Client_secret,
+		AccessToken:  s.Config.Twitter.Access_token,
+		AccessSecret: s.Config.Twitter.Access_secret,
 		UserA:        s.To_identity.External_username,
-		UserB:        s.config.String("twitter.screen_name"),
+		UserB:        s.Config.Twitter.Screen_name,
 	}
-	var response string
-	err := s.getfriendship.Do(f, &response)
+	var isFriend bool
+	err := s.Getfriendship.Do(f, &isFriend)
 	if err != nil {
 		log.Printf("Twitter check friendship(%s/%s) fail: %s", f.UserA, f.UserB, err)
 		return
 	}
-	isFriend := response == "true"
 
 	data := CreateData(s)
 
@@ -195,31 +193,31 @@ func (s *TwitterSender) Do() {
 }
 
 func (s *TwitterSender) sendTweet(t string) {
-	tweet := &twitter.Tweet{
-		ClientToken:  s.config.String("twitter.client_token"),
-		ClientSecret: s.config.String("twitter.client_secret"),
-		AccessToken:  s.config.String("twitter.access_token"),
-		AccessSecret: s.config.String("twitter.access_secret"),
+	tweet := &twitter_service.StatusesUpdateArg{
+		ClientToken:  s.Config.Twitter.Client_token,
+		ClientSecret: s.Config.Twitter.Client_secret,
+		AccessToken:  s.Config.Twitter.Access_token,
+		AccessSecret: s.Config.Twitter.Access_secret,
 		Tweet:        t,
 	}
-	var response string
-	err := s.sendtweet.Do(tweet, &response)
+	var response twitter_service.StatusesUpdateReply
+	err := s.Sendtweet.Do(tweet, &response)
 	if err != nil {
 		log.Printf("Can't send tweet: %s", err)
 	}
 }
 
 func (s *TwitterSender) sendDM(to_user string, t string) {
-	dm := &twitter.DirectMessage{
-		ClientToken:  s.config.String("twitter.client_token"),
-		ClientSecret: s.config.String("twitter.client_secret"),
-		AccessToken:  s.config.String("twitter.access_token"),
-		AccessSecret: s.config.String("twitter.access_secret"),
+	dm := &twitter_service.DirectMessagesNewArg{
+		ClientToken:  s.Config.Twitter.Client_token,
+		ClientSecret: s.Config.Twitter.Client_secret,
+		AccessToken:  s.Config.Twitter.Access_token,
+		AccessSecret: s.Config.Twitter.Access_secret,
 		Message:      t,
 		ToUserName:   to_user,
 	}
-	var response string
-	err := s.senddm.Do(dm, &response)
+	var response twitter_service.DirectMessagesNewReply
+	err := s.Senddm.Do(dm, &response)
 	if err != nil {
 		log.Printf("Can't send tweet: %s", err)
 	}
@@ -227,57 +225,4 @@ func (s *TwitterSender) sendDM(to_user string, t string) {
 
 func TwitterSenderGenerator() interface{} {
 	return &TwitterSender{}
-}
-
-func main() {
-	log.SetPrefix("[TwitterSender]")
-	log.Printf("Service start")
-	config := config.LoadFile("twitter_sender.yaml")
-
-	client := gosque.CreateQueue(
-		config.String("redis.netaddr"),
-		config.Int("redis.db"),
-		config.String("redis.password"),
-		"resque:queue:twitter")
-
-	sendtweet := gobus.CreateClient(
-		config.String("redis.netaddr"),
-		config.Int("redis.db"),
-		config.String("redis.password"),
-		"twitter:tweet")
-
-	senddm := gobus.CreateClient(
-		config.String("redis.netaddr"),
-		config.Int("redis.db"),
-		config.String("redis.password"),
-		"twitter:directmessage")
-
-	getinfo := gobus.CreateClient(
-		config.String("redis.netaddr"),
-		config.Int("redis.db"),
-		config.String("redis.password"),
-		"twitter:userinfo")
-
-	getfriendship := gobus.CreateClient(
-		config.String("redis.netaddr"),
-		config.Int("redis.db"),
-		config.String("redis.password"),
-		"twitter:friendship")
-
-	recv := client.IncomingJob("twitter_job", TwitterSenderGenerator, 5e9)
-	for {
-		select {
-		case job := <-recv:
-			twitterSender := job.(*TwitterSender)
-			twitterSender.config = config
-			twitterSender.sendtweet = sendtweet
-			twitterSender.senddm = senddm
-			twitterSender.getinfo = getinfo
-			twitterSender.getfriendship = getfriendship
-			go func() {
-				twitterSender.Do()
-			}()
-		}
-	}
-	log.Printf("Service stop")
 }
