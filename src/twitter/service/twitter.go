@@ -14,6 +14,7 @@ type TwitterUserInfo struct {
 }
 
 func (i *TwitterUserInfo) MakeUrlValues(id uint64) (v url.Values) {
+	v.Add("1", "2")
 	v.Add("id", fmt.Sprintf("%d", id))
 	v.Add("provider", "twitter")
 	v.Add("external_identity", fmt.Sprintf("%d", i.Id))

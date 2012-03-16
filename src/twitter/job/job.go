@@ -23,6 +23,7 @@ type TwitterSender struct {
 	Title             string
 	Description       string
 	Begin_at          ExfeTime
+	Time_type         string
 	Place_line1       string
 	Place_line2       string
 	Cross_id          int64
@@ -58,6 +59,7 @@ type TwitterSender struct {
 		External_username string
 		Provider          string
 	}
+	To_identity_time_zone string
 	Invitations []struct {
 		Invitation_id     string
 		State             int64
