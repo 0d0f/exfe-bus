@@ -157,9 +157,8 @@ func LoadTemplate(name string) *template.Template {
 func (s *TwitterSender) Do() {
 	log.Printf("Get a job")
 
-	if (s.External_identity != "") ||
-		(strings.ToLower(s.External_identity) == strings.ToLower(fmt.Sprintf("@%s@twitter", s.To_identity.External_username))) {
-		// update user info
+	if s.To_identity.External_identity == "" {
+		// get to_identity info
 		var reply twitter_service.TwitterUserInfo
 		err := s.Getinfo.Do(&twitter_service.UsersShowArg{
 			ClientToken:  s.Config.Twitter.Client_token,
@@ -169,7 +168,7 @@ func (s *TwitterSender) Do() {
 			ScreenName:   s.To_identity.External_username,
 		}, &reply)
 		if err == nil {
-			id, _ := strconv.ParseUint(s.Identity_id, 10, 64)
+			id, _ := strconv.ParseUint(s.To_identity.Id, 10, 64)
 			go s.updateUserInfo(id, &reply)
 		}
 	}
