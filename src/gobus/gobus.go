@@ -7,6 +7,8 @@ import (
 	"github.com/simonz05/godis"
 	"reflect"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
 
 //////////////////////////////////////////
@@ -31,13 +33,33 @@ type baseService struct {
 	r          runner
 }
 
-func (b *baseService) init(netaddr string, db int, password, queueName string, r runner) {
+func (b *baseService) init(netaddr string, db int, password, queueName string, job interface{}, name string, r runner) error {
 	b.redis = godis.New(netaddr, db, password)
 	b.queueName = fmt.Sprintf("gobus:queue:%s", queueName)
 	b.status = Stopped
 	b.quitChan = make(chan int)
 	b.isQuitChan = make(chan int)
 	b.r = r
+
+	v := reflect.ValueOf(job)
+	b.doFunc = v.MethodByName(name)
+	if b.doFunc == reflect.ValueOf(nil) {
+		return fmt.Errorf("Can't find method: %s", name)
+	}
+	mtype := b.doFunc.Type()
+	mname := mtype.Name()
+	if mtype.PkgPath() != "" {
+		return fmt.Errorf("Method %s must be exported.", mname)
+	}
+	if mtype.NumIn() < 1 {
+		return fmt.Errorf("method", mname, "must has one ins at least.")
+	}
+	b.argType = mtype.In(0)
+	if !isExportedOrBuiltinType(b.argType) {
+		return fmt.Errorf(mname, "argument type not exported:", b.argType)
+	}
+
+	return nil
 }
 
 func (s *baseService) Close() error {
@@ -118,16 +140,32 @@ type Service struct {
 	replyType reflect.Type
 }
 
-func CreateService(netaddr string, db int, password, queueName string, job interface{}) *Service {
+func CreateService(netaddr string, db int, password, queueName string, job interface{}) (*Service, error) {
 	ret := &Service{}
-	ret.init(netaddr, db, password, queueName, ret)
+	err := ret.init(netaddr, db, password, queueName, job, "Do", ret)
+	if err != nil {
+		return nil, err
+	}
 
-	v := reflect.ValueOf(job)
-	ret.doFunc = v.MethodByName("Do")
-	doType := ret.doFunc.Type()
-	ret.argType = doType.In(0)
-	ret.replyType = doType.In(1).Elem()
-	return ret
+	mtype := ret.doFunc.Type()
+	if mtype.NumIn() != 2 {
+		return nil, fmt.Errorf("method Do has wrong number of ins:", mtype.NumIn())
+	}
+	replyType := mtype.In(1)
+	if replyType.Kind() != reflect.Ptr {
+		return nil, fmt.Errorf("method Do reply type not a pointer:", replyType)
+	}
+	if !isExportedOrBuiltinType(replyType) {
+		return nil, fmt.Errorf("method Do reply type not exported:", replyType)
+	}
+	ret.replyType = replyType.Elem()
+	if mtype.NumOut() != 1 {
+		return nil, fmt.Errorf("method Do has wrong number of outs:", mtype.NumOut())
+	}
+	if returnType := mtype.Out(0); returnType != typeOfError {
+		return nil, fmt.Errorf("method Do returns", returnType.String(), "not error")
+	}
+	return ret, nil
 }
 
 func (s *Service) run() {
@@ -188,16 +226,19 @@ type BatchService struct {
 	argsType reflect.Type
 }
 
-func CreateBatchService(netaddr string, db int, password, queueName string, job interface{}) *BatchService {
+func CreateBatchService(netaddr string, db int, password, queueName string, job interface{}) (*BatchService, error) {
 	ret := &BatchService{}
-	ret.init(netaddr, db, password, queueName, ret)
+	err := ret.init(netaddr, db, password, queueName, job, "Batch", ret)
+	if err != nil {
+		return nil, err
+	}
 
-	v := reflect.ValueOf(job)
-	ret.doFunc = v.MethodByName("Batch")
-	doType := ret.doFunc.Type()
-	ret.argType = doType.In(0).Elem()
-	ret.argsType = doType.In(0)
-	return ret
+	ret.argsType = ret.argType
+	if ret.argsType.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("method Batch arg type not Slice.")
+	}
+	ret.argType = ret.argsType.Elem()
+	return ret, nil
 }
 
 func (s *BatchService) run() {
@@ -353,6 +394,22 @@ func (c *Client) isErr(err error, format string, a ...interface{}) bool {
 }
 
 //////////////////////////////////////////
+
+var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
+
+func isExportedOrBuiltinType(t reflect.Type) bool {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	// PkgPath will be non-empty even for an exported type,
+	// so we need to check the type name as well.
+	return isExported(t.Name()) || t.PkgPath() == ""
+}
+
+func isExported(name string) bool {
+	rune, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(rune)
+}
 
 type metaType struct {
 	Id        string

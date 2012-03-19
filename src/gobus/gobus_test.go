@@ -20,7 +20,10 @@ func TestCreateService(t *testing.T) {
 	fmt.Println("Test create service")
 
 	queue := "empty"
-	service := CreateService("", 0, "", queue, &EmptyJob{})
+	service, err := CreateService("", 0, "", queue, &EmptyJob{})
+	if err != nil {
+		t.Fatal("Create service failed:", err)
+	}
 	defer func() { service.Close() }()
 	go service.Serve(1e9)
 
@@ -42,7 +45,10 @@ func TestCreateClient(t *testing.T) {
 
 	queue := "empty"
 
-	service := CreateService("", 0, "", queue, &EmptyJob{})
+	service, err := CreateService("", 0, "", queue, &EmptyJob{})
+	if err != nil {
+		t.Fatal("Create service failed:", err)
+	}
 	defer func() {
 		service.Close()
 		service.Clear()
@@ -53,7 +59,7 @@ func TestCreateClient(t *testing.T) {
 	defer func() { client.Close() }()
 
 	var reply int
-	err := client.Do(3, &reply)
+	err = client.Do(3, &reply)
 	if err != nil {
 		t.Errorf("Return call should no error: %s", err)
 	}
@@ -82,7 +88,10 @@ func TestPtrClient(t *testing.T) {
 
 	queue := "empty"
 
-	service := CreateService("", 0, "", queue, &PtrJob{})
+	service, err := CreateService("", 0, "", queue, &PtrJob{})
+	if err != nil {
+		t.Fatal("Create service failed:", err)
+	}
 	defer func() {
 		service.Close()
 		service.Clear()
@@ -93,7 +102,7 @@ func TestPtrClient(t *testing.T) {
 	defer func() { client.Close() }()
 
 	var reply string
-	err := client.Do(&Arg{
+	err = client.Do(&Arg{
 		A: "abc",
 	}, &reply)
 	if err != nil {
@@ -122,7 +131,10 @@ func TestBatchService(t *testing.T) {
 
 	queue := "batch"
 	job := &BatchJob{}
-	service := CreateBatchService("", 0, "", queue, job)
+	service, err := CreateBatchService("", 0, "", queue, job)
+	if err != nil {
+		t.Fatal("Create service failed:", err)
+	}
 	service.Clear()
 	defer service.Close()
 	go service.Serve(1e9)

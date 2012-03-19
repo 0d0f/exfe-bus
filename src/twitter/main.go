@@ -17,43 +17,55 @@ const (
 )
 
 func runService(c *twitter_job.Config) {
-	friendship := gobus.CreateService(
+	friendship, err := gobus.CreateService(
 		c.Redis.Netaddr,
 		c.Redis.Db,
 		c.Redis.Password,
 		queue_friendship,
 		&twitter_service.FriendshipsExists{})
+	if err != nil {
+		log.Fatal("FriendshipsExists service launch failed:", err)
+	}
 
 	go friendship.Serve(c.Service.Time_out)
 
 	user := new(twitter_service.UsersShow)
 	user.SiteUrl = c.Site_url
-	info := gobus.CreateService(
+	info, err := gobus.CreateService(
 		c.Redis.Netaddr,
 		c.Redis.Db,
 		c.Redis.Password,
 		queue_info,
 		user)
+	if err != nil {
+		log.Fatal("UsersShow service launch failed:", err)
+	}
 
 	go info.Serve(c.Service.Time_out)
 
-	tweet := gobus.CreateService(
+	tweet, err := gobus.CreateService(
 		c.Redis.Netaddr,
 		c.Redis.Db,
 		c.Redis.Password,
 		queue_tweet,
 		&twitter_service.StatusesUpdate{})
+	if err != nil {
+		log.Fatal("StatusesUpdate service launch failed:", err)
+	}
 
 	go tweet.Serve(c.Service.Time_out)
 
 	d := new(twitter_service.DirectMessagesNew)
 	d.SiteUrl = c.Site_url
-	dm := gobus.CreateService(
+	dm, err := gobus.CreateService(
 		c.Redis.Netaddr,
 		c.Redis.Db,
 		c.Redis.Password,
 		queue_dm,
 		d)
+	if err != nil {
+		log.Fatal("DirectMessagesNew service launch failed:", err)
+	}
 
 	go dm.Serve(c.Service.Time_out)
 }
