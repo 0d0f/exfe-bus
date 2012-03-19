@@ -26,12 +26,14 @@ func runService(config *twitter_job.Config) {
 
 	go friendship.Serve(config.Service.Time_out)
 
+	user := new(twitter_service.UsersShow)
+	user.SiteUrl = config.Site_url
 	info := gobus.CreateService(
 		config.Redis.Netaddr,
 		config.Redis.Db,
 		config.Redis.Password,
 		queue_info,
-		&twitter_service.UsersShow{})
+		user)
 
 	go info.Serve(config.Service.Time_out)
 
@@ -44,12 +46,14 @@ func runService(config *twitter_job.Config) {
 
 	go tweet.Serve(config.Service.Time_out)
 
+	d := new(twitter_service.DirectMessagesNew)
+	d.SiteUrl = config.Site_url
 	dm := gobus.CreateService(
 		config.Redis.Netaddr,
 		config.Redis.Db,
 		config.Redis.Password,
 		queue_dm,
-		&twitter_service.DirectMessagesNew{})
+		d)
 
 	go dm.Serve(config.Service.Time_out)
 }

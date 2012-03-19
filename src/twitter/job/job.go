@@ -1,7 +1,6 @@
 package twitter_job
 
 import (
-	"net/http"
 	"twitter/service"
 	"bytes"
 	"fmt"
@@ -93,16 +92,6 @@ type TwitterSender struct {
 	Senddm        *gobus.Client
 }
 
-func (s *TwitterSender) updateUserInfo(id uint64, i *twitter_service.TwitterUserInfo) {
-	url := fmt.Sprintf("%s/identity/update", s.Config.Site_url)
-	_, err := http.PostForm(url, i.MakeUrlValues(id))
-	if err != nil {
-		log.Printf("[Error]Update identity info fail: %s", err)
-	} else {
-		log.Printf("[Info]Update identity info success")
-	}
-}
-
 func (s *TwitterSender) CrossLink(withToken bool) string {
 	link := fmt.Sprintf(" %s/!%s", s.Config.Site_url, s.Cross_id_base62)
 	if withToken {
@@ -159,18 +148,16 @@ func (s *TwitterSender) Do() {
 
 	if s.To_identity.External_identity == "" {
 		// get to_identity info
-		var reply twitter_service.TwitterUserInfo
-		err := s.Getinfo.Do(&twitter_service.UsersShowArg{
+		id, _ := strconv.ParseUint(s.To_identity.Id, 10, 64)
+
+		s.Getinfo.Send(&twitter_service.UsersShowArg{
 			ClientToken:  s.Config.Twitter.Client_token,
 			ClientSecret: s.Config.Twitter.Client_secret,
 			AccessToken:  s.Config.Twitter.Access_token,
 			AccessSecret: s.Config.Twitter.Access_secret,
-			ScreenName:   s.To_identity.External_username,
-		}, &reply)
-		if err == nil {
-			id, _ := strconv.ParseUint(s.To_identity.Id, 10, 64)
-			go s.updateUserInfo(id, &reply)
-		}
+			ScreenName:   &s.To_identity.External_username,
+			IdentityId:   &id,
+		})
 	}
 
 	// check friendship
@@ -226,23 +213,17 @@ func (s *TwitterSender) sendTweet(t string) {
 }
 
 func (s *TwitterSender) sendDM(to_user string, t string) {
+	i, _ := strconv.ParseUint(s.To_identity.Id, 10, 64)
 	dm := &twitter_service.DirectMessagesNewArg{
 		ClientToken:  s.Config.Twitter.Client_token,
 		ClientSecret: s.Config.Twitter.Client_secret,
 		AccessToken:  s.Config.Twitter.Access_token,
 		AccessSecret: s.Config.Twitter.Access_secret,
 		Message:      t,
-		ToUserName:   to_user,
+		ToUserName:   &to_user,
+		IdentityId:   &i,
 	}
-	var response twitter_service.DirectMessagesNewReply
-	err := s.Senddm.Do(dm, &response)
-	if err != nil {
-		log.Printf("Can't send tweet: %s", err)
-		return
-	}
-
-	i, _ := strconv.ParseUint(s.To_identity.Id, 10, 64)
-	go s.updateUserInfo(i, &response.Recipient)
+	s.Senddm.Send(dm)
 }
 
 func TwitterSenderGenerator() interface{} {

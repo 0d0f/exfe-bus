@@ -22,7 +22,7 @@ func (t *StatusesUpdateArg) String() string {
 }
 
 type StatusesUpdateReply struct {
-	User TwitterUserInfo
+	User UserInfo
 }
 
 type StatusesUpdate struct {
