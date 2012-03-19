@@ -1,50 +1,27 @@
 package config
 
 import (
-	"fmt"
-	"github.com/googollee/go-gypsy"
-	"strconv"
-	"strings"
+	"flag"
+	"os"
+	"encoding/json"
 )
 
-type Configure struct {
-	file *yaml.File
-}
-
-func LoadFile(filename string) *Configure {
-	return &Configure{
-		file: yaml.ConfigFile(filename),
-	}
-}
-
-func LoadString(data string) *Configure {
-	return &Configure{
-		file: yaml.Config(data),
-	}
-}
-
-func (c *Configure) String(key string) string {
-	value, err := c.file.Get(key)
+func LoadFile(filename string, config interface{}) {
+	f, err := os.Open(filename)
 	if err != nil {
-		panic(fmt.Sprintf("Load configure key(%s) error: %s", key, err.Error()))
+		panic(err)
 	}
-	return strings.Trim(value, "\"'")
+
+	decoder := json.NewDecoder(f)
+	err = decoder.Decode(config)
+	if err != nil {
+		panic(err)
+	}
 }
 
-func (c *Configure) Uint(key string) uint {
-	value := c.String(key)
-	i, err := strconv.ParseUint(value, 10, 0)
-	if err != nil {
-		panic(fmt.Sprintf("Configure key(%s)'s value(%s) can't convert to int: %s", key, value, err.Error()))
-	}
-	return uint(i)
-}
-
-func (c *Configure) Int(key string) int {
-	value := c.String(key)
-	i, err := strconv.Atoi(value)
-	if err != nil {
-		panic(fmt.Sprintf("Configure key(%s)'s value(%s) can't convert to int: %s", key, value, err.Error()))
-	}
-	return i
+func LoadHelper(defaultname string, config interface{}) {
+	var configFile string
+	flag.StringVar(&configFile, "config", "twitter.json", "Specify the configuration file")
+	flag.Parse()
+	LoadFile(configFile, config)
 }
