@@ -40,6 +40,9 @@ type UpdateInfoService struct {
 
 func (s *UpdateInfoService) UpdateUserInfo(id uint64, i *UserInfo) error {
 	url := fmt.Sprintf("%s/identity/update", s.SiteUrl)
-	_, err := http.PostForm(url, i.makeUrlValues(id))
+	resp, err := http.PostForm(url, i.makeUrlValues(id))
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("Update to %s failed: %s", url, resp.Status)
+	}
 	return err
 }
