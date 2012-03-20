@@ -7,6 +7,9 @@ import (
 	"gobus"
 	"gosque"
 	"log"
+	"flag"
+	"fmt"
+	"os"
 )
 
 const (
@@ -75,7 +78,25 @@ func main() {
 	log.Printf("Service start")
 
 	var c twitter_job.Config
-	config.LoadHelper("twitter.json", &c)
+
+	var pidfile string
+	var configFile string
+
+	flag.StringVar(&pidfile, "pid", "", "Specify the pid file")
+	flag.StringVar(&configFile, "config", "twitter.json", "Specify the configuration file")
+	flag.Parse()
+
+	config.LoadFile(configFile, &c)
+
+	flag.Parse()
+	if pidfile != "" {
+		pid, err := os.Create(pidfile)
+		if err != nil {
+			log.Fatal("Can't create pid(%s): %s", pidfile, err)
+			return
+		}
+		pid.WriteString(fmt.Sprintf("%d", os.Getpid()))
+	}
 
 	runService(&c)
 
