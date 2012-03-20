@@ -3,7 +3,7 @@ package oauth
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/garyburd/go-oauth"
+	"github.com/garyburd/go-oauth/oauth"
 	"io"
 	"io/ioutil"
 	"net/http"
