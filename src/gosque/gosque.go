@@ -62,7 +62,7 @@ func (c *Client) jobLoop(jobRecv chan<- interface{}, name string, generateFunc f
 		}
 		err = decoder.Decode(&value)
 		if err != nil {
-			fmt.Printf("Error parse value: %s\n", string(elem))
+			fmt.Printf("Error parse value(%s): %s\n", string(elem), err)
 			continue
 		}
 

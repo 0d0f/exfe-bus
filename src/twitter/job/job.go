@@ -58,7 +58,7 @@ type TwitterSender struct {
 		External_username string
 		Provider          string
 	}
-	To_identity_time_zone string
+	To_identity_time_zone *string
 	Invitations []struct {
 		Invitation_id     string
 		State             int64
@@ -172,8 +172,7 @@ func (s *TwitterSender) Do() {
 	var isFriend bool
 	err := s.Getfriendship.Do(f, &isFriend)
 	if err != nil {
-		log.Printf("Twitter check friendship(%s/%s) fail: %s", f.UserA, f.UserB, err)
-		return
+		isFriend = false
 	}
 
 	data := CreateData(s)
