@@ -2,42 +2,50 @@ package gosque
 
 import (
 	"fmt"
+	"time"
 	"testing"
 )
 
-type Job struct {
-	Name string
+type Test struct {
+	t *testing.T
+	count int
 }
 
-func GenerateJobs(gosque *Client, max int) {
-	for i := 0; i < max; i++ {
-		job := Job{
-			fmt.Sprintf("Job-%d", i),
-		}
-		err := gosque.PutJob("test_job", job)
+func (t *Test) Perform(arg string) {
+	expect := fmt.Sprintf("Job-%d", t.count)
+	got := arg
+	if got != expect {
+		t.t.Errorf("Failed arg: expect: %s, got: %s", expect, got)
+	}
+	t.count++
+}
+
+func GenerateJobs(gosque *Client, t *testing.T) {
+	for i := 0; i < 10; i++ {
+		job := fmt.Sprintf("Job-%d", i)
+		err := gosque.Enqueue("test_queue", "test", job)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
 }
 
-func GenerateJobTemplate() interface{} {
-	return &Job{"123"}
-}
-
 func TestGetJob(t *testing.T) {
-	const queue = "resque:test:job"
-	const maxJobs = 10
-	gosque := CreateQueue("", 0, "", queue)
-	defer func() { gosque.Close() }()
-	GenerateJobs(gosque, maxJobs)
+	gosque := CreateQueue("", 0, "", "test_queue")
 
-	jobRecv := gosque.IncomingJob("test_job", GenerateJobTemplate, 5e9)
-	for i := 0; i < 10; i++ {
-		job := (<-jobRecv).(*Job)
-		expectName := fmt.Sprintf("Job-%d", i)
-		if job.Name != expectName {
-			t.Errorf("Failed Job.Name, expect: %s, got: %s", expectName, job.Name)
-		}
+	test := &Test{
+		t: t,
+	}
+	fmt.Println("here")
+	gosque.Register(test)
+	defer func() { gosque.Close() }()
+	GenerateJobs(gosque, t)
+
+	go gosque.Serve(1e9)
+
+	time.Sleep(5e9)
+
+	if test.count != 10 {
+		t.Errorf("Job count should be 10, got: %d", test.count)
 	}
 }

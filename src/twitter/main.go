@@ -100,12 +100,6 @@ func main() {
 
 	runService(&c)
 
-	client := gosque.CreateQueue(
-		c.Redis.Netaddr,
-		c.Redis.Db,
-		c.Redis.Password,
-		"resque:queue:twitter")
-
 	sendtweet := gobus.CreateClient(
 		c.Redis.Netaddr,
 		c.Redis.Db,
@@ -130,20 +124,20 @@ func main() {
 		c.Redis.Password,
 		queue_friendship)
 
-	recv := client.IncomingJob("twitter_job", twitter_job.TwitterSenderGenerator, 5e9)
-	for {
-		select {
-		case job := <-recv:
-			twitterSender := job.(*twitter_job.TwitterSender)
-			twitterSender.Config = &c
-			twitterSender.Sendtweet = sendtweet
-			twitterSender.Senddm = senddm
-			twitterSender.Getinfo = getinfo
-			twitterSender.Getfriendship = getfriendship
-			go func() {
-				twitterSender.Do()
-			}()
-		}
+	job := twitter_job.Twitter_job{
+		Config: &c,
+		Sendtweet: sendtweet,
+		Senddm: senddm,
+		Getinfo: getinfo,
+		Getfriendship: getfriendship,
 	}
+
+	queue := gosque.CreateQueue("", 0, "", "twitter")
+	err := queue.Register(&job)
+	if err != nil {
+		log.Fatal(err)
+	}
+	queue.Serve(5e9)
+
 	log.Printf("Service stop")
 }

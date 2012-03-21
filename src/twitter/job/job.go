@@ -18,7 +18,7 @@ type ExfeTime struct {
 	Time_type string
 }
 
-type TwitterSender struct {
+type TwitterJobArg struct {
 	Title             string
 	Description       string
 	Begin_at          ExfeTime
@@ -84,7 +84,9 @@ type TwitterSender struct {
 		}
 		User_id int64
 	}
+}
 
+type Twitter_job struct {
 	Config        *Config
 	Getfriendship *gobus.Client
 	Getinfo       *gobus.Client
@@ -92,15 +94,15 @@ type TwitterSender struct {
 	Senddm        *gobus.Client
 }
 
-func (s *TwitterSender) CrossLink(withToken bool) string {
-	link := fmt.Sprintf(" %s/!%s", s.Config.Site_url, s.Cross_id_base62)
+func (s *TwitterJobArg) CrossLink(siteUrl string, withToken bool) string {
+	link := fmt.Sprintf(" %s/!%s", siteUrl, s.Cross_id_base62)
 	if withToken {
 		return fmt.Sprintf("%s?token=%s", link, s.Token)
 	}
 	return link
 }
 
-func (s *TwitterSender) isHost() bool {
+func (s *TwitterJobArg) isHost() bool {
 	identity_id, _ := strconv.ParseInt(s.Identity_id, 10, 0)
 	return identity_id == s.Host_identity_id
 }
@@ -125,17 +127,17 @@ type TemplateData struct {
 	Token         string
 }
 
-func CreateData(sender *TwitterSender) *TemplateData {
+func (s *TwitterJobArg) CreateData(siteUrl string) *TemplateData {
 	return &TemplateData{
-		ToUserName:    sender.To_identity.External_username,
-		IsHost:        sender.isHost(),
-		Title:         sender.Title,
-		Time:          sender.Begin_at.Datetime,
-		Place1:        sender.Place_line1,
-		Place2:        sender.Place_line2,
-		SiteUrl:       sender.Config.Site_url,
-		CrossIdBase62: sender.Cross_id_base62,
-		Token:         sender.Token,
+		ToUserName:    s.To_identity.External_username,
+		IsHost:        s.isHost(),
+		Title:         s.Title,
+		Time:          s.Begin_at.Datetime,
+		Place1:        s.Place_line1,
+		Place2:        s.Place_line2,
+		SiteUrl:       siteUrl,
+		CrossIdBase62: s.Cross_id_base62,
+		Token:         s.Token,
 	}
 }
 
@@ -143,20 +145,20 @@ func LoadTemplate(name string) *template.Template {
 	return template.Must(template.ParseFiles(fmt.Sprintf("./template/default/%s", name)))
 }
 
-func (s *TwitterSender) Do() {
-	log.Printf("Get a job")
+func (s *Twitter_job) Perform(arg *TwitterJobArg) {
+	log.Printf("[TwitterJob]Get a job")
 
-	if s.To_identity.External_identity == "" {
+	toIdentityId, _ := strconv.ParseUint(arg.To_identity.Id, 10, 64)
+
+	if arg.To_identity.External_identity == "" {
 		// get to_identity info
-		id, _ := strconv.ParseUint(s.To_identity.Id, 10, 64)
-
 		s.Getinfo.Send(&twitter_service.UsersShowArg{
 			ClientToken:  s.Config.Twitter.Client_token,
 			ClientSecret: s.Config.Twitter.Client_secret,
 			AccessToken:  s.Config.Twitter.Access_token,
 			AccessSecret: s.Config.Twitter.Access_secret,
-			ScreenName:   &s.To_identity.External_username,
-			IdentityId:   &id,
+			ScreenName:   &arg.To_identity.External_username,
+			IdentityId:   &toIdentityId,
 		})
 	}
 
@@ -166,7 +168,7 @@ func (s *TwitterSender) Do() {
 		ClientSecret: s.Config.Twitter.Client_secret,
 		AccessToken:  s.Config.Twitter.Access_token,
 		AccessSecret: s.Config.Twitter.Access_secret,
-		UserA:        s.To_identity.External_username,
+		UserA:        arg.To_identity.External_username,
 		UserB:        s.Config.Twitter.Screen_name,
 	}
 	var isFriend bool
@@ -175,7 +177,7 @@ func (s *TwitterSender) Do() {
 		isFriend = false
 	}
 
-	data := CreateData(s)
+	data := arg.CreateData(s.Config.Site_url)
 
 	var tmpl *template.Template
 	if isFriend {
@@ -186,16 +188,16 @@ func (s *TwitterSender) Do() {
 	buf := bytes.NewBuffer(nil)
 	tmpl.Execute(buf, data)
 
-	tweet := ShortTweet(strings.Trim(buf.String(), "\n \t")) + s.CrossLink(isFriend)
+	tweet := ShortTweet(strings.Trim(buf.String(), "\n \t")) + arg.CrossLink(s.Config.Site_url, isFriend)
 
 	if isFriend {
-		s.sendDM(data.ToUserName, tweet)
+		s.sendDM(toIdentityId, data.ToUserName, tweet)
 	} else {
 		s.sendTweet(tweet)
 	}
 }
 
-func (s *TwitterSender) sendTweet(t string) {
+func (s *Twitter_job) sendTweet(t string) {
 	tweet := &twitter_service.StatusesUpdateArg{
 		ClientToken:  s.Config.Twitter.Client_token,
 		ClientSecret: s.Config.Twitter.Client_secret,
@@ -211,20 +213,15 @@ func (s *TwitterSender) sendTweet(t string) {
 	}
 }
 
-func (s *TwitterSender) sendDM(to_user string, t string) {
-	i, _ := strconv.ParseUint(s.To_identity.Id, 10, 64)
+func (s *Twitter_job) sendDM(identityId uint64, toUserName string, t string) {
 	dm := &twitter_service.DirectMessagesNewArg{
 		ClientToken:  s.Config.Twitter.Client_token,
 		ClientSecret: s.Config.Twitter.Client_secret,
 		AccessToken:  s.Config.Twitter.Access_token,
 		AccessSecret: s.Config.Twitter.Access_secret,
 		Message:      t,
-		ToUserName:   &to_user,
-		IdentityId:   &i,
+		ToUserName:   &toUserName,
+		IdentityId:   &identityId,
 	}
 	s.Senddm.Send(dm)
-}
-
-func TwitterSenderGenerator() interface{} {
-	return &TwitterSender{}
 }
