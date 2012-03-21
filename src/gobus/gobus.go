@@ -271,22 +271,18 @@ type Client struct {
 }
 
 func CreateClient(netaddr string, db int, password, queueName string) *Client {
-	redis := godis.New(netaddr, db, password)
-
 	return &Client{
 		netaddr:   netaddr,
 		db:        db,
 		password:  password,
-		redis:     redis,
 		queueName: fmt.Sprintf("gobus:queue:%s", queueName),
 	}
 }
 
-func (c *Client) Close() error {
-	return c.redis.Quit()
-}
-
 func (c *Client) Do(arg interface{}, reply interface{}) error {
+	c.connRedis()
+	defer c.closeRedis()
+
 	meta, err := c.makeMeta(arg)
 	if err != nil {
 		return err
@@ -301,12 +297,23 @@ func (c *Client) Do(arg interface{}, reply interface{}) error {
 }
 
 func (c *Client) Send(arg interface{}) error {
+	c.connRedis()
+	defer c.closeRedis()
+
 	meta, err := c.makeMeta(arg)
 	if err != nil {
 		return err
 	}
 	meta.NeedReply = false
 	return c.send(meta)
+}
+
+func (c *Client) connRedis() {
+	c.redis = godis.New(c.netaddr, c.db, c.password)
+}
+
+func (c *Client) closeRedis() {
+	c.redis.Quit()
 }
 
 func (c *Client) makeMeta(arg interface{}) (*metaType, error) {

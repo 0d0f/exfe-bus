@@ -56,7 +56,6 @@ func TestCreateClient(t *testing.T) {
 	go service.Serve(1e9)
 
 	client := CreateClient("", 0, "", queue)
-	defer func() { client.Close() }()
 
 	var reply int
 	err = client.Do(3, &reply)
@@ -99,7 +98,6 @@ func TestPtrClient(t *testing.T) {
 	go service.Serve(1e9)
 
 	client := CreateClient("", 0, "", queue)
-	defer func() { client.Close() }()
 
 	var reply string
 	err = client.Do(&Arg{
@@ -140,7 +138,6 @@ func TestBatchService(t *testing.T) {
 	go service.Serve(1e9)
 
 	client := CreateClient("", 0, "", queue)
-	defer client.Close()
 
 	for i := 0; i < 10; i++ {
 		client.Send(i)
