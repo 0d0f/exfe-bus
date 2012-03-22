@@ -86,6 +86,10 @@ type TwitterJobArg struct {
 	}
 }
 
+func (t *TwitterJobArg) Queue() string {
+	return "twitter"
+}
+
 type Twitter_job struct {
 	Config        *Config
 	Getfriendship *gobus.Client

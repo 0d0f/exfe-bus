@@ -46,32 +46,32 @@ func (c *Client) Register(job interface{}) error {
 	if mtype.NumIn() < 1 {
 		return fmt.Errorf("method Perform must has one ins")
 	}
-	argType := mtype.In(0)
-	if !isExportedOrBuiltinType(argType) {
-		return fmt.Errorf("Perform argument type not exported:", argType)
+	argtype := mtype.In(0)
+	if !argtype.Implements(reflect.TypeOf(new(argType)).Elem()) {
+		return fmt.Errorf("Perform argument type not exported:", argtype)
 	}
 	if mtype.NumOut() != 0 {
 		return fmt.Errorf("method Do has wrong number of outs:", mtype.NumOut())
 	}
 
 	c.registered[typename] = &registeredFunc{
-		arg: argType,
+		arg: mtype.In(0),
 		function: f,
 	}
 
 	return nil
 }
 
-func (c *Client) Enqueue(queue, name string, v interface{}) error {
+func (c *Client) Enqueue(name string, arg argType) error {
 	data := metaType{}
 	data.Class = strings.ToLower(name)
-	data.Args = v
+	data.Args = arg
 
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
 	encoder.Encode(data)
 
-	q := fmt.Sprintf("resque:queue:%s",queue)
+	q := fmt.Sprintf("resque:queue:%s",arg.Queue())
 	_, err := c.redis.Rpush(q, buf.String())
 	return err
 }
@@ -122,6 +122,10 @@ type metaType struct {
 	Class string
 	Args interface{}
 	Id   string
+}
+
+type argType interface {
+	Queue() string
 }
 
 type registeredFunc struct {
