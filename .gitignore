@@ -2,3 +2,4 @@
 *.json
 bin/*
 pkg/*
+deploy/*
