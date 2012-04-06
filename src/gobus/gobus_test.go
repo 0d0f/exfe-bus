@@ -114,6 +114,46 @@ func TestPtrClient(t *testing.T) {
 
 /////////////////////////////////////////////////
 
+type InstanceJob struct {
+}
+
+func (j *InstanceJob) Do(arg Arg, reply *string) error {
+	*reply = arg.A
+	return nil
+}
+
+func TestInstanceClient(t *testing.T) {
+	fmt.Println("Test instance client")
+
+	queue := "empty"
+
+	service, err := CreateService("", 0, "", queue, &InstanceJob{})
+	if err != nil {
+		t.Fatal("Create service failed:", err)
+	}
+	defer func() {
+		service.Close()
+		service.Clear()
+	}()
+	go service.Serve(1e9)
+
+	client := CreateClient("", 0, "", queue)
+
+	var reply string
+	err = client.Do(Arg{
+		A: "abc",
+	}, &reply)
+	if err != nil {
+		t.Errorf("Return call should no error: %s", err)
+	}
+	if reply != "abc" {
+		t.Errorf("Reply should be abc, but got: %d", reply)
+	}
+	service.Stop()
+}
+
+/////////////////////////////////////////////////
+
 type BatchJob struct {
 	data []int
 }
@@ -154,3 +194,84 @@ func TestBatchService(t *testing.T) {
 
 	service.Clear()
 }
+
+/////////////////////////////////////////////////
+
+type ErrorJob struct {
+}
+
+func (j *ErrorJob) Do(arg Arg, reply *string) error {
+	return fmt.Errorf("Internal Error")
+}
+
+func TestErrorClient(t *testing.T) {
+	fmt.Println("Test error client")
+
+	queue := "empty"
+
+	service, err := CreateService("", 0, "", queue, &ErrorJob{})
+	if err != nil {
+		t.Fatal("Create service failed:", err)
+	}
+	defer func() {
+		service.Close()
+		service.Clear()
+	}()
+	go service.Serve(1e9)
+
+	client := CreateClient("", 0, "", queue)
+
+	var reply string
+	err = client.Do(Arg{
+		A: "abc",
+	}, &reply)
+	if err == nil {
+		t.Errorf("Return should return a error")
+	}
+	if err.Error() != "Internal Error" {
+		t.Errorf("Return error: %s, expect: %s", err, "Internal Error")
+	}
+	service.Stop()
+}
+
+/////////////////////////////////////////////////
+
+type PanicJob struct {
+}
+
+func (j *PanicJob) Do(arg Arg, reply *string) error {
+	panic("Fatal!")
+	return fmt.Errorf("Internal Error")
+}
+
+func TestPanicClient(t *testing.T) {
+	fmt.Println("Test panic client")
+
+	queue := "empty"
+
+	service, err := CreateService("", 0, "", queue, &PanicJob{})
+	if err != nil {
+		t.Fatal("Create service failed:", err)
+	}
+	defer func() {
+		service.Close()
+		service.Clear()
+	}()
+	go service.Serve(1e9)
+
+	client := CreateClient("", 0, "", queue)
+
+	defer func() {
+		p := recover()
+		if p != "Fatal!" {
+			t.Errorf("Panic got: %s, expect: Fatal!", p)
+		}
+		service.Stop()
+	}()
+
+	var reply string
+	err = client.Do(Arg{
+		A: "abc",
+	}, &reply)
+}
+

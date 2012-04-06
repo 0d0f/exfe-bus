@@ -181,29 +181,32 @@ func (s *Service) run() {
 
 func (s *Service) doJob(meta metaType) {
 	reply := reflect.New(s.replyType)
-	ret := s.doFunc.Call([]reflect.Value{reflect.ValueOf(meta.Arg).Elem(), reply})
+	var funcRet []reflect.Value
 
-	if meta.NeedReply {
-		r := ret[0].Interface()
-		var err error
-		if r != nil {
-			err = r.(error)
+	defer func() {
+		p := recover()
+		if meta.NeedReply {
+			var ret returnType
+			ret.Reply = reply.Interface()
+			if p != nil {
+				ret.Panic = p
+			} else {
+				r := funcRet[0].Interface()
+				if r != nil {
+					ret.Error = r.(error).Error()
+				}
+			}
+			s.sendBack(meta, &ret)
 		}
-		s.sendBack(err, meta, reply.Interface())
-	}
+	}()
+
+	funcRet = s.doFunc.Call([]reflect.Value{reflect.ValueOf(meta.Arg).Elem(), reply})
 }
 
-func (s *Service) sendBack(err error, meta metaType, reply interface{}) {
+func (s *Service) sendBack(meta metaType, ret *returnType) {
 	key := meta.Id
 
-	ret := returnType{
-		Reply: reply,
-	}
-	if err != nil {
-		ret.Error = err.Error()
-	}
-
-	str, err := valueToJson(ret)
+	str, err := valueToJson(*ret)
 	if s.isErr(err, "JSON Encode value(%v)", ret) {
 		return
 	}
@@ -367,13 +370,16 @@ func (c *Client) waitReply(id string, reply interface{}) error {
 	}
 
 	ret := &returnType{
-		Error: "",
 		Reply: reply,
 	}
 
 	err = jsonToValue(retBytes, ret)
 	if err != nil {
 		return err
+	}
+
+	if ret.Panic != nil {
+		panic(ret.Panic)
 	}
 
 	if ret.Error != "" {
@@ -427,6 +433,7 @@ type metaType struct {
 type returnType struct {
 	Error string
 	Reply interface{}
+	Panic interface{}
 }
 
 func jsonToValue(input []byte, value interface{}) error {
