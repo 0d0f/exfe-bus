@@ -31,6 +31,7 @@ type baseService struct {
 	isQuitChan chan int
 	doFunc     reflect.Value
 	argType    reflect.Type
+	replyType reflect.Type
 	r          runner
 }
 
@@ -48,16 +49,22 @@ func (b *baseService) init(netaddr string, db int, password, queueName string, j
 		return fmt.Errorf("Can't find method: %s", name)
 	}
 	mtype := b.doFunc.Type()
-	mname := mtype.Name()
 	if mtype.PkgPath() != "" {
-		return fmt.Errorf("Method %s must be exported.", mname)
+		return fmt.Errorf("Method %s must be exported.", name)
 	}
 	if mtype.NumIn() < 1 {
-		return fmt.Errorf("method", mname, "must has one ins at least.")
+		return fmt.Errorf("method %s must has one ins at least.", name)
 	}
 	b.argType = mtype.In(0)
 	if !isExportedOrBuiltinType(b.argType) {
-		return fmt.Errorf(mname, "argument type not exported:", b.argType)
+		return fmt.Errorf("%s argument type not exported: %v", name, b.argType)
+	}
+
+	if mtype.NumOut() != 1 {
+		return fmt.Errorf("method %s must has one outs at least.", name)
+	}
+	if returnType := mtype.Out(0); returnType != typeOfError {
+		return fmt.Errorf("method %s returns %s not error", name, returnType)
 	}
 
 	return nil
@@ -138,7 +145,6 @@ func (s *baseService) isErr(err error, format string, a ...interface{}) bool {
 
 type Service struct {
 	baseService
-	replyType reflect.Type
 }
 
 func CreateService(netaddr string, db int, password, queueName string, job interface{}) (*Service, error) {
@@ -150,22 +156,21 @@ func CreateService(netaddr string, db int, password, queueName string, job inter
 
 	mtype := ret.doFunc.Type()
 	if mtype.NumIn() != 2 {
-		return nil, fmt.Errorf("method Do has wrong number of ins:", mtype.NumIn())
+		return nil, fmt.Errorf("method Do has wrong number of ins: %d", mtype.NumIn())
 	}
+
 	replyType := mtype.In(1)
 	if replyType.Kind() != reflect.Ptr {
-		return nil, fmt.Errorf("method Do reply type not a pointer:", replyType)
+		return nil, fmt.Errorf("method Do reply type not a pointer: %v", replyType)
 	}
 	if !isExportedOrBuiltinType(replyType) {
-		return nil, fmt.Errorf("method Do reply type not exported:", replyType)
+		return nil, fmt.Errorf("method Do reply type not exported: %v", replyType)
 	}
 	ret.replyType = replyType.Elem()
 	if mtype.NumOut() != 1 {
-		return nil, fmt.Errorf("method Do has wrong number of outs:", mtype.NumOut())
+		return nil, fmt.Errorf("method Do has wrong number of outs: %v", mtype.NumOut())
 	}
-	if returnType := mtype.Out(0); returnType != typeOfError {
-		return nil, fmt.Errorf("method Do returns", returnType.String(), "not error")
-	}
+
 	return ret, nil
 }
 
@@ -458,7 +463,7 @@ type RetryJob struct {
 	password string
 }
 
-func (j *RetryJob) Batch(args []failedType) {
+func (j *RetryJob) Batch(args []failedType) error {
 	for _, arg := range args {
 		sp := strings.Split(arg.Meta.Id, ":")
 		queue := sp[len(sp) - 2]
@@ -473,6 +478,7 @@ func (j *RetryJob) Batch(args []failedType) {
 			fmt.Println(err)
 		}
 	}
+	return nil
 }
 
 func GetDefaultRetryServer(netaddr string, db int, password string) (*BatchService, error) {

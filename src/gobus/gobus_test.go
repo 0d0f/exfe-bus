@@ -158,10 +158,11 @@ type BatchJob struct {
 	data []int
 }
 
-func (j *BatchJob) Batch(args []int) {
+func (j *BatchJob) Batch(args []int) error {
 	for _, i := range args {
 		j.data = append(j.data, i)
 	}
+	return nil
 }
 
 func TestBatchService(t *testing.T) {
