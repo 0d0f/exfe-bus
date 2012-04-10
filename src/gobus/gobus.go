@@ -1,6 +1,7 @@
 package gobus
 
 import (
+	"strings"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -169,14 +170,16 @@ func CreateService(netaddr string, db int, password, queueName string, job inter
 }
 
 func (s *Service) run() {
-	meta, err := s.getArg()
-	if err != nil && err.Error() == "Nonexisting key" {
-		return
+	for {
+		meta, err := s.getArg()
+		if err != nil && err.Error() == "Nonexisting key" {
+			return
+		}
+		if s.isErr(err, "Get job from queue fail") {
+			return
+		}
+		s.doJob(meta)
 	}
-	if s.isErr(err, "Get job from queue fail") {
-		return
-	}
-	s.doJob(meta)
 }
 
 func (s *Service) doJob(meta metaType) {
@@ -185,22 +188,54 @@ func (s *Service) doJob(meta metaType) {
 
 	defer func() {
 		p := recover()
-		if meta.NeedReply {
-			var ret returnType
-			ret.Reply = reply.Interface()
-			if p != nil {
-				ret.Panic = p
-			} else {
-				r := funcRet[0].Interface()
-				if r != nil {
-					ret.Error = r.(error).Error()
-				}
+		var ret returnType
+		ret.Reply = reply.Interface()
+		if p != nil {
+			ret.Panic = p
+		} else {
+			r := funcRet[0].Interface()
+			if r != nil {
+				ret.Error = r.(error).Error()
 			}
+		}
+		if meta.NeedReply {
 			s.sendBack(meta, &ret)
+		} else if ret.Panic != nil {
+			s.savePanic(meta, ret.Panic)
+		} else if ret.Error != "" {
+			s.saveFailed(meta, ret.Error)
 		}
 	}()
 
 	funcRet = s.doFunc.Call([]reflect.Value{reflect.ValueOf(meta.Arg).Elem(), reply})
+}
+
+func (s *Service) savePanic(meta metaType, raised interface{}) {
+	p := panicType{
+		Meta: meta,
+		Panic: raised,
+	}
+	json, _ := valueToJson(p)
+	s.redis.Rpush("gobus:fatal", json)
+}
+
+func (s *Service) saveFailed(meta metaType, err string) {
+	meta.RetryCount++
+	if meta.RetryCount > meta.MaxRetry {
+		s.savePanic(meta, err)
+		return
+	}
+
+	failed := failedType{
+		Meta: meta,
+		Failed: err,
+	}
+	m := metaType {
+		Arg: failed,
+		NeedReply: false,
+	}
+	json, _ := valueToJson(m)
+	s.redis.Rpush("gobus:failed", json)
 }
 
 func (s *Service) sendBack(meta metaType, ret *returnType) {
@@ -256,10 +291,17 @@ func (s *BatchService) run() {
 		}
 		args = reflect.Append(args, reflect.ValueOf(meta.Arg).Elem())
 	}
-	s.doJobs(args)
+	if (args.Len() > 0 ) { s.doJobs(args) }
 }
 
 func (s *BatchService) doJobs(args reflect.Value) {
+	defer func() {
+		p := recover()
+		if p != nil {
+			fmt.Println("Batch Panic:", p)
+			panic(p)
+		}
+	}()
 	s.doFunc.Call([]reflect.Value{args})
 }
 
@@ -299,7 +341,7 @@ func (c *Client) Do(arg interface{}, reply interface{}) error {
 	return c.waitReply(meta.Id, reply)
 }
 
-func (c *Client) Send(arg interface{}) error {
+func (c *Client) Send(arg interface{}, maxRetry int) error {
 	c.connRedis()
 	defer c.closeRedis()
 
@@ -308,6 +350,7 @@ func (c *Client) Send(arg interface{}) error {
 		return err
 	}
 	meta.NeedReply = false
+	meta.MaxRetry = maxRetry
 	return c.send(meta)
 }
 
@@ -330,6 +373,7 @@ func (c *Client) makeMeta(arg interface{}) (*metaType, error) {
 	value := &metaType{
 		Id:  key,
 		Arg: arg,
+		MaxRetry: 5,
 	}
 
 	return value, nil
@@ -408,6 +452,41 @@ func (c *Client) isErr(err error, format string, a ...interface{}) bool {
 
 //////////////////////////////////////////
 
+type RetryJob struct {
+	netaddr string
+	db int
+	password string
+}
+
+func (j *RetryJob) Batch(args []failedType) {
+	for _, arg := range args {
+		sp := strings.Split(arg.Meta.Id, ":")
+		queue := sp[len(sp) - 2]
+		client := CreateClient(j.netaddr, j.db, j.password, queue)
+		fmt.Println("Send", arg.Meta, "to", queue, "for reason", arg.Failed)
+
+		client.connRedis()
+		defer client.closeRedis()
+
+		err := client.send(&arg.Meta)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+}
+
+func GetDefaultRetryServer(netaddr string, db int, password string) (*BatchService, error) {
+	job := RetryJob{netaddr, db, password}
+	service, err := CreateBatchService(netaddr, db, password, "failed", &job)
+	if err != nil {
+		return nil, err
+	}
+	service.queueName = "gobus:failed"
+	return service, nil
+}
+
+//////////////////////////////////////////
+
 var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 
 func isExportedOrBuiltinType(t reflect.Type) bool {
@@ -425,15 +504,27 @@ func isExported(name string) bool {
 }
 
 type metaType struct {
-	Id        string
-	Arg       interface{}
-	NeedReply bool
+	Id         string
+	Arg        interface{}
+	RetryCount int
+	MaxRetry   int
+	NeedReply  bool
 }
 
 type returnType struct {
 	Error string
 	Reply interface{}
 	Panic interface{}
+}
+
+type panicType struct {
+	Meta metaType
+	Panic interface{}
+}
+
+type failedType struct {
+	Meta metaType
+	Failed string
 }
 
 func jsonToValue(input []byte, value interface{}) error {

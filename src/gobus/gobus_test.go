@@ -180,7 +180,7 @@ func TestBatchService(t *testing.T) {
 	client := CreateClient("", 0, "", queue)
 
 	for i := 0; i < 10; i++ {
-		client.Send(i)
+		client.Send(i, 3)
 	}
 
 	time.Sleep(1e9)
@@ -273,5 +273,73 @@ func TestPanicClient(t *testing.T) {
 	err = client.Do(Arg{
 		A: "abc",
 	}, &reply)
+}
+
+/////////////////////////////////////////////////
+
+type TestRetryJob struct {
+	count int
+	result string
+}
+
+func (j *TestRetryJob) Do(arg Arg, reply *string) error {
+	j.count++
+	if j.count == 1 {
+		return fmt.Errorf("Retry")
+	}
+	if j.count == 2 {
+		return fmt.Errorf("Retry again")
+	}
+	j.result = arg.A
+	return nil
+}
+
+func TestRetryClient(t *testing.T) {
+	fmt.Println("Test retry client")
+
+	queue := "empty"
+
+	job := TestRetryJob{}
+	service, err := CreateService("", 0, "", queue, &job)
+	if err != nil {
+		t.Fatal("Create service failed:", err)
+	}
+
+	retry, err := GetDefaultRetryServer("", 0, "")
+	if err != nil {
+		t.Fatal("Create retry service failed:", err)
+	}
+	defer func() {
+		service.Close()
+		retry.Close()
+	}()
+	go retry.Serve(1e9)
+	go service.Serve(0.1e9)
+
+	client := CreateClient("", 0, "", queue)
+
+	defer func() {
+		service.Stop()
+	}()
+
+	job.count = 0
+	err = client.Send(Arg{
+		A: "abc",
+	}, 4)
+
+	time.Sleep(3e9)
+	if job.result != "abc" {
+		t.Fatal("Retry failed")
+	}
+
+	job.count = 0
+	err = client.Send(Arg{
+		A: "123",
+	}, 1)
+
+	time.Sleep(3e9)
+	if job.result != "abc" {
+		t.Fatal("Retry failed")
+	}
 }
 
