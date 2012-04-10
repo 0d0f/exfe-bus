@@ -116,6 +116,34 @@ Loop:
 	s.isQuitChan <- 1
 }
 
+func (s *baseService) savePanic(meta metaType, raised interface{}) {
+	p := panicType{
+		Meta: meta,
+		Panic: raised,
+	}
+	json, _ := valueToJson(p)
+	s.redis.Rpush("gobus:fatal", json)
+}
+
+func (s *baseService) saveFailed(meta metaType, err string) {
+	meta.RetryCount++
+	if meta.RetryCount > meta.MaxRetry {
+		s.savePanic(meta, err)
+		return
+	}
+
+	failed := failedType{
+		Meta: meta,
+		Failed: err,
+	}
+	m := metaType {
+		Arg: failed,
+		NeedReply: false,
+	}
+	json, _ := valueToJson(m)
+	s.redis.Rpush("gobus:failed", json)
+}
+
 func (s *baseService) getArg() (meta metaType, err error) {
 	retBytes, err := s.redis.Lpop(s.queueName)
 	if err != nil {
@@ -215,34 +243,6 @@ func (s *Service) doJob(meta metaType) {
 	funcRet = s.doFunc.Call([]reflect.Value{reflect.ValueOf(meta.Arg).Elem(), reply})
 }
 
-func (s *Service) savePanic(meta metaType, raised interface{}) {
-	p := panicType{
-		Meta: meta,
-		Panic: raised,
-	}
-	json, _ := valueToJson(p)
-	s.redis.Rpush("gobus:fatal", json)
-}
-
-func (s *Service) saveFailed(meta metaType, err string) {
-	meta.RetryCount++
-	if meta.RetryCount > meta.MaxRetry {
-		s.savePanic(meta, err)
-		return
-	}
-
-	failed := failedType{
-		Meta: meta,
-		Failed: err,
-	}
-	m := metaType {
-		Arg: failed,
-		NeedReply: false,
-	}
-	json, _ := valueToJson(m)
-	s.redis.Rpush("gobus:failed", json)
-}
-
 func (s *Service) sendBack(meta metaType, ret *returnType) {
 	key := meta.Id
 
@@ -285,6 +285,7 @@ func CreateBatchService(netaddr string, db int, password, queueName string, job 
 }
 
 func (s *BatchService) run() {
+	var metas []metaType
 	args := reflect.MakeSlice(s.argsType, 0, 0)
 	for {
 		meta, err := s.getArg()
@@ -295,19 +296,36 @@ func (s *BatchService) run() {
 			break
 		}
 		args = reflect.Append(args, reflect.ValueOf(meta.Arg).Elem())
+		metas = append(metas, meta)
 	}
-	if (args.Len() > 0 ) { s.doJobs(args) }
+	if (args.Len() > 0 ) { s.doJobs(args, metas) }
 }
 
-func (s *BatchService) doJobs(args reflect.Value) {
+func (s *BatchService) doJobs(args reflect.Value, metas []metaType) {
+	var funcRet []reflect.Value
 	defer func() {
 		p := recover()
-		if p != nil {
-			fmt.Println("Batch Panic:", p)
-			panic(p)
+		var err error
+
+		r := funcRet[0].Interface()
+		if r != nil {
+			err = r.(error)
+		}
+
+		if p == nil && err == nil { return }
+
+		for _, meta := range metas {
+			meta.RetryCount++
+			if p != nil {
+				s.savePanic(meta, p)
+			} else {
+				s.saveFailed(meta, err.Error())
+			}
 		}
 	}()
-	s.doFunc.Call([]reflect.Value{args})
+
+	funcRet = s.doFunc.Call([]reflect.Value{args})
+
 }
 
 /////////////////////////////////////////
@@ -468,7 +486,6 @@ func (j *RetryJob) Batch(args []failedType) error {
 		sp := strings.Split(arg.Meta.Id, ":")
 		queue := sp[len(sp) - 2]
 		client := CreateClient(j.netaddr, j.db, j.password, queue)
-		fmt.Println("Send", arg.Meta, "to", queue, "for reason", arg.Failed)
 
 		client.connRedis()
 		defer client.closeRedis()

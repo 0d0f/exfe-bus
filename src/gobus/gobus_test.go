@@ -344,3 +344,71 @@ func TestRetryClient(t *testing.T) {
 	}
 }
 
+/////////////////////////////////////////////////
+
+type TestBatchRetryJob struct {
+	count int
+	result string
+}
+
+func (j *TestBatchRetryJob) Batch(args []Arg) error {
+	j.count++
+	if j.count == 1 {
+		j.result += args[0].A
+		return fmt.Errorf("Retry")
+	}
+	if j.count == 2 {
+		j.result += args[0].A
+		return fmt.Errorf("Retry again")
+	}
+	for _, a := range args {
+		j.result += a.A
+	}
+	return nil
+}
+
+func TestBatchRetryClient(t *testing.T) {
+	fmt.Println("Test batch retry client")
+
+	queue := "empty"
+
+	job := TestBatchRetryJob{}
+	service, err := CreateBatchService("", 0, "", queue, &job)
+	if err != nil {
+		t.Fatal("Create service failed:", err)
+	}
+
+	retry, err := GetDefaultRetryServer("", 0, "")
+	if err != nil {
+		t.Fatal("Create retry service failed:", err)
+	}
+	defer func() {
+		service.Close()
+		retry.Close()
+	}()
+	go retry.Serve(1e9)
+	go service.Serve(0.1e9)
+
+	client := CreateClient("", 0, "", queue)
+
+	defer func() {
+		service.Stop()
+	}()
+
+	job.count = 0
+	err = client.Send(Arg{
+		A: "x",
+	}, 1)
+	for i:=0; i<10; i++ {
+		err = client.Send(Arg{
+			A: fmt.Sprintf("%d", i),
+		}, 4)
+	}
+
+	time.Sleep(3e9)
+	fmt.Println(job.result)
+	if job.result != "x00123456789" {
+		t.Fatal("Retry failed")
+	}
+}
+
