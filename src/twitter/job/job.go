@@ -163,7 +163,7 @@ func (s *Twitter_job) Perform(arg *TwitterJobArg) {
 			AccessSecret: s.Config.Twitter.Access_secret,
 			ScreenName:   &arg.To_identity.External_username,
 			IdentityId:   &toIdentityId,
-		})
+		}, 5)
 	}
 
 	// check friendship
@@ -227,5 +227,5 @@ func (s *Twitter_job) sendDM(identityId uint64, toUserName string, t string) {
 		ToUserName:   &toUserName,
 		IdentityId:   &identityId,
 	}
-	s.Senddm.Send(dm)
+	s.Senddm.Send(dm, 5)
 }
