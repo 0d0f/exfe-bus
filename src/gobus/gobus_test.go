@@ -6,66 +6,77 @@ import (
 	"time"
 )
 
+const serverName = "test"
+
+func closeAndClearServer(q *Server) {
+	q.Stop()
+	q.Close()
+	q.ClearQueue()
+}
+
 /////////////////////////////////////////////////
 
 type EmptyJob struct {
 }
 
-func (j *EmptyJob) Do(arg int, reply *int) error {
+func (j *EmptyJob) Test(arg int, reply *int) error {
 	*reply = arg * arg
+	return nil
+}
+
+func (j *EmptyJob) Batch(args []int) error {
 	return nil
 }
 
 func TestCreateService(t *testing.T) {
 	fmt.Println("Test create service")
 
-	queue := "empty"
-	service, err := CreateService("", 0, "", queue, &EmptyJob{})
-	if err != nil {
-		t.Fatal("Create service failed:", err)
-	}
-	defer func() { service.Close() }()
-	go service.Serve(1e9)
+	server := CreateServer("", 0, "", serverName)
+	defer closeAndClearServer(server)
+
+	server.Register(&EmptyJob{})
+	go server.Serve(1e9)
 
 	time.Sleep(0.5e9)
-	if !service.IsRunning() {
-		t.Fatal("Service doesn't run")
+	if !server.IsRunning() {
+		t.Fatal("server doesn't run")
 	}
 
-	_ = service.Stop()
-	if service.IsRunning() {
-		t.Fatal("Service is still running")
+	_ = server.Stop()
+	if server.IsRunning() {
+		t.Fatal("server is still running")
 	}
-
-	service.Clear()
 }
 
 func TestCreateClient(t *testing.T) {
 	fmt.Println("Test create client")
 
-	queue := "empty"
+	server := CreateServer("", 0, "", serverName)
+	defer closeAndClearServer(server)
 
-	service, err := CreateService("", 0, "", queue, &EmptyJob{})
-	if err != nil {
-		t.Fatal("Create service failed:", err)
-	}
-	defer func() {
-		service.Close()
-		service.Clear()
-	}()
-	go service.Serve(1e9)
+	server.Register(&EmptyJob{})
+	go server.Serve(1e9)
 
-	client := CreateClient("", 0, "", queue)
+	client := CreateClient("", 0, "", serverName)
 
 	var reply int
-	err = client.Do(3, &reply)
+	err := client.Do("Test", 3, &reply)
 	if err != nil {
 		t.Errorf("Return call should no error: %s", err)
 	}
 	if reply != 9 {
 		t.Errorf("Reply should be 9, but got: %d", reply)
 	}
-	service.Stop()
+
+	err = client.Send("Batch", 3, 5)
+	if err != nil {
+		t.Errorf("Return call should no error: %s", err)
+	}
+
+	err = client.Do("Batch", 3, &reply)
+	if err.Error() != "Can't find service: Batch(arg, reply)" {
+		t.Errorf("Error should: Can't find service, but got: %s", err)
+	}
 }
 
 /////////////////////////////////////////////////
@@ -74,10 +85,15 @@ type Arg struct {
 	A string
 }
 
-type PtrJob struct {
+type Job struct {
 }
 
-func (j *PtrJob) Do(arg *Arg, reply *string) error {
+func (j *Job) PtrTest(arg *Arg, reply *string) error {
+	*reply = arg.A
+	return nil
+}
+
+func (j *Job) InstanceTest(arg Arg, reply *string) error {
 	*reply = arg.A
 	return nil
 }
@@ -85,71 +101,33 @@ func (j *PtrJob) Do(arg *Arg, reply *string) error {
 func TestPtrClient(t *testing.T) {
 	fmt.Println("Test pointer client")
 
-	queue := "empty"
+	server := CreateServer("", 0, "", serverName)
+	defer closeAndClearServer(server)
 
-	service, err := CreateService("", 0, "", queue, &PtrJob{})
-	if err != nil {
-		t.Fatal("Create service failed:", err)
-	}
-	defer func() {
-		service.Close()
-		service.Clear()
-	}()
-	go service.Serve(1e9)
+	server.Register(&Job{})
+	go server.Serve(1e9)
 
-	client := CreateClient("", 0, "", queue)
+	client := CreateClient("", 0, "", serverName)
 
 	var reply string
-	err = client.Do(&Arg{
-		A: "abc",
-	}, &reply)
+
+	reply = ""
+	err := client.Do("PtrTest", &Arg{"abc"}, &reply)
 	if err != nil {
 		t.Errorf("Return call should no error: %s", err)
 	}
 	if reply != "abc" {
 		t.Errorf("Reply should be abc, but got: %d", reply)
 	}
-	service.Stop()
-}
 
-/////////////////////////////////////////////////
-
-type InstanceJob struct {
-}
-
-func (j *InstanceJob) Do(arg Arg, reply *string) error {
-	*reply = arg.A
-	return nil
-}
-
-func TestInstanceClient(t *testing.T) {
-	fmt.Println("Test instance client")
-
-	queue := "empty"
-
-	service, err := CreateService("", 0, "", queue, &InstanceJob{})
-	if err != nil {
-		t.Fatal("Create service failed:", err)
-	}
-	defer func() {
-		service.Close()
-		service.Clear()
-	}()
-	go service.Serve(1e9)
-
-	client := CreateClient("", 0, "", queue)
-
-	var reply string
-	err = client.Do(Arg{
-		A: "abc",
-	}, &reply)
+	reply = ""
+	err = client.Do("InstanceTest", Arg{"abc"}, &reply)
 	if err != nil {
 		t.Errorf("Return call should no error: %s", err)
 	}
 	if reply != "abc" {
 		t.Errorf("Reply should be abc, but got: %d", reply)
 	}
-	service.Stop()
 }
 
 /////////////////////////////////////////////////
@@ -168,32 +146,26 @@ func (j *BatchJob) Batch(args []int) error {
 func TestBatchService(t *testing.T) {
 	fmt.Println("Test batch service")
 
-	queue := "batch"
-	job := &BatchJob{}
-	service, err := CreateBatchService("", 0, "", queue, job)
-	if err != nil {
-		t.Fatal("Create service failed:", err)
-	}
-	service.Clear()
-	defer service.Close()
-	go service.Serve(1e9)
+	server := CreateServer("", 0, "", serverName)
+	defer closeAndClearServer(server)
 
-	client := CreateClient("", 0, "", queue)
+	job := BatchJob{}
+	server.Register(&job)
+	go server.Serve(1e9)
+
+	client := CreateClient("", 0, "", serverName)
 
 	for i := 0; i < 10; i++ {
-		client.Send(i, 3)
+		client.Send("Batch", i, 3)
 	}
 
 	time.Sleep(1e9)
-	service.Stop()
 
 	for i, d := range job.data {
 		if i != d {
 			t.Errorf("at index %d expect %d, but got %d", i, i, d)
 		}
 	}
-
-	service.Clear()
 }
 
 /////////////////////////////////////////////////
@@ -201,79 +173,42 @@ func TestBatchService(t *testing.T) {
 type ErrorJob struct {
 }
 
-func (j *ErrorJob) Do(arg Arg, reply *string) error {
+func (j *ErrorJob) Error(arg Arg, reply *string) error {
+	return fmt.Errorf("Internal Error")
+}
+
+func (j *ErrorJob) Panic(arg Arg, reply *string) error {
+	panic("Fatal!")
 	return fmt.Errorf("Internal Error")
 }
 
 func TestErrorClient(t *testing.T) {
 	fmt.Println("Test error client")
 
-	queue := "empty"
+	server := CreateServer("", 0, "", serverName)
+	defer closeAndClearServer(server)
+	server.Register(&ErrorJob{})
+	go server.Serve(1e9)
 
-	service, err := CreateService("", 0, "", queue, &ErrorJob{})
-	if err != nil {
-		t.Fatal("Create service failed:", err)
-	}
-	defer func() {
-		service.Close()
-		service.Clear()
-	}()
-	go service.Serve(1e9)
-
-	client := CreateClient("", 0, "", queue)
+	client := CreateClient("", 0, "", serverName)
 
 	var reply string
-	err = client.Do(Arg{
-		A: "abc",
-	}, &reply)
+	err := client.Do("Error", Arg{"abc"}, &reply)
 	if err == nil {
 		t.Errorf("Return should return a error")
 	}
 	if err.Error() != "Internal Error" {
 		t.Errorf("Return error: %s, expect: %s", err, "Internal Error")
 	}
-	service.Stop()
-}
-
-/////////////////////////////////////////////////
-
-type PanicJob struct {
-}
-
-func (j *PanicJob) Do(arg Arg, reply *string) error {
-	panic("Fatal!")
-	return fmt.Errorf("Internal Error")
-}
-
-func TestPanicClient(t *testing.T) {
-	fmt.Println("Test panic client")
-
-	queue := "empty"
-
-	service, err := CreateService("", 0, "", queue, &PanicJob{})
-	if err != nil {
-		t.Fatal("Create service failed:", err)
-	}
-	defer func() {
-		service.Close()
-		service.Clear()
-	}()
-	go service.Serve(1e9)
-
-	client := CreateClient("", 0, "", queue)
 
 	defer func() {
 		p := recover()
 		if p != "Fatal!" {
 			t.Errorf("Panic got: %s, expect: Fatal!", p)
 		}
-		service.Stop()
 	}()
 
-	var reply string
-	err = client.Do(Arg{
-		A: "abc",
-	}, &reply)
+	client.Do("Panic", Arg{"abc"}, &reply)
 }
 
 /////////////////////////////////////////////////
@@ -295,63 +230,7 @@ func (j *TestRetryJob) Do(arg Arg, reply *string) error {
 	return nil
 }
 
-func TestRetryClient(t *testing.T) {
-	fmt.Println("Test retry client")
-
-	queue := "empty"
-
-	job := TestRetryJob{}
-	service, err := CreateService("", 0, "", queue, &job)
-	if err != nil {
-		t.Fatal("Create service failed:", err)
-	}
-
-	retry, err := GetDefaultRetryServer("", 0, "")
-	if err != nil {
-		t.Fatal("Create retry service failed:", err)
-	}
-	defer func() {
-		service.Close()
-		retry.Close()
-	}()
-	go retry.Serve(1e9)
-	go service.Serve(0.1e9)
-
-	client := CreateClient("", 0, "", queue)
-
-	defer func() {
-		service.Stop()
-	}()
-
-	job.count = 0
-	err = client.Send(Arg{
-		A: "abc",
-	}, 4)
-
-	time.Sleep(3e9)
-	if job.result != "abc" {
-		t.Fatal("Retry failed")
-	}
-
-	job.count = 0
-	err = client.Send(Arg{
-		A: "123",
-	}, 1)
-
-	time.Sleep(3e9)
-	if job.result != "abc" {
-		t.Fatal("Retry failed")
-	}
-}
-
-/////////////////////////////////////////////////
-
-type TestBatchRetryJob struct {
-	count int
-	result string
-}
-
-func (j *TestBatchRetryJob) Batch(args []Arg) error {
+func (j *TestRetryJob) Batch(args []Arg) error {
 	j.count++
 	if j.count == 1 {
 		j.result += args[0].A
@@ -367,48 +246,54 @@ func (j *TestBatchRetryJob) Batch(args []Arg) error {
 	return nil
 }
 
-func TestBatchRetryClient(t *testing.T) {
-	fmt.Println("Test batch retry client")
+func TestRetryClient(t *testing.T) {
+	fmt.Println("Test retry client")
 
-	queue := "empty"
-
-	job := TestBatchRetryJob{}
-	service, err := CreateBatchService("", 0, "", queue, &job)
-	if err != nil {
-		t.Fatal("Create service failed:", err)
-	}
-
-	retry, err := GetDefaultRetryServer("", 0, "")
-	if err != nil {
-		t.Fatal("Create retry service failed:", err)
-	}
-	defer func() {
-		service.Close()
-		retry.Close()
-	}()
+	job := TestRetryJob{}
+	server := CreateServer("", 0, "", serverName)
+	retry := DefaultRetryServer("", 0, "")
+	defer closeAndClearServer(server)
+	defer closeAndClearServer(retry)
+	server.Register(&job)
 	go retry.Serve(1e9)
-	go service.Serve(0.1e9)
+	go server.Serve(0.1e9)
 
-	client := CreateClient("", 0, "", queue)
+	client := CreateClient("", 0, "", serverName)
 
-	defer func() {
-		service.Stop()
-	}()
+	{
+		job.count = 0
+		job.result = ""
+		client.Send("Do", Arg{"abc"}, 4)
 
-	job.count = 0
-	err = client.Send(Arg{
-		A: "x",
-	}, 1)
-	for i:=0; i<10; i++ {
-		err = client.Send(Arg{
-			A: fmt.Sprintf("%d", i),
-		}, 4)
+		time.Sleep(3e9)
+		if job.result != "abc" {
+			t.Fatal("Retry failed")
+		}
 	}
 
-	time.Sleep(3e9)
-	fmt.Println(job.result)
-	if job.result != "x00123456789" {
-		t.Fatal("Retry failed")
+	{
+		job.count = 0
+		job.result = ""
+		client.Send("Do", Arg{"123"}, 1)
+
+		time.Sleep(3e9)
+		if job.result != "" {
+			t.Fatal("Retry failed")
+		}
+	}
+
+	{
+		job.count = 0
+		job.result = ""
+		client.Send("Batch", Arg{"x"}, 1)
+		for i:=0; i<10; i++ {
+			client.Send("Batch", Arg{fmt.Sprintf("%d", i)}, 4)
+		}
+
+		time.Sleep(3e9)
+		fmt.Println(job.result)
+		if job.result != "x00123456789" {
+			t.Fatal("Retry failed")
+		}
 	}
 }
-
