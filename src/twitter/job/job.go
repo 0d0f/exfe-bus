@@ -1,89 +1,23 @@
 package twitter_job
 
 import (
+	"exfe"
 	"twitter/service"
 	"bytes"
 	"fmt"
 	"gobus"
 	"log"
-	"strconv"
 	"strings"
 	"text/template"
 )
 
-type ExfeTime struct {
-	Time      string
-	Data      string
-	Datetime  string
-	Time_type string
+type TwitterJobArg struct {
+	Cross exfe.Cross
+	To_invitation exfe.Invitation
 }
 
-type TwitterJobArg struct {
-	Title             string
-	Description       string
-	Begin_at          ExfeTime
-	Time_type         string
-	Place_line1       string
-	Place_line2       string
-	Cross_id          int64
-	Cross_id_base62   string
-	Invitation_id     string
-	Token             string
-	Identity_id       string
-	Host_identity_id  int64
-	Provider          string
-	External_identity string
-	Name              string
-	Avatar_file_name  string
-	Host_identity     struct {
-		Name             string
-		Avatar_file_name string
-	}
-	Rsvp_status int64
-	By_identity struct {
-		Id                string
-		External_identity string
-		Name              string
-		Bio               string
-		Avatar_file_name  string
-		External_username string
-		Provider          string
-	}
-	To_identity struct {
-		Id                string
-		External_identity string
-		Name              string
-		Bio               string
-		Avatar_file_name  string
-		External_username string
-		Provider          string
-	}
-	To_identity_time_zone *string
-	Invitations []struct {
-		Invitation_id     string
-		State             int64
-		By_identity_id    string
-		Token             string
-		Updated_at        string
-		Identity_id       string
-		Provider          string
-		External_identity string
-		Name              string
-		Bio               string
-		Avatar_file_name  string
-		External_username string
-		Identities        []struct {
-			Identity_id       string
-			Status            string
-			Provider          string
-			External_identity string
-			Name              string
-			Bio               string
-			Avatar_file_name  string
-			External_username string
-		}
-		User_id int64
-	}
+func (s *TwitterJobArg) isHost() bool {
+	return s.Cross.By_identity.Id == s.To_invitation.Identity.Id
 }
 
 func (t *TwitterJobArg) Queue() string {
@@ -92,23 +26,7 @@ func (t *TwitterJobArg) Queue() string {
 
 type Twitter_job struct {
 	Config        *Config
-	Getfriendship *gobus.Client
-	Getinfo       *gobus.Client
-	Sendtweet     *gobus.Client
-	Senddm        *gobus.Client
-}
-
-func (s *TwitterJobArg) CrossLink(siteUrl string, withToken bool) string {
-	link := fmt.Sprintf(" %s/!%s", siteUrl, s.Cross_id_base62)
-	if withToken {
-		return fmt.Sprintf("%s?token=%s", link, s.Token)
-	}
-	return link
-}
-
-func (s *TwitterJobArg) isHost() bool {
-	identity_id, _ := strconv.ParseInt(s.Identity_id, 10, 0)
-	return identity_id == s.Host_identity_id
+	Client        *gobus.Client
 }
 
 func ShortTweet(tweet string) string {
@@ -124,24 +42,27 @@ type TemplateData struct {
 	IsHost        bool
 	Title         string
 	Time          string
-	Place1        string
-	Place2        string
+	Place         string
 	SiteUrl       string
 	CrossIdBase62 string
 	Token         string
 }
 
 func (s *TwitterJobArg) CreateData(siteUrl string) *TemplateData {
+	t, err := s.Cross.Time.StringInZone(s.To_invitation.Identity.Timezone)
+	if err != nil {
+		log.Printf("Time parse error: %s", err)
+		return nil
+	}
 	return &TemplateData{
-		ToUserName:    s.To_identity.External_username,
+		ToUserName:    s.To_invitation.Identity.External_username,
 		IsHost:        s.isHost(),
-		Title:         s.Title,
-		Time:          s.Begin_at.Datetime,
-		Place1:        s.Place_line1,
-		Place2:        s.Place_line2,
+		Title:         s.Cross.Title,
+		Time:          t,
+		Place:         s.Cross.Place.String(),
 		SiteUrl:       siteUrl,
-		CrossIdBase62: s.Cross_id_base62,
-		Token:         s.Token,
+		CrossIdBase62: s.Cross.Id_base62,
+		Token:         s.To_invitation.Token,
 	}
 }
 
@@ -152,16 +73,16 @@ func LoadTemplate(name string) *template.Template {
 func (s *Twitter_job) Perform(arg *TwitterJobArg) {
 	log.Printf("[TwitterJob]Get a job")
 
-	toIdentityId, _ := strconv.ParseUint(arg.To_identity.Id, 10, 64)
+	toIdentityId := arg.To_invitation.Identity.Id
 
-	if arg.To_identity.External_identity == "" {
+	if arg.To_invitation.Identity.External_id == "" {
 		// get to_identity info
-		s.Getinfo.Send(&twitter_service.UsersShowArg{
+		s.Client.Send("GetInfo", &twitter_service.UsersShowArg{
 			ClientToken:  s.Config.Twitter.Client_token,
 			ClientSecret: s.Config.Twitter.Client_secret,
 			AccessToken:  s.Config.Twitter.Access_token,
 			AccessSecret: s.Config.Twitter.Access_secret,
-			ScreenName:   &arg.To_identity.External_username,
+			ScreenName:   &arg.To_invitation.Identity.External_username,
 			IdentityId:   &toIdentityId,
 		}, 5)
 	}
@@ -172,11 +93,11 @@ func (s *Twitter_job) Perform(arg *TwitterJobArg) {
 		ClientSecret: s.Config.Twitter.Client_secret,
 		AccessToken:  s.Config.Twitter.Access_token,
 		AccessSecret: s.Config.Twitter.Access_secret,
-		UserA:        arg.To_identity.External_username,
+		UserA:        arg.To_invitation.Identity.External_username,
 		UserB:        s.Config.Twitter.Screen_name,
 	}
 	var isFriend bool
-	err := s.Getfriendship.Do(f, &isFriend)
+	err := s.Client.Do("GetFriendship", f, &isFriend)
 	if err != nil {
 		isFriend = false
 	}
@@ -192,11 +113,11 @@ func (s *Twitter_job) Perform(arg *TwitterJobArg) {
 	buf := bytes.NewBuffer(nil)
 	tmpl.Execute(buf, data)
 
-	tweet := ShortTweet(strings.Trim(buf.String(), "\n \t")) + arg.CrossLink(s.Config.Site_url, isFriend)
-
 	if isFriend {
+		tweet := ShortTweet(strings.Trim(buf.String(), "\n \t")) + arg.Cross.LinkTo(s.Config.Site_url, &arg.To_invitation)
 		s.sendDM(toIdentityId, data.ToUserName, tweet)
 	} else {
+		tweet := ShortTweet(strings.Trim(buf.String(), "\n \t")) + arg.Cross.Link(s.Config.Site_url)
 		s.sendTweet(tweet)
 	}
 }
@@ -210,7 +131,7 @@ func (s *Twitter_job) sendTweet(t string) {
 		Tweet:        t,
 	}
 	var response twitter_service.StatusesUpdateReply
-	err := s.Sendtweet.Do(tweet, &response)
+	err := s.Client.Do("SendTweet", tweet, &response)
 	if err != nil {
 		log.Printf("Can't send tweet: %s", err)
 		return
@@ -227,5 +148,5 @@ func (s *Twitter_job) sendDM(identityId uint64, toUserName string, t string) {
 		ToUserName:   &toUserName,
 		IdentityId:   &identityId,
 	}
-	s.Senddm.Send(dm, 5)
+	s.Client.Send("SendDM", dm, 5)
 }

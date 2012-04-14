@@ -25,10 +25,10 @@ type StatusesUpdateReply struct {
 	User UserInfo
 }
 
-type StatusesUpdate struct {
+type Statuses struct {
 }
 
-func (t *StatusesUpdate) Do(arg *StatusesUpdateArg, reply *StatusesUpdateReply) error {
+func (t *Statuses) SendTweet(arg *StatusesUpdateArg, reply *StatusesUpdateReply) error {
 	log.Printf("[Info][statuses/update]Call by arg: %s", arg)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")

@@ -54,11 +54,11 @@ func (arg *UsersShowArg) getValues() (v url.Values, err error) {
 	return v, nil
 }
 
-type UsersShow struct {
+type Users struct {
 	UpdateInfoService
 }
 
-func (s *UsersShow) Do(arg *UsersShowArg, reply *UserInfo) error {
+func (s *Users) UserInfo(arg *UsersShowArg, reply *UserInfo) error {
 	log.Printf("[Info][users/show]Call by arg %s", arg)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")

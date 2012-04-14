@@ -20,57 +20,18 @@ const (
 )
 
 func runService(c *twitter_job.Config) {
-	friendship, err := gobus.CreateService(
-		c.Redis.Netaddr,
-		c.Redis.Db,
-		c.Redis.Password,
-		queue_friendship,
-		&twitter_service.FriendshipsExists{})
-	if err != nil {
-		log.Fatal("FriendshipsExists service launch failed:", err)
-	}
+	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "twitter")
 
-	go friendship.Serve(c.Service.Time_out)
-
-	user := new(twitter_service.UsersShow)
+	server.Register(new(twitter_service.FriendshipsExists))
+	user := new(twitter_service.Users)
 	user.SiteUrl = c.Site_url
-	info, err := gobus.CreateService(
-		c.Redis.Netaddr,
-		c.Redis.Db,
-		c.Redis.Password,
-		queue_info,
-		user)
-	if err != nil {
-		log.Fatal("UsersShow service launch failed:", err)
-	}
-
-	go info.Serve(c.Service.Time_out)
-
-	tweet, err := gobus.CreateService(
-		c.Redis.Netaddr,
-		c.Redis.Db,
-		c.Redis.Password,
-		queue_tweet,
-		&twitter_service.StatusesUpdate{})
-	if err != nil {
-		log.Fatal("StatusesUpdate service launch failed:", err)
-	}
-
-	go tweet.Serve(c.Service.Time_out)
-
-	d := new(twitter_service.DirectMessagesNew)
+	server.Register(user)
+	server.Register(new(twitter_service.Statuses))
+	d := new(twitter_service.DirectMessages)
 	d.SiteUrl = c.Site_url
-	dm, err := gobus.CreateService(
-		c.Redis.Netaddr,
-		c.Redis.Db,
-		c.Redis.Password,
-		queue_dm,
-		d)
-	if err != nil {
-		log.Fatal("DirectMessagesNew service launch failed:", err)
-	}
+	server.Register(d)
 
-	go dm.Serve(c.Service.Time_out)
+	go server.Serve(c.Service.Time_out)
 }
 
 func main() {
@@ -100,36 +61,15 @@ func main() {
 
 	runService(&c)
 
-	sendtweet := gobus.CreateClient(
+	client := gobus.CreateClient(
 		c.Redis.Netaddr,
 		c.Redis.Db,
 		c.Redis.Password,
-		queue_tweet)
-
-	senddm := gobus.CreateClient(
-		c.Redis.Netaddr,
-		c.Redis.Db,
-		c.Redis.Password,
-		queue_dm)
-
-	getinfo := gobus.CreateClient(
-		c.Redis.Netaddr,
-		c.Redis.Db,
-		c.Redis.Password,
-		queue_info)
-
-	getfriendship := gobus.CreateClient(
-		c.Redis.Netaddr,
-		c.Redis.Db,
-		c.Redis.Password,
-		queue_friendship)
+		"twitter")
 
 	job := twitter_job.Twitter_job{
 		Config: &c,
-		Sendtweet: sendtweet,
-		Senddm: senddm,
-		Getinfo: getinfo,
-		Getfriendship: getfriendship,
+		Client: client,
 	}
 
 	queue := gosque.CreateQueue("", 0, "", "twitter")

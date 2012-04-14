@@ -18,7 +18,7 @@ func (i *UserInfo) makeUrlValues(id uint64) (v url.Values) {
 	v = make(url.Values)
 	v.Add("id", fmt.Sprintf("%d", id))
 	v.Add("provider", "twitter")
-	v.Add("external_identity", fmt.Sprintf("%d", i.Id))
+	v.Add("external_id", fmt.Sprintf("%d", i.Id))
 	if i.Name != nil {
 		v.Add("name", *i.Name)
 	}
@@ -26,7 +26,7 @@ func (i *UserInfo) makeUrlValues(id uint64) (v url.Values) {
 		v.Add("bio", *i.Description)
 	}
 	if i.Profile_image_url != nil {
-		v.Add("avatar_url", *i.Profile_image_url)
+		v.Add("avatar_filename", *i.Profile_image_url)
 	}
 	if i.Screen_name != nil {
 		v.Add("external_username", *i.Screen_name)

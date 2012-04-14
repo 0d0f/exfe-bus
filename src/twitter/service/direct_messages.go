@@ -58,11 +58,11 @@ type DirectMessagesNewReply struct {
 	Recipient UserInfo
 }
 
-type DirectMessagesNew struct {
+type DirectMessages struct {
 	UpdateInfoService
 }
 
-func (m *DirectMessagesNew) Do(arg *DirectMessagesNewArg, reply *DirectMessagesNewReply) error {
+func (m *DirectMessages) SendDM(arg *DirectMessagesNewArg, reply *DirectMessagesNewReply) error {
 	log.Printf("[Info][direct_messages/new]Call by arg: %s", arg)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
