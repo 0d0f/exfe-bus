@@ -3,6 +3,7 @@ package exfe
 type Identity struct {
 	Id uint64
 	Type string
+	Token string
 	Name string
 	Nickname string
 	Bio string
@@ -18,6 +19,7 @@ type Identity struct {
  type Invitation struct {
 	 Id uint64
 	 Type string
+	 Token string
 	 Identity Identity
 	 Rsvp_status uint64
 	 By_identity Identity
