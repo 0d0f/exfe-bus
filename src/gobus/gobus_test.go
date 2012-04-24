@@ -60,7 +60,7 @@ func TestCreateClient(t *testing.T) {
 	client := CreateClient("", 0, "", serverName)
 
 	var reply int
-	err := client.Do("Test", 3, &reply)
+	err := client.Do("Test", 3, &reply, 3)
 	if err != nil {
 		t.Errorf("Return call should no error: %s", err)
 	}
@@ -73,7 +73,7 @@ func TestCreateClient(t *testing.T) {
 		t.Errorf("Return call should no error: %s", err)
 	}
 
-	err = client.Do("Batch", 3, &reply)
+	err = client.Do("Batch", 3, &reply, 3)
 	if err.Error() != "Can't find service: Batch(arg, reply)" {
 		t.Errorf("Error should: Can't find service, but got: %s", err)
 	}
@@ -112,7 +112,7 @@ func TestPtrClient(t *testing.T) {
 	var reply string
 
 	reply = ""
-	err := client.Do("PtrTest", &Arg{"abc"}, &reply)
+	err := client.Do("PtrTest", &Arg{"abc"}, &reply, 3)
 	if err != nil {
 		t.Errorf("Return call should no error: %s", err)
 	}
@@ -121,7 +121,7 @@ func TestPtrClient(t *testing.T) {
 	}
 
 	reply = ""
-	err = client.Do("InstanceTest", Arg{"abc"}, &reply)
+	err = client.Do("InstanceTest", Arg{"abc"}, &reply, 3)
 	if err != nil {
 		t.Errorf("Return call should no error: %s", err)
 	}
@@ -193,7 +193,7 @@ func TestErrorClient(t *testing.T) {
 	client := CreateClient("", 0, "", serverName)
 
 	var reply string
-	err := client.Do("Error", Arg{"abc"}, &reply)
+	err := client.Do("Error", Arg{"abc"}, &reply, 3)
 	if err == nil {
 		t.Errorf("Return should return a error")
 	}
@@ -208,7 +208,7 @@ func TestErrorClient(t *testing.T) {
 		}
 	}()
 
-	client.Do("Panic", Arg{"abc"}, &reply)
+	client.Do("Panic", Arg{"abc"}, &reply, 3)
 }
 
 /////////////////////////////////////////////////

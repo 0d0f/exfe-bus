@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"bytes"
 	"encoding/json"
+	"time"
 )
 
 type Client struct {
@@ -24,7 +25,7 @@ func CreateClient(netaddr string, db int, password, queueName string) *Client {
 	}
 }
 
-func (c *Client) Do(method string, arg interface{}, reply interface{}) error {
+func (c *Client) Do(method string, arg interface{}, reply interface{}, timeOut time.Duration) error {
 	c.connRedis()
 	defer c.closeRedis()
 
@@ -39,7 +40,7 @@ func (c *Client) Do(method string, arg interface{}, reply interface{}) error {
 	if err != nil {
 		return err
 	}
-	return c.waitReply(meta.Id, reply)
+	return c.waitReply(meta.Id, reply, timeOut)
 }
 
 func (c *Client) Send(method string, arg interface{}, maxRetry int) error {
@@ -106,10 +107,14 @@ func (c *Client) send(m *metaType) error {
 	return nil
 }
 
-func (c *Client) waitReply(id string, reply interface{}) error {
+func (c *Client) waitReply(id string, reply interface{}, timeOut time.Duration) error {
 	sub := godis.NewSub(c.netaddr, c.db, c.password)
 	sub.Subscribe(id)
-	_ = <-sub.Messages
+	select {
+	case _ = <-sub.Messages:
+	case <-time.After(timeOut * time.Second):
+		return fmt.Errorf("Timeout")
+	}
 	sub.Close()
 
 	retBytes, err := c.redis.Get(id)
