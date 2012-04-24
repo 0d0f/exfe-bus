@@ -12,16 +12,16 @@ type Identity struct {
 
 	External_id string
 	External_username string
-	avatar_filename string
-	avatar_updated_at string
+	Avatar_filename string
+	Avatar_updated_at string
 }
 
- type Invitation struct {
-	 Id uint64
-	 Type string
-	 Token string
-	 Identity Identity
-	 Rsvp_status uint64
-	 By_identity Identity
-	 Via string
- }
+type Invitation struct {
+	Id uint64
+	Type string
+	Token string
+	Identity Identity
+	Rsvp_status string
+	By_identity Identity
+	Via string
+}

@@ -83,65 +83,65 @@ type CrossTimeTest struct {
 
 var crossTimeTestData = []CrossTimeTest{
 	// if OutputOrigin, then output origin directly
-	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                "+08:00 CST", true, fmt.Sprintf("2:08PM on %s", ThisYear())},
-	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00 abc", OutputOrigin},            "+08:00 CST", true, fmt.Sprintf("2012-04-04 14:8:00 abc")},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                "+08:00 CST", true, fmt.Sprintf("2:08PM on %s", ThisYear())},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00 abc", Origin},            "+08:00 CST", true, fmt.Sprintf("2012-04-04 14:8:00 abc")},
 
 	// Time_word (at) Time Date_word (on) Date
-	{CrossTime{EFTime{"This Week", "", "", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                           "+08:00 CST", true, fmt.Sprintf("This Week")},
-	{CrossTime{EFTime{"", ThisYearDate(), "", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                        "+08:00 CST", true, fmt.Sprintf("%s", ThisYear())},
-	{CrossTime{EFTime{"", "", "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                              "+08:00 CST", true, fmt.Sprintf("Dinner")},
-	{CrossTime{EFTime{"", "", "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                            "+08:00 CST", true, fmt.Sprintf("2:08PM")},
-	{CrossTime{EFTime{"This Week", ThisYearDate(), "", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},               "+08:00 CST", true, fmt.Sprintf("This Week on %s", ThisYear())},
-	{CrossTime{EFTime{"This Week", "", "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                     "+08:00 CST", true, fmt.Sprintf("Dinner This Week")},
-	{CrossTime{EFTime{"This Week", "", "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                   "+08:00 CST", true, fmt.Sprintf("2:08PM This Week")},
-	{CrossTime{EFTime{"", ThisYearDate(), "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                  "+08:00 CST", true, fmt.Sprintf("Dinner on %s", ThisYear())},
-	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                "+08:00 CST", true, fmt.Sprintf("2:08PM on %s", ThisYear())},
-	{CrossTime{EFTime{"", "", "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                      "+08:00 CST", true, fmt.Sprintf("Dinner at 2:08PM")},
-	{CrossTime{EFTime{"This Week", ThisYearDate(), "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},         "+08:00 CST", true, fmt.Sprintf("Dinner This Week on %s", ThisYear())},
-	{CrossTime{EFTime{"This Week", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},       "+08:00 CST", true, fmt.Sprintf("2:08PM This Week on %s", ThisYear())},
-	{CrossTime{EFTime{"This Week", "", "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},             "+08:00 CST", true, fmt.Sprintf("Dinner at 2:08PM This Week")},
-	{CrossTime{EFTime{"This Week", ThisYearDate(), "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat}, "+08:00 CST", true, fmt.Sprintf("Dinner at 2:08PM This Week on %s", ThisYear())},
+	{CrossTime{EFTime{"This Week", "", "", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                           "+08:00 CST", true, fmt.Sprintf("This Week")},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                        "+08:00 CST", true, fmt.Sprintf("%s", ThisYear())},
+	{CrossTime{EFTime{"", "", "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                              "+08:00 CST", true, fmt.Sprintf("Dinner")},
+	{CrossTime{EFTime{"", "", "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                            "+08:00 CST", true, fmt.Sprintf("2:08PM")},
+	{CrossTime{EFTime{"This Week", ThisYearDate(), "", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},               "+08:00 CST", true, fmt.Sprintf("This Week on %s", ThisYear())},
+	{CrossTime{EFTime{"This Week", "", "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                     "+08:00 CST", true, fmt.Sprintf("Dinner This Week")},
+	{CrossTime{EFTime{"This Week", "", "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                   "+08:00 CST", true, fmt.Sprintf("2:08PM This Week")},
+	{CrossTime{EFTime{"", ThisYearDate(), "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                  "+08:00 CST", true, fmt.Sprintf("Dinner on %s", ThisYear())},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                "+08:00 CST", true, fmt.Sprintf("2:08PM on %s", ThisYear())},
+	{CrossTime{EFTime{"", "", "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                      "+08:00 CST", true, fmt.Sprintf("Dinner at 2:08PM")},
+	{CrossTime{EFTime{"This Week", ThisYearDate(), "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},         "+08:00 CST", true, fmt.Sprintf("Dinner This Week on %s", ThisYear())},
+	{CrossTime{EFTime{"This Week", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},       "+08:00 CST", true, fmt.Sprintf("2:08PM This Week on %s", ThisYear())},
+	{CrossTime{EFTime{"This Week", "", "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},             "+08:00 CST", true, fmt.Sprintf("Dinner at 2:08PM This Week")},
+	{CrossTime{EFTime{"This Week", ThisYearDate(), "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format}, "+08:00 CST", true, fmt.Sprintf("Dinner at 2:08PM This Week on %s", ThisYear())},
 
 	// different target zone format
-	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                "+08:00", true, fmt.Sprintf("2:08PM on %s", ThisYear())},
-	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                "", true, fmt.Sprintf("2:08PM on %s", ThisYear())},
-	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                "+08:00 PST", true, fmt.Sprintf("2:08PM on %s", ThisYear())},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                "+08:00", true, fmt.Sprintf("2:08PM on %s", ThisYear())},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                "", true, fmt.Sprintf("2:08PM on %s", ThisYear())},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                "+08:00 PST", true, fmt.Sprintf("2:08PM on %s", ThisYear())},
 
-	// if OutputOrigin, use CrossTime zone
-	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                "+09:00 PST", true, fmt.Sprintf("3:08PM +09:00 PST on %s", ThisYear())},
-	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00 abc", OutputOrigin},            "+09:00 PST", true, fmt.Sprintf("2012-04-04 14:8:00 abc +08:00 CST")},
+	// if Origin, use CrossTime zone
+	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                "+09:00 PST", true, fmt.Sprintf("3:08PM +09:00 PST on %s", ThisYear())},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00 abc", Origin},            "+09:00 PST", true, fmt.Sprintf("2012-04-04 14:8:00 abc +08:00 CST")},
 
 	// Time_word (at) Time Zone Date_word (on) Date
 	// Only show Zone with Time_word or Time
-	{CrossTime{EFTime{"This Week", "", "", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                           "+09:00 PST", true, fmt.Sprintf("This Week")},
-	{CrossTime{EFTime{"", ThisYearDate(), "", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                        "+09:00 PST", true, fmt.Sprintf("%s", ThisYear())},
-	{CrossTime{EFTime{"", "", "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                              "+09:00 PST", true, fmt.Sprintf("Dinner +08:00 CST")},
-	{CrossTime{EFTime{"", "", "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                            "+09:00 PST", true, fmt.Sprintf("3:08PM +09:00 PST")},
-	{CrossTime{EFTime{"This Week", ThisYearDate(), "", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},               "+09:00 PST", true, fmt.Sprintf("This Week on %s", ThisYear())},
-	{CrossTime{EFTime{"This Week", "", "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                     "+09:00 PST", true, fmt.Sprintf("Dinner +08:00 CST This Week")},
-	{CrossTime{EFTime{"This Week", "", "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                   "+09:00 PST", true, fmt.Sprintf("3:08PM +09:00 PST This Week")},
-	{CrossTime{EFTime{"", ThisYearDate(), "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                  "+09:00 PST", true, fmt.Sprintf("Dinner +08:00 CST on %s", ThisYear())},
-	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                "+09:00 PST", true, fmt.Sprintf("3:08PM +09:00 PST on %s", ThisYear())},
-	{CrossTime{EFTime{"", "", "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                      "+09:00 PST", true, fmt.Sprintf("Dinner at 3:08PM +09:00 PST")},
-	{CrossTime{EFTime{"This Week", ThisYearDate(), "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},         "+09:00 PST", true, fmt.Sprintf("Dinner +08:00 CST This Week on %s", ThisYear())},
-	{CrossTime{EFTime{"This Week", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},       "+09:00 PST", true, fmt.Sprintf("3:08PM +09:00 PST This Week on %s", ThisYear())},
-	{CrossTime{EFTime{"This Week", "", "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},             "+09:00 PST", true, fmt.Sprintf("Dinner at 3:08PM +09:00 PST This Week")},
-	{CrossTime{EFTime{"This Week", ThisYearDate(), "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat}, "+09:00 PST", true, fmt.Sprintf("Dinner at 3:08PM +09:00 PST This Week on %s", ThisYear())},
+	{CrossTime{EFTime{"This Week", "", "", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                           "+09:00 PST", true, fmt.Sprintf("This Week")},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                        "+09:00 PST", true, fmt.Sprintf("%s", ThisYear())},
+	{CrossTime{EFTime{"", "", "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                              "+09:00 PST", true, fmt.Sprintf("Dinner +08:00 CST")},
+	{CrossTime{EFTime{"", "", "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                            "+09:00 PST", true, fmt.Sprintf("3:08PM +09:00 PST")},
+	{CrossTime{EFTime{"This Week", ThisYearDate(), "", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},               "+09:00 PST", true, fmt.Sprintf("This Week on %s", ThisYear())},
+	{CrossTime{EFTime{"This Week", "", "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                     "+09:00 PST", true, fmt.Sprintf("Dinner +08:00 CST This Week")},
+	{CrossTime{EFTime{"This Week", "", "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                   "+09:00 PST", true, fmt.Sprintf("3:08PM +09:00 PST This Week")},
+	{CrossTime{EFTime{"", ThisYearDate(), "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                  "+09:00 PST", true, fmt.Sprintf("Dinner +08:00 CST on %s", ThisYear())},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                "+09:00 PST", true, fmt.Sprintf("3:08PM +09:00 PST on %s", ThisYear())},
+	{CrossTime{EFTime{"", "", "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                      "+09:00 PST", true, fmt.Sprintf("Dinner at 3:08PM +09:00 PST")},
+	{CrossTime{EFTime{"This Week", ThisYearDate(), "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},         "+09:00 PST", true, fmt.Sprintf("Dinner +08:00 CST This Week on %s", ThisYear())},
+	{CrossTime{EFTime{"This Week", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},       "+09:00 PST", true, fmt.Sprintf("3:08PM +09:00 PST This Week on %s", ThisYear())},
+	{CrossTime{EFTime{"This Week", "", "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},             "+09:00 PST", true, fmt.Sprintf("Dinner at 3:08PM +09:00 PST This Week")},
+	{CrossTime{EFTime{"This Week", ThisYearDate(), "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format}, "+09:00 PST", true, fmt.Sprintf("Dinner at 3:08PM +09:00 PST This Week on %s", ThisYear())},
 
 	// different target zone format
-	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                "+09:00", true, fmt.Sprintf("3:08PM +09:00 on %s", ThisYear())},
-	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                "", true, fmt.Sprintf("2:08PM on %s", ThisYear())},
-	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                "+09:00 PST", true, fmt.Sprintf("3:08PM +09:00 PST on %s", ThisYear())},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                "+09:00", true, fmt.Sprintf("3:08PM +09:00 on %s", ThisYear())},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                "", true, fmt.Sprintf("2:08PM on %s", ThisYear())},
+	{CrossTime{EFTime{"", ThisYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                "+09:00 PST", true, fmt.Sprintf("3:08PM +09:00 PST on %s", ThisYear())},
 
 	// different year
 	// Time_word (at) Time Date_word (on) Date
-	{CrossTime{EFTime{"", LastYearDate(), "", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                        "+08:00 CST", true, fmt.Sprintf("%s", LastYear())},
-	{CrossTime{EFTime{"This Week", LastYearDate(), "", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},               "+08:00 CST", true, fmt.Sprintf("This Week on %s", LastYear())},
-	{CrossTime{EFTime{"", LastYearDate(), "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                  "+08:00 CST", true, fmt.Sprintf("Dinner on %s", LastYear())},
-	{CrossTime{EFTime{"", LastYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},                "+08:00 CST", true, fmt.Sprintf("2:08PM on %s", LastYear())},
-	{CrossTime{EFTime{"This Week", LastYearDate(), "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},         "+08:00 CST", true, fmt.Sprintf("Dinner This Week on %s", LastYear())},
-	{CrossTime{EFTime{"This Week", LastYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat},       "+08:00 CST", true, fmt.Sprintf("2:08PM This Week on %s", LastYear())},
-	{CrossTime{EFTime{"This Week", LastYearDate(), "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", OutputFormat}, "+08:00 CST", true, fmt.Sprintf("Dinner at 2:08PM This Week on %s", LastYear())},
+	{CrossTime{EFTime{"", LastYearDate(), "", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                        "+08:00 CST", true, fmt.Sprintf("%s", LastYear())},
+	{CrossTime{EFTime{"This Week", LastYearDate(), "", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},               "+08:00 CST", true, fmt.Sprintf("This Week on %s", LastYear())},
+	{CrossTime{EFTime{"", LastYearDate(), "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                  "+08:00 CST", true, fmt.Sprintf("Dinner on %s", LastYear())},
+	{CrossTime{EFTime{"", LastYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},                "+08:00 CST", true, fmt.Sprintf("2:08PM on %s", LastYear())},
+	{CrossTime{EFTime{"This Week", LastYearDate(), "Dinner", "", "+08:00 CST"}, "2012-04-04 14:8:00", Format},         "+08:00 CST", true, fmt.Sprintf("Dinner This Week on %s", LastYear())},
+	{CrossTime{EFTime{"This Week", LastYearDate(), "", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format},       "+08:00 CST", true, fmt.Sprintf("2:08PM This Week on %s", LastYear())},
+	{CrossTime{EFTime{"This Week", LastYearDate(), "Dinner", "14:08:00", "+08:00 CST"}, "2012-04-04 14:8:00", Format}, "+08:00 CST", true, fmt.Sprintf("Dinner at 2:08PM This Week on %s", LastYear())},
 }
 
 func TestCrossTimeInZoneString(t *testing.T) {

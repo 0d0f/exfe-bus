@@ -110,22 +110,22 @@ func (t EFTime) StringInZone(targetZone string) (string, error) {
 	return ret, nil
 }
 
-type OriginMarkType uint
+type OutputFormat uint
 
 const (
-	OutputFormat OriginMarkType = 0
-	OutputOrigin = 1
+	Format OutputFormat = 0
+	Origin = 1
 )
 
 type CrossTime struct {
 	Begin_at EFTime
 	Origin string
-	OriginMark OriginMarkType
+	OutputFormat OutputFormat
 }
 
 func (t CrossTime)StringInZone(targetZone string) (string, error) {
-	switch t.OriginMark {
-	case OutputFormat:
+	switch t.OutputFormat {
+	case Format:
 		ret, err := t.Begin_at.StringInZone(targetZone)
 		return ret, err
 	}

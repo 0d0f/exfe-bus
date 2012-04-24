@@ -7,18 +7,21 @@ import (
 type Cross struct {
 	Id uint64
 	Id_base62 string
-	Type string
 	Title string
 	Description string
 	Time CrossTime
 	Place Place
 	Attribute map[string]string
-	Exfee []Invitation
+	Exfee struct {
+		Invitations []Invitation
+		Id uint
+	}
 	Widget []interface{}
 	Relative []struct {
 		Id uint64
 		Relation string
 	}
+	Type string
 	By_identity Identity
 }
 
