@@ -297,3 +297,37 @@ func TestRetryClient(t *testing.T) {
 		}
 	}
 }
+
+/////////////////////////////////////////////////
+
+type PhpJob struct {
+	data []int
+}
+
+func (j *PhpJob) Batch(args []int) error {
+	for _, i := range args {
+		j.data = append(j.data, i)
+	}
+	return nil
+}
+
+func TestPhpService(t *testing.T) {
+	fmt.Println("Test batch service")
+
+	server := CreateServer("", 0, "", "php")
+	defer closeAndClearServer(server)
+
+	job := PhpJob{}
+	server.Register(&job)
+	go server.Serve(0.1e9)
+
+	time.Sleep(1e9)
+
+	if len(job.data) != 1 {
+		t.Errorf("need run php_test.php first")
+		return
+	}
+	if job.data[0] != 3 {
+		t.Errorf("got: %d, expect: 3", job.data[0])
+	}
+}
