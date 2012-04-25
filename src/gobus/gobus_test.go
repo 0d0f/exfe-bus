@@ -311,6 +311,11 @@ func (j *PhpJob) Batch(args []int) error {
 	return nil
 }
 
+func (j *PhpJob) Do(args int, reply *int) error {
+	j.data = append(j.data, args)
+	return nil
+}
+
 func TestPhpService(t *testing.T) {
 	fmt.Println("Test batch service")
 
@@ -323,11 +328,13 @@ func TestPhpService(t *testing.T) {
 
 	time.Sleep(1e9)
 
-	if len(job.data) != 1 {
+	if len(job.data) != 2 {
 		t.Errorf("need run php_test.php first")
 		return
 	}
-	if job.data[0] != 3 {
-		t.Errorf("got: %d, expect: 3", job.data[0])
+	for i := range job.data {
+		if job.data[i] != 3 {
+			t.Errorf("data[%d] got: %d, expect: 3", i, job.data[i])
+		}
 	}
 }
