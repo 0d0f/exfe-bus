@@ -97,7 +97,7 @@ func (s *Twitter_job) Perform(arg *TwitterJobArg) {
 		UserB:        s.Config.Twitter.Screen_name,
 	}
 	var isFriend bool
-	err := s.Client.Do("GetFriendship", f, &isFriend)
+	err := s.Client.Do("GetFriendship", f, &isFriend, 3)
 	if err != nil {
 		isFriend = false
 	}
@@ -131,7 +131,7 @@ func (s *Twitter_job) sendTweet(t string) {
 		Tweet:        t,
 	}
 	var response twitter_service.StatusesUpdateReply
-	err := s.Client.Do("SendTweet", tweet, &response)
+	err := s.Client.Do("SendTweet", tweet, &response, 3)
 	if err != nil {
 		log.Printf("Can't send tweet: %s", err)
 		return

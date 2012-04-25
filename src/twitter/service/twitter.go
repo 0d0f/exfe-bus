@@ -38,7 +38,7 @@ type UpdateInfoService struct {
 	SiteUrl string
 }
 
-func (s *UpdateInfoService) UpdateUserInfo(id uint64, i *UserInfo) error {
+func (s *UpdateInfoService) UpdateUserInfo(id uint64, i *UserInfo, _ int) error {
 	url := fmt.Sprintf("%s/identity/update", s.SiteUrl)
 	resp, err := http.PostForm(url, i.makeUrlValues(id))
 	if err != nil {

@@ -85,7 +85,7 @@ func (s *Users) UserInfo(arg *UsersShowArg, reply *UserInfo) error {
 	if arg.IdentityId != nil {
 		go func() {
 			id := *arg.IdentityId
-			err := s.UpdateUserInfo(id, reply)
+			err := s.UpdateUserInfo(id, reply, 4)
 			if err != nil {
 				log.Printf("[Error][users/show]Update identity(%d) info fail: %s", id, err)
 			} else {

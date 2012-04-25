@@ -89,7 +89,7 @@ func (m *DirectMessages) SendDM(arg *DirectMessagesNewArg, reply *DirectMessages
 	if arg.IdentityId != nil {
 		go func() {
 			id := *arg.IdentityId
-			err := m.UpdateUserInfo(id, &reply.Recipient)
+			err := m.UpdateUserInfo(id, &reply.Recipient, 1)
 			if err != nil {
 				log.Printf("[Error][direct_messages/new]Update identity(%d) info fail: %s", id, err)
 			} else {

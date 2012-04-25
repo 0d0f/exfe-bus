@@ -29,7 +29,7 @@ type FriendshipsExistsReply bool
 type FriendshipsExists struct {
 }
 
-func (f *FriendshipsExists) Do(arg *FriendshipsExistsArg, reply *FriendshipsExistsReply) error {
+func (f *FriendshipsExists) GetFriendship(arg *FriendshipsExistsArg, reply *FriendshipsExistsReply) error {
 	log.Printf("[Info][friendships/exists]Call by arg: %s", arg)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
