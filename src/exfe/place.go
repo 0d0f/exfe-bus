@@ -21,8 +21,8 @@ func (p *Place) String() string {
 	}
 
 	if p.Description == "" {
-		return fmt.Sprintf("at %s", p.Title)
+		return fmt.Sprintf("%s", p.Title)
 	}
 
-	return fmt.Sprintf("at %s, %s", p.Title, p.Description)
+	return fmt.Sprintf("%s, %s", p.Title, p.Description)
 }

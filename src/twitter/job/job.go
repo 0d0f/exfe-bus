@@ -114,10 +114,10 @@ func (s *Twitter_job) Perform(arg *TwitterJobArg) {
 	tmpl.Execute(buf, data)
 
 	if isFriend {
-		tweet := ShortTweet(strings.Trim(buf.String(), "\n \t")) + arg.Cross.LinkTo(s.Config.Site_url, &arg.To_invitation)
+		tweet := ShortTweet(strings.Trim(buf.String(), "\n \t")) + " " + arg.Cross.LinkTo(s.Config.Site_url, &arg.To_invitation)
 		s.sendDM(toIdentityId, data.ToUserName, tweet)
 	} else {
-		tweet := ShortTweet(strings.Trim(buf.String(), "\n \t")) + arg.Cross.Link(s.Config.Site_url)
+		tweet := ShortTweet(strings.Trim(buf.String(), "\n \t")) + " " + arg.Cross.Link(s.Config.Site_url)
 		s.sendTweet(tweet)
 	}
 }
