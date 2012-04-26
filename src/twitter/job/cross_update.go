@@ -2,6 +2,7 @@ package twitter_job
 
 import (
 	"exfe"
+	"strings"
 	"gobus"
 	"fmt"
 )
@@ -35,19 +36,11 @@ func (a CrossUpdateArg) sameTitleMessage(time, title, place1, place2 string) str
 	meta := fmt.Sprintf("%s \n%s \n%s", time, place1, place2)
 
 	if len(meta) + len(title) + 2 > messageMaxLen {
-		title = title[0:titleMaxLen] + "…"
+		title = strings.Trim(title[0:titleMaxLen], " \n") + "…"
 	}
 	if len(meta) + len(title) + 2 > messageMaxLen {
-		metaLen := messageMaxLen - len(title) - 3
-		meta = meta[0:metaLen]
-		for i := len(meta) - 1; i >= 0; i-- {
-			if meta[i] == ' ' || meta[i] == '\n' {
-				meta = meta[0:i]
-			} else {
-				break
-			}
-		}
-		meta = meta + "…"
+		metaLen := messageMaxLen - len(title) - 5
+		meta = strings.Trim(meta[0:metaLen], " \n") + "…"
 	}
 	return fmt.Sprintf("%s \n%s", meta, title)
 }
@@ -57,24 +50,16 @@ func (a CrossUpdateArg) diffTitleMessage(time, new_title, place1, place2, old_ti
 	title := fmt.Sprintf("\"%s\"\nchanged from \"%s\"", new_title, old_title)
 
 	if len(meta) + len(title) + 2 > messageMaxLen {
-		new_title = new_title[0:newTitleMaxLen] + "…"
+		new_title = strings.Trim(new_title[0:newTitleMaxLen], " \n") + "…"
 		title = fmt.Sprintf("\"%s\"\nchanged from \"%s\"", new_title, old_title)
 	}
 	if len(meta) + len(title) + 2 > messageMaxLen {
-		old_title = old_title[0:titleMaxLen] + "…"
+		old_title = strings.Trim(old_title[0:titleMaxLen], " \n") + "…"
 		title = fmt.Sprintf("\"%s\"\nchanged from \"%s\"", new_title, old_title)
 	}
 	if len(meta) + len(title) + 2 > messageMaxLen {
-		metaLen := messageMaxLen - len(title) - 3
-		meta = meta[0:metaLen]
-		for i := len(meta) - 1; i >= 0; i-- {
-			if meta[i] == ' ' || meta[i] == '\n' {
-				meta = meta[0:i]
-			} else {
-				break
-			}
-		}
-		meta = meta + "…"
+		metaLen := messageMaxLen - len(title) - 5
+		meta = strings.Trim(meta[0:metaLen], " \n") + "…"
 	}
 	return fmt.Sprintf("%s \n%s", meta, title)
 }

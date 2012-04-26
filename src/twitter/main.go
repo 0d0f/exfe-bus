@@ -31,7 +31,7 @@ func runService(c *twitter_job.Config) {
 	d.SiteUrl = c.Site_url
 	server.Register(d)
 
-	go server.Serve(c.Service.Time_out)
+	go server.Serve(c.Service.Time_out * 1e9)
 }
 
 func main() {
@@ -77,7 +77,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	queue.Serve(5e9)
+	queue.Serve(c.Service.Time_out * 1e9)
 
 	log.Printf("Service stop")
 }
