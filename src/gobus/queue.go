@@ -1,0 +1,141 @@
+package gobus
+
+import (
+	"github.com/simonz05/godis"
+	"fmt"
+	"errors"
+	"time"
+	"encoding/json"
+	"bytes"
+	"reflect"
+)
+
+var EmptyQueueError = errors.New("Empty queue.")
+var QueueChangedError = errors.New("Queue changed before pop")
+
+type LastDelayQueue struct {
+	redis *godis.Client
+	name string
+	hashName string
+	delay int
+	dataType reflect.Type
+}
+
+func NewLastDelayQueue(name string, delayInSeconds int, typeInstance interface{}, redis *godis.Client) *LastDelayQueue {
+	return &LastDelayQueue{
+		redis: redis,
+		name: name,
+		hashName: fmt.Sprintf("%s:timehash", name),
+		delay: delayInSeconds,
+		dataType: reflect.TypeOf(typeInstance),
+	}
+}
+
+func (q *LastDelayQueue) Push(id string, data interface{}) error {
+	return q.PushWithTime(float64(time.Now().Unix()), id, data)
+}
+
+func (q *LastDelayQueue) PushWithTime(time float64, id string, data interface{}) error {
+	score := time
+	buf := bytes.NewBuffer(nil)
+	encoder := json.NewEncoder(buf)
+	err := encoder.Encode(data)
+	if err != nil {
+		return err
+	}
+
+	_, err = q.redis.Zadd(q.hashName, score, id)
+	if err != nil {
+		return err
+	}
+	_, err = q.redis.Rpush(fmt.Sprintf("%s:%s", q.name, id), buf.String())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (q *LastDelayQueue) GetTimeoutId() (string, error) {
+	end := time.Now().Unix() - int64(q.delay)
+
+	reply, err := q.redis.Zrangebyscore(q.hashName, "0", fmt.Sprintf("%d", end))
+	if err != nil {
+		return "", err
+	}
+
+	if len(reply.Elems) == 0 {
+		return "", EmptyQueueError
+	}
+
+	id := string(reply.Elems[0].Elem)
+	_, err = q.redis.Zrem(q.hashName, id)
+	if err != nil {
+		return id, err
+	}
+	return id, nil
+}
+
+func (q *LastDelayQueue) PopFromId(id string) ([]interface{}, error) {
+	queueName := fmt.Sprintf("%s:%s", q.name, id)
+
+	pipe := godis.NewPipeClientFromClient(q.redis)
+	defer pipe.Quit()
+
+	err := pipe.Watch(queueName)
+	if err != nil {
+		return nil, err
+	}
+	err = pipe.Multi()
+	if err != nil {
+		return nil, err
+	}
+	_, err = pipe.Lrange(queueName, 0, -1)
+	if err != nil {
+		return nil, err
+	}
+	_, err = pipe.Del(queueName)
+	if err != nil {
+		return nil, err
+	}
+	r := pipe.Exec()
+	if len(r) == 0 {
+		return nil, QueueChangedError
+	}
+	ret := make([]interface{}, 0, 0)
+	for _, reply := range r[0].Elems {
+		buf := bytes.NewBuffer(reply.Elem)
+		decoder := json.NewDecoder(buf)
+		var data interface{}
+		data = reflect.New(q.dataType).Interface()
+		err := decoder.Decode(&data)
+		if err != nil {
+			continue
+		}
+		ret = append(ret, data)
+	}
+	return ret, nil
+}
+
+func (q *LastDelayQueue) Pop() ([]interface{}, error) {
+	id, err := q.GetTimeoutId()
+	if err == EmptyQueueError {
+		return []interface{}{}, nil
+	}
+	return q.PopFromId(id)
+}
+
+func (q *LastDelayQueue) NextWakeup() (time.Duration, error) {
+	reply, err := q.redis.Zrange(q.hashName, 0, -1)
+	if err != nil {
+		return time.Duration(q.delay) * time.Second, err
+	}
+	if len(reply.Elems) == 0 {
+		return time.Duration(q.delay) * time.Second, nil
+	}
+	id := string(reply.Elems[0].Elem)
+	score, err := q.redis.Zscore(q.hashName, id)
+	if err != nil {
+		return time.Duration(q.delay) * time.Second, err
+	}
+	return time.Duration(int64(score) + int64(q.delay) - time.Now().Unix()) * time.Second, nil
+}
