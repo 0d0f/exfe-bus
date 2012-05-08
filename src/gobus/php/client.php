@@ -1,6 +1,4 @@
 <?php
-require_once 'Redisent.php';
-
 class Gobus
 {
     public static $host = null;
