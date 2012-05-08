@@ -5,10 +5,12 @@ import (
 	"strings"
 	"gobus"
 	"fmt"
+	"github.com/simonz05/godis"
 )
 
 type CrossUpdateArg struct {
 	Cross exfe.Cross
+	To_identity exfe.Identity
 	Old_cross exfe.Cross
 }
 
@@ -66,6 +68,16 @@ func (a CrossUpdateArg) diffTitleMessage(time, new_title, place1, place2, old_ti
 
 type Cross_update struct {
 	Config *Config
-	Client *gobus.Client
+	Queue *gobus.LastDelayQueue
 }
 
+func NewCrossUpdate(redis *godis.Client) *Cross_update {
+	t := new(CrossUpdateArg)
+	return &Cross_update{
+		Queue: gobus.NewLastDelayQueue(CrossUpdateMergeQueue, 30, t, redis),
+	}
+}
+
+func (c *Cross_update) Perform(arg CrossUpdateArg) {
+	c.Queue.Push(fmt.Sprintf("%d", arg.To_identity.Id), arg)
+}

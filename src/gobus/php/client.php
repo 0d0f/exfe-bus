@@ -3,19 +3,22 @@ require_once 'Redisent.php';
 
 class Gobus
 {
-    public static $redis = null;
+    public static $host = null;
+    public static $port = null;
 
     public static function setBackend($server)
     {
-        list($host, $port) = explode(':', $server);
-        self::$redis = new Redisent($host, $port);
+        list(self::$host, self::$port) = explode(':', $server);
     }
 
     public static function send($queue_name, $method, $arg, $max_retry = 5)
     {
+        $redis = new Redis();
+        $redis->connect(self::$host, self::$port);
+
         $queue = "gobus:queue:" . $queue_name;
         $idcount = $queue . ":idcount";
-        $id = self::$redis->incr($idcount);
+        $id = $redis->incr($idcount);
 
         $meta = array(
             'id' => $queue . ":" . $id,
@@ -26,7 +29,7 @@ class Gobus
         );
 
         $data = json_encode($method).json_encode($meta);
-        self::$redis->rpush($queue, $data);
+        $redis->rPush($queue, $data);
     }
 }
 ?>
