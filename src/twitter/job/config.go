@@ -6,6 +6,7 @@ import (
 
 type Config struct {
 	Site_url string
+	Site_api string
 	Twitter struct {
 		Client_token string
 		Client_secret string

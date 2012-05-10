@@ -35,11 +35,11 @@ func (i *UserInfo) makeUrlValues(id uint64) (v url.Values) {
 }
 
 type UpdateInfoService struct {
-	SiteUrl string
+	SiteApi string
 }
 
 func (s *UpdateInfoService) UpdateUserInfo(id uint64, i *UserInfo, _ int) error {
-	url := fmt.Sprintf("%s/identity/update", s.SiteUrl)
+	url := fmt.Sprintf("%s/v2/identities/update", s.SiteApi)
 	resp, err := http.PostForm(url, i.makeUrlValues(id))
 	if err != nil {
 		return err

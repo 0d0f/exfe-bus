@@ -23,11 +23,11 @@ func runService(c *twitter_job.Config) {
 
 	server.Register(new(twitter_service.FriendshipsExists))
 	user := new(twitter_service.Users)
-	user.SiteUrl = c.Site_url
+	user.SiteApi = c.Site_api
 	server.Register(user)
 	server.Register(new(twitter_service.Statuses))
 	d := new(twitter_service.DirectMessages)
-	d.SiteUrl = c.Site_url
+	d.SiteApi = c.Site_api
 	server.Register(d)
 
 	go server.Serve(c.Service.Time_out * 1e9)
