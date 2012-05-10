@@ -5,7 +5,6 @@ import (
 	"twitter/job"
 	"config"
 	"gobus"
-	"gosque"
 	"log"
 	"flag"
 	"fmt"
@@ -35,8 +34,7 @@ func runService(c *twitter_job.Config) {
 }
 
 func main() {
-	log.SetPrefix("[TwitterSender]")
-	log.Printf("Service start")
+	log.Printf("[INFO][Cross]Service start")
 
 	var c twitter_job.Config
 
@@ -53,7 +51,7 @@ func main() {
 	if pidfile != "" {
 		pid, err := os.Create(pidfile)
 		if err != nil {
-			log.Fatal("Can't create pid(%s): %s", pidfile, err)
+			log.Fatal("[ERROR][Cross]Can't create pid(%s): %s", pidfile, err)
 			return
 		}
 		pid.WriteString(fmt.Sprintf("%d", os.Getpid()))
@@ -67,17 +65,15 @@ func main() {
 		c.Redis.Password,
 		"twitter")
 
-	job := twitter_job.Twitter_job{
+	job := twitter_job.CrossJob{
 		Config: &c,
 		Client: client,
 	}
 
-	queue := gosque.CreateQueue("", 0, "", "twitter")
-	err := queue.Register(&job)
-	if err != nil {
-		log.Fatal(err)
-	}
-	queue.Serve(c.Service.Time_out * 1e9)
+	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "twitter_job")
 
-	log.Printf("Service stop")
+	server.Register(&job)
+	server.Serve(c.Service.Time_out * 1e9)
+
+	log.Printf("[INFO][Cross Service]Service stop")
 }

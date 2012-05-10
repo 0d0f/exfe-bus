@@ -48,7 +48,7 @@ func (a *UpdateExfeeArg) isHost() bool {
 func (a *UpdateExfeeArg) CreateData(siteUrl string) *TemplateData {
 	t, err := a.Cross.Time.StringInZone(a.To_invitation.Identity.Timezone)
 	if err != nil {
-		log.Printf("Time parse error: %s", err)
+		log.Printf("[ERROR][Update Exfee]Time parse error: %s", err)
 		return nil
 	}
 	return &TemplateData{
@@ -72,6 +72,11 @@ func (j *CrossJob) Update_exfee(args []*UpdateExfeeArg) error {
 	log.Printf("[INFO][Update Exfee]Get a job")
 
 	for _, arg := range args {
+		if len(arg.Event) > 0 {
+			// user status change, need further
+			continue
+		}
+
 		toIdentityId := arg.To_invitation.Identity.Id
 
 		if arg.To_invitation.Identity.External_id == "" {
@@ -96,9 +101,9 @@ func (j *CrossJob) Update_exfee(args []*UpdateExfeeArg) error {
 			UserB:        j.Config.Twitter.Screen_name,
 		}
 		var isFriend bool
-		err := j.Client.Do("GetFriendship", f, &isFriend, 3)
+		err := j.Client.Do("GetFriendship", f, &isFriend, 10)
 		if err != nil {
-			log.Printf("[ERROR][Update Exfee]Can't require friendship: %s(%d)", arg.To_invitation.Identity.External_username, arg.To_invitation.Identity.External_id)
+			log.Printf("[ERROR][Update Exfee]Can't require friendship: %s(%s): %s", arg.To_invitation.Identity.External_username, arg.To_invitation.Identity.External_id, err)
 			isFriend = false
 		}
 
@@ -121,6 +126,8 @@ func (j *CrossJob) Update_exfee(args []*UpdateExfeeArg) error {
 			j.sendTweet(tweet)
 		}
 	}
+
+	return nil
 }
 
 func (j *CrossJob) sendTweet(t string) {
@@ -131,7 +138,6 @@ func (j *CrossJob) sendTweet(t string) {
 		AccessSecret: j.Config.Twitter.Access_secret,
 		Tweet:        t,
 	}
-	var response twitter_service.StatusesUpdateReply
 	j.Client.Send("SendTweet", tweet, 5)
 }
 
