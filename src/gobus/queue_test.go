@@ -11,8 +11,8 @@ func TestTailDelayQueue(t *testing.T) {
 	interval := 5
 
 	godis := godis.New("", 0, "")
-	var queueType int
-	q := NewTailDelayQueue("dt", interval, queueType, godis)
+	var queueType []int
+	q, _ := NewTailDelayQueue("dt", interval, queueType, godis)
 
 	next, _ := q.NextWakeup()
 	if next != (time.Duration(interval) * time.Second) {
@@ -30,7 +30,7 @@ func TestTailDelayQueue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Pop error: %s", err)
 	}
-	if len(ret) != 0 {
+	if ret != nil {
 		t.Fatalf("Pop should not get anything, but got: %s", ret)
 	}
 
@@ -46,7 +46,7 @@ func TestTailDelayQueue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Pop error: %s", err)
 	}
-	if len(ret) != 11 {
+	if len(ret.([]int)) != 11 {
 		t.Fatalf("Pop data error: %s", ret)
 	}
 	t.Logf("ret: %s", ret)
@@ -55,7 +55,7 @@ func TestTailDelayQueue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Pop error: %s", err)
 	}
-	if len(ret) != 0 {
+	if ret != nil {
 		t.Fatalf("Pop should not get anything, but got: %s", ret)
 	}
 
@@ -65,7 +65,7 @@ func TestTailDelayQueue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Pop error: %s", err)
 	}
-	if len(ret) != 2 {
+	if len(ret.([]int)) != 2 {
 		t.Fatalf("Pop should not get anything, but got: %s", ret)
 	}
 	t.Logf("ret: %s", ret)

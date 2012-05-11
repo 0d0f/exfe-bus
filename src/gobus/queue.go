@@ -21,14 +21,18 @@ type TailDelayQueue struct {
 	dataType reflect.Type
 }
 
-func NewTailDelayQueue(name string, delayInSeconds int, typeInstance interface{}, redis *godis.Client) *TailDelayQueue {
+func NewTailDelayQueue(name string, delayInSeconds int, typeInstance interface{}, redis *godis.Client) (*TailDelayQueue, error) {
+	t := reflect.TypeOf(typeInstance)
+	if t.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("typeInstance must be a slice")
+	}
 	return &TailDelayQueue{
 		redis: redis,
 		name: name,
 		hashName: fmt.Sprintf("%s:timehash", name),
 		delay: delayInSeconds,
-		dataType: reflect.TypeOf(typeInstance),
-	}
+		dataType: t,
+	}, nil
 }
 
 func (q *TailDelayQueue) Push(id string, data interface{}) error {
@@ -75,7 +79,7 @@ func (q *TailDelayQueue) GetTimeoutId() (string, error) {
 	return id, nil
 }
 
-func (q *TailDelayQueue) PopFromId(id string) ([]interface{}, error) {
+func (q *TailDelayQueue) PopFromId(id string) (interface{}, error) {
 	queueName := fmt.Sprintf("%s:%s", q.name, id)
 
 	pipe := godis.NewPipeClientFromClient(q.redis)
@@ -101,25 +105,24 @@ func (q *TailDelayQueue) PopFromId(id string) ([]interface{}, error) {
 	if len(r) == 0 {
 		return nil, QueueChangedError
 	}
-	ret := make([]interface{}, 0, 0)
+	ret := reflect.MakeSlice(q.dataType, 0, 0)
 	for _, reply := range r[0].Elems {
 		buf := bytes.NewBuffer(reply.Elem)
 		decoder := json.NewDecoder(buf)
-		var data interface{}
-		data = reflect.New(q.dataType).Interface()
-		err := decoder.Decode(&data)
+		data := reflect.New(q.dataType.Elem())
+		err := decoder.Decode(data.Interface())
 		if err != nil {
 			continue
 		}
-		ret = append(ret, data)
+		ret = reflect.Append(ret, data.Elem())
 	}
-	return ret, nil
+	return ret.Interface(), nil
 }
 
-func (q *TailDelayQueue) Pop() ([]interface{}, error) {
+func (q *TailDelayQueue) Pop() (interface{}, error) {
 	id, err := q.GetTimeoutId()
 	if err == EmptyQueueError {
-		return []interface{}{}, nil
+		return nil, nil
 	}
 	return q.PopFromId(id)
 }
