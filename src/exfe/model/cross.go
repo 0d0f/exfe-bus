@@ -1,4 +1,4 @@
-package exfe
+package exfe_model
 
 import (
 	"fmt"
@@ -29,6 +29,6 @@ func (c *Cross) Link(host string) string {
 	return fmt.Sprintf("%s/!%s", host, c.Id_base62)
 }
 
-func (c *Cross) LinkTo(host string, target *Invitation) string {
-	return fmt.Sprintf("%s?token=%s", c.Link(host), target.Token)
+func (c *Cross) LinkTo(host string, token string) string {
+	return fmt.Sprintf("%s?token=%s", c.Link(host), token)
 }

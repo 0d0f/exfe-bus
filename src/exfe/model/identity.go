@@ -1,4 +1,4 @@
-package exfe
+package exfe_model
 
 type Identity struct {
 	Id uint64
@@ -9,6 +9,7 @@ type Identity struct {
 	Bio string
 	Provider string
 	Timezone string
+	Connected_user_id uint64
 
 	External_id string
 	External_username string

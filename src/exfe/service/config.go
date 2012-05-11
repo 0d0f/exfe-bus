@@ -1,4 +1,4 @@
-package twitter_job
+package exfe_service
 
 import (
 	"time"
@@ -19,7 +19,8 @@ type Config struct {
 		Db int
 		Password string
 	}
-	Service struct {
+	Cross struct {
 		Time_out time.Duration
+		Twitter_delay int
 	}
 }

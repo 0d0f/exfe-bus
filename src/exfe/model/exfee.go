@@ -1,4 +1,4 @@
-package exfe
+package exfe_model
 
 type Exfee struct {
 	Id string
