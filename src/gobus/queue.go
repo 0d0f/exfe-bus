@@ -13,7 +13,7 @@ import (
 var EmptyQueueError = errors.New("Empty queue.")
 var QueueChangedError = errors.New("Queue changed before pop")
 
-type LastDelayQueue struct {
+type TailDelayQueue struct {
 	redis *godis.Client
 	name string
 	hashName string
@@ -21,8 +21,8 @@ type LastDelayQueue struct {
 	dataType reflect.Type
 }
 
-func NewLastDelayQueue(name string, delayInSeconds int, typeInstance interface{}, redis *godis.Client) *LastDelayQueue {
-	return &LastDelayQueue{
+func NewTailDelayQueue(name string, delayInSeconds int, typeInstance interface{}, redis *godis.Client) *TailDelayQueue {
+	return &TailDelayQueue{
 		redis: redis,
 		name: name,
 		hashName: fmt.Sprintf("%s:timehash", name),
@@ -31,11 +31,11 @@ func NewLastDelayQueue(name string, delayInSeconds int, typeInstance interface{}
 	}
 }
 
-func (q *LastDelayQueue) Push(id string, data interface{}) error {
+func (q *TailDelayQueue) Push(id string, data interface{}) error {
 	return q.PushWithTime(float64(time.Now().Unix()), id, data)
 }
 
-func (q *LastDelayQueue) PushWithTime(time float64, id string, data interface{}) error {
+func (q *TailDelayQueue) PushWithTime(time float64, id string, data interface{}) error {
 	score := time
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
@@ -55,7 +55,7 @@ func (q *LastDelayQueue) PushWithTime(time float64, id string, data interface{})
 	return nil
 }
 
-func (q *LastDelayQueue) GetTimeoutId() (string, error) {
+func (q *TailDelayQueue) GetTimeoutId() (string, error) {
 	end := time.Now().Unix() - int64(q.delay)
 
 	reply, err := q.redis.Zrangebyscore(q.hashName, "0", fmt.Sprintf("%d", end))
@@ -75,7 +75,7 @@ func (q *LastDelayQueue) GetTimeoutId() (string, error) {
 	return id, nil
 }
 
-func (q *LastDelayQueue) PopFromId(id string) ([]interface{}, error) {
+func (q *TailDelayQueue) PopFromId(id string) ([]interface{}, error) {
 	queueName := fmt.Sprintf("%s:%s", q.name, id)
 
 	pipe := godis.NewPipeClientFromClient(q.redis)
@@ -116,7 +116,7 @@ func (q *LastDelayQueue) PopFromId(id string) ([]interface{}, error) {
 	return ret, nil
 }
 
-func (q *LastDelayQueue) Pop() ([]interface{}, error) {
+func (q *TailDelayQueue) Pop() ([]interface{}, error) {
 	id, err := q.GetTimeoutId()
 	if err == EmptyQueueError {
 		return []interface{}{}, nil
@@ -124,7 +124,7 @@ func (q *LastDelayQueue) Pop() ([]interface{}, error) {
 	return q.PopFromId(id)
 }
 
-func (q *LastDelayQueue) NextWakeup() (time.Duration, error) {
+func (q *TailDelayQueue) NextWakeup() (time.Duration, error) {
 	reply, err := q.redis.Zrange(q.hashName, 0, -1)
 	if err != nil {
 		return time.Duration(q.delay) * time.Second, err

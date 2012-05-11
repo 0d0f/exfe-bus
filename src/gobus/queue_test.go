@@ -7,12 +7,12 @@ import (
 )
 
 
-func TestLastDelayQueue(t *testing.T) {
+func TestTailDelayQueue(t *testing.T) {
 	interval := 5
 
 	godis := godis.New("", 0, "")
 	var queueType int
-	q := NewLastDelayQueue("dt", interval, queueType, godis)
+	q := NewTailDelayQueue("dt", interval, queueType, godis)
 
 	next, _ := q.NextWakeup()
 	if next != (time.Duration(interval) * time.Second) {
