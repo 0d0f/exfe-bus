@@ -6,8 +6,9 @@ redis = Redis.new
 i = 0
 
 open("./test_data/twitter_test.data").each do |l|
-  redis.rpush "gobus:queue:twitter_job", l
+  next if l.length == 0
+  redis.rpush "gobus:queue:cross", l
   i += 1
 end
 
-redis.set "gobus:queue:twitter_job:idcount", i
+redis.set "gobus:queue:cross:idcount", i

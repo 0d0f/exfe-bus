@@ -11,8 +11,9 @@
     "access_secret": "",
     "screen_name": ""
   },
-  "service": {
-    "time_out": 5
+  "cross": {
+    "time_out": 5,
+    "twitter_delay": 300
   },
   "site_url": "",
   "site_api": ""
