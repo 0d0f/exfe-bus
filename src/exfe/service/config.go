@@ -13,6 +13,7 @@ type Config struct {
 		Access_token string
 		Access_secret string
 		Screen_name string
+		Time_out time.Duration
 	}
 	Redis struct {
 		Netaddr string
