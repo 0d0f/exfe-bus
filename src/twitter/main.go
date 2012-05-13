@@ -19,7 +19,7 @@ const (
 )
 
 func main() {
-	log, err := syslog.New(syslog.LOG_INFO, "twitter")
+	log, err := syslog.New(syslog.LOG_INFO, "exfe.twitter")
 	if err != nil {
 		panic(err)
 	}
