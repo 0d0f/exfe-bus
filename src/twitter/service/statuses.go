@@ -3,7 +3,7 @@ package twitter_service
 import (
 	"fmt"
 	"net/url"
-	"log"
+	"log/syslog"
 	"oauth"
 	"encoding/json"
 )
@@ -26,10 +26,21 @@ type StatusesUpdateReply struct {
 }
 
 type Statuses struct {
+	log *syslog.Writer
+}
+
+func NewStatuses() *Statuses {
+	log, err := syslog.New(syslog.LOG_INFO, "exfe.twitter.statuses")
+	if err != nil {
+		panic(err)
+	}
+	return &Statuses{
+		log: log,
+	}
 }
 
 func (t *Statuses) SendTweet(arg *StatusesUpdateArg, reply *StatusesUpdateReply) error {
-	log.Printf("[Info][statuses/update]Call by arg: %s", arg)
+	t.log.Info(fmt.Sprintf("update: %s", arg))
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 	params := make(url.Values)
@@ -37,7 +48,7 @@ func (t *Statuses) SendTweet(arg *StatusesUpdateArg, reply *StatusesUpdateReply)
 
 	retReader, err := client.Do("POST", "/statuses/update.json", params)
 	if err != nil {
-		log.Printf("[Error][statuses/update]Twitter access error: %s", err)
+		t.log.Err(fmt.Sprintf("Twitter access error: %s", err))
 		return err
 	}
 

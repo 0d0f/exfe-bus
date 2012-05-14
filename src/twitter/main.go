@@ -48,17 +48,10 @@ func main() {
 
 	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "twitter")
 
-	server.Register(new(twitter_service.FriendshipsExists))
-
-	user := new(twitter_service.Users)
-	user.SiteApi = c.Site_api
-	server.Register(user)
-
-	server.Register(new(twitter_service.Statuses))
-
-	d := new(twitter_service.DirectMessages)
-	d.SiteApi = c.Site_api
-	server.Register(d)
+	server.Register(twitter_service.NewFriendships())
+	server.Register(twitter_service.NewUsers(c.Site_api))
+	server.Register(twitter_service.NewStatuses())
+	server.Register(twitter_service.NewDirectMessages(c.Site_api))
 
 	server.Serve(c.Twitter.Time_out * 1e9)
 }

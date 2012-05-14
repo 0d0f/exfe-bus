@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"oauth"
 	"net/url"
-	"log"
+	"log/syslog"
 	"bytes"
 	"encoding/json"
 )
@@ -56,29 +56,43 @@ func (arg *UsersShowArg) getValues() (v url.Values, err error) {
 
 type Users struct {
 	UpdateInfoService
+	log *syslog.Writer
 }
 
-func (s *Users) UserInfo(arg *UsersShowArg, reply *UserInfo) error {
-	log.Printf("[Info][users/show]Call by arg %s", arg)
+func NewUsers(site_api string) *Users {
+	log, err := syslog.New(syslog.LOG_INFO, "exfe.twitter.users")
+	if err != nil {
+		panic(err)
+	}
+	return &Users{
+		UpdateInfoService: UpdateInfoService{
+			SiteApi: site_api,
+		},
+		log: log,
+	}
+}
+
+func (s *Users) GetInfo(arg *UsersShowArg, reply *UserInfo) error {
+	s.log.Info(fmt.Sprintf("show: %s", arg))
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 
 	params, err := arg.getValues()
 	if err != nil {
-		log.Printf("[Error][users/shwo]Can't get arg's value: %s", err)
+		s.log.Err(fmt.Sprintf("Can't get arg's value: %s", err))
 		return err
 	}
 
 	retReader, err := client.Do("GET", "/users/show.json", params)
 	if err != nil {
-		log.Printf("[Error][users/show]Twitter access error: %s", err)
+		s.log.Err(fmt.Sprintf("Twitter access error: %s", err))
 		return err
 	}
 
 	decoder := json.NewDecoder(retReader)
 	err = decoder.Decode(reply)
 	if err != nil {
-		log.Printf("[Error][users/show]Can't parse twitter reply: %s", err)
+		s.log.Err(fmt.Sprintf("Can't parse twitter reply: %s", err))
 		return err
 	}
 
@@ -87,9 +101,9 @@ func (s *Users) UserInfo(arg *UsersShowArg, reply *UserInfo) error {
 			id := *arg.IdentityId
 			err := s.UpdateUserInfo(id, reply, 4)
 			if err != nil {
-				log.Printf("[Error][users/show]Update identity(%d) info fail: %s", id, err)
+				s.log.Err(fmt.Sprintf("Update identity(%d) info fail: %s", id, err))
 			} else {
-				log.Printf("[Info][users/show]Update identity(%d) info succeed", id)
+				s.log.Info(fmt.Sprintf("Update identity(%d) info succeed", id))
 			}
 		}()
 	}

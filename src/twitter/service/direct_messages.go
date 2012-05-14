@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"fmt"
 	"oauth"
-	"log"
+	"log/syslog"
 	"bytes"
 	"encoding/json"
 )
@@ -60,29 +60,43 @@ type DirectMessagesNewReply struct {
 
 type DirectMessages struct {
 	UpdateInfoService
+	log *syslog.Writer
+}
+
+func NewDirectMessages(site_api string) *DirectMessages {
+	log, err := syslog.New(syslog.LOG_INFO, "exfe.twitter.directmessages")
+	if err != nil {
+		panic(err)
+	}
+	return &DirectMessages{
+		UpdateInfoService: UpdateInfoService{
+			SiteApi: site_api,
+		},
+		log: log,
+	}
 }
 
 func (m *DirectMessages) SendDM(arg *DirectMessagesNewArg, reply *DirectMessagesNewReply) error {
-	log.Printf("[Info][direct_messages/new]Call by arg: %s", arg)
+	m.log.Info(fmt.Sprintf("new: %s", arg))
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 
 	params, err := arg.getValues()
 	if err != nil {
-		log.Printf("[Error][users/shwo]Can't get arg's value: %s", err)
+		m.log.Err(fmt.Sprintf("Can't get arg's value: %s", err))
 		return err
 	}
 
 	retReader, err := client.Do("POST", "/direct_messages/new.json", params)
 	if err != nil {
-		log.Printf("[Error][direct_messages/new]Twitter access error: %s", err)
+		m.log.Err(fmt.Sprintf("Twitter access error: %s", err))
 		return err
 	}
 
 	decoder := json.NewDecoder(retReader)
 	err = decoder.Decode(reply)
 	if err != nil {
-		log.Printf("[Error][direct_messages/new]Parse twitter response error: %s", err)
+		m.log.Err(fmt.Sprintf("Parse twitter response error: %s", err))
 		return err
 	}
 
@@ -91,9 +105,9 @@ func (m *DirectMessages) SendDM(arg *DirectMessagesNewArg, reply *DirectMessages
 			id := *arg.IdentityId
 			err := m.UpdateUserInfo(id, &reply.Recipient, 1)
 			if err != nil {
-				log.Printf("[Error][direct_messages/new]Update identity(%d) info fail: %s", id, err)
+				m.log.Err(fmt.Sprintf("Update identity(%d) info fail: %s", id, err))
 			} else {
-				log.Printf("[Info][direct_messages/new]Update identity(%d) info success", id)
+				m.log.Info(fmt.Sprintf("Update identity(%d) info success", id))
 			}
 		}()
 	}
