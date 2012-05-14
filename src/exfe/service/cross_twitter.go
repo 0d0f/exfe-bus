@@ -130,9 +130,46 @@ func (s *CrossTwitter) handle(args []OneIdentityUpdateArg) {
 	to_identity := &args[0].To_identity
 
 	s.sendNewInvitation(to_identity, old_cross, cross)
-	s.sendNoticeInvitation(to_identity, old_cross, cross)
+	s.sendDiscard(to_identity, old_cross, cross)
 	s.sendCrossChange(to_identity, old_cross, cross)
 	s.sendExfeeChange(to_identity, old_cross, cross)
+}
+
+func (s *CrossTwitter) findToken(to *exfe_model.Identity, cross *exfe_model.Cross) *string {
+	var token *string
+	for _, invitation := range cross.Exfee.Invitations {
+		if invitation.Identity.Connected_user_id == to.Connected_user_id {
+			token = &invitation.Token
+			break
+		}
+	}
+	if token == nil {
+		s.log.Err(fmt.Sprintf("Can't find identity %d in cross %d", to.Id, cross.Id))
+	}
+	return token
+}
+
+func (s *CrossTwitter) diffExfee(left, right *exfe_model.Exfee) (leftOnly map[uint64]*exfe_model.Identity, rightOnly map[uint64]*exfe_model.Identity) {
+	leftOnly = make(map[uint64]*exfe_model.Identity)
+	rightOnly = make(map[uint64]*exfe_model.Identity)
+
+	for _, i := range left.Invitations {
+		leftOnly[i.Identity.Id] = &i.Identity
+	}
+	for _, i := range right.Invitations {
+		leftOnly[i.Identity.Id] = &i.Identity
+	}
+	same := make([]uint64, 0, 0)
+	for k, _ := range leftOnly {
+		if _, ok := rightOnly[k]; ok {
+			same = append(same, k)
+		}
+	}
+	for _, id := range same {
+		delete(leftOnly, id)
+		delete(rightOnly, id)
+	}
+	return
 }
 
 type NewInvitationData struct {
@@ -153,16 +190,6 @@ func (s *CrossTwitter) createInvitationData(siteUrl string, to *exfe_model.Ident
 		return nil
 	}
 	isHost := cross.By_identity.Connected_user_id == to.Connected_user_id
-	var token *string
-	for _, invitation := range cross.Exfee.Invitations {
-		if invitation.Identity.Connected_user_id == to.Connected_user_id {
-			token = &invitation.Token
-			break
-		}
-	}
-	if token == nil {
-		s.log.Err(fmt.Sprintf("Can't find identity %d in cross %d", to.Id, cross.Id))
-	}
 	return &NewInvitationData{
 		ToUserName:    to.External_username,
 		IsHost:        isHost,
@@ -171,13 +198,16 @@ func (s *CrossTwitter) createInvitationData(siteUrl string, to *exfe_model.Ident
 		Place:         cross.Place.String(),
 		SiteUrl:       siteUrl,
 		CrossIdBase62: cross.Id_base62,
-		Token:         *token,
+		Token:         *s.findToken(to, cross),
 	}
 }
 
 func (s *CrossTwitter) sendNewInvitation(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
 	if old != nil {
-		return
+		_, right := s.diffExfee(&old.Exfee, &current.Exfee)
+		if _, ok := right[to.Id]; !ok {
+			return
+		}
 	}
 
 	data := s.createInvitationData(s.config.Site_url, to, current)
@@ -205,11 +235,168 @@ func (s *CrossTwitter) sendNewInvitation(to *exfe_model.Identity, old *exfe_mode
 	}
 }
 
-func (s *CrossTwitter) sendNoticeInvitation(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
+func (s *CrossTwitter) sendDiscard(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
+	if old == nil {
+		return
+	}
+	left, _ := s.diffExfee(&old.Exfee, &current.Exfee)
+	if _, ok := left[to.Id]; !ok {
+		return
+	}
+
+	data := s.createInvitationData(s.config.Site_url, to, current)
+	if data == nil {
+		s.log.Err(fmt.Sprintf("Can't send cross %d invitation to identity %d", current.Id, to.Id))
+		return
+	}
+
+	s.getIdentityInfo(to)
+	isFriend := s.checkFriend(to)
+
+	buf := bytes.NewBuffer(nil)
+	tmpl := template.Must(template.New("Discard").Parse(
+		"You're discarded from this X"))
+	tmpl.Execute(buf, data)
+	if isFriend {
+		msg := s.shortTweet(strings.Trim(buf.String(), "\n \t")) + " " + current.LinkTo(s.config.Site_url, data.Token)
+		s.sendDM(to.Id, data.ToUserName, msg)
+	} else {
+		tweet := s.shortTweet(strings.Trim(buf.String(), "\n \t")) + " " + current.Link(s.config.Site_url)
+		s.sendTweet(tweet)
+	}
+}
+
+const messageMaxLen = 140 - 29 /* len("Update http://t.co/fbqqsjky:\n") */ - 5 /* reserved */
+const titleMaxLen = 20
+const newTitleMaxLen = 13
+
+func sameTitleMessage(time, title, place1, place2 string) string {
+	meta := fmt.Sprintf("%s \n%s \n%s", time, place1, place2)
+
+	if len(meta) + len(title) + 2 > messageMaxLen {
+		title = strings.Trim(title[0:titleMaxLen], " \n") + "…"
+	}
+	if len(meta) + len(title) + 2 > messageMaxLen {
+		metaLen := messageMaxLen - len(title) - 5
+		meta = strings.Trim(meta[0:metaLen], " \n") + "…"
+	}
+	return fmt.Sprintf("%s \n%s", meta, title)
+}
+
+func diffTitleMessage(time, new_title, place1, place2, old_title string) string {
+	meta := fmt.Sprintf("%s \n%s \n%s", time, place1, place2)
+	title := fmt.Sprintf("\"%s\"\nchanged from \"%s\"", new_title, old_title)
+
+	if len(meta) + len(title) + 2 > messageMaxLen {
+		new_title = strings.Trim(new_title[0:newTitleMaxLen], " \n") + "…"
+		title = fmt.Sprintf("\"%s\"\nchanged from \"%s\"", new_title, old_title)
+	}
+	if len(meta) + len(title) + 2 > messageMaxLen {
+		old_title = strings.Trim(old_title[0:titleMaxLen], " \n") + "…"
+		title = fmt.Sprintf("\"%s\"\nchanged from \"%s\"", new_title, old_title)
+	}
+	if len(meta) + len(title) + 2 > messageMaxLen {
+		metaLen := messageMaxLen - len(title) - 5
+		meta = strings.Trim(meta[0:metaLen], " \n") + "…"
+	}
+	return fmt.Sprintf("%s \n%s", meta, title)
 }
 
 func (s *CrossTwitter) sendCrossChange(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
+	fmt.Println("enter sendCrossChange, old =", old)
+	if old == nil {
+		return
+	}
+
+	fmt.Println("enter sendCrossChange")
+	newTime, err := current.Time.StringInZone(to.Timezone)
+	if err != nil {
+		s.log.Err(fmt.Sprintf("can't convert cross %d time to zone %s", current.Id, to.Timezone))
+		return
+	}
+	newPlaceTitle := current.Place.Title
+	newPlaceDesc := current.Place.Description
+	isChanged := false
+
+	if old.Title != current.Title {
+		isChanged = true
+	}
+	if old.Place.Title != newPlaceTitle {
+		isChanged = true
+	}
+	if old.Place.Description != newPlaceDesc {
+		isChanged = true
+	}
+	if o, _ := old.Time.StringInZone(to.Timezone); o != newTime {
+		isChanged = true
+	}
+	fmt.Println("change:", isChanged)
+	if !isChanged {
+		return
+	}
+
+	var message string
+	if old.Title != current.Title {
+		message = diffTitleMessage(newTime, current.Title, newPlaceTitle, newPlaceDesc, old.Title)
+	} else {
+		message = sameTitleMessage(newTime, current.Title, newPlaceTitle, newPlaceDesc)
+	}
+
+	s.getIdentityInfo(to)
+	isFriend := s.checkFriend(to)
+
+	if isFriend {
+		msg := "Update " + current.LinkTo(s.config.Site_url, *s.findToken(to, current)) + ":\n" + message
+		s.sendDM(to.Id, to.External_username, msg)
+	} else {
+		tweet := "Update " + current.Link(s.config.Site_url) + ":\n" + message
+		s.sendTweet(tweet)
+	}
 }
 
 func (s *CrossTwitter) sendExfeeChange(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
+	if old == nil {
+		return
+	}
+	left, right := s.diffExfee(&old.Exfee, &current.Exfee)
+	if _, ok := left[to.Id]; ok {
+		return
+	}
+	if _, ok := right[to.Id]; ok {
+		return
+	}
+
+	s.getIdentityInfo(to)
+	isFriend := s.checkFriend(to)
+
+	var message string
+	switch len(right) {
+	default:
+		message += fmt.Sprintf("Confirmed: %s /w %d others", right[0].External_username, len(right))
+	case 2:
+		message += fmt.Sprintf("Confirmed: %s /w 1 other", right[0].External_username)
+	case 1:
+		message += fmt.Sprintf("Confirmed: %s", right[0].External_username)
+	case 0:
+	}
+	if len(message) > 0 {
+		message += "\n"
+	}
+	switch len(left) {
+	default:
+		message += fmt.Sprintf("Discard: %s /w %d others", left[0].External_username, len(left))
+	case 2:
+		message += fmt.Sprintf("Discard: %s /w 1 other", left[0].External_username)
+	case 1:
+		message += fmt.Sprintf("Discard: %s", left[0].External_username)
+	case 0:
+	}
+
+	if isFriend {
+		msg := "Update " + current.LinkTo(s.config.Site_url, *s.findToken(to, current)) + ":\n" + message
+		s.sendDM(to.Id, to.External_username, msg)
+	} else {
+		tweet := "Update " + current.Link(s.config.Site_url) + ":\n" + message
+		s.sendTweet(tweet)
+	}
 }

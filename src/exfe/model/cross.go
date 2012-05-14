@@ -12,10 +12,7 @@ type Cross struct {
 	Time CrossTime
 	Place Place
 	Attribute map[string]string
-	Exfee struct {
-		Invitations []Invitation
-		Id uint
-	}
+	Exfee Exfee
 	Widget []interface{}
 	Relative []struct {
 		Id uint64

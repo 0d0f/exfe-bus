@@ -1,6 +1,6 @@
 package exfe_model
 
 type Exfee struct {
-	Id string
+	Id uint64
 	Invitations []Invitation
 }
