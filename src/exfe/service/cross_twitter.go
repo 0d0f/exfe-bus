@@ -129,8 +129,7 @@ func (s *CrossTwitter) handle(args []OneIdentityUpdateArg) {
 	cross := &args[len(args)-1].Cross
 	to_identity := &args[0].To_identity
 
-	s.sendNewInvitation(to_identity, old_cross, cross)
-	s.sendDiscard(to_identity, old_cross, cross)
+	s.sendNewCross(to_identity, old_cross, cross)
 	s.sendCrossChange(to_identity, old_cross, cross)
 	s.sendExfeeChange(to_identity, old_cross, cross)
 }
@@ -149,28 +148,57 @@ func (s *CrossTwitter) findToken(to *exfe_model.Identity, cross *exfe_model.Cros
 	return token
 }
 
-func (s *CrossTwitter) diffExfee(left, right *exfe_model.Exfee) (leftOnly map[uint64]*exfe_model.Identity, rightOnly map[uint64]*exfe_model.Identity) {
-	leftOnly = make(map[uint64]*exfe_model.Identity)
-	rightOnly = make(map[uint64]*exfe_model.Identity)
+func newStatusUser(log *syslog.Writer, old, new_ *exfe_model.Exfee) (accepted map[uint64]*exfe_model.Identity, declined map[uint64]*exfe_model.Identity, newlyInvited map[uint64]*exfe_model.Invitation, removed map[uint64]*exfe_model.Identity) {
+	oldId := make(map[uint64]*exfe_model.Invitation)
+	newId := make(map[uint64]*exfe_model.Invitation)
 
-	for _, i := range left.Invitations {
-		leftOnly[i.Identity.Id] = &i.Identity
+	accepted = make(map[uint64]*exfe_model.Identity)
+	declined = make(map[uint64]*exfe_model.Identity)
+	newlyInvited = make(map[uint64]*exfe_model.Invitation)
+	removed = make(map[uint64]*exfe_model.Identity)
+
+	for i, v := range old.Invitations {
+		if v.Rsvp_status == "NOTIFICATION" {
+			continue
+		}
+		if _, ok := oldId[v.Identity.Connected_user_id]; ok {
+			log.Err(fmt.Sprintf("more than one non-notification status in exfee %d, user id %d", old.Id, v.Identity.Connected_user_id))
+		}
+		oldId[v.Identity.Connected_user_id] = &old.Invitations[i]
 	}
-	for _, i := range right.Invitations {
-		rightOnly[i.Identity.Id] = &i.Identity
+	for i, v := range new_.Invitations {
+		if v.Rsvp_status == "NOTIFICATION" {
+			continue
+		}
+		if _, ok := newId[v.Identity.Connected_user_id]; ok {
+			log.Err(fmt.Sprintf("more than one non-notification status in exfee %d, user id %d", old.Id, v.Identity.Connected_user_id))
+		}
+		newId[v.Identity.Connected_user_id] = &new_.Invitations[i]
 	}
-	same := make([]uint64, 0, 0)
-	for k, _ := range leftOnly {
-		if _, ok := rightOnly[k]; ok {
-			same = append(same, k)
+
+	fmt.Println(oldId)
+	fmt.Println(newId)
+
+	for k, v := range newId {
+		fmt.Println(v.Rsvp_status)
+		switch v.Rsvp_status {
+		case "ACCEPTED":
+			if inv, ok := oldId[k]; !ok || inv.Rsvp_status != v.Rsvp_status {
+				accepted[k] = &v.Identity
+			}
+		case "DECLINED":
+			if inv, ok := oldId[k]; !ok || inv.Rsvp_status != v.Rsvp_status {
+				declined[k] = &v.Identity
+			}
+		}
+		if _, ok := oldId[k]; !ok {
+			newlyInvited[k] = v
 		}
 	}
-	fmt.Println("leftOnly:", leftOnly)
-	fmt.Println("rightOnly:", rightOnly)
-	fmt.Println("same:", same)
-	for _, id := range same {
-		delete(leftOnly, id)
-		delete(rightOnly, id)
+	for k, v := range oldId {
+		if _, ok := newId[k]; !ok {
+			removed[k] = &v.Identity
+		}
 	}
 	return
 }
@@ -205,17 +233,18 @@ func (s *CrossTwitter) createInvitationData(siteUrl string, to *exfe_model.Ident
 	}
 }
 
-func (s *CrossTwitter) sendNewInvitation(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
+func (s *CrossTwitter) sendNewCross(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
 	if old != nil {
-		_, right := s.diffExfee(&old.Exfee, &current.Exfee)
-		if _, ok := right[to.Id]; !ok {
-			return
-		}
+		return
 	}
 
-	data := s.createInvitationData(s.config.Site_url, to, current)
+	s.sendInvitation(to, current)
+}
+
+func (s *CrossTwitter) sendInvitation(to *exfe_model.Identity, cross *exfe_model.Cross) {
+	data := s.createInvitationData(s.config.Site_url, to, cross)
 	if data == nil {
-		s.log.Err(fmt.Sprintf("Can't send cross %d invitation to identity %d", current.Id, to.Id))
+		s.log.Err(fmt.Sprintf("Can't send cross %d invitation to identity %d", cross.Id, to.Id))
 		return
 	}
 
@@ -227,45 +256,26 @@ func (s *CrossTwitter) sendNewInvitation(to *exfe_model.Identity, old *exfe_mode
 		tmpl := template.Must(template.New("NewInvitation").Parse(
 			"{{ if .IsHost }}You're successfully gathering this X{{ else }}Invitation{{ end }}: {{ .Title }}.{{ if .Time }} {{ .Time }}{{ end }}{{ if .Place }} at {{ .Place }}{{ end }}"))
 		tmpl.Execute(buf, data)
-		msg := s.shortTweet(strings.Trim(buf.String(), "\n \t")) + " " + current.LinkTo(s.config.Site_url, data.Token)
+		msg := s.shortTweet(strings.Trim(buf.String(), "\n \t")) + " " + cross.LinkTo(s.config.Site_url, data.Token)
 		s.sendDM(to.Id, data.ToUserName, msg)
 	} else {
 		tmpl := template.Must(template.New("NewInvitation").Parse(
 			"@{{ .ToUserName }} {{ if .IsHost }}Invited{{ else }}Invitation{{ end }}:"))
 		tmpl.Execute(buf, data)
-		tweet := s.shortTweet(strings.Trim(buf.String(), "\n \t")) + " " + current.Link(s.config.Site_url)
+		tweet := s.shortTweet(strings.Trim(buf.String(), "\n \t")) + " " + cross.Link(s.config.Site_url)
 		s.sendTweet(tweet)
 	}
 }
 
-func (s *CrossTwitter) sendDiscard(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
-	if old == nil {
-		return
-	}
-	left, _ := s.diffExfee(&old.Exfee, &current.Exfee)
-	fmt.Println(left)
-	if _, ok := left[to.Id]; !ok {
-		return
-	}
-
-	data := s.createInvitationData(s.config.Site_url, to, current)
-	if data == nil {
-		s.log.Err(fmt.Sprintf("Can't send cross %d invitation to identity %d", current.Id, to.Id))
-		return
-	}
-
+func (s *CrossTwitter) sendQuit(to *exfe_model.Identity, cross *exfe_model.Cross) {
 	s.getIdentityInfo(to)
 	isFriend := s.checkFriend(to)
 
-	buf := bytes.NewBuffer(nil)
-	tmpl := template.Must(template.New("Discard").Parse(
-		"You're discarded from this X"))
-	tmpl.Execute(buf, data)
+	msg := fmt.Sprintf("You quit the Cross %s", cross.Link(s.config.Site_url))
 	if isFriend {
-		msg := s.shortTweet(strings.Trim(buf.String(), "\n \t")) + " " + current.LinkTo(s.config.Site_url, data.Token)
-		s.sendDM(to.Id, data.ToUserName, msg)
+		s.sendDM(to.Id, to.External_username, msg)
 	} else {
-		tweet := fmt.Sprintf("@%s %s %s", data.ToUserName, s.shortTweet(strings.Trim(buf.String(), "\n \t")), current.Link(s.config.Site_url))
+		tweet := fmt.Sprintf("@%s %s", to.External_username, msg, "\n \t")
 		s.sendTweet(tweet)
 	}
 }
@@ -359,48 +369,116 @@ func (s *CrossTwitter) sendExfeeChange(to *exfe_model.Identity, old *exfe_model.
 	if old == nil {
 		return
 	}
-	left, right := s.diffExfee(&old.Exfee, &current.Exfee)
-	if len(left) == 0 && len(right) == 0 {
-		return
+	accepted, declined, newlyInvited, removed := newStatusUser(s.log, &old.Exfee, &current.Exfee)
+	fmt.Println(accepted, declined, newlyInvited, removed)
+
+	if len(accepted) > 0 {
+		s.sendAccepted(to, accepted, current)
 	}
-	if _, ok := left[to.Id]; ok {
-		return
+	if len(declined) > 0 {
+		s.sendDeclined(to, declined, current)
 	}
-	if _, ok := right[to.Id]; ok {
-		return
+	if len(newlyInvited) > 0 {
+		if _, ok := newlyInvited[to.Connected_user_id]; ok {
+			s.sendInvitation(to, current)
+		} else {
+			s.sendNewlyInvited(to, newlyInvited, current)
+		}
+	}
+	if len(removed) > 0 {
+		if _, ok := removed[to.Connected_user_id]; ok {
+			s.sendQuit(to, current)
+		} else {
+			s.sendRemoved(to, removed, current)
+		}
+	}
+}
+
+func (s *CrossTwitter) sendAccepted(to *exfe_model.Identity, identities map[uint64]*exfe_model.Identity, cross *exfe_model.Cross) {
+	totalAccepted := 0
+	for _, i := range cross.Exfee.Invitations {
+		if i.Rsvp_status == "ACCEPTED" {
+			totalAccepted++
+		}
+	}
+	msg := fmt.Sprintf("%d Accepted:", totalAccepted)
+	for _, i := range identities {
+		msg = fmt.Sprintf("%s %s,", msg, i.Name)
+	}
+	otherCount := totalAccepted - len(identities)
+	switch otherCount {
+	case 0:
+		msg = msg[0:len(msg) - 1]
+	case 1:
+		msg = fmt.Sprintf("%s and 1 other", msg)
+	default:
+		msg = fmt.Sprintf("%s and %d others", msg, totalAccepted - len(identities))
 	}
 
 	s.getIdentityInfo(to)
 	isFriend := s.checkFriend(to)
 
-	var message string
-	switch len(right) {
-	default:
-		message += fmt.Sprintf("Confirmed: %s /w %d others", right[0].External_username, len(right))
-	case 2:
-		message += fmt.Sprintf("Confirmed: %s /w 1 other", right[0].External_username)
-	case 1:
-		message += fmt.Sprintf("Confirmed: %s", right[0].External_username)
-	case 0:
-	}
-	if len(message) > 0 {
-		message += "\n"
-	}
-	switch len(left) {
-	default:
-		message += fmt.Sprintf("Decline: %s /w %d others", left[0].External_username, len(left))
-	case 2:
-		message += fmt.Sprintf("Decline: %s /w 1 other", left[0].External_username)
-	case 1:
-		message += fmt.Sprintf("Decline: %s", left[0].External_username)
-	case 0:
-	}
-
 	if isFriend {
-		msg := fmt.Sprintf("Update %s:\n%s", current.LinkTo(s.config.Site_url, *s.findToken(to, current)), message)
+		msg = fmt.Sprintf("Cross %s(%s) %s", cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
 		s.sendDM(to.Id, to.External_username, msg)
 	} else {
-		tweet := fmt.Sprintf("@%s Update %s:\n%s",to.External_username, current.Link(s.config.Site_url), message)
+		tweet := fmt.Sprintf("@s Cross %s(%s) %s", to.External_username, cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
 		s.sendTweet(tweet)
 	}
 }
+
+func (s *CrossTwitter) sendDeclined(to *exfe_model.Identity, identities map[uint64]*exfe_model.Identity, cross *exfe_model.Cross) {
+	msg := "Declined:"
+	for _, i := range identities {
+		msg = fmt.Sprintf("%s %s,", msg, i.Name)
+	}
+	msg = msg[0:len(msg) - 1]
+
+	s.getIdentityInfo(to)
+	isFriend := s.checkFriend(to)
+
+	if isFriend {
+		msg = fmt.Sprintf("Cross %s(%s) %s", cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		s.sendDM(to.Id, to.External_username, msg)
+	} else {
+		tweet := fmt.Sprintf("@s Cross %s(%s) %s", to.External_username, cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		s.sendTweet(tweet)
+	}
+}
+
+func (s *CrossTwitter) sendNewlyInvited(to *exfe_model.Identity, invitations map[uint64]*exfe_model.Invitation, cross *exfe_model.Cross) {
+	msg := "Newly invited:"
+	for _, i := range invitations {
+		msg = fmt.Sprintf("%s %s,", msg, i.Identity.Name)
+	}
+	msg = msg[0:len(msg) - 1]
+
+	s.getIdentityInfo(to)
+	isFriend := s.checkFriend(to)
+
+	if isFriend {
+		msg = fmt.Sprintf("Cross %s(%s) %s", cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		s.sendDM(to.Id, to.External_username, msg)
+	} else {
+		tweet := fmt.Sprintf("@s Cross %s(%s) %s", to.External_username, cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		s.sendTweet(tweet)
+	}
+}
+
+func (s *CrossTwitter) sendRemoved(to *exfe_model.Identity, identities map[uint64]*exfe_model.Identity, cross *exfe_model.Cross) {
+	msg := "Removed:"
+	for _, i := range identities {
+		msg = fmt.Sprintf("%s %s,", msg, i.Name)
+	}
+	msg = msg[0:len(msg) - 1]
+
+	s.getIdentityInfo(to)
+	isFriend := s.checkFriend(to)
+
+	if isFriend {
+		msg = fmt.Sprintf("Cross %s(%s) %s", cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		s.sendDM(to.Id, to.External_username, msg)
+	} else {
+		tweet := fmt.Sprintf("@s Cross %s(%s) %s", to.External_username, cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		s.sendTweet(tweet)
+	}}
