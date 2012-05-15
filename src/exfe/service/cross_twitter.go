@@ -157,7 +157,7 @@ func (s *CrossTwitter) diffExfee(left, right *exfe_model.Exfee) (leftOnly map[ui
 		leftOnly[i.Identity.Id] = &i.Identity
 	}
 	for _, i := range right.Invitations {
-		leftOnly[i.Identity.Id] = &i.Identity
+		rightOnly[i.Identity.Id] = &i.Identity
 	}
 	same := make([]uint64, 0, 0)
 	for k, _ := range leftOnly {
@@ -165,6 +165,9 @@ func (s *CrossTwitter) diffExfee(left, right *exfe_model.Exfee) (leftOnly map[ui
 			same = append(same, k)
 		}
 	}
+	fmt.Println("leftOnly:", leftOnly)
+	fmt.Println("rightOnly:", rightOnly)
+	fmt.Println("same:", same)
 	for _, id := range same {
 		delete(leftOnly, id)
 		delete(rightOnly, id)
@@ -240,6 +243,7 @@ func (s *CrossTwitter) sendDiscard(to *exfe_model.Identity, old *exfe_model.Cros
 		return
 	}
 	left, _ := s.diffExfee(&old.Exfee, &current.Exfee)
+	fmt.Println(left)
 	if _, ok := left[to.Id]; !ok {
 		return
 	}
@@ -261,7 +265,7 @@ func (s *CrossTwitter) sendDiscard(to *exfe_model.Identity, old *exfe_model.Cros
 		msg := s.shortTweet(strings.Trim(buf.String(), "\n \t")) + " " + current.LinkTo(s.config.Site_url, data.Token)
 		s.sendDM(to.Id, data.ToUserName, msg)
 	} else {
-		tweet := s.shortTweet(strings.Trim(buf.String(), "\n \t")) + " " + current.Link(s.config.Site_url)
+		tweet := fmt.Sprintf("@%s %s %s", data.ToUserName, s.shortTweet(strings.Trim(buf.String(), "\n \t")), current.Link(s.config.Site_url))
 		s.sendTweet(tweet)
 	}
 }
@@ -303,12 +307,10 @@ func diffTitleMessage(time, new_title, place1, place2, old_title string) string 
 }
 
 func (s *CrossTwitter) sendCrossChange(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
-	fmt.Println("enter sendCrossChange, old =", old)
 	if old == nil {
 		return
 	}
 
-	fmt.Println("enter sendCrossChange")
 	newTime, err := current.Time.StringInZone(to.Timezone)
 	if err != nil {
 		s.log.Err(fmt.Sprintf("can't convert cross %d time to zone %s", current.Id, to.Timezone))
@@ -330,7 +332,6 @@ func (s *CrossTwitter) sendCrossChange(to *exfe_model.Identity, old *exfe_model.
 	if o, _ := old.Time.StringInZone(to.Timezone); o != newTime {
 		isChanged = true
 	}
-	fmt.Println("change:", isChanged)
 	if !isChanged {
 		return
 	}
@@ -346,10 +347,10 @@ func (s *CrossTwitter) sendCrossChange(to *exfe_model.Identity, old *exfe_model.
 	isFriend := s.checkFriend(to)
 
 	if isFriend {
-		msg := "Update " + current.LinkTo(s.config.Site_url, *s.findToken(to, current)) + ":\n" + message
+		msg := fmt.Sprintf("Update %s:\n%s", current.LinkTo(s.config.Site_url, *s.findToken(to, current)), message)
 		s.sendDM(to.Id, to.External_username, msg)
 	} else {
-		tweet := "Update " + current.Link(s.config.Site_url) + ":\n" + message
+		tweet := fmt.Sprintf("@%s Update %s:\n%s", to.External_username, current.Link(s.config.Site_url), message)
 		s.sendTweet(tweet)
 	}
 }
@@ -359,6 +360,9 @@ func (s *CrossTwitter) sendExfeeChange(to *exfe_model.Identity, old *exfe_model.
 		return
 	}
 	left, right := s.diffExfee(&old.Exfee, &current.Exfee)
+	if len(left) == 0 && len(right) == 0 {
+		return
+	}
 	if _, ok := left[to.Id]; ok {
 		return
 	}
@@ -384,19 +388,19 @@ func (s *CrossTwitter) sendExfeeChange(to *exfe_model.Identity, old *exfe_model.
 	}
 	switch len(left) {
 	default:
-		message += fmt.Sprintf("Discard: %s /w %d others", left[0].External_username, len(left))
+		message += fmt.Sprintf("Decline: %s /w %d others", left[0].External_username, len(left))
 	case 2:
-		message += fmt.Sprintf("Discard: %s /w 1 other", left[0].External_username)
+		message += fmt.Sprintf("Decline: %s /w 1 other", left[0].External_username)
 	case 1:
-		message += fmt.Sprintf("Discard: %s", left[0].External_username)
+		message += fmt.Sprintf("Decline: %s", left[0].External_username)
 	case 0:
 	}
 
 	if isFriend {
-		msg := "Update " + current.LinkTo(s.config.Site_url, *s.findToken(to, current)) + ":\n" + message
+		msg := fmt.Sprintf("Update %s:\n%s", current.LinkTo(s.config.Site_url, *s.findToken(to, current)), message)
 		s.sendDM(to.Id, to.External_username, msg)
 	} else {
-		tweet := "Update " + current.Link(s.config.Site_url) + ":\n" + message
+		tweet := fmt.Sprintf("@%s Update %s:\n%s",to.External_username, current.Link(s.config.Site_url), message)
 		s.sendTweet(tweet)
 	}
 }
