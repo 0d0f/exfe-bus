@@ -176,11 +176,7 @@ func newStatusUser(log *syslog.Writer, old, new_ *exfe_model.Exfee) (accepted ma
 		newId[v.Identity.Connected_user_id] = &new_.Invitations[i]
 	}
 
-	fmt.Println(oldId)
-	fmt.Println(newId)
-
 	for k, v := range newId {
-		fmt.Println(v.Rsvp_status)
 		switch v.Rsvp_status {
 		case "ACCEPTED":
 			if inv, ok := oldId[k]; !ok || inv.Rsvp_status != v.Rsvp_status {
@@ -370,7 +366,6 @@ func (s *CrossTwitter) sendExfeeChange(to *exfe_model.Identity, old *exfe_model.
 		return
 	}
 	accepted, declined, newlyInvited, removed := newStatusUser(s.log, &old.Exfee, &current.Exfee)
-	fmt.Println(accepted, declined, newlyInvited, removed)
 
 	if len(accepted) > 0 {
 		s.sendAccepted(to, accepted, current)
@@ -438,10 +433,10 @@ func (s *CrossTwitter) sendDeclined(to *exfe_model.Identity, identities map[uint
 	isFriend := s.checkFriend(to)
 
 	if isFriend {
-		msg = fmt.Sprintf("Cross %s(%s) %s", cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		msg = fmt.Sprintf("Cross %s %s %s", cross.Title, cross.Link(s.config.Site_url), msg)
 		s.sendDM(to.Id, to.External_username, msg)
 	} else {
-		tweet := fmt.Sprintf("@s Cross %s(%s) %s", to.External_username, cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		tweet := fmt.Sprintf("@%s Cross %s %s %s", to.External_username, cross.Title, cross.Link(s.config.Site_url), msg)
 		s.sendTweet(tweet)
 	}
 }
