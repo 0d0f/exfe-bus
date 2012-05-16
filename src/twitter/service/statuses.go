@@ -44,6 +44,9 @@ func (t *Statuses) SendTweet(arg *StatusesUpdateArg, reply *StatusesUpdateReply)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 	params := make(url.Values)
+	if len(arg.Tweet) > 140 {
+		arg.Tweet = fmt.Sprintf("%s...", arg.Tweet[0:137])
+	}
 	params.Add("status", arg.Tweet)
 
 	retReader, err := client.Do("POST", "/statuses/update.json", params)

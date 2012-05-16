@@ -24,4 +24,10 @@ type Config struct {
 		Time_out time.Duration
 		Twitter_delay int
 	}
+	Apn struct {
+		Time_out time.Duration
+		Cert string
+		Key string
+		Server string
+	}
 }

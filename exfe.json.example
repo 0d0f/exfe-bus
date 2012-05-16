@@ -16,6 +16,12 @@
     "time_out": 5,
     "twitter_delay": 300
   },
+  "apn": {
+    "time_out": 5,
+    "cert": "apn_cert.pem",
+    "key": "apn_key.pem",
+    "server": "gateway.sandbox.push.apple.com:2195"
+  },
   "site_url": "",
   "site_api": ""
 }
