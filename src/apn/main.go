@@ -1,4 +1,4 @@
-package apn
+package main
 
 import (
 	"apn/service"
