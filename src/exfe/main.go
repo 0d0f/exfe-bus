@@ -41,6 +41,9 @@ func main() {
 	twitter := exfe_service.NewCrossTwitter(&c)
 	go twitter.Serve()
 
+	apn := exfe_service.NewCrossApn(&c)
+	go apn.Serve()
+
 	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "cross")
 	server.Register(exfe_service.NewCross(&c))
 	server.Serve(c.Cross.Time_out * 1e9)

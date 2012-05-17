@@ -28,7 +28,7 @@ func NewCrossApn(config *Config) *CrossApn {
 	if err != nil {
 		panic(err)
 	}
-	queue, err := gobus.NewTailDelayQueue(crossApnQueueName, config.Cross.Twitter_delay, arg, redis)
+	queue, err := gobus.NewTailDelayQueue(crossApnQueueName, config.Cross.Apn_delay, arg, redis)
 	if err != nil {
 		panic(err)
 	}

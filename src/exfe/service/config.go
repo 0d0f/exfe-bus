@@ -23,6 +23,7 @@ type Config struct {
 	Cross struct {
 		Time_out time.Duration
 		Twitter_delay int
+		Apn_delay int
 	}
 	Apn struct {
 		Time_out time.Duration
