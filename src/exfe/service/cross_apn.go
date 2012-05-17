@@ -1,105 +1,29 @@
 package exfe_service
 
 import (
-	"github.com/simonz05/godis"
 	"exfe/model"
-	"gobus"
-	"log/syslog"
 	"apn/service"
 	"fmt"
-	"time"
 	"bytes"
 	"text/template"
 )
 
-const crossApnQueueName = "exfe:queue:cross:apn"
-
 type CrossApn struct {
-	queue *gobus.TailDelayQueue
-	config *Config
-	log *syslog.Writer
-	client *gobus.Client
+	CrossProviderBase
 }
 
-func NewCrossApn(config *Config) *CrossApn {
-	arg := []OneIdentityUpdateArg{}
-	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
-	log, err := syslog.New(syslog.LOG_DEBUG, "exfe.cross.apn")
-	if err != nil {
-		panic(err)
+func NewCrossApn(config *Config) (ret *CrossApn) {
+	ret = &CrossApn{
+		CrossProviderBase: NewCrossProviderBase("apn", config.Cross.Apn_delay, config),
 	}
-	queue, err := gobus.NewTailDelayQueue(crossApnQueueName, config.Cross.Apn_delay, arg, redis)
-	if err != nil {
-		panic(err)
-	}
-	return &CrossApn{
-		queue: queue,
-		config: config,
-		log: log,
-		client: gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "apn"),
-	}
+	ret.handler = ret
+	return
 }
 
-func (s *CrossApn) Serve() {
-	for {
-		t, err := s.queue.NextWakeup()
-		if err != nil {
-			s.log.Crit(fmt.Sprintf("next wakeup error: %s", err))
-			break
-		}
-		time.Sleep(t)
-		args, err := s.queue.Pop()
-		if err != nil {
-			s.log.Err(fmt.Sprintf("pop from delay queue failed: %s", err))
-			continue
-		}
-		if args != nil {
-			s.handle(args.([]OneIdentityUpdateArg))
-		}
-	}
-}
-
-func (s *CrossApn) handle(args []OneIdentityUpdateArg) {
-	old_cross := args[0].Old_cross
-	cross := &args[len(args)-1].Cross
-	to_identity := &args[0].To_identity
-
+func (s *CrossApn) Handle(to_identity *exfe_model.Identity, old_cross, cross *exfe_model.Cross) {
 	s.sendNewCross(to_identity, old_cross, cross)
 	s.sendCrossChange(to_identity, old_cross, cross)
 	s.sendExfeeChange(to_identity, old_cross, cross)
-}
-
-func (s *CrossApn) findToken(to *exfe_model.Identity, cross *exfe_model.Cross) *string {
-	var token *string
-	for _, invitation := range cross.Exfee.Invitations {
-		if invitation.Identity.Connected_user_id == to.Connected_user_id {
-			token = &invitation.Token
-			break
-		}
-	}
-	if token == nil {
-		s.log.Err(fmt.Sprintf("Can't find identity %d in cross %d", to.Id, cross.Id))
-	}
-	return token
-}
-
-func (s *CrossApn) createInvitationData(siteUrl string, to *exfe_model.Identity, cross *exfe_model.Cross) *NewInvitationData {
-	t, err := cross.Time.StringInZone(to.Timezone)
-	if err != nil {
-		s.log.Err(fmt.Sprintf("Time parse error: %s", err))
-		return nil
-	}
-	isHost := cross.By_identity.Connected_user_id == to.Connected_user_id
-	return &NewInvitationData{
-		ToUserName:    to.External_username,
-		IsHost:        isHost,
-		Title:         cross.Title,
-		Time:          t,
-		Place:         cross.Place.String(),
-		SiteUrl:       siteUrl,
-		CrossIdBase62: cross.Id_base62,
-		Token:         *s.findToken(to, cross),
-	}
 }
 
 func (s *CrossApn) sendNewCross(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
@@ -111,7 +35,7 @@ func (s *CrossApn) sendNewCross(to *exfe_model.Identity, old *exfe_model.Cross, 
 }
 
 func (s *CrossApn) sendInvitation(to *exfe_model.Identity, cross *exfe_model.Cross) {
-	data := s.createInvitationData(s.config.Site_url, to, cross)
+	data := newInvitationData(s.log, s.config.Site_url, to, cross)
 	if data == nil {
 		s.log.Err(fmt.Sprintf("Can't send cross %d invitation to identity %d", cross.Id, to.Id))
 		return
@@ -198,7 +122,7 @@ func (s *CrossApn) sendExfeeChange(to *exfe_model.Identity, old *exfe_model.Cros
 	if old == nil {
 		return
 	}
-	accepted, declined, newlyInvited, removed := newStatusUser(s.log, &old.Exfee, &current.Exfee)
+	accepted, declined, newlyInvited, removed := diffExfee(s.log, &old.Exfee, &current.Exfee)
 
 	if len(accepted) > 0 {
 		s.sendAccepted(to, accepted, current)

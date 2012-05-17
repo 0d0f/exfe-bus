@@ -1,63 +1,30 @@
 package exfe_service
 
 import (
-	"github.com/simonz05/godis"
 	"exfe/model"
-	"gobus"
-	"log/syslog"
 	"twitter/service"
 	"fmt"
-	"time"
 	"bytes"
 	"text/template"
 	"strings"
 )
 
-const crossTwitterQueueName = "exfe:queue:cross:twitter"
-
 type CrossTwitter struct {
-	queue *gobus.TailDelayQueue
-	config *Config
-	log *syslog.Writer
-	client *gobus.Client
+	CrossProviderBase
 }
 
-func NewCrossTwitter(config *Config) *CrossTwitter {
-	arg := []OneIdentityUpdateArg{}
-	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
-	log, err := syslog.New(syslog.LOG_DEBUG, "exfe.cross.twitter")
-	if err != nil {
-		panic(err)
+func NewCrossTwitter(config *Config) (ret *CrossTwitter) {
+	ret = &CrossTwitter {
+		CrossProviderBase: NewCrossProviderBase("twitter", config.Cross.Twitter_delay, config),
 	}
-	queue, err := gobus.NewTailDelayQueue(crossTwitterQueueName, config.Cross.Twitter_delay, arg, redis)
-	if err != nil {
-		panic(err)
-	}
-	return &CrossTwitter{
-		queue: queue,
-		config: config,
-		log: log,
-		client: gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "twitter"),
-	}
+	ret.handler = ret
+	return
 }
 
-func (s *CrossTwitter) Serve() {
-	for {
-		t, err := s.queue.NextWakeup()
-		if err != nil {
-			s.log.Crit(fmt.Sprintf("next wakeup error: %s", err))
-			break
-		}
-		time.Sleep(t)
-		args, err := s.queue.Pop()
-		if err != nil {
-			s.log.Err(fmt.Sprintf("pop from delay queue failed: %s", err))
-			continue
-		}
-		if args != nil {
-			s.handle(args.([]OneIdentityUpdateArg))
-		}
-	}
+func (s *CrossTwitter) Handle(to_identity *exfe_model.Identity, old_cross, cross *exfe_model.Cross) {
+	s.sendNewCross(to_identity, old_cross, cross)
+	s.sendCrossChange(to_identity, old_cross, cross)
+	s.sendExfeeChange(to_identity, old_cross, cross)
 }
 
 func (s *CrossTwitter) shortTweet(tweet string) string {
@@ -124,16 +91,6 @@ func (s *CrossTwitter) sendDM(identityId uint64, toUserName string, t string) {
 	s.client.Send("SendDM", dm, 5)
 }
 
-func (s *CrossTwitter) handle(args []OneIdentityUpdateArg) {
-	old_cross := args[0].Old_cross
-	cross := &args[len(args)-1].Cross
-	to_identity := &args[0].To_identity
-
-	s.sendNewCross(to_identity, old_cross, cross)
-	s.sendCrossChange(to_identity, old_cross, cross)
-	s.sendExfeeChange(to_identity, old_cross, cross)
-}
-
 func (s *CrossTwitter) findToken(to *exfe_model.Identity, cross *exfe_model.Cross) *string {
 	var token *string
 	for _, invitation := range cross.Exfee.Invitations {
@@ -148,87 +105,6 @@ func (s *CrossTwitter) findToken(to *exfe_model.Identity, cross *exfe_model.Cros
 	return token
 }
 
-func newStatusUser(log *syslog.Writer, old, new_ *exfe_model.Exfee) (accepted map[uint64]*exfe_model.Identity, declined map[uint64]*exfe_model.Identity, newlyInvited map[uint64]*exfe_model.Invitation, removed map[uint64]*exfe_model.Identity) {
-	oldId := make(map[uint64]*exfe_model.Invitation)
-	newId := make(map[uint64]*exfe_model.Invitation)
-
-	accepted = make(map[uint64]*exfe_model.Identity)
-	declined = make(map[uint64]*exfe_model.Identity)
-	newlyInvited = make(map[uint64]*exfe_model.Invitation)
-	removed = make(map[uint64]*exfe_model.Identity)
-
-	for i, v := range old.Invitations {
-		if v.Rsvp_status == "NOTIFICATION" {
-			continue
-		}
-		if _, ok := oldId[v.Identity.Connected_user_id]; ok {
-			log.Err(fmt.Sprintf("more than one non-notification status in exfee %d, user id %d", old.Id, v.Identity.Connected_user_id))
-		}
-		oldId[v.Identity.Connected_user_id] = &old.Invitations[i]
-	}
-	for i, v := range new_.Invitations {
-		if v.Rsvp_status == "NOTIFICATION" {
-			continue
-		}
-		if _, ok := newId[v.Identity.Connected_user_id]; ok {
-			log.Err(fmt.Sprintf("more than one non-notification status in exfee %d, user id %d", old.Id, v.Identity.Connected_user_id))
-		}
-		newId[v.Identity.Connected_user_id] = &new_.Invitations[i]
-	}
-
-	for k, v := range newId {
-		switch v.Rsvp_status {
-		case "ACCEPTED":
-			if inv, ok := oldId[k]; !ok || inv.Rsvp_status != v.Rsvp_status {
-				accepted[k] = &v.Identity
-			}
-		case "DECLINED":
-			if inv, ok := oldId[k]; !ok || inv.Rsvp_status != v.Rsvp_status {
-				declined[k] = &v.Identity
-			}
-		}
-		if _, ok := oldId[k]; !ok {
-			newlyInvited[k] = v
-		}
-	}
-	for k, v := range oldId {
-		if _, ok := newId[k]; !ok {
-			removed[k] = &v.Identity
-		}
-	}
-	return
-}
-
-type NewInvitationData struct {
-	ToUserName    string
-	IsHost        bool
-	Title         string
-	Time          string
-	Place         string
-	SiteUrl       string
-	CrossIdBase62 string
-	Token         string
-}
-
-func (s *CrossTwitter) createInvitationData(siteUrl string, to *exfe_model.Identity, cross *exfe_model.Cross) *NewInvitationData {
-	t, err := cross.Time.StringInZone(to.Timezone)
-	if err != nil {
-		s.log.Err(fmt.Sprintf("Time parse error: %s", err))
-		return nil
-	}
-	isHost := cross.By_identity.Connected_user_id == to.Connected_user_id
-	return &NewInvitationData{
-		ToUserName:    to.External_username,
-		IsHost:        isHost,
-		Title:         cross.Title,
-		Time:          t,
-		Place:         cross.Place.String(),
-		SiteUrl:       siteUrl,
-		CrossIdBase62: cross.Id_base62,
-		Token:         *s.findToken(to, cross),
-	}
-}
-
 func (s *CrossTwitter) sendNewCross(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
 	if old != nil {
 		return
@@ -238,7 +114,7 @@ func (s *CrossTwitter) sendNewCross(to *exfe_model.Identity, old *exfe_model.Cro
 }
 
 func (s *CrossTwitter) sendInvitation(to *exfe_model.Identity, cross *exfe_model.Cross) {
-	data := s.createInvitationData(s.config.Site_url, to, cross)
+	data := newInvitationData(s.log, s.config.Site_url, to, cross)
 	if data == nil {
 		s.log.Err(fmt.Sprintf("Can't send cross %d invitation to identity %d", cross.Id, to.Id))
 		return
@@ -365,7 +241,7 @@ func (s *CrossTwitter) sendExfeeChange(to *exfe_model.Identity, old *exfe_model.
 	if old == nil {
 		return
 	}
-	accepted, declined, newlyInvited, removed := newStatusUser(s.log, &old.Exfee, &current.Exfee)
+	accepted, declined, newlyInvited, removed := diffExfee(s.log, &old.Exfee, &current.Exfee)
 
 	if len(accepted) > 0 {
 		s.sendAccepted(to, accepted, current)
