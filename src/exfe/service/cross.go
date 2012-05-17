@@ -24,6 +24,7 @@ type OneIdentityUpdateArg struct {
 
 type Cross struct {
 	twitterQueue *gobus.TailDelayQueue
+	apnQueue *gobus.TailDelayQueue
 	config *Config
 	log *syslog.Writer
 }
@@ -35,12 +36,17 @@ func NewCross(config *Config) *Cross {
 	if err != nil {
 		panic(err)
 	}
-	queue, err := gobus.NewTailDelayQueue(crossTwitterQueueName, config.Cross.Twitter_delay, arg, redis)
+	twitter, err := gobus.NewTailDelayQueue(crossTwitterQueueName, config.Cross.Twitter_delay, arg, redis)
+	if err != nil {
+		panic(err)
+	}
+	apn, err := gobus.NewTailDelayQueue(crossApnQueueName, config.Cross.Twitter_delay, arg, redis)
 	if err != nil {
 		panic(err)
 	}
 	return &Cross{
-		twitterQueue: queue,
+		twitterQueue: twitter,
+		apnQueue: apn,
 		config: config,
 		log: log,
 	}
@@ -78,6 +84,8 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 	switch arg.To_identity.Provider {
 	case "twitter":
 		s.twitterQueue.Push(id, arg)
+	case "iOSAPN":
+		s.apnQueue.Push(id, arg)
 	default:
 		s.log.Err(fmt.Sprintf("Not support provider: %s", arg.To_identity.Provider))
 	}

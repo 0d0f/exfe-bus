@@ -18,8 +18,8 @@
   },
   "apn": {
     "time_out": 5,
-    "cert": "apn_cert.pem",
-    "key": "apn_key.pem",
+    "cert": "apns_dev_cert.pem",
+    "key": "apns_dev_key.pem",
     "server": "gateway.sandbox.push.apple.com:2195"
   },
   "site_url": "",

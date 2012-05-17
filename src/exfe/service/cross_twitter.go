@@ -414,10 +414,10 @@ func (s *CrossTwitter) sendAccepted(to *exfe_model.Identity, identities map[uint
 	isFriend := s.checkFriend(to)
 
 	if isFriend {
-		msg = fmt.Sprintf("Cross %s(%s) %s", cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		msg = fmt.Sprintf("Cross %s(%s) %s", cross.Title, cross.Link(s.config.Site_url), msg)
 		s.sendDM(to.Id, to.External_username, msg)
 	} else {
-		tweet := fmt.Sprintf("@s Cross %s(%s) %s", to.External_username, cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		tweet := fmt.Sprintf("@s Cross %s(%s) %s", to.External_username, cross.Title, cross.Link(s.config.Site_url), msg)
 		s.sendTweet(tweet)
 	}
 }
@@ -452,10 +452,10 @@ func (s *CrossTwitter) sendNewlyInvited(to *exfe_model.Identity, invitations map
 	isFriend := s.checkFriend(to)
 
 	if isFriend {
-		msg = fmt.Sprintf("Cross %s(%s) %s", cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		msg = fmt.Sprintf("Cross %s(%s) %s", cross.Title, cross.Link(s.config.Site_url), msg)
 		s.sendDM(to.Id, to.External_username, msg)
 	} else {
-		tweet := fmt.Sprintf("@s Cross %s(%s) %s", to.External_username, cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		tweet := fmt.Sprintf("@s Cross %s(%s) %s", to.External_username, cross.Title, cross.Link(s.config.Site_url), msg)
 		s.sendTweet(tweet)
 	}
 }
@@ -471,9 +471,9 @@ func (s *CrossTwitter) sendRemoved(to *exfe_model.Identity, identities map[uint6
 	isFriend := s.checkFriend(to)
 
 	if isFriend {
-		msg = fmt.Sprintf("Cross %s(%s) %s", cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		msg = fmt.Sprintf("Cross %s(%s) %s", cross.Title, cross.Link(s.config.Site_url), msg)
 		s.sendDM(to.Id, to.External_username, msg)
 	} else {
-		tweet := fmt.Sprintf("@s Cross %s(%s) %s", to.External_username, cross.Title, cross.Link(s.config.Site_url), msg)[0:140]
+		tweet := fmt.Sprintf("@s Cross %s(%s) %s", to.External_username, cross.Title, cross.Link(s.config.Site_url), msg)
 		s.sendTweet(tweet)
 	}}

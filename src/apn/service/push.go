@@ -4,6 +4,7 @@ import (
 	"github.com/virushuo/Go-Apns"
 	"fmt"
 	"log/syslog"
+	"encoding/json"
 )
 
 type Apn struct {
@@ -37,7 +38,7 @@ func errorListen(apn *Apn) {
 		apnerr := <-apn.apn.Errorchan
 		apn.log.Err(fmt.Sprintf("Apn error: cmd %d, status %d, id %d", apnerr.Command, apnerr.Status, apnerr.Identifier))
 		var err error
-		apn.apn, err = goapns.Connect(apn.cert, apn.key, apn.server)
+		err = apn.apn.Reconnect()
 		if err != nil {
 			apn.log.Err(fmt.Sprintf("Reconnect to apn server(%s) error: %s", apn.server, err))
 			panic(err)
@@ -45,9 +46,23 @@ func errorListen(apn *Apn) {
 	}
 }
 
+type ExfePush struct {
+	Cid uint64
+	T string
+}
+
+func (p *ExfePush) MarshalJSON() ([]byte, error) {
+	t, _ := json.Marshal(p.T)
+	return []byte(fmt.Sprintf("{\"cid\":\"%d\",\"t\":%s}", p.Cid, t)), nil
+}
+
 type ApnSendArg struct {
 	DeviceToken string
 	Alert string
+	Badge uint
+	Sound string
+	Cid uint64
+	T string
 }
 
 func (a *Apn) ApnSend(args []ApnSendArg) error {
@@ -55,6 +70,12 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 		notification := goapns.Notification{
 			Device_token: arg.DeviceToken,
 			Alert: arg.Alert,
+			Badge: arg.Badge,
+			Sound: arg.Sound,
+			Args: ExfePush{
+				Cid: arg.Cid,
+				T: arg.T,
+			},
 			Identifier: a.id,
 		}
 		a.id++
