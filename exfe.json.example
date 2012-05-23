@@ -1,8 +1,17 @@
 {
+  "site_url": "",
+  "site_api": "",
   "redis": {
     "netaddr": "",
     "db": 0,
     "password": ""
+  },
+  "cross": {
+    "time_out": 5,
+    "delay": {
+      "twitter": 300,
+      "iOSAPN":300
+    }
   },
   "twitter": {
     "client_token": "",
@@ -12,19 +21,17 @@
     "screen_name": "",
     "time_out": 5
   },
-  "cross": {
-    "time_out": 5,
-    "delay": {
-      "twitter": 300,
-      "iOSAPN":300
-    }
-  },
   "apn": {
     "time_out": 5,
     "cert": "apns_dev_cert.pem",
     "key": "apns_dev_key.pem",
     "server": "gateway.sandbox.push.apple.com:2195"
   },
-  "site_url": "",
-  "site_api": ""
+  "email": {
+    "time_out": 5,
+    "host": "smtp.gmail.com",
+    "port": 465,
+    "user": "contact@0d0f.com",
+    "password": "[S9rQ+vNjJloR*Vs"
+  }
 }
