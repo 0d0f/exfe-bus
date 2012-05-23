@@ -24,8 +24,7 @@ type OneIdentityUpdateArg struct {
 }
 
 type Cross struct {
-	twitterQueue *gobus.TailDelayQueue
-	apnQueue *gobus.TailDelayQueue
+	queues map[string]*gobus.TailDelayQueue
 	config *Config
 	log *syslog.Writer
 }
@@ -37,17 +36,16 @@ func NewCross(config *Config) *Cross {
 	if err != nil {
 		panic(err)
 	}
-	twitter, err := gobus.NewTailDelayQueue(getProviderQueueName("twitter"), config.Cross.Twitter_delay, arg, redis)
-	if err != nil {
-		panic(err)
-	}
-	apn, err := gobus.NewTailDelayQueue(getProviderQueueName("apn"), config.Cross.Twitter_delay, arg, redis)
-	if err != nil {
-		panic(err)
+	queues := make(map[string]*gobus.TailDelayQueue)
+	for _, p := range [...]string{"twitter", "iOSAPN"} {
+		queue, err := gobus.NewTailDelayQueue(getProviderQueueName(p), config.Cross.Delay[p], arg, redis)
+		if err != nil {
+			panic(err)
+		}
+		queues[p] = queue
 	}
 	return &Cross{
-		twitterQueue: twitter,
-		apnQueue: apn,
+		queues: queues,
 		config: config,
 		log: log,
 	}
@@ -82,14 +80,12 @@ func (s *Cross) getUserIdentityMap(cross *exfe_model.Cross) (identityMap map[uin
 func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 	id := fmt.Sprintf("%d-%d", arg.Cross.Id, arg.To_identity.Id)
 
-	switch arg.To_identity.Provider {
-	case "twitter":
-		s.twitterQueue.Push(id, arg)
-	case "iOSAPN":
-		s.apnQueue.Push(id, arg)
-	default:
+	queue, ok := s.queues[arg.To_identity.Provider]
+	if !ok {
 		s.log.Err(fmt.Sprintf("Not support provider: %s", arg.To_identity.Provider))
+		return
 	}
+	queue.Push(id, arg)
 }
 
 func getProviderQueueName(provider string) string{
@@ -108,7 +104,7 @@ type CrossProviderBase struct {
 	handler CrossProviderHandler
 }
 
-func NewCrossProviderBase(provider string, delay int, config *Config) (ret CrossProviderBase) {
+func NewCrossProviderBase(provider string, config *Config) (ret CrossProviderBase) {
 	var err error
 	ret.log, err = syslog.New(syslog.LOG_DEBUG, fmt.Sprintf("exfe.cross.%s", provider))
 	if err != nil {
@@ -117,7 +113,7 @@ func NewCrossProviderBase(provider string, delay int, config *Config) (ret Cross
 
 	arg := []OneIdentityUpdateArg{}
 	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
-	ret.queue, err = gobus.NewTailDelayQueue(getProviderQueueName(provider), delay, arg, redis)
+	ret.queue, err = gobus.NewTailDelayQueue(getProviderQueueName(provider), config.Cross.Delay[provider], arg, redis)
 	if err != nil {
 		panic(err)
 	}

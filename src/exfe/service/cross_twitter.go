@@ -15,7 +15,7 @@ type CrossTwitter struct {
 
 func NewCrossTwitter(config *Config) (ret *CrossTwitter) {
 	ret = &CrossTwitter {
-		CrossProviderBase: NewCrossProviderBase("twitter", config.Cross.Twitter_delay, config),
+		CrossProviderBase: NewCrossProviderBase("twitter", config),
 	}
 	ret.handler = ret
 	return

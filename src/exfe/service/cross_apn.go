@@ -14,7 +14,7 @@ type CrossApn struct {
 
 func NewCrossApn(config *Config) (ret *CrossApn) {
 	ret = &CrossApn{
-		CrossProviderBase: NewCrossProviderBase("apn", config.Cross.Apn_delay, config),
+		CrossProviderBase: NewCrossProviderBase("iOSAPN", config),
 	}
 	ret.handler = ret
 	return

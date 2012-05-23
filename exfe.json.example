@@ -14,7 +14,10 @@
   },
   "cross": {
     "time_out": 5,
-    "twitter_delay": 300
+    "delay": {
+      "twitter": 300,
+      "iOSAPN":300
+    }
   },
   "apn": {
     "time_out": 5,

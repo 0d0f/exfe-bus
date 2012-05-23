@@ -39,7 +39,7 @@ func main() {
 		pid.WriteString(fmt.Sprintf("%d", os.Getpid()))
 	}
 
-	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "apn")
+	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "iOSAPN")
 
 	apn, err := apn_service.NewApn(c.Apn.Cert, c.Apn.Key, c.Apn.Server, log)
 	if err != nil {

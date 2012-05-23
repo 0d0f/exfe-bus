@@ -1,6 +1,7 @@
 package mail
 
 import (
+	"net/smtp"
 	"bytes"
 	"fmt"
 	"log"
@@ -32,7 +33,7 @@ type Mail struct {
 	FileParts []FilePart
 }
 
-func (m *Mail) GoString() string {
+func (m *Mail) String() string {
 	return fmt.Sprintf("Mail send from %s to %s with subject: %s", m.From.ToString(), m.ToLine(), m.Subject)
 }
 
@@ -142,4 +143,8 @@ func (m *Mail) Body() []byte {
 		m.Subject,
 		m.ToHeader(),
 		body))
+}
+
+func (m *Mail) SendSMTP(server string, auth smtp.Auth) error {
+	return smtp.SendMail(server, auth, m.From.Mail, m.ToMail(), m.Body())
 }
