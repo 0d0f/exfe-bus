@@ -11,16 +11,20 @@ import (
 
 type UpdateCrossArg struct {
 	Cross exfe_model.Cross
-	Old_cross *exfe_model.Cross
 	To_identities []exfe_model.Identity
 	By_identity exfe_model.Identity
+
+	Old_cross *exfe_model.Cross
+	Post *exfe_model.Post
 }
 
 type OneIdentityUpdateArg struct {
 	Cross exfe_model.Cross
-	Old_cross *exfe_model.Cross
 	To_identity exfe_model.Identity
 	By_identity exfe_model.Identity
+
+	Old_cross *exfe_model.Cross
+	Post *exfe_model.Post
 }
 
 type Cross struct {
@@ -56,9 +60,10 @@ func (s *Cross) Update(args []*UpdateCrossArg) error {
 		for _, to := range arg.To_identities {
 			update := OneIdentityUpdateArg{
 				Cross: arg.Cross,
-				Old_cross: arg.Old_cross,
 				To_identity: to,
 				By_identity: arg.By_identity,
+				Old_cross: arg.Old_cross,
+				Post: arg.Post,
 			}
 			s.dispatch(&update)
 		}
@@ -84,6 +89,12 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 	if !ok {
 		s.log.Err(fmt.Sprintf("Not support provider: %s", arg.To_identity.Provider))
 		return
+	}
+	if arg.To_identity.Provider != "email" {
+		if arg.Post != nil {
+			s.log.Info(fmt.Sprintf("provider %s can't handle post now", arg.To_identity.Provider))
+			return
+		}
 	}
 	queue.Push(id, arg)
 }

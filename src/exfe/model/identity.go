@@ -21,6 +21,7 @@ type Invitation struct {
 	Id uint64
 	Type string
 	Token string
+	Host bool
 	Identity Identity
 	Rsvp_status string
 	By_identity Identity

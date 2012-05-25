@@ -1,41 +1,86 @@
 package exfe_service
 
 import (
+	"github.com/simonz05/godis"
+	"time"
 	"exfe/model"
 	"gomail"
 	"fmt"
 	"bytes"
 	"text/template"
+	"log/syslog"
+	"gobus"
 )
 
 type CrossEmail struct {
-	CrossProviderBase
+	log *syslog.Writer
+	queue *gobus.TailDelayQueue
+	config *Config
+	client *gobus.Client
 }
 
 func NewCrossEmail(config *Config) (ret *CrossEmail) {
-	ret = &CrossEmail{
-		CrossProviderBase: NewCrossProviderBase("email", config),
+	provider := "email"
+	var err error
+	ret.log, err = syslog.New(syslog.LOG_DEBUG, fmt.Sprintf("exfe.cross.%s", provider))
+	if err != nil {
+		panic(err)
 	}
-	ret.handler = ret
+
+	arg := []OneIdentityUpdateArg{}
+	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
+	ret.queue, err = gobus.NewTailDelayQueue(getProviderQueueName(provider), config.Cross.Delay[provider], arg, redis)
+	if err != nil {
+		panic(err)
+	}
+
+	ret.config = config
+	ret.client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, provider)
 	return
 }
 
-func (s *CrossEmail) Handle(to_identity *exfe_model.Identity, old_cross, cross *exfe_model.Cross) {
-	s.sendNewCross(to_identity, old_cross, cross)
-	s.sendCrossChange(to_identity, old_cross, cross)
-}
+func (e *CrossEmail) Serve() {
+	for {
+		t, err := e.queue.NextWakeup()
+		if err != nil {
+			e.log.Crit(fmt.Sprintf("next wakeup error: %s", err))
+			break
+		}
+		time.Sleep(t)
+		args, err := e.queue.Pop()
+		if err != nil {
+			e.log.Err(fmt.Sprintf("pop from delay queue failed: %s", err))
+			continue
+		}
+		if args != nil {
+			updates := args.([]OneIdentityUpdateArg)
 
-func (s *CrossEmail) sendNewCross(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
-	if old != nil {
-		return
+			cross := &updates[len(updates)-1].Cross
+			to := findInvitation(&updates[0].To_identity, &updates[0].Cross)
+			posts := make([]*exfe_model.Post, 0, 0)
+
+			var old_cross *exfe_model.Cross
+			for _, update := range updates {
+				if old_cross == nil && update.Old_cross != nil {
+					old_cross = update.Old_cross
+				}
+				if update.Post != nil {
+					posts = append(posts, update.Post)
+				}
+			}
+
+			e.sendMail(to, cross, old_cross, posts)
+		}
 	}
-
-	s.sendInvitation(to, current)
 }
 
-type CrossInvitation struct {
+type CrossTemplateData struct {
 	To *exfe_model.Invitation
 	Cross *exfe_model.Cross
+
+	Old_cross *exfe_model.Cross
+	Posts []*exfe_model.Post
+
 	Site_url string
 	App_url string
 }
@@ -49,48 +94,24 @@ func findInvitation(to *exfe_model.Identity, cross *exfe_model.Cross) *exfe_mode
 	return nil
 }
 
-func (s *CrossEmail) sendInvitation(to *exfe_model.Identity, cross *exfe_model.Cross) {
-	data := CrossInvitation{findInvitation(to, cross), cross, s.config.Site_url, "appurl"}
+func (e *CrossEmail) sendMail(to *exfe_model.Invitation, cross, old_cross *exfe_model.Cross, posts []*exfe_model.Post) {
+	data := CrossTemplateData{to, cross, old_cross, posts, e.config.Site_url, "appurl"}
 
 	buf := bytes.NewBuffer(nil)
-	tmpl := template.Must(template.ParseFiles("./template/default/cross_invitation_email.html"))
+	tmpl := template.Must(template.ParseFiles("./template/default/cross_email.html"))
 	err := tmpl.Execute(buf, data)
-	fmt.Println("template exec:", err)
+	if err != nil {
+		e.log.Err(fmt.Sprintf("template exec error:", err))
+		return
+	}
+
 	arg := gomail.Mail{
-		To: []gomail.MailUser{gomail.MailUser{to.External_id, to.Name}},
+		To: []gomail.MailUser{gomail.MailUser{to.Identity.External_id, to.Identity.Name}},
 		From: gomail.MailUser{"x@exfe.com", "x@exfe.com"},
 		Subject: cross.Title,
 		Html: buf.String(),
 	}
+
 	fmt.Println(buf.String())
-	s.client.Send("EmailSend", &arg, 5)
-}
-
-type CrossChange struct {
-	To *exfe_model.Invitation
-	Cross *exfe_model.Cross
-	OldCross *exfe_model.Cross
-	Site_url string
-	App_url string
-}
-
-func (s *CrossEmail) sendCrossChange(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
-	if old == nil {
-		return
-	}
-
-	data := CrossChange{findInvitation(to, current), current, old, s.config.Site_url, "appurl"}
-
-	buf := bytes.NewBuffer(nil)
-	tmpl := template.Must(template.ParseFiles("./template/default/cross_change_email.html"))
-	err := tmpl.Execute(buf, data)
-	fmt.Println("template exec:", err)
-	arg := gomail.Mail{
-		To: []gomail.MailUser{gomail.MailUser{to.External_id, to.Name}},
-		From: gomail.MailUser{"x@exfe.com", "x@exfe.com"},
-		Subject: current.Title,
-		Html: buf.String(),
-	}
-	fmt.Println(buf.String())
-	s.client.Send("EmailSend", &arg, 5)
+	e.client.Send("EmailSend", &arg, 5)
 }

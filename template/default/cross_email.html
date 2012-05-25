@@ -33,11 +33,19 @@
                               To: <span style="font-weight: bold;">{{.To.Identity.Name}}</span>
                             </td>
                         </tr>
+                        {{ if .Old_cross }}
+                        <tr>
+                            <td valign="top" style="padding-bottom: 20px;">
+                              Old <span style="color: #0591ac; text-decoration: none;">X</span> {{ .Old_cross.Title}} was changed..
+                            </td>
+                        </tr>
+                        {{ else }}
                         <tr>
                             <td valign="top" style="padding-bottom: 20px;">
                               You're successfully gathering this <span style="color: #0591ac; text-decoration: none;">X</span>.
                             </td>
                         </tr>
+                        {{ end }}
                         <tr>
                             <td>
                                 <table border="0" cellpadding="0" cellspacing="0">
@@ -60,9 +68,13 @@
                             </td>
                         </tr>
                         <tr>
+                            <td valign="top" style="padding-top: 30px;">
+                                You're <span style="color: #0591ac; text-decoration: none;">{{.To.Rsvp_status}}</span> to attend.<br />
+                            </td>
+                        </tr>
+                        <tr>
                             <td valign="top" style="padding-bottom: 30px;">
-                                You're <span style="color: #0591ac; text-decoration: none;">{{.To.Rsvp_status}}</span>
-                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px;" alt="Check it out" href="{{.Cross.LinkTo .Site_url .To.Token}}">Check it out...</a>
+                                <a alt="Check it out" href="{{.Cross.LinkTo .Site_url .To.Token}}">Check it out...</a>
                             </td>
                         </tr>
                         <tr>
@@ -84,21 +96,13 @@
                         <tr>
                             <td>
                                 <table border="0" style="color: #333333;" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td width="25" height="25" align="left" valign="top">
-                                          <img width="20" height="20" src="{{.To.Identity.Avatar_filename}}">
-                                        </td>
-                                        <td>
-                                          <span>{{.To.Identity.Name}}</span> <span class="exfe_mail_label">host</span>
-                                        </td>
-                                    </tr>
                                     {{range .Cross.Exfee.Invitations}}
                                     <tr>
                                         <td width="25" height="25" align="left" valign="top">
                                           <img width="20" height="20" src="{{.Identity.Avatar_filename}}">
                                         </td>
                                         <td>
-                                          <span>{{.Identity.Name}}</span>
+                                            <span>{{.Identity.Name}}</span> {{ if .Host }}<span class="exfe_mail_label">host</span>{{ end }}
                                         </td>
                                     </tr>
                                     {{end}}
@@ -108,6 +112,30 @@
                     </table>
                 </td>
             </tr>
+            {{ if .Posts }}
+            <tr>
+                <td colspan="3" style="font-size: 15px; line-height: 15px; color: #333333; padding-top: 40px;">
+                    Conversation:
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table border="0" style="color: #333333;" cellpadding="0" cellspacing="0">
+                        {{range .Posts}}
+                        <tr>
+                            <td width="25" height="25" align="left" valign="top">
+                                <img width="20" height="20" src="{{.Identity.Avatar_filename}}">
+                                {{.By_identity.Name}}
+                            </td>
+                            <td>
+                                {{.Content}}
+                            </td>
+                        </tr>
+                        {{end}}
+                    </table>
+                </td>
+            </tr>
+            {{ end }}
             <tr>
                 <td colspan="3" style="font-size: 11px; line-height: 15px; color: #7F7F7F; padding-top: 40px;">
                     Reply this email directly as conversation, or
