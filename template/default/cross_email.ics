@@ -1,0 +1,21 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//exfe//exfe.com //
+X-WR-CALNAME:{{ .Cross.Title }}
+X-WR-CALDESC:exfe cal
+X-WR-TIMEZONE:{{ .To.Identity.Timezone }}
+BEGIN:VEVENT
+UID:20120524T103639CEST-2554ieA6Vn@exfe
+DTSTAMP:20120524T080539Z
+DESCRIPTION:{{ .Cross.Description }}
+DTSTART:19700101T010000
+LOCATION: {{ .Cross.Title }} - {{ .Cross.Description }}
+SUMMARY:{{ .Cross.Title}}
+URL:https:{{ .Cross.Link .Site_url }}
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:exfe:{{ .Cross.Title }}
+TRIGGER:-P1W
+END:VALARM
+END:VEVENT
+END:VCALENDAR

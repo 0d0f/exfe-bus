@@ -19,24 +19,26 @@ type CrossEmail struct {
 	client *gobus.Client
 }
 
-func NewCrossEmail(config *Config) (ret *CrossEmail) {
+func NewCrossEmail(config *Config) *CrossEmail {
 	provider := "email"
-	var err error
-	ret.log, err = syslog.New(syslog.LOG_DEBUG, fmt.Sprintf("exfe.cross.%s", provider))
+	log, err := syslog.New(syslog.LOG_DEBUG, fmt.Sprintf("exfe.cross.%s", provider))
 	if err != nil {
 		panic(err)
 	}
 
 	arg := []OneIdentityUpdateArg{}
 	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
-	ret.queue, err = gobus.NewTailDelayQueue(getProviderQueueName(provider), config.Cross.Delay[provider], arg, redis)
+	queue, err := gobus.NewTailDelayQueue(getProviderQueueName(provider), config.Cross.Delay[provider], arg, redis)
 	if err != nil {
 		panic(err)
 	}
 
-	ret.config = config
-	ret.client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, provider)
-	return
+	return &CrossEmail{
+		log: log,
+		queue: queue,
+		config: config,
+		client: gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, provider),
+	}
 }
 
 func (e *CrossEmail) Serve() {
@@ -97,9 +99,17 @@ func findInvitation(to *exfe_model.Identity, cross *exfe_model.Cross) *exfe_mode
 func (e *CrossEmail) sendMail(to *exfe_model.Invitation, cross, old_cross *exfe_model.Cross, posts []*exfe_model.Post) {
 	data := CrossTemplateData{to, cross, old_cross, posts, e.config.Site_url, "appurl"}
 
-	buf := bytes.NewBuffer(nil)
+	html := bytes.NewBuffer(nil)
 	tmpl := template.Must(template.ParseFiles("./template/default/cross_email.html"))
-	err := tmpl.Execute(buf, data)
+	err := tmpl.Execute(html, data)
+	if err != nil {
+		e.log.Err(fmt.Sprintf("template exec error:", err))
+		return
+	}
+
+	ics := bytes.NewBuffer(nil)
+	tmpl = template.Must(template.ParseFiles("./template/default/cross_email.ics"))
+	err = tmpl.Execute(ics, data)
 	if err != nil {
 		e.log.Err(fmt.Sprintf("template exec error:", err))
 		return
@@ -109,9 +119,13 @@ func (e *CrossEmail) sendMail(to *exfe_model.Invitation, cross, old_cross *exfe_
 		To: []gomail.MailUser{gomail.MailUser{to.Identity.External_id, to.Identity.Name}},
 		From: gomail.MailUser{"x@exfe.com", "x@exfe.com"},
 		Subject: cross.Title,
-		Html: buf.String(),
+		Html: html.String(),
+		FileParts: []gomail.FilePart{
+			gomail.FilePart{fmt.Sprintf("x-%s.ics", cross.Id_base62), ics.Bytes()},
+		},
 	}
 
-	fmt.Println(buf.String())
+	fmt.Println(html.String())
+	fmt.Println(ics.String())
 	e.client.Send("EmailSend", &arg, 5)
 }
