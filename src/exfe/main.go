@@ -44,6 +44,9 @@ func main() {
 	apn := exfe_service.NewCrossApn(&c)
 	go apn.Serve()
 
+	email := exfe_service.NewCrossEmail(&c)
+	go email.Serve()
+
 	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "cross")
 	server.Register(exfe_service.NewCross(&c))
 	server.Serve(c.Cross.Time_out * 1e9)

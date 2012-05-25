@@ -37,7 +37,7 @@ func NewCross(config *Config) *Cross {
 		panic(err)
 	}
 	queues := make(map[string]*gobus.TailDelayQueue)
-	for _, p := range [...]string{"twitter", "iOSAPN"} {
+	for _, p := range [...]string{"twitter", "iOSAPN", "email"} {
 		queue, err := gobus.NewTailDelayQueue(getProviderQueueName(p), config.Cross.Delay[p], arg, redis)
 		if err != nil {
 			panic(err)
