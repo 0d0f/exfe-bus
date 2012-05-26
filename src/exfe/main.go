@@ -49,6 +49,7 @@ func main() {
 
 	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "cross")
 	server.Register(exfe_service.NewCross(&c))
+	server.Register(exfe_service.NewAuthentication(&c))
 	server.Serve(c.Cross.Time_out * 1e9)
 
 	log.Info("Service stop")
