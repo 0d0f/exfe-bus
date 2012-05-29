@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"strings"
 	"fmt"
 )
 
@@ -12,16 +13,19 @@ func TestHashFromCount(t *testing.T) {
 	}
 
 	datas := []TestData{
-		{0, "00"},
-		{9, "09"},
-		{10, "0a"},
-		{35, "0z"},
-		{36, "10"},
-		{36*36-1, "zz"},
+		{0, "AA"},
+		{25, "AZ"},
+		{26, "A0"},
+		{35, "A9"},
+		{36, "BA"},
+		{26*36-1, "Z9"},
 	}
 
 	for _, d := range datas {
-		h := HashFromCount(d.count)
+		h, err := HashFromCount(d.count)
+		if err != nil {
+			t.Errorf("Error: %s", err)
+		}
 		if h != d.hash {
 			t.Errorf("Count %d should be hash %s, but got %s", d.count, d.hash, h)
 		}
@@ -38,6 +42,17 @@ func TestHashCreate(t *testing.T) {
 	h1, _ := handler.FindByUrl("123", url)
 	if h1 != h {
 		t.Errorf("user id %s's url %s expect hash %s, but got %s", "123", url, h, h1)
+	}
+
+	uph := strings.ToUpper(h)
+	upurl, _ := handler.Get("123", uph)
+	if upurl != url {
+		t.Errorf("hash handler should not care about case")
+	}
+	lowerh := strings.ToLower(h)
+	lowerurl, _ := handler.Get("123", lowerh)
+	if lowerurl != url {
+		t.Errorf("hash handler should not care about case")
 	}
 }
 

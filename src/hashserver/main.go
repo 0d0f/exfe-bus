@@ -11,8 +11,8 @@ import (
 	"os"
 )
 
-const HashUserPattern = "^/hash/user/(.*?)$"
-const HashTagPattern = "^/hash/user/(.*?)/tag/(.*?)$"
+const HashUserPattern = "^/puh/(.*?)$"
+const HashTagPattern = "^/puh/(.*?)/(.*?)$"
 
 type HashHTTP struct {
 	handler *HashHandler
@@ -100,6 +100,9 @@ func main() {
 		userReg: regexp.MustCompile(HashUserPattern),
 		tagReg: regexp.MustCompile(HashTagPattern),
 	}
-	http.Handle("/hash/", handler)
-	http.ListenAndServe(":8080", nil)
+	http.Handle("/puh/", handler)
+	err = http.ListenAndServe(":8080", nil)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
 }

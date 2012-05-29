@@ -2,6 +2,7 @@ package main
 
 import (
 	"time"
+	"strings"
 	"fmt"
 	"github.com/simonz05/godis"
 )
@@ -9,14 +10,18 @@ import (
 var a float64 = 1.0
 var b float64 = 0.0
 var Inf float64 = a / b
-const CharPos = "0123456789abcdefghijklmnopqrstuvwxyz" // 0-9, a-z
+const CharPos = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" // A-Z, 0-9
 const SizePerPosition = len(CharPos)
 const MaxSize = SizePerPosition * SizePerPosition
+var ErrorOutOfRange = fmt.Errorf("count out of range")
 
-func HashFromCount(count int64) string {
+func HashFromCount(count int64) (string, error) {
 	first := count / int64(SizePerPosition)
+	if first >= 26 {
+		return "", ErrorOutOfRange
+	}
 	second := count - first * int64(SizePerPosition)
-	return fmt.Sprintf("%c%c", CharPos[first], CharPos[second])
+	return fmt.Sprintf("%c%c", CharPos[first], CharPos[second]), nil
 }
 
 type HashHandler struct {
@@ -30,6 +35,7 @@ func NewHashHandler(netaddr string, db int, password string) *HashHandler {
 }
 
 func (h *HashHandler) Get(userid string, hash string) (string, error) {
+	hash = strings.ToUpper(hash)
 	url, err := h.redis.Get(hashKey(userid, hash))
 	if err == nil {
 		err = h.Update(userid, hash)
@@ -73,7 +79,10 @@ func (h *HashHandler) Create(userid string, url string) (string, error) {
 		}
 		h.redis.Del(urlKey(userid, url))
 	} else {
-		hash = HashFromCount(count)
+		hash, err = HashFromCount(count)
+		if err != nil {
+			return "", nil
+		}
 	}
 	err = h.redis.Set(hashKey(userid, hash), url)
 	if err != nil {
