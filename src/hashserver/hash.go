@@ -5,6 +5,7 @@ import (
 	"strings"
 	"fmt"
 	"github.com/simonz05/godis"
+	"encoding/base64"
 )
 
 var a float64 = 1.0
@@ -36,10 +37,15 @@ func NewHashHandler(netaddr string, db int, password string) *HashHandler {
 
 func (h *HashHandler) Get(userid string, hash string) (string, error) {
 	hash = strings.ToUpper(hash)
-	url, err := h.redis.Get(hashKey(userid, hash))
-	if err == nil {
-		err = h.Update(userid, hash)
+	url64, err := h.redis.Get(hashKey(userid, hash))
+	if err != nil {
+		return "", err
 	}
+	err = h.Update(userid, hash)
+	if err != nil {
+		return "", err
+	}
+	url, err := base64.URLEncoding.DecodeString(string(url64))
 	return string(url), err
 }
 
@@ -62,6 +68,7 @@ func (h *HashHandler) FindLatestHash(userid string) (string, error) {
 }
 
 func (h *HashHandler) Create(userid string, url string) (string, error) {
+	url64 := base64.URLEncoding.EncodeToString([]byte(url))
 	count, err := h.redis.Zcount(timeKey(userid), -Inf, +Inf)
 	if err != nil {
 		return "", err
@@ -84,7 +91,7 @@ func (h *HashHandler) Create(userid string, url string) (string, error) {
 			return "", nil
 		}
 	}
-	err = h.redis.Set(hashKey(userid, hash), url)
+	err = h.redis.Set(hashKey(userid, hash), url64)
 	if err != nil {
 		return "", err
 	}
@@ -101,7 +108,8 @@ func hashKey(userid, hash string) string {
 }
 
 func urlKey(userid, url string) string {
-	return fmt.Sprintf("hash_url:%s:%s", userid, url)
+	url64 := base64.URLEncoding.EncodeToString([]byte(url))
+	return fmt.Sprintf("hash_url:%s:%s", userid, url64)
 }
 
 func timeKey(userid string) string {
