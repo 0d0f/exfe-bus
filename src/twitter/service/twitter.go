@@ -39,7 +39,7 @@ type UpdateInfoService struct {
 }
 
 func (s *UpdateInfoService) UpdateUserInfo(id uint64, i *UserInfo, _ int) error {
-	url := fmt.Sprintf("%s/v2/identities/update", s.SiteApi)
+	url := fmt.Sprintf("%s/v2/identities/UpdateByGobus", s.SiteApi)
 	resp, err := http.PostForm(url, i.makeUrlValues(id))
 	if err != nil {
 		return err
