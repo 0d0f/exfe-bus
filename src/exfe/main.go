@@ -2,12 +2,8 @@ package main
 
 import (
 	"exfe/service"
-	"config"
 	"gobus"
 	"log/syslog"
-	"flag"
-	"fmt"
-	"os"
 )
 
 func main() {
@@ -17,39 +13,20 @@ func main() {
 	}
 	log.Info("Service start")
 
-	var c exfe_service.Config
+	c := exfe_service.InitConfig()
 
-	var pidfile string
-	var configFile string
-
-	flag.StringVar(&pidfile, "pid", "", "Specify the pid file")
-	flag.StringVar(&configFile, "config", "exfe.json", "Specify the configuration file")
-	flag.Parse()
-
-	config.LoadFile(configFile, &c)
-
-	flag.Parse()
-	if pidfile != "" {
-		pid, err := os.Create(pidfile)
-		if err != nil {
-			log.Crit(fmt.Sprintf("Can't create pid(%s): %s", pidfile, err))
-			return
-		}
-		pid.WriteString(fmt.Sprintf("%d", os.Getpid()))
-	}
-
-	twitter := exfe_service.NewCrossTwitter(&c)
+	twitter := exfe_service.NewCrossTwitter(c)
 	go twitter.Serve()
 
-	apn := exfe_service.NewCrossApn(&c)
+	apn := exfe_service.NewCrossApn(c)
 	go apn.Serve()
 
-	email := exfe_service.NewCrossEmail(&c)
+	email := exfe_service.NewCrossEmail(c)
 	go email.Serve()
 
 	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "cross")
-	server.Register(exfe_service.NewCross(&c))
-	server.Register(exfe_service.NewAuthentication(&c))
+	server.Register(exfe_service.NewCross(c))
+	server.Register(exfe_service.NewAuthentication(c))
 	server.Serve(c.Cross.Time_out * 1e9)
 
 	log.Info("Service stop")

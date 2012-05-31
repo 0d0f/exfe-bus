@@ -3,9 +3,6 @@ package main
 import (
 	"exfe/service"
 	"email/service"
-	"os"
-	"config"
-	"flag"
 	"fmt"
 	"gobus"
 	"log/syslog"
@@ -20,24 +17,7 @@ func main() {
 	}
 	log.Info("Service start")
 
-	var pidfile string
-	var configFile string
-
-	flag.StringVar(&pidfile, "pid", "", "Specify the pid file")
-	flag.StringVar(&configFile, "config", "exfe.json", "Specify the configuration file")
-	flag.Parse()
-
-	var c exfe_service.Config
-	config.LoadFile(configFile, &c)
-
-	if pidfile != "" {
-		pid, err := os.Create(pidfile)
-		if err != nil {
-			log.Crit(fmt.Sprintf("Can't create pid(%s): %s", pidfile, err))
-			return
-		}
-		pid.WriteString(fmt.Sprintf("%d", os.Getpid()))
-	}
+	c := exfe_service.InitConfig()
 
 	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "email")
 

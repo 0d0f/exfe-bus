@@ -27,6 +27,12 @@
     "key": "apns_dev_key.pem",
     "server": "gateway.sandbox.push.apple.com:2195"
   },
+  "c2dm": {
+    "time_out": 5,
+    "email": "",
+    "password": "",
+    "appid": ""
+  },
   "email": {
     "time_out": 5,
     "host": "smtp.gmail.com",

@@ -2,6 +2,10 @@ package exfe_service
 
 import (
 	"time"
+	"flag"
+	"config"
+	"os"
+	"fmt"
 )
 
 type Config struct {
@@ -32,6 +36,12 @@ type Config struct {
 		Key string
 		Server string
 	}
+	C2DM struct {
+		Time_out time.Duration
+		Email string
+		Password string
+		Appid string
+	}
 	Email struct {
 		Time_out time.Duration
 		Host string
@@ -39,4 +49,28 @@ type Config struct {
 		User string
 		Password string
 	}
+}
+
+func InitConfig() *Config {
+	var c Config
+
+	var pidfile string
+	var configFile string
+
+	flag.StringVar(&pidfile, "pid", "", "Specify the pid file")
+	flag.StringVar(&configFile, "config", "exfe.json", "Specify the configuration file")
+	flag.Parse()
+
+	config.LoadFile(configFile, &c)
+
+	flag.Parse()
+	if pidfile != "" {
+		pid, err := os.Create(pidfile)
+		if err != nil {
+			panic(fmt.Sprintf("Can't create pid(%s): %s", pidfile, err))
+		}
+		pid.WriteString(fmt.Sprintf("%d", os.Getpid()))
+	}
+
+	return &c
 }
