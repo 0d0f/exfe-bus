@@ -202,6 +202,8 @@ func (s *CrossPush) push(to *exfe_model.Identity, message, sound, messageType st
 		arg := c2dm_service.C2DMSendArg{
 			DeviceID: to.External_id,
 			Message: message,
+			Cid: crossId,
+			T: messageType,
 		}
 		s.android.Send("C2DMSend", &arg, 5)
 	}
