@@ -4,6 +4,7 @@ import (
 	"exfe/model"
 	"apn/service"
 	"c2dm/service"
+	"gobus"
 	"fmt"
 	"bytes"
 	"text/template"
@@ -11,12 +12,15 @@ import (
 
 type CrossPush struct {
 	CrossProviderBase
+	android *gobus.Client
 }
 
 func NewCrossPush(config *Config) (ret *CrossPush) {
 	ret = &CrossPush{
 		CrossProviderBase: NewCrossProviderBase("push", config),
 	}
+	ret.client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "iOSAPN")
+	ret.android = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "Android")
 	ret.handler = ret
 	return
 }
@@ -199,7 +203,7 @@ func (s *CrossPush) push(to *exfe_model.Identity, message, sound, messageType st
 			DeviceID: to.External_id,
 			Message: message,
 		}
-		s.client.Send("C2DMSend", &arg, 5)
+		s.android.Send("C2DMSend", &arg, 5)
 	}
 }
 
