@@ -18,8 +18,8 @@ func main() {
 	twitter := exfe_service.NewCrossTwitter(c)
 	go twitter.Serve()
 
-	apn := exfe_service.NewCrossApn(c)
-	go apn.Serve()
+	push := exfe_service.NewCrossPush(c)
+	go push.Serve()
 
 	email := exfe_service.NewCrossEmail(c)
 	go email.Serve()

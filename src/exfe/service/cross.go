@@ -41,7 +41,7 @@ func NewCross(config *Config) *Cross {
 		panic(err)
 	}
 	queues := make(map[string]*gobus.TailDelayQueue)
-	for _, p := range [...]string{"twitter", "iOSAPN", "email"} {
+	for _, p := range [...]string{"twitter", "push", "email"} {
 		queue, err := gobus.NewTailDelayQueue(getProviderQueueName(p), config.Cross.Delay[p], arg, redis)
 		if err != nil {
 			panic(err)
@@ -86,6 +86,11 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 	id := fmt.Sprintf("%d-%d", arg.Cross.Id, arg.To_identity.Id)
 
 	queue, ok := s.queues[arg.To_identity.Provider]
+	if !ok {
+		if arg.To_identity.Provider == "iOSAPN" || arg.To_identity.Provider == "Android" {
+			queue, ok = s.queues["push"]
+		}
+	}
 	if !ok {
 		s.log.Err(fmt.Sprintf("Not support provider: %s", arg.To_identity.Provider))
 		return
