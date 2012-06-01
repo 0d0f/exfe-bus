@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/url"
 	"fmt"
 	"oauth"
 	"os"
@@ -8,9 +9,11 @@ import (
 
 func main() {
 	request := oauth.CreateOAuthRequest("VC3OxLBNSGPLOZ2zkgisA", "Lg6b5eHdPLFPsy4pI2aXPn6qEX6oxTwPyS0rr2g4A",
-		"http://api.twitter.com/oauth/request_token", "http://api.twitter.com/oauth/authenticate", "http://api.twitter.com/oauth/access_token")
+		"http://api.twitter.com/oauth/request_token", "http://api.twitter.com/oauth/authorize", "http://api.twitter.com/oauth/access_token")
 
-	temp_token, auth_url, err := request.AuthorizeUrl("http://callback", nil, nil)
+	params := make(url.Values)
+	params.Add("sign_in", "false")
+	temp_token, auth_url, err := request.AuthorizeUrl("http://callback", params, params)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

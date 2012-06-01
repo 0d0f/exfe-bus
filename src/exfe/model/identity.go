@@ -14,7 +14,6 @@ type Identity struct {
 	External_id string
 	External_username string
 	Avatar_filename string
-	Avatar_updated_at string
 }
 
 type Invitation struct {
