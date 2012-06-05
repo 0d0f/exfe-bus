@@ -25,6 +25,8 @@ func NewC2DM(email, password, appid string, log *syslog.Writer) (*C2DM, error) {
 type C2DMSendArg struct {
 	DeviceID string
 	Message string
+	Badge uint
+	Sound string
 	Cid uint64
 	T string
 }
@@ -32,6 +34,8 @@ type C2DMSendArg struct {
 func (c *C2DM) C2DMSend(args []C2DMSendArg) error {
 	for _, arg := range args {
 		load := go_c2dm.NewLoad(arg.DeviceID, arg.Message)
+		load.Add("badge", fmt.Sprintf("%d", arg.Badge))
+		load.Add("sound", arg.Sound)
 		load.Add("cid", fmt.Sprintf("%d", arg.Cid))
 		load.Add("t", arg.T)
 		load.DelayWhileIdle = true
