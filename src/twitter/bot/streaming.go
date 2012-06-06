@@ -1,6 +1,7 @@
 package main
 
 import (
+	"exfe/service"
 	"oauth"
 	"io"
 	"fmt"
@@ -8,30 +9,6 @@ import (
 	"bytes"
 	"strings"
 )
-
-type DirectMessage struct {
-	Sender struct {
-		Id_str string
-		Screen_name string
-	}
-	Text string
-}
-
-type Tweet struct {
-	Entities struct {
-		User_mentions []struct {
-			Screen_name string
-			Id_str string
-		}
-	}
-	Text string
-	In_reply_to_status_id_str *string
-	User *struct {
-		Screen_name string
-		Id_str string
-	}
-	Direct_message *DirectMessage
-}
 
 func find(data []byte, c rune) int {
 	for i, d := range data {
@@ -87,6 +64,8 @@ func parseBuf(buf []byte, cache []byte, ret chan Tweet) []byte {
 			err := decoder.Decode(&t)
 			if err == nil && (t.User != nil || t.Direct_message != nil) {
 				ret <- t
+			} else {
+				// send helper
 			}
 		}
 	}
@@ -102,12 +81,16 @@ func connStreaming(clientToken, clientSecret, accessToken, accessSecret string) 
 }
 
 func main() {
-	c, _ := connStreaming("VC3OxLBNSGPLOZ2zkgisA", "Lg6b5eHdPLFPsy4pI2aXPn6qEX6oxTwPyS0rr2g4A", "491159882-kPatxldk69pToBLBaiCGabZcCkxxTwjXBc6UQwBU", "uIYJyzC8kavcZkj25wVDjlI7GdG0o1X0dqJJSJum1Y")
+	config := exfe_service.InitConfig()
+	Init(config.Twitter.Screen_name)
+
+	c, _ := connStreaming(config.Twitter.Client_token, config.Twitter.Client_secret, config.Twitter.Access_token, config.Twitter.Access_secret)
 
 	for t := range c {
-		fmt.Println(t)
-		if t.Direct_message != nil {
-			fmt.Println(*t.Direct_message)
-		}
+		hash, post := t.parse()
+		time := t.created_at()
+		external_id := t.external_id()
+
+		fmt.Println(hash, time, external_id, post)
 	}
 }
