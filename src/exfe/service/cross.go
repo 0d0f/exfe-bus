@@ -231,7 +231,6 @@ type NewInvitationData struct {
 	Time          string
 	Place         string
 	SiteUrl       string
-	CrossIdBase62 string
 	Token         string
 }
 
@@ -249,7 +248,6 @@ func newInvitationData(log *syslog.Writer, siteUrl string, to *exfe_model.Identi
 		Time:          t,
 		Place:         cross.Place.String(),
 		SiteUrl:       siteUrl,
-		CrossIdBase62: cross.Id_base62,
 		Token:         *findToken(to, cross),
 	}
 }

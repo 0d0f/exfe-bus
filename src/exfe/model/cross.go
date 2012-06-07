@@ -6,7 +6,6 @@ import (
 
 type Cross struct {
 	Id uint64
-	Id_base62 string
 	Title string
 	Description string
 	Time CrossTime
@@ -23,7 +22,7 @@ type Cross struct {
 }
 
 func (c *Cross) Link(host string) string {
-	return fmt.Sprintf("%s/!%s", host, c.Id_base62)
+	return fmt.Sprintf("%s/!%s", host, c.Id)
 }
 
 func (c *Cross) LinkTo(host string, token string) string {
