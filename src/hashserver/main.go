@@ -25,10 +25,10 @@ func (h *HashHTTP) Get(userid, hash string) (string, error) {
 	return h.handler.Get(userid, hash)
 }
 
-func (h *HashHTTP) Post(userid, url string) (string, error) {
-	hash, err := h.handler.FindByUrl(userid, url)
+func (h *HashHTTP) Post(userid, data string) (string, error) {
+	hash, err := h.handler.FindByData(userid, data)
 	if err != nil {
-		hash, err = h.handler.Create(userid, url)
+		hash, err = h.handler.Create(userid, data)
 	}
 	return hash, err
 }
@@ -52,7 +52,13 @@ func (h *HashHTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		args := h.userReg.FindStringSubmatch(r.URL.Path)
 		if len(args) == 2 {
-			hash, err := h.Post(args[1], r.Form["url"][0])
+			var err error
+			var hash string
+			if data, ok := r.Form["data"]; ok {
+				hash, err = h.Post(args[1], data[0])
+			} else {
+				err = fmt.Errorf("can't find data params in post data")
+			}
 			if err == nil {
 				fmt.Fprintf(w, "%s", hash)
 				return

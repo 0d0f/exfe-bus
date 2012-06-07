@@ -49,8 +49,8 @@ func (h *HashHandler) Get(userid string, hash string) (string, error) {
 	return string(url), err
 }
 
-func (h *HashHandler) FindByUrl(userid string, url string) (string, error) {
-	hash, err := h.redis.Get(urlKey(userid, url))
+func (h *HashHandler) FindByData(userid string, data string) (string, error) {
+	hash, err := h.redis.Get(dataKey(userid, data))
 	if err == nil {
 		err = h.Update(userid, string(hash))
 	}
@@ -67,8 +67,8 @@ func (h *HashHandler) FindLatestHash(userid string) (string, error) {
 	return string(reply.Elems[0].Elem), err
 }
 
-func (h *HashHandler) Create(userid string, url string) (string, error) {
-	url64 := base64.URLEncoding.EncodeToString([]byte(url))
+func (h *HashHandler) Create(userid string, data string) (string, error) {
+	data64 := base64.URLEncoding.EncodeToString([]byte(data))
 	count, err := h.redis.Zcount(timeKey(userid), -Inf, +Inf)
 	if err != nil {
 		return "", err
@@ -80,22 +80,22 @@ func (h *HashHandler) Create(userid string, url string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		url, err = h.Get(userid, hash)
+		data, err = h.Get(userid, hash)
 		if err != nil {
 			return "", err
 		}
-		h.redis.Del(urlKey(userid, url))
+		h.redis.Del(dataKey(userid, data))
 	} else {
 		hash, err = HashFromCount(count)
 		if err != nil {
 			return "", nil
 		}
 	}
-	err = h.redis.Set(hashKey(userid, hash), url64)
+	err = h.redis.Set(hashKey(userid, hash), data64)
 	if err != nil {
 		return "", err
 	}
-	err = h.redis.Set(urlKey(userid, url), hash)
+	err = h.redis.Set(dataKey(userid, data), hash)
 	if err != nil {
 		return "", err
 	}
@@ -107,8 +107,8 @@ func hashKey(userid, hash string) string {
 	return fmt.Sprintf("hash:%s:%s", userid, hash)
 }
 
-func urlKey(userid, url string) string {
-	url64 := base64.URLEncoding.EncodeToString([]byte(url))
+func dataKey(userid, data string) string {
+	url64 := base64.URLEncoding.EncodeToString([]byte(data))
 	return fmt.Sprintf("hash_url:%s:%s", userid, url64)
 }
 

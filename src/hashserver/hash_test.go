@@ -39,7 +39,7 @@ func TestHashCreate(t *testing.T) {
 	if url != "http://123/a" {
 		t.Errorf("User id %s's hash %s expect url %s, but got %s", "123", h, "http://123/a", url)
 	}
-	h1, _ := handler.FindByUrl("123", url)
+	h1, _ := handler.FindByData("123", url)
 	if h1 != h {
 		t.Errorf("user id %s's url %s expect hash %s, but got %s", "123", url, h, h1)
 	}
@@ -85,4 +85,3 @@ func TestHashUpdate(t *testing.T) {
 		t.Errorf("User id %s last hash should get url %s, but got url %s", "234", "http://234/d", url)
 	}
 }
-
