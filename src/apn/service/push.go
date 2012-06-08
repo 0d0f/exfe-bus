@@ -15,8 +15,8 @@ type Apn struct {
 	id uint32
 }
 
-func NewApn(cert, key, server string) (*Apn, error) {
-	apn, err := goapns.Connect(cert, key, server)
+func NewApn(cert, key, server, rootca string) (*Apn, error) {
+	apn, err := goapns.Connect(cert, key, server, rootca)
 	if err != nil {
 		return nil, err
 	}

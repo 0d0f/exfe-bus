@@ -35,6 +35,7 @@ type Config struct {
 		Cert string
 		Key string
 		Server string
+		Rootca string
 	}
 	C2DM struct {
 		Time_out time.Duration

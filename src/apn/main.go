@@ -15,7 +15,7 @@ func main() {
 
 	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "iOSAPN")
 
-	apn, err := apn_service.NewApn(c.Apn.Cert, c.Apn.Key, c.Apn.Server)
+	apn, err := apn_service.NewApn(c.Apn.Cert, c.Apn.Key, c.Apn.Server, c.Apn.Rootca)
 	if err != nil {
 		log.Fatalf("Launch Apn service error: %s", err)
 	}

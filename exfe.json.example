@@ -25,7 +25,8 @@
     "time_out": 5,
     "cert": "apns_dev_cert.pem",
     "key": "apns_dev_key.pem",
-    "server": "gateway.sandbox.push.apple.com:2195"
+    "server": "gateway.sandbox.push.apple.com:2195",
+    "rootca": "root.ca"
   },
   "c2dm": {
     "time_out": 5,
