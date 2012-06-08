@@ -1,12 +1,13 @@
 package exfe_service
 
 import (
-	"log/syslog"
-	"github.com/simonz05/godis"
+	"log"
+	"github.com/googollee/godis"
 	"gobus"
 	"exfe/model"
 	"fmt"
 	"time"
+	"os"
 )
 
 type UpdateCrossArg struct {
@@ -30,16 +31,13 @@ type OneIdentityUpdateArg struct {
 type Cross struct {
 	queues map[string]*gobus.TailDelayQueue
 	config *Config
-	log *syslog.Writer
+	log *log.Logger
 }
 
 func NewCross(config *Config) *Cross {
 	arg := []OneIdentityUpdateArg{}
 	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
-	log, err := syslog.New(syslog.LOG_DEBUG, "exfe.cross")
-	if err != nil {
-		panic(err)
-	}
+	log := log.New(os.Stderr, "exfe.cross", log.LstdFlags)
 	queues := make(map[string]*gobus.TailDelayQueue)
 	for _, p := range [...]string{"twitter", "push", "email"} {
 		queue, err := gobus.NewTailDelayQueue(getProviderQueueName(p), config.Cross.Delay[p], arg, redis)
@@ -92,12 +90,12 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 		}
 	}
 	if !ok {
-		s.log.Err(fmt.Sprintf("Not support provider: %s", arg.To_identity.Provider))
+		log.Printf("Not support provider: %s", arg.To_identity.Provider)
 		return
 	}
 	if arg.To_identity.Provider != "email" {
 		if arg.Post != nil {
-			s.log.Info(fmt.Sprintf("provider %s can't handle post now", arg.To_identity.Provider))
+			log.Printf("provider %s can't handle post now", arg.To_identity.Provider)
 			return
 		}
 	}
@@ -113,7 +111,7 @@ type CrossProviderHandler interface{
 }
 
 type CrossProviderBase struct {
-	log *syslog.Writer
+	log *log.Logger
 	queue *gobus.TailDelayQueue
 	config *Config
 	client *gobus.Client
@@ -121,14 +119,11 @@ type CrossProviderBase struct {
 }
 
 func NewCrossProviderBase(provider string, config *Config) (ret CrossProviderBase) {
-	var err error
-	ret.log, err = syslog.New(syslog.LOG_DEBUG, fmt.Sprintf("exfe.cross.%s", provider))
-	if err != nil {
-		panic(err)
-	}
+	ret.log = log.New(os.Stderr, fmt.Sprintf("exfe.cross.%s", provider), log.LstdFlags)
 
 	arg := []OneIdentityUpdateArg{}
 	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
+	var err error
 	ret.queue, err = gobus.NewTailDelayQueue(getProviderQueueName(provider), config.Cross.Delay[provider], arg, redis)
 	if err != nil {
 		panic(err)
@@ -143,13 +138,13 @@ func (b *CrossProviderBase) Serve() {
 	for {
 		t, err := b.queue.NextWakeup()
 		if err != nil {
-			b.log.Crit(fmt.Sprintf("next wakeup error: %s", err))
+			log.Printf("next wakeup error: %s", err)
 			break
 		}
 		time.Sleep(t)
 		args, err := b.queue.Pop()
 		if err != nil {
-			b.log.Err(fmt.Sprintf("pop from delay queue failed: %s", err))
+			log.Printf("pop from delay queue failed: %s", err)
 			continue
 		}
 		if args != nil {
@@ -173,7 +168,7 @@ func findToken(to *exfe_model.Identity, cross *exfe_model.Cross) (ret *string) {
 	return
 }
 
-func diffExfee(log *syslog.Writer, old, new_ *exfe_model.Exfee) (accepted map[uint64]*exfe_model.Identity, declined map[uint64]*exfe_model.Identity, newlyInvited map[uint64]*exfe_model.Invitation, removed map[uint64]*exfe_model.Identity) {
+func diffExfee(log *log.Logger, old, new_ *exfe_model.Exfee) (accepted map[uint64]*exfe_model.Identity, declined map[uint64]*exfe_model.Identity, newlyInvited map[uint64]*exfe_model.Invitation, removed map[uint64]*exfe_model.Identity) {
 	oldId := make(map[uint64]*exfe_model.Invitation)
 	newId := make(map[uint64]*exfe_model.Invitation)
 
@@ -187,7 +182,7 @@ func diffExfee(log *syslog.Writer, old, new_ *exfe_model.Exfee) (accepted map[ui
 			continue
 		}
 		if _, ok := oldId[v.Identity.Connected_user_id]; ok {
-			log.Err(fmt.Sprintf("more than one non-notification status in exfee %d, user id %d", old.Id, v.Identity.Connected_user_id))
+			log.Printf("more than one non-notification status in exfee %d, user id %d", old.Id, v.Identity.Connected_user_id)
 		}
 		oldId[v.Identity.Connected_user_id] = &old.Invitations[i]
 	}
@@ -196,7 +191,7 @@ func diffExfee(log *syslog.Writer, old, new_ *exfe_model.Exfee) (accepted map[ui
 			continue
 		}
 		if _, ok := newId[v.Identity.Connected_user_id]; ok {
-			log.Err(fmt.Sprintf("more than one non-notification status in exfee %d, user id %d", old.Id, v.Identity.Connected_user_id))
+			log.Printf("more than one non-notification status in exfee %d, user id %d", old.Id, v.Identity.Connected_user_id)
 		}
 		newId[v.Identity.Connected_user_id] = &new_.Invitations[i]
 	}
@@ -234,10 +229,10 @@ type NewInvitationData struct {
 	Token         string
 }
 
-func newInvitationData(log *syslog.Writer, siteUrl string, to *exfe_model.Identity, cross *exfe_model.Cross) *NewInvitationData {
+func newInvitationData(log *log.Logger, siteUrl string, to *exfe_model.Identity, cross *exfe_model.Cross) *NewInvitationData {
 	t, err := cross.Time.StringInZone(to.Timezone)
 	if err != nil {
-		log.Err(fmt.Sprintf("Time parse error: %s", err))
+		log.Printf("Time parse error: %s", err)
 		return nil
 	}
 	isHost := cross.By_identity.Connected_user_id == to.Connected_user_id

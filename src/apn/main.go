@@ -4,25 +4,20 @@ import (
 	"apn/service"
 	"exfe/service"
 	"gobus"
-	"log/syslog"
-	"fmt"
+	"log"
 )
 
 func main() {
-	log, err := syslog.New(syslog.LOG_INFO, "exfe.apn")
-	if err != nil {
-		panic(err)
-	}
-	log.Info("Service start")
+	log.SetPrefix("exfe.apn")
+	log.Print("Service start")
 
 	c := exfe_service.InitConfig()
 
 	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "iOSAPN")
 
-	apn, err := apn_service.NewApn(c.Apn.Cert, c.Apn.Key, c.Apn.Server, log)
+	apn, err := apn_service.NewApn(c.Apn.Cert, c.Apn.Key, c.Apn.Server)
 	if err != nil {
-		log.Crit(fmt.Sprintf("Launch Apn service error: %s", err))
-		panic(err)
+		log.Fatalf("Launch Apn service error: %s", err)
 	}
 	server.Register(apn)
 

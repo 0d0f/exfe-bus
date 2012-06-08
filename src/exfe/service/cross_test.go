@@ -3,7 +3,8 @@ package exfe_service
 import (
 	"exfe/model"
 	"testing"
-	"log/syslog"
+	"log"
+	"os"
 	"encoding/json"
 	"bytes"
 )
@@ -46,7 +47,7 @@ var exfee = exfe_model.Exfee{
 }
 
 func TestExfeeStatus(t *testing.T) {
-	log, _ := syslog.New(syslog.LOG_INFO, "test")
+	log := log.New(os.Stderr, "test", log.LstdFlags)
 	var new_, old exfe_model.Exfee
 
 	buf := bytes.NewBuffer(nil)

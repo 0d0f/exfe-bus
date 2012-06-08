@@ -1,7 +1,7 @@
 package gobus
 
 import (
-	"github.com/simonz05/godis"
+	"github.com/googollee/godis"
 	"fmt"
 	"errors"
 	"time"

@@ -5,17 +5,14 @@ import (
 	"email/service"
 	"fmt"
 	"gobus"
-	"log/syslog"
+	"log"
 	"net/smtp"
 	"time"
 )
 
 func main() {
-	log, err := syslog.New(syslog.LOG_INFO, "exfe.email.notify")
-	if err != nil {
-		panic(err)
-	}
-	log.Info("Service start")
+	log.SetPrefix("exfe.email.notify")
+	log.Print("Service start")
 
 	c := exfe_service.InitConfig()
 
@@ -25,10 +22,9 @@ func main() {
 		&email_service.EmailSenderService{
 			Server: fmt.Sprintf("%s:%d", c.Email.Host, c.Email.Port),
 			Auth:   smtp.PlainAuth("", c.Email.User, c.Email.Password, c.Email.Host),
-			Log: log,
 		})
 	defer func() {
-		log.Info("Service stop")
+		log.Print("Service stop")
 		server.Close()
 	}()
 

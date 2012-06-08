@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"oauth"
 	"net/url"
-	"log/syslog"
+	"log"
+	"os"
 	"bytes"
 	"encoding/json"
 )
@@ -56,14 +57,11 @@ func (arg *UsersShowArg) getValues() (v url.Values, err error) {
 
 type Users struct {
 	UpdateInfoService
-	log *syslog.Writer
+	log *log.Logger
 }
 
 func NewUsers(site_api string) *Users {
-	log, err := syslog.New(syslog.LOG_INFO, "exfe.twitter.users")
-	if err != nil {
-		panic(err)
-	}
+	log := log.New(os.Stderr, "exfe.twitter.users", log.LstdFlags)
 	return &Users{
 		UpdateInfoService: UpdateInfoService{
 			SiteApi: site_api,
@@ -73,26 +71,26 @@ func NewUsers(site_api string) *Users {
 }
 
 func (s *Users) GetInfo(arg *UsersShowArg, reply *UserInfo) error {
-	s.log.Info(fmt.Sprintf("show: %s", arg))
+	s.log.Printf("show: %s", arg)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 
 	params, err := arg.getValues()
 	if err != nil {
-		s.log.Err(fmt.Sprintf("Can't get arg's value: %s", err))
+		s.log.Printf("Can't get arg's value: %s", err)
 		return err
 	}
 
 	retReader, err := client.Do("GET", "/users/show.json", params)
 	if err != nil {
-		s.log.Err(fmt.Sprintf("Twitter access error: %s", err))
+		s.log.Printf("Twitter access error: %s", err)
 		return err
 	}
 
 	decoder := json.NewDecoder(retReader)
 	err = decoder.Decode(reply)
 	if err != nil {
-		s.log.Err(fmt.Sprintf("Can't parse twitter reply: %s", err))
+		s.log.Printf("Can't parse twitter reply: %s", err)
 		return err
 	}
 
@@ -101,9 +99,9 @@ func (s *Users) GetInfo(arg *UsersShowArg, reply *UserInfo) error {
 			id := *arg.IdentityId
 			err := s.UpdateUserInfo(id, reply, 4)
 			if err != nil {
-				s.log.Err(fmt.Sprintf("Update identity(%d) info fail: %s", id, err))
+				s.log.Printf("Update identity(%d) info fail: %s", id, err)
 			} else {
-				s.log.Info(fmt.Sprintf("Update identity(%d) info succeed", id))
+				s.log.Printf("Update identity(%d) info succeed", id)
 			}
 		}()
 	}

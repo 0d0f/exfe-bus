@@ -1,4 +1,4 @@
-go get github.com/simonz05/godis
+go get github.com/googollee/godis
 go get github.com/garyburd/go-oauth/oauth
 go get github.com/virushuo/Go-Apns
 go get github.com/googollee/go_c2dm

@@ -4,7 +4,7 @@ import (
 	"twitter/service"
 	"exfe/service"
 	"gobus"
-	"log/syslog"
+	"log"
 )
 
 const (
@@ -15,11 +15,8 @@ const (
 )
 
 func main() {
-	log, err := syslog.New(syslog.LOG_INFO, "exfe.twitter")
-	if err != nil {
-		panic(err)
-	}
-	log.Info("Service start")
+	log.SetPrefix("exfe.twitter")
+	log.Print("Service start")
 
 	c := exfe_service.InitConfig()
 

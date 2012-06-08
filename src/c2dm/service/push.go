@@ -3,22 +3,20 @@ package c2dm_service
 import (
 	"github.com/googollee/go_c2dm"
 	"fmt"
-	"log/syslog"
+	"log"
 )
 
 type C2DM struct {
 	c2dm *go_c2dm.Client
-	log *syslog.Writer
 }
 
-func NewC2DM(email, password, appid string, log *syslog.Writer) (*C2DM, error) {
+func NewC2DM(email, password, appid string) (*C2DM, error) {
 	client, err := go_c2dm.NewClient(email, password, appid)
 	if err != nil {
 		return nil, err
 	}
 	return &C2DM{
 		c2dm: client,
-		log: log,
 	}, nil
 }
 
@@ -43,7 +41,7 @@ func (c *C2DM) C2DMSend(args []C2DMSendArg) error {
 
 		_, err := c.c2dm.Send(load)
 		if err != nil {
-			c.log.Err(fmt.Sprintf("Send notification(%s) to device(%s) error: %s", arg.Message, arg.DeviceID, err))
+			log.Printf("Send notification(%s) to device(%s) error: %s", arg.Message, arg.DeviceID, err)
 		}
 	}
 	return nil

@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"gomail"
 	"strings"
-	"log/syslog"
+	"log"
 	"exfe/model"
 	"fmt"
 	"text/template"
 	"gobus"
+	"os"
 )
 
 type WelcomeArg struct {
@@ -38,15 +39,12 @@ type WelcomeActiveArg struct {
 
 type Authentication struct {
 	config *Config
-	log *syslog.Writer
+	log *log.Logger
 	client *gobus.Client
 }
 
 func NewAuthentication(config *Config) *Authentication {
-	log, err := syslog.New(syslog.LOG_DEBUG, "exfe.auth")
-	if err != nil {
-		panic(err)
-	}
+	log := log.New(os.Stderr, "exfe.auth", log.LstdFlags)
 	client := gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "email")
 	return &Authentication{
 		config: config,
@@ -86,7 +84,7 @@ func (s *Authentication) Welcome(arg *WelcomeArg, reply *int) error {
 
 	err := executeTemplate("auth_welcome.html", &arg.To_identity, arg, s.client)
 	if err != nil {
-		s.log.Err(fmt.Sprintf("Execute template error: %s", err))
+		log.Printf("Execute template error: %s", err)
 	}
 	return nil
 }
@@ -96,7 +94,7 @@ func (s *Authentication) Verify(arg *VerifyArg, reply *int) error {
 
 	err := executeTemplate("auth_verify.html", &arg.To_identity, arg, s.client)
 	if err != nil {
-		s.log.Err(fmt.Sprintf("Execute template error: %s", err))
+		log.Printf("Execute template error: %s", err)
 	}
 	return nil
 }
@@ -106,7 +104,7 @@ func (s *Authentication) ResetPassword(arg *ResetPasswordArg, reply *int) error 
 
 	err := executeTemplate("auth_reset_password.html", &arg.To_identity, arg, s.client)
 	if err != nil {
-		s.log.Err(fmt.Sprintf("Execute template error: %s", err))
+		log.Printf("Execute template error: %s", err)
 	}
 	return nil
 }
@@ -116,7 +114,7 @@ func (s *Authentication) Active(arg *ActiveArg, reply *int) error {
 
 	err := executeTemplate("auth_active.html", &arg.To_identity, arg, s.client)
 	if err != nil {
-		s.log.Err(fmt.Sprintf("Execute template error: %s", err))
+		log.Printf("Execute template error: %s", err)
 	}
 	return nil
 }
@@ -126,7 +124,7 @@ func (s *Authentication) WelcomeActive(arg *WelcomeActiveArg, reply *int) error 
 
 	err := executeTemplate("auth_welcome_active.html", &arg.To_identity, arg, s.client)
 	if err != nil {
-		s.log.Err(fmt.Sprintf("Execute template error: %s", err))
+		log.Printf("Execute template error: %s", err)
 	}
 	return nil
 }

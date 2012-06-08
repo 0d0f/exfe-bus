@@ -5,10 +5,9 @@ import (
 	"twitter/service"
 	"fmt"
 	"gobus"
-	"log/syslog"
+	"log"
 )
 
-var log *syslog.Writer
 var config *exfe_service.Config
 var helper string
 var client *gobus.Client
@@ -25,7 +24,7 @@ func sendHelp(screen_name string) {
 	var isFriend bool
 	err := client.Do("GetFriendship", f, &isFriend, 10)
 	if err != nil {
-		log.Err(fmt.Sprintf("Can't require user %s friendship: %s", screen_name, err))
+		log.Printf("Can't require user %s friendship: %s", screen_name, err)
 		isFriend = false
 	}
 
@@ -53,13 +52,9 @@ func sendHelp(screen_name string) {
 
 func main() {
 	config = exfe_service.InitConfig()
-	helper = fmt.Sprintf("WRONG SYNTAX. Please enclose the 2-character hash in your reply to indicate mentioning X, e.g.:\n @%s Sure, be there or be square! #Z4", config.Twitter.Screen_name)
+	helper = fmt.Sprintf("WRONG SYNTAX. Please enclose the 2-character hash in your reply to indicate mentioning 'X', e.g.:\n@%s Sure, be there or be square! #Z4", config.Twitter.Screen_name)
 	client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "twitter")
-	var err error
-	log, err = syslog.New(syslog.LOG_INFO, "exfe.twitter_bot")
-	if err != nil {
-		panic(err)
-	}
+	log.SetPrefix("exfe.twitter_bot")
 
 	Init(config.Twitter.Screen_name)
 

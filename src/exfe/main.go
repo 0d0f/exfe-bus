@@ -3,15 +3,12 @@ package main
 import (
 	"exfe/service"
 	"gobus"
-	"log/syslog"
+	"log"
 )
 
 func main() {
-	log, err := syslog.New(syslog.LOG_INFO, "exfe")
-	if err != nil {
-		panic(err)
-	}
-	log.Info("Service start")
+	log.SetPrefix("exfe")
+	log.Print("Service start")
 
 	c := exfe_service.InitConfig()
 
@@ -29,5 +26,5 @@ func main() {
 	server.Register(exfe_service.NewAuthentication(c))
 	server.Serve(c.Cross.Time_out * 1e9)
 
-	log.Info("Service stop")
+	log.Print("Service stop")
 }

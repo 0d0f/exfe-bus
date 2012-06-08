@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"net/http"
 	"exfe/service"
-	"log/syslog"
+	"log"
 	"flag"
 	"config"
 	"os"
@@ -16,7 +16,7 @@ const HashTagPattern = "^/puh/(.*?)/(.*?)$"
 
 type HashHTTP struct {
 	handler *HashHandler
-	log *syslog.Writer
+	log *log.Logger
 	userReg *regexp.Regexp
 	tagReg *regexp.Regexp
 }
@@ -73,11 +73,8 @@ func (h *HashHTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	log, err := syslog.New(syslog.LOG_INFO, "exfe.hash")
-	if err != nil {
-		panic(err)
-	}
-	log.Info("Service start")
+	log := log.New(os.Stderr, "exfe.hash", log.LstdFlags)
+	log.Print("Service start")
 
 	var c exfe_service.Config
 
@@ -94,8 +91,7 @@ func main() {
 	if pidfile != "" {
 		pid, err := os.Create(pidfile)
 		if err != nil {
-			log.Crit(fmt.Sprintf("Can't create pid(%s): %s", pidfile, err))
-			return
+			log.Fatalf("Can't create pid(%s): %s", pidfile, err)
 		}
 		pid.WriteString(fmt.Sprintf("%d", os.Getpid()))
 	}
@@ -107,8 +103,8 @@ func main() {
 		tagReg: regexp.MustCompile(HashTagPattern),
 	}
 	http.Handle("/puh/", handler)
-	err = http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Printf("Error: %s", err)
 	}
 }

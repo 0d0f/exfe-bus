@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"oauth"
 	"net/url"
-	"log/syslog"
+	"log"
+	"os"
 	"encoding/json"
 )
 
@@ -27,21 +28,18 @@ func (f *FriendshipsExistsArg) String() string {
 type FriendshipsExistsReply bool
 
 type Friendships struct {
-	log *syslog.Writer
+	log *log.Logger
 }
 
 func NewFriendships() *Friendships {
-	log, err := syslog.New(syslog.LOG_INFO, "exfe.twitter.friendships")
-	if err != nil {
-		panic(err)
-	}
+	log := log.New(os.Stderr, "exfe.twitter.friendships", log.LstdFlags)
 	return &Friendships{
 		log: log,
 	}
 }
 
 func (f *Friendships) GetFriendship(arg *FriendshipsExistsArg, reply *FriendshipsExistsReply) error {
-	f.log.Info(fmt.Sprintf("exists: %s", arg))
+	f.log.Printf("exists: %s", arg)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 	params := make(url.Values)
@@ -49,14 +47,14 @@ func (f *Friendships) GetFriendship(arg *FriendshipsExistsArg, reply *Friendship
 	params.Add("user_b", arg.UserB)
 	retReader, err := client.Do("GET", "/friendships/exists.json", params)
 	if err != nil {
-		f.log.Err(fmt.Sprintf("Twitter access error: %s", err))
+		f.log.Printf("Twitter access error: %s", err)
 		return err
 	}
 
 	decoder := json.NewDecoder(retReader)
 	err = decoder.Decode(reply)
 	if err != nil {
-		f.log.Err(fmt.Sprintf("Parse twitter response error: %s", err))
+		f.log.Printf("Parse twitter response error: %s", err)
 		return err
 	}
 

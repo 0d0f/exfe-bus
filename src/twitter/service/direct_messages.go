@@ -2,9 +2,10 @@ package twitter_service
 
 import (
 	"net/url"
+	"os"
 	"fmt"
 	"oauth"
-	"log/syslog"
+	"log"
 	"bytes"
 	"encoding/json"
 )
@@ -60,14 +61,11 @@ type DirectMessagesNewReply struct {
 
 type DirectMessages struct {
 	UpdateInfoService
-	log *syslog.Writer
+	log *log.Logger
 }
 
 func NewDirectMessages(site_api string) *DirectMessages {
-	log, err := syslog.New(syslog.LOG_INFO, "exfe.twitter.directmessages")
-	if err != nil {
-		panic(err)
-	}
+	log := log.New(os.Stderr, "exfe.twitter.directmessages", log.LstdFlags)
 	return &DirectMessages{
 		UpdateInfoService: UpdateInfoService{
 			SiteApi: site_api,
@@ -77,7 +75,7 @@ func NewDirectMessages(site_api string) *DirectMessages {
 }
 
 func (m *DirectMessages) SendDM(arg *DirectMessagesNewArg, reply *DirectMessagesNewReply) error {
-	m.log.Info(fmt.Sprintf("new: %s", arg))
+	m.log.Printf("new: %s", arg)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 
@@ -87,20 +85,20 @@ func (m *DirectMessages) SendDM(arg *DirectMessagesNewArg, reply *DirectMessages
 
 	params, err := arg.getValues()
 	if err != nil {
-		m.log.Err(fmt.Sprintf("Can't get arg's value: %s", err))
+		m.log.Printf("Can't get arg's value: %s", err)
 		return err
 	}
 
 	retReader, err := client.Do("POST", "/direct_messages/new.json", params)
 	if err != nil {
-		m.log.Err(fmt.Sprintf("Twitter access error: %s", err))
+		m.log.Printf("Twitter access error: %s", err)
 		return err
 	}
 
 	decoder := json.NewDecoder(retReader)
 	err = decoder.Decode(reply)
 	if err != nil {
-		m.log.Err(fmt.Sprintf("Parse twitter response error: %s", err))
+		m.log.Printf("Parse twitter response error: %s", err)
 		return err
 	}
 
@@ -109,9 +107,9 @@ func (m *DirectMessages) SendDM(arg *DirectMessagesNewArg, reply *DirectMessages
 			id := *arg.IdentityId
 			err := m.UpdateUserInfo(id, &reply.Recipient, 1)
 			if err != nil {
-				m.log.Err(fmt.Sprintf("Update identity(%d) info fail: %s", id, err))
+				m.log.Printf("Update identity(%d) info fail: %s", id, err)
 			} else {
-				m.log.Info(fmt.Sprintf("Update identity(%d) info success", id))
+				m.log.Printf("Update identity(%d) info success", id)
 			}
 		}()
 	}

@@ -3,7 +3,7 @@ package apn_service
 import (
 	"github.com/virushuo/Go-Apns"
 	"fmt"
-	"log/syslog"
+	"log"
 	"encoding/json"
 )
 
@@ -13,10 +13,9 @@ type Apn struct {
 	server string
 	apn *goapns.Apn
 	id uint32
-	log *syslog.Writer
 }
 
-func NewApn(cert, key, server string, log *syslog.Writer) (*Apn, error) {
+func NewApn(cert, key, server string) (*Apn, error) {
 	apn, err := goapns.Connect(cert, key, server)
 	if err != nil {
 		return nil, err
@@ -27,7 +26,6 @@ func NewApn(cert, key, server string, log *syslog.Writer) (*Apn, error) {
 		server: server,
 		apn: apn,
 		id: 0,
-		log: log,
 	}
 	go errorListen(ret)
 	return ret, nil
@@ -36,11 +34,11 @@ func NewApn(cert, key, server string, log *syslog.Writer) (*Apn, error) {
 func errorListen(apn *Apn) {
 	for {
 		apnerr := <-apn.apn.Errorchan
-		apn.log.Err(fmt.Sprintf("Apn error: cmd %d, status %d, id %d", apnerr.Command, apnerr.Status, apnerr.Identifier))
+		log.Printf("Apn error: cmd %d, status %d, id %d", apnerr.Command, apnerr.Status, apnerr.Identifier)
 		var err error
 		err = apn.apn.Reconnect()
 		if err != nil {
-			apn.log.Err(fmt.Sprintf("Reconnect to apn server(%s) error: %s", apn.server, err))
+			log.Printf("Reconnect to apn server(%s) error: %s", apn.server, err)
 			panic(err)
 		}
 	}
@@ -81,7 +79,7 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 		a.id++
 		err := a.apn.SendNotification(&notification)
 		if err != nil {
-			a.log.Err(fmt.Sprintf("Send notification(%s) to device(%s) error: %s", arg.Alert, arg.DeviceToken, err))
+			log.Printf("Send notification(%s) to device(%s) error: %s", arg.Alert, arg.DeviceToken, err)
 		}
 	}
 	return nil

@@ -4,25 +4,20 @@ import (
 	"c2dm/service"
 	"exfe/service"
 	"gobus"
-	"log/syslog"
-	"fmt"
+	"log"
 )
 
 func main() {
-	log, err := syslog.New(syslog.LOG_INFO, "exfe.c2dm")
-	if err != nil {
-		panic(err)
-	}
-	log.Info("Service start")
+	log.SetPrefix("exfe.c2dm")
+	log.Print("Service start")
 
 	c := exfe_service.InitConfig()
 
 	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "Android")
 
-	c2dm, err := c2dm_service.NewC2DM(c.C2DM.Email, c.C2DM.Password, c.C2DM.Appid, log)
+	c2dm, err := c2dm_service.NewC2DM(c.C2DM.Email, c.C2DM.Password, c.C2DM.Appid)
 	if err != nil {
-		log.Crit(fmt.Sprintf("Launch service error: %s", err))
-		panic(err)
+		log.Fatal("Launch service error: %s", err)
 	}
 	server.Register(c2dm)
 

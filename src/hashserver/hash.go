@@ -4,7 +4,7 @@ import (
 	"time"
 	"strings"
 	"fmt"
-	"github.com/simonz05/godis"
+	"github.com/googollee/godis"
 	"encoding/base64"
 )
 

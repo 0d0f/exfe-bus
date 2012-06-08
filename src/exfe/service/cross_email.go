@@ -1,19 +1,20 @@
 package exfe_service
 
 import (
-	"github.com/simonz05/godis"
+	"github.com/googollee/godis"
 	"time"
 	"exfe/model"
 	"gomail"
 	"fmt"
 	"bytes"
 	"text/template"
-	"log/syslog"
+	"log"
 	"gobus"
+	"os"
 )
 
 type CrossEmail struct {
-	log *syslog.Writer
+	log *log.Logger
 	queue *gobus.TailDelayQueue
 	config *Config
 	client *gobus.Client
@@ -21,10 +22,7 @@ type CrossEmail struct {
 
 func NewCrossEmail(config *Config) *CrossEmail {
 	provider := "email"
-	log, err := syslog.New(syslog.LOG_DEBUG, fmt.Sprintf("exfe.cross.%s", provider))
-	if err != nil {
-		panic(err)
-	}
+	log := log.New(os.Stderr, fmt.Sprintf("exfe.cross.%s", provider), log.LstdFlags)
 
 	arg := []OneIdentityUpdateArg{}
 	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
@@ -45,13 +43,13 @@ func (e *CrossEmail) Serve() {
 	for {
 		t, err := e.queue.NextWakeup()
 		if err != nil {
-			e.log.Crit(fmt.Sprintf("next wakeup error: %s", err))
+			e.log.Printf("next wakeup error: %s", err)
 			break
 		}
 		time.Sleep(t)
 		args, err := e.queue.Pop()
 		if err != nil {
-			e.log.Err(fmt.Sprintf("pop from delay queue failed: %s", err))
+			e.log.Printf("pop from delay queue failed: %s", err)
 			continue
 		}
 		if args != nil {
@@ -103,7 +101,7 @@ func (e *CrossEmail) sendMail(to *exfe_model.Invitation, cross, old_cross *exfe_
 	tmpl := template.Must(template.ParseFiles("./template/default/cross_email.html"))
 	err := tmpl.Execute(html, data)
 	if err != nil {
-		e.log.Err(fmt.Sprintf("template exec error:", err))
+		e.log.Printf("template exec error:", err)
 		return
 	}
 
@@ -111,7 +109,7 @@ func (e *CrossEmail) sendMail(to *exfe_model.Invitation, cross, old_cross *exfe_
 	tmpl = template.Must(template.ParseFiles("./template/default/cross_email.ics"))
 	err = tmpl.Execute(ics, data)
 	if err != nil {
-		e.log.Err(fmt.Sprintf("template exec error:", err))
+		e.log.Printf("template exec error:", err)
 		return
 	}
 

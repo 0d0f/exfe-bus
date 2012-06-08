@@ -42,7 +42,7 @@ func (s *CrossPush) sendNewCross(to *exfe_model.Identity, old *exfe_model.Cross,
 func (s *CrossPush) sendInvitation(to *exfe_model.Identity, cross *exfe_model.Cross) {
 	data := newInvitationData(s.log, s.config.Site_url, to, cross)
 	if data == nil {
-		s.log.Err(fmt.Sprintf("Can't send cross %d invitation to identity %d", cross.Id, to.Id))
+		s.log.Printf("Can't send cross %d invitation to identity %d", cross.Id, to.Id)
 		return
 	}
 
@@ -66,7 +66,7 @@ func (s *CrossPush) sendCrossChange(to *exfe_model.Identity, old *exfe_model.Cro
 
 	newTime, err := current.Time.StringInZone(to.Timezone)
 	if err != nil {
-		s.log.Err(fmt.Sprintf("can't convert cross %d time to zone %s", current.Id, to.Timezone))
+		s.log.Printf("can't convert cross %d time to zone %s", current.Id, to.Timezone)
 		return
 	}
 	newPlaceTitle := current.Place.Title
