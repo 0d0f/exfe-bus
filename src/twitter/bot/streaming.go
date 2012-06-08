@@ -1,7 +1,6 @@
 package main
 
 import (
-	"exfe/service"
 	"oauth"
 	"io"
 	"fmt"
@@ -64,8 +63,6 @@ func parseBuf(buf []byte, cache []byte, ret chan Tweet) []byte {
 			err := decoder.Decode(&t)
 			if err == nil && (t.User != nil || t.Direct_message != nil) {
 				ret <- t
-			} else {
-				// send helper
 			}
 		}
 	}
@@ -80,17 +77,3 @@ func connStreaming(clientToken, clientSecret, accessToken, accessSecret string) 
 	return ret, nil
 }
 
-func main() {
-	config := exfe_service.InitConfig()
-	Init(config.Twitter.Screen_name)
-
-	c, _ := connStreaming(config.Twitter.Client_token, config.Twitter.Client_secret, config.Twitter.Access_token, config.Twitter.Access_secret)
-
-	for t := range c {
-		hash, post := t.parse()
-		time := t.created_at()
-		external_id := t.external_id()
-
-		fmt.Println(hash, time, external_id, post)
-	}
-}

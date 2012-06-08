@@ -29,6 +29,10 @@ type DirectMessage struct {
 	Text string
 }
 
+func (d *DirectMessage) screen_name() string {
+	return d.Sender.Screen_name
+}
+
 func (d *DirectMessage) text() string {
 	return strings.Trim(d.Text, " \t\n\r")
 }
@@ -63,7 +67,14 @@ func (t *Tweet) text() string {
 			return t[1]
 		}
 	}
-	return text
+	return ""
+}
+
+func (t *Tweet) screen_name() string {
+	if t.Direct_message != nil {
+		return t.Direct_message.screen_name()
+	}
+	return t.User.Screen_name
 }
 
 func (t *Tweet) created_at() string {
