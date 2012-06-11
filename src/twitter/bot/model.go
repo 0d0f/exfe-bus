@@ -100,4 +100,3 @@ func (t *Tweet) parse() (hash, post string) {
 	}
 	return
 }
-

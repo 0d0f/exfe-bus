@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"gobus"
 	"log"
+	"io/ioutil"
+	"net/url"
+	"net/http"
 )
 
 var config *exfe_service.Config
@@ -74,6 +77,31 @@ func main() {
 
 		if hash == "" && post != "" {
 			sendHelp(screen_name)
+			continue
+		}
+
+		params := make(url.Values)
+		params.Add("per_user_hash", hash)
+		params.Add("content", post)
+		params.Add("external_id", external_id)
+		params.Add("provider", "twitter")
+		params.Add("time", time)
+		resp, err := http.PostForm(fmt.Sprintln("%s/v2/gobus/PostConversation", config.Site_api), params)
+		if err != nil {
+			log.Printf("Send post to server error: %s", err)
+			continue
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("Get response body error: %s", err)
+			continue
+		}
+		if resp.StatusCode == 500 {
+			log.Printf("Server inner error: %s", string(body))
+			continue
+		}
+		if resp.StatusCode == 400 {
+			log.Printf("User status error: %s", string(body))
 			continue
 		}
 	}

@@ -16,7 +16,7 @@ type Apn struct {
 }
 
 func NewApn(cert, key, server, rootca string) (*Apn, error) {
-	apn, err := goapns.Connect(cert, key, server, rootca)
+	apn, err := goapns.Connect(cert, key, server)
 	if err != nil {
 		return nil, err
 	}
