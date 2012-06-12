@@ -11,8 +11,8 @@ import (
 	"os"
 )
 
-const HashUserPattern = "^/puh/(.*?)$"
-const HashTagPattern = "^/puh/(.*?)/(.*?)$"
+const HashUserPattern = "^/iom/(.*?)$"
+const HashTagPattern = "^/iom/(.*?)/(.*?)$"
 
 type HashHTTP struct {
 	handler *HashHandler
