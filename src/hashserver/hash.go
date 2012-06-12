@@ -11,14 +11,14 @@ import (
 var a float64 = 1.0
 var b float64 = 0.0
 var Inf float64 = a / b
-const CharPos = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" // A-Z, 0-9
+const CharPos = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789" // A-Z, 0-9
 const SizePerPosition = len(CharPos)
 const MaxSize = SizePerPosition * SizePerPosition
 var ErrorOutOfRange = fmt.Errorf("count out of range")
 
 func HashFromCount(count int64) (string, error) {
 	first := count / int64(SizePerPosition)
-	if first >= 26 {
+	if first >= 24 {
 		return "", ErrorOutOfRange
 	}
 	second := count - first * int64(SizePerPosition)

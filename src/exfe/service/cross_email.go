@@ -119,7 +119,7 @@ func (e *CrossEmail) sendMail(to *exfe_model.Invitation, cross, old_cross *exfe_
 		Subject: cross.Title,
 		Html: html.String(),
 		FileParts: []gomail.FilePart{
-			gomail.FilePart{fmt.Sprintf("x-%s.ics", cross.Id), ics.Bytes()},
+			gomail.FilePart{fmt.Sprintf("x-%d.ics", cross.Id), ics.Bytes()},
 		},
 	}
 
