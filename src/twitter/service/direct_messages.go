@@ -17,6 +17,7 @@ type DirectMessagesNewArg struct {
 	AccessSecret string
 
 	Message      string
+	Urls         []string
 	ToUserName   *string
 	ToUserId     *string
 
@@ -79,9 +80,7 @@ func (m *DirectMessages) SendDM(arg *DirectMessagesNewArg, reply *DirectMessages
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 
-	if len(arg.Message) > 140 {
-		arg.Message = fmt.Sprintf("%s...", arg.Message[0:137])
-	}
+	arg.Message = makeText(arg.Message, arg.Urls)
 
 	params, err := arg.getValues()
 	if err != nil {

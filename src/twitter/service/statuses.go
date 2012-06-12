@@ -16,6 +16,7 @@ type StatusesUpdateArg struct {
 	AccessSecret string
 
 	Tweet        string
+	Urls         []string
 }
 
 func (t *StatusesUpdateArg) String() string {
@@ -41,11 +42,9 @@ func (t *Statuses) SendTweet(arg *StatusesUpdateArg, reply *StatusesUpdateReply)
 	t.log.Printf("update: %s", arg)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
+
 	params := make(url.Values)
-	if len(arg.Tweet) > 140 {
-		arg.Tweet = fmt.Sprintf("%s...", arg.Tweet[0:137])
-	}
-	params.Add("status", arg.Tweet)
+	params.Add("status", makeText(arg.Tweet, arg.Urls))
 
 	retReader, err := client.Do("POST", "/statuses/update.json", params)
 	if err != nil {

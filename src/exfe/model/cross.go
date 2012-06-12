@@ -28,3 +28,13 @@ func (c *Cross) Link(host string) string {
 func (c *Cross) LinkTo(host string, token string) string {
 	return fmt.Sprintf("%s?token=%s", c.Link(host), token)
 }
+
+func (c *Cross) TotalAccepted() int {
+	ret := 0
+	for _, i := range c.Exfee.Invitations {
+		if i.Rsvp_status == "ACCEPTED" {
+			ret++
+		}
+	}
+	return ret
+}

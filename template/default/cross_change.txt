@@ -1,0 +1,1 @@
+"{{ .Cross.Title }}" Update: {{ .Cross.Time.StringInZone .To_identity.Timezone }} at {{ .Cross.Place.String }}.

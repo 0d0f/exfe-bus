@@ -1,0 +1,1 @@
+Cross {{ .Arg.Cross.Title }} {{ .TotalAccepted }} Accepted:{{ range .Identities }} {{ .Name }}{{ end }}{{ if .HasOther }} and {{ .OtherCount }} {{ if .IsOthers }}others{{ else }}other{{ end }}{{ end }}.

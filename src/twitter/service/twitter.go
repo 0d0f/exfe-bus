@@ -6,6 +6,9 @@ import (
 	"net/http"
 )
 
+const UrlLength = 20
+const MaxTweetLength = 140
+
 type UserInfo struct {
 	Id uint64
 	Screen_name *string
@@ -48,4 +51,17 @@ func (s *UpdateInfoService) UpdateUserInfo(id uint64, i *UserInfo, _ int) error 
 		return fmt.Errorf("Update to %s failed: %s", url, resp.Status)
 	}
 	return nil
+}
+
+func makeText(message string, urls []string) string {
+	maxMessageLength := MaxTweetLength - (len(urls) + 1/* space */) * UrlLength
+
+	if len(message) > maxMessageLength {
+		message = fmt.Sprintf("%s…", message[0:(maxMessageLength-1)])
+	}
+	for _, url := range urls {
+		message = fmt.Sprintf("%s %s", message, url)
+	}
+
+	return message
 }

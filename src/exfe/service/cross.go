@@ -107,7 +107,7 @@ func getProviderQueueName(provider string) string{
 }
 
 type CrossProviderHandler interface{
-	Handle(to_identity *exfe_model.Identity, old_cross, cross *exfe_model.Cross)
+	Handle(arg *ProviderArg)
 }
 
 type CrossProviderBase struct {
@@ -149,100 +149,13 @@ func (b *CrossProviderBase) Serve() {
 		}
 		if args != nil {
 			updates := args.([]OneIdentityUpdateArg)
-			old_cross := updates[0].Old_cross
-			cross := &updates[len(updates)-1].Cross
-			to_identity := &updates[0].To_identity
-
-			b.handler.Handle(to_identity, old_cross, cross)
-		}
-	}
-}
-
-func findToken(to *exfe_model.Identity, cross *exfe_model.Cross) (ret *string) {
-	for _, invitation := range cross.Exfee.Invitations {
-		if invitation.Identity.Connected_user_id == to.Connected_user_id {
-			ret = &invitation.Token
-			break
-		}
-	}
-	return
-}
-
-func diffExfee(log *log.Logger, old, new_ *exfe_model.Exfee) (accepted map[uint64]*exfe_model.Identity, declined map[uint64]*exfe_model.Identity, newlyInvited map[uint64]*exfe_model.Invitation, removed map[uint64]*exfe_model.Identity) {
-	oldId := make(map[uint64]*exfe_model.Invitation)
-	newId := make(map[uint64]*exfe_model.Invitation)
-
-	accepted = make(map[uint64]*exfe_model.Identity)
-	declined = make(map[uint64]*exfe_model.Identity)
-	newlyInvited = make(map[uint64]*exfe_model.Invitation)
-	removed = make(map[uint64]*exfe_model.Identity)
-
-	for i, v := range old.Invitations {
-		if v.Rsvp_status == "NOTIFICATION" {
-			continue
-		}
-		if _, ok := oldId[v.Identity.Connected_user_id]; ok {
-			log.Printf("more than one non-notification status in exfee %d, user id %d", old.Id, v.Identity.Connected_user_id)
-		}
-		oldId[v.Identity.Connected_user_id] = &old.Invitations[i]
-	}
-	for i, v := range new_.Invitations {
-		if v.Rsvp_status == "NOTIFICATION" {
-			continue
-		}
-		if _, ok := newId[v.Identity.Connected_user_id]; ok {
-			log.Printf("more than one non-notification status in exfee %d, user id %d", old.Id, v.Identity.Connected_user_id)
-		}
-		newId[v.Identity.Connected_user_id] = &new_.Invitations[i]
-	}
-
-	for k, v := range newId {
-		switch v.Rsvp_status {
-		case "ACCEPTED":
-			if inv, ok := oldId[k]; !ok || inv.Rsvp_status != v.Rsvp_status {
-				accepted[k] = &v.Identity
+			arg := &ProviderArg{
+				Old_cross: updates[0].Old_cross,
+				Cross: &updates[len(updates)-1].Cross,
+				To_identity: &updates[0].To_identity,
 			}
-		case "DECLINED":
-			if inv, ok := oldId[k]; !ok || inv.Rsvp_status != v.Rsvp_status {
-				declined[k] = &v.Identity
-			}
-		}
-		if _, ok := oldId[k]; !ok {
-			newlyInvited[k] = v
-		}
-	}
-	for k, v := range oldId {
-		if _, ok := newId[k]; !ok {
-			removed[k] = &v.Identity
-		}
-	}
-	return
-}
 
-type NewInvitationData struct {
-	ToUserName    string
-	IsHost        bool
-	Title         string
-	Time          string
-	Place         string
-	SiteUrl       string
-	Token         string
-}
-
-func newInvitationData(log *log.Logger, siteUrl string, to *exfe_model.Identity, cross *exfe_model.Cross) *NewInvitationData {
-	t, err := cross.Time.StringInZone(to.Timezone)
-	if err != nil {
-		log.Printf("Time parse error: %s", err)
-		return nil
-	}
-	isHost := cross.By_identity.Connected_user_id == to.Connected_user_id
-	return &NewInvitationData{
-		ToUserName:    to.External_username,
-		IsHost:        isHost,
-		Title:         cross.Title,
-		Time:          t,
-		Place:         cross.Place.String(),
-		SiteUrl:       siteUrl,
-		Token:         *findToken(to, cross),
+			b.handler.Handle(arg)
+		}
 	}
 }

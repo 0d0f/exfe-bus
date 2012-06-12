@@ -10,7 +10,8 @@
     "time_out": 5,
     "delay": {
       "twitter": 300,
-      "iOSAPN":300
+      "push": 300,
+      "email": 300
     }
   },
   "twitter": {

@@ -1,13 +1,9 @@
 package exfe_service
 
 import (
-	"exfe/model"
 	"apn/service"
 	"c2dm/service"
 	"gobus"
-	"fmt"
-	"bytes"
-	"text/template"
 )
 
 type CrossPush struct {
@@ -25,187 +21,89 @@ func NewCrossPush(config *Config) (ret *CrossPush) {
 	return
 }
 
-func (s *CrossPush) Handle(to_identity *exfe_model.Identity, old_cross, cross *exfe_model.Cross) {
-	s.sendNewCross(to_identity, old_cross, cross)
-	s.sendCrossChange(to_identity, old_cross, cross)
-	s.sendExfeeChange(to_identity, old_cross, cross)
+func (s *CrossPush) Handle(arg *ProviderArg) {
+	s.sendNewCross(arg)
+	s.sendCrossChange(arg)
+	s.sendExfeeChange(arg)
 }
 
-func (s *CrossPush) sendNewCross(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
-	if old != nil {
+func (s *CrossPush) sendNewCross(arg *ProviderArg) {
+	if arg.Old_cross != nil {
 		return
 	}
 
-	s.sendInvitation(to, current)
+	str, _ := arg.TextPrivateInvitation()
+	s.push(arg, str, "default", "i", 0)
 }
 
-func (s *CrossPush) sendInvitation(to *exfe_model.Identity, cross *exfe_model.Cross) {
-	data := newInvitationData(s.log, s.config.Site_url, to, cross)
-	if data == nil {
-		s.log.Printf("Can't send cross %d invitation to identity %d", cross.Id, to.Id)
+func (s *CrossPush) sendCrossChange(arg *ProviderArg) {
+	if arg.Old_cross == nil {
 		return
 	}
 
-	buf := bytes.NewBuffer(nil)
-	tmpl := template.Must(template.New("NewInvitation").Parse(
-		"{{ if .IsHost }}You're successfully gathering this X{{ else }}Invitation{{ end }}: {{ .Title }}.{{ if .Time }} {{ .Time }}{{ end }}{{ if .Place }} at {{ .Place }}{{ end }}"))
-	tmpl.Execute(buf, data)
-
-	s.push(to, buf.String(), "default", "i", 0, cross.Id)
+	if arg.Old_cross.Title != arg.Cross.Title {
+		msg, _ := arg.TextTitleChange()
+		s.push(arg, msg, "default", "u", 0)
+	}
+	msg, _ := arg.TextCrossChange()
+	s.push(arg, msg, "default", "u", 0)
 }
 
-func (s *CrossPush) sendQuit(to *exfe_model.Identity, cross *exfe_model.Cross) {
-	msg := fmt.Sprintf("You quit the Cross %s", cross.Title)
-	s.push(to, msg, "default", "r", 0, cross.Id)
-}
-
-func (s *CrossPush) sendCrossChange(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
-	if old == nil {
+func (s *CrossPush) sendExfeeChange(arg *ProviderArg) {
+	if arg.Old_cross == nil {
 		return
 	}
-
-	newTime, err := current.Time.StringInZone(to.Timezone)
-	if err != nil {
-		s.log.Printf("can't convert cross %d time to zone %s", current.Id, to.Timezone)
-		return
-	}
-	newPlaceTitle := current.Place.Title
-	newPlaceDesc := current.Place.Description
-	isChanged := false
-
-	if old.Title != current.Title {
-		isChanged = true
-	}
-	if old.Place.Title != newPlaceTitle {
-		isChanged = true
-	}
-	if old.Place.Description != newPlaceDesc {
-		isChanged = true
-	}
-	if o, _ := old.Time.StringInZone(to.Timezone); o != newTime {
-		isChanged = true
-	}
-	if !isChanged {
-		return
-	}
-
-	var message string
-	if old.Title != current.Title {
-		message = diffTitleMessage(newTime, current.Title, newPlaceTitle, newPlaceDesc, old.Title)
-	} else {
-		message = sameTitleMessage(newTime, current.Title, newPlaceTitle, newPlaceDesc)
-	}
-
-	msg := fmt.Sprintf("Update: %s", message)
-	s.push(to, msg, "default", "u", 0, current.Id)
-}
-
-func (s *CrossPush) sendExfeeChange(to *exfe_model.Identity, old *exfe_model.Cross, current *exfe_model.Cross) {
-	if old == nil {
-		return
-	}
-	accepted, declined, newlyInvited, removed := diffExfee(s.log, &old.Exfee, &current.Exfee)
+	accepted, declined, newlyInvited, removed := arg.Diff(s.log)
 
 	if len(accepted) > 0 {
-		s.sendAccepted(to, accepted, current)
+		msg, _ := arg.TextAccepted(accepted)
+		s.push(arg, msg, "default", "u", 0)
 	}
 	if len(declined) > 0 {
-		s.sendDeclined(to, declined, current)
+		msg, _ := arg.TextDeclined(declined)
+		s.push(arg, msg, "default", "u", 0)
 	}
 	if len(newlyInvited) > 0 {
-		if _, ok := newlyInvited[to.Connected_user_id]; ok {
-			s.sendInvitation(to, current)
+		if _, ok := newlyInvited[arg.To_identity.Connected_user_id]; ok {
+			msg, _ := arg.TextPrivateInvitation()
+			s.push(arg, msg, "default", "i", 0)
 		} else {
-			s.sendNewlyInvited(to, newlyInvited, current)
+			msg, _ := arg.TextNewlyInvited(newlyInvited)
+			s.push(arg, msg, "default", "u", 0)
 		}
 	}
 	if len(removed) > 0 {
-		if _, ok := removed[to.Connected_user_id]; ok {
-			s.sendQuit(to, current)
+		if _, ok := removed[arg.To_identity.Connected_user_id]; ok {
+			msg, _ := arg.TextQuit()
+			s.push(arg, msg, "default", "r", 0)
 		} else {
-			s.sendRemoved(to, removed, current)
+			msg, _ := arg.TextRemoved(removed)
+			s.push(arg, msg, "default", "u", 0)
 		}
 	}
 }
 
-func (s *CrossPush) sendAccepted(to *exfe_model.Identity, identities map[uint64]*exfe_model.Identity, cross *exfe_model.Cross) {
-	totalAccepted := 0
-	for _, i := range cross.Exfee.Invitations {
-		if i.Rsvp_status == "ACCEPTED" {
-			totalAccepted++
-		}
-	}
-	msg := fmt.Sprintf("%d Accepted:", totalAccepted)
-	for _, i := range identities {
-		msg = fmt.Sprintf("%s %s,", msg, i.Name)
-	}
-	otherCount := totalAccepted - len(identities)
-	switch otherCount {
-	case 0:
-		msg = msg[0:len(msg) - 1]
-	case 1:
-		msg = fmt.Sprintf("%s and 1 other", msg)
-	default:
-		msg = fmt.Sprintf("%s and %d others", msg, totalAccepted - len(identities))
-	}
-
-	msg = fmt.Sprintf("Cross %s %s", cross.Title, msg)
-	s.push(to, msg, "default", "u", 0, cross.Id)
-}
-
-func (s *CrossPush) sendDeclined(to *exfe_model.Identity, identities map[uint64]*exfe_model.Identity, cross *exfe_model.Cross) {
-	msg := "Declined:"
-	for _, i := range identities {
-		msg = fmt.Sprintf("%s %s,", msg, i.Name)
-	}
-	msg = msg[0:len(msg) - 1]
-
-	msg = fmt.Sprintf("Cross %s %s", cross.Title, msg)
-	s.push(to, msg, "default", "u", 0, cross.Id)
-}
-
-func (s *CrossPush) sendNewlyInvited(to *exfe_model.Identity, invitations map[uint64]*exfe_model.Invitation, cross *exfe_model.Cross) {
-	msg := "Newly invited:"
-	for _, i := range invitations {
-		msg = fmt.Sprintf("%s %s,", msg, i.Identity.Name)
-	}
-	msg = msg[0:len(msg) - 1]
-
-	msg = fmt.Sprintf("Cross %s %s", cross.Title, msg)
-	s.push(to, msg, "default", "u", 0, cross.Id)
-}
-
-func (s *CrossPush) sendRemoved(to *exfe_model.Identity, identities map[uint64]*exfe_model.Identity, cross *exfe_model.Cross) {
-	msg := "Removed:"
-	for _, i := range identities {
-		msg = fmt.Sprintf("%s %s,", msg, i.Name)
-	}
-	msg = msg[0:len(msg) - 1]
-
-	msg = fmt.Sprintf("Cross %s %s", cross.Title, msg)
-	s.push(to, msg, "default", "u", 0, cross.Id)
-}
-
-func (s *CrossPush) push(to *exfe_model.Identity, message, sound, messageType string, badge uint, crossId uint64) {
-	switch to.Provider {
+func (s *CrossPush) push(arg *ProviderArg, message, sound, messageType string, badge uint) {
+	switch arg.To_identity.Provider {
 	case "iOSAPN":
 		arg := apn_service.ApnSendArg{
-			DeviceToken: to.External_id,
+			DeviceToken: arg.To_identity.External_id,
 			Alert: message,
 			Badge: badge,
 			Sound: sound,
-			Cid: crossId,
+			Cid: arg.Cross.Id,
 			T: messageType,
 		}
 		s.client.Send("ApnSend", &arg, 5)
 	case "Android":
 		arg := c2dm_service.C2DMSendArg{
-			DeviceID: to.External_id,
+			DeviceID: arg.To_identity.External_id,
 			Message: message,
-			Cid: crossId,
+			Cid: arg.Cross.Id,
 			T: messageType,
+			Badge: badge,
+			Sound: sound,
 		}
 		s.android.Send("C2DMSend", &arg, 5)
 	}
 }
-
