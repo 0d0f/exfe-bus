@@ -32,6 +32,7 @@ type Cross struct {
 	queues map[string]*gobus.TailDelayQueue
 	config *Config
 	log *log.Logger
+	post *CrossPost
 }
 
 func NewCross(config *Config) *Cross {
@@ -50,6 +51,7 @@ func NewCross(config *Config) *Cross {
 		queues: queues,
 		config: config,
 		log: log,
+		post: NewCrossPost(config),
 	}
 }
 
@@ -95,7 +97,7 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 	}
 	if arg.To_identity.Provider != "email" {
 		if arg.Post != nil {
-			log.Printf("provider %s can't handle post now", arg.To_identity.Provider)
+			s.post.SendPost(arg)
 			return
 		}
 	}
