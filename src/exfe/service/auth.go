@@ -20,12 +20,12 @@ type UserArg struct {
 }
 
 func (a *UserArg) Link() string {
-	return fmt.Sprintf("%s/!#token=%s", a.config.Site_url, a.Token)
+	return fmt.Sprintf("%s/#token=%s", a.config.Site_url, a.Token)
 }
 
 func (a *UserArg) PartLink() string {
 	max := len(a.Token)
-	return fmt.Sprintf("%s/!#token=%s...%s", a.config.Site_url, a.Token[0:3], a.Token[max-5:max])
+	return fmt.Sprintf("%s/#token=%s...%s", a.config.Site_url, a.Token[0:3], a.Token[max-5:max])
 }
 
 func (a *UserArg) NeedVerify() bool {
