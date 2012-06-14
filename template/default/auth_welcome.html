@@ -1,4 +1,4 @@
-%title%
+Welcome to EXFE
 
 <!DOCTYPE html>
 <html>
@@ -11,14 +11,19 @@
             <tr>
                 <td valign="top">
                     <p style="font-size: 18px; line-height: 24px;">
-                        Hello. %name%
+                        Hi, {{ .To_identity.Name }}.
                     </p>
                     <p>
-                        <span style="font-size: 18px; line-height: 24px;">Welcome to <a style="color: #0591ac; text-decoration: none;" href="%site_url%">EXFE</a>!</span>
+                        <span style="font-size: 18px; line-height: 24px;">Welcome to <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>!</span>
                         <br>
                         <span>An utility for hanging out with friends.</span>
                     </p>
-                    %link%
+                    {{ if .NeedVerify }}
+                    <p>
+                        <span style="font-size: 18px; line-height: 24px;">Please click here to verify your identity: <a style="color: #0591ac; text-decoration: none;" href="{{ .Link }}">{{ .PartLink }}</a></span>
+                    </p>
+                    {{ end }}
+
                     <p>
                         <span style="color: #0591ac;">X</span> (cross) is a gathering of people, for anything you want to do with them. We save you from calling up every one RSVP, losing in endless emails messages off the point.
                     </p>
@@ -29,13 +34,13 @@
             </tr>
             <tr>
                 <td>
-                    <img style="float: left; margin-left: 20px; margin-right: 40px; margin-bottom: 10px;" src="%site_url%/static/images/rome.png">
+                    <img style="float: left; margin-left: 20px; margin-right: 40px; margin-bottom: 10px;" src="{{ .Config.Site_url }}/static/images/rome.png">
                     <div style="color:#333333;">
                         <p style="font-size: 18px; line-height: 24px; margin: 0 0 20px 0">
                             “Rome wasn't built in a day.”
                         </p>
                         <p style="margin: 0;">
-                            <a style="color: #0591ac; text-decoration: none;" href="%site_url%">EXFE</a>
+                            <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>
                             [ˈɛksfi] is still in
                             <span style ="font-weight: bold;">testing</span>
                             stage. We’re building up blocks of it, thus some bugs and unfinished pages. Any feedback, please email
@@ -51,9 +56,9 @@
             <tr>
                 <td style="color: #666666; font-size: 11px;">
                     This email is sent to
-                    <a style="font-style: italic; color: #666666; text-decoration: none;" href="mailto:%external_identity%">%external_identity%</a>
+                    <a style="font-style: italic; color: #666666; text-decoration: none;" href="mailto:{{ .To_identity.External_id }}">{{ .To_identity.External_id }}</a>
                     per identity registration request on
-                    <a style="color: #0591ac; text-decoration: none;" href="%site_url%">EXFE</a>.&nbsp;&nbsp;&nbsp;&nbsp;<!--<a style="color:#999999; text-decoration: none;" href="">Report <span style="text-decoration: underline;">Spam</span></a>?-->
+                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.&nbsp;&nbsp;&nbsp;&nbsp;<!--<a style="color:#999999; text-decoration: none;" href="">Report <span style="text-decoration: underline;">Spam</span></a>?-->
                 </td>
             </tr>
         </table>

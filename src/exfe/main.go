@@ -21,10 +21,13 @@ func main() {
 	email := exfe_service.NewCrossEmail(c)
 	go email.Serve()
 
-	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "cross")
-	server.Register(exfe_service.NewCross(c))
-	server.Register(exfe_service.NewAuthentication(c))
-	server.Serve(c.Cross.Time_out * 1e9)
+	cross := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "cross")
+	cross.Register(exfe_service.NewCross(c))
+	go cross.Serve(c.Cross.Time_out * 1e9)
+
+	user := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "user")
+	user.Register(exfe_service.NewAuthentication(c))
+	user.Serve(c.User.Time_out * 1e9)
 
 	log.Print("Service stop")
 }

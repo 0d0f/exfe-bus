@@ -21,7 +21,9 @@ type Config struct {
 		Time_out time.Duration
 		Delay map[string]int
 	}
-
+	User struct {
+		Time_out time.Duration
+	}
 	Twitter struct {
 		Client_token string
 		Client_secret string

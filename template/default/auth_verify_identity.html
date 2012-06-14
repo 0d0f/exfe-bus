@@ -11,7 +11,7 @@ EXFE identity verification
             <tr>
                 <td>
                     <p style="font-size: 18px; line-height: 24px;">
-                        Hi, %name%
+                        Hi, {{ .To_identity.Name }}
                     </p>
                     <p>
                         <span style="font-size: 18px; line-height: 24px;">Welcome to <span style="color: #0591ac;">EXFE</span>!</span>
@@ -19,8 +19,8 @@ EXFE identity verification
                         <span>An utility for hanging out with friends.</span>
                     </p>
                     <p>
-                        <a style="color:#333333; text-decoration: none;" href="%link%">
-                            Click to verify your identity: <span style="text-decoration: underline;">%partlink%</span>
+                        <a style="color:#333333; text-decoration: none;" href="{{ .Link }}">
+                            Click to verify your identity: <span style="text-decoration: underline;">{{ .PartLink }}</span>
                         </a>
                     </p>
                     <p>
@@ -31,7 +31,7 @@ EXFE identity verification
                     </p>
                     <p style="color: #666666; font-size: 11px;">
                         <br>
-                        This email is sent to %external_identity% for identity verification request of <span style="color:#0591ac;">EXFE</span>. Report Spam?
+                        This email is sent to {{ .To_identity.External_username }} for identity verification request of <span style="color:#0591ac;">EXFE</span>. Report Spam?
                     </p>
                 </td>
             </tr>

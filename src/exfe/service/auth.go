@@ -12,29 +12,24 @@ import (
 	"os"
 )
 
-type WelcomeArg struct {
+type UserArg struct {
 	To_identity exfe_model.Identity
 	config *Config
+	Token string
+	Type string
 }
 
-type VerifyArg struct {
-	To_identity exfe_model.Identity
-	config *Config
+func (a *UserArg) Link() string {
+	return fmt.Sprintf("%s/!#token=%s", a.config.Site_url, a.Token)
 }
 
-type ResetPasswordArg struct {
-	To_identity exfe_model.Identity
-	config *Config
+func (a *UserArg) PartLink() string {
+	max := len(a.Token)
+	return fmt.Sprintf("%s/!#token=%s...%s", a.config.Site_url, a.Token[0:3], a.Token[max-5:max])
 }
 
-type ActiveArg struct {
-	To_identity exfe_model.Identity
-	config *Config
-}
-
-type WelcomeActiveArg struct {
-	To_identity exfe_model.Identity
-	config *Config
+func (a *UserArg) NeedVerify() bool {
+	return a.Token != ""
 }
 
 type Authentication struct {
@@ -79,7 +74,7 @@ func executeTemplate(name string, to *exfe_model.Identity, data interface{}, cli
 	return nil
 }
 
-func (s *Authentication) Welcome(arg *WelcomeArg, reply *int) error {
+func (s *Authentication) Welcome(arg *UserArg, reply *int) error {
 	arg.config = s.config
 
 	err := executeTemplate("auth_welcome.html", &arg.To_identity, arg, s.client)
@@ -89,40 +84,11 @@ func (s *Authentication) Welcome(arg *WelcomeArg, reply *int) error {
 	return nil
 }
 
-func (s *Authentication) Verify(arg *VerifyArg, reply *int) error {
+func (s *Authentication) Verify(arg *UserArg, reply *int) error {
 	arg.config = s.config
 
-	err := executeTemplate("auth_verify.html", &arg.To_identity, arg, s.client)
-	if err != nil {
-		log.Printf("Execute template error: %s", err)
-	}
-	return nil
-}
-
-func (s *Authentication) ResetPassword(arg *ResetPasswordArg, reply *int) error {
-	arg.config = s.config
-
-	err := executeTemplate("auth_reset_password.html", &arg.To_identity, arg, s.client)
-	if err != nil {
-		log.Printf("Execute template error: %s", err)
-	}
-	return nil
-}
-
-func (s *Authentication) Active(arg *ActiveArg, reply *int) error {
-	arg.config = s.config
-
-	err := executeTemplate("auth_active.html", &arg.To_identity, arg, s.client)
-	if err != nil {
-		log.Printf("Execute template error: %s", err)
-	}
-	return nil
-}
-
-func (s *Authentication) WelcomeActive(arg *WelcomeActiveArg, reply *int) error {
-	arg.config = s.config
-
-	err := executeTemplate("auth_welcome_active.html", &arg.To_identity, arg, s.client)
+	template := fmt.Sprintf("auth_%s", arg.Type)
+	err := executeTemplate(template, &arg.To_identity, arg, s.client)
 	if err != nil {
 		log.Printf("Execute template error: %s", err)
 	}
