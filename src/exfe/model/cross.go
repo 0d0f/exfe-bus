@@ -13,10 +13,10 @@ type Cross struct {
 	Attribute map[string]string
 	Exfee Exfee
 	Widget []interface{}
-	Relative []struct {
+/*	Relative []struct {
 		Id uint64
 		Relation string
-	}
+	}*/
 	Type string
 	By_identity Identity
 }
