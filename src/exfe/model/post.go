@@ -12,11 +12,11 @@ type Post struct {
 	Postable_id uint64
 	Postable_type string
 	Via string
-	Create_at string
+	Created_at string
 	/*Relative map[string]string*/
 }
 
-func (p *Post) CreateAt(timezone string) (string, error) {
+func (p *Post) CreatedAt(timezone string) (string, error) {
 	t, err := time.Parse("2006-01-02 15:04:05 -0700", p.Create_at)
 	if err != nil {
 		return "", err
