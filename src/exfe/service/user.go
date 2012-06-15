@@ -16,7 +16,7 @@ type UserArg struct {
 	To_identity exfe_model.Identity
 	config *Config
 	Token string
-	Type string
+	Action string
 }
 
 func (a *UserArg) Link() string {
@@ -32,16 +32,16 @@ func (a *UserArg) NeedVerify() bool {
 	return a.Token != ""
 }
 
-type Authentication struct {
+type User struct {
 	config *Config
 	log *log.Logger
 	client *gobus.Client
 }
 
-func NewAuthentication(config *Config) *Authentication {
+func NewUser(config *Config) *User {
 	log := log.New(os.Stderr, "exfe.auth", log.LstdFlags)
 	client := gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "email")
-	return &Authentication{
+	return &User{
 		config: config,
 		log: log,
 		client: client,
@@ -74,7 +74,7 @@ func executeTemplate(name string, to *exfe_model.Identity, data interface{}, cli
 	return nil
 }
 
-func (s *Authentication) Welcome(arg *UserArg, reply *int) error {
+func (s *User) Welcome(arg *UserArg, reply *int) error {
 	arg.config = s.config
 
 	err := executeTemplate("auth_welcome.html", &arg.To_identity, arg, s.client)
@@ -84,10 +84,10 @@ func (s *Authentication) Welcome(arg *UserArg, reply *int) error {
 	return nil
 }
 
-func (s *Authentication) Verify(arg *UserArg, reply *int) error {
+func (s *User) Verify(arg *UserArg, reply *int) error {
 	arg.config = s.config
 
-	template := fmt.Sprintf("auth_%s", arg.Type)
+	template := fmt.Sprintf("user_%s", strings.ToLower(arg.Action))
 	err := executeTemplate(template, &arg.To_identity, arg, s.client)
 	if err != nil {
 		log.Printf("Execute template error: %s", err)
