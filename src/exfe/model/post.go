@@ -17,7 +17,7 @@ type Post struct {
 }
 
 func (p *Post) CreatedAt(timezone string) (string, error) {
-	t, err := time.Parse("2006-01-02 15:04:05 -0700", p.Create_at)
+	t, err := time.Parse("2006-01-02 15:04:05 -0700", p.Created_at)
 	if err != nil {
 		return "", err
 	}
