@@ -11,7 +11,7 @@ Welcome to EXFE
             <tr>
                 <td valign="top">
                     <p style="font-size: 18px; line-height: 24px;">
-                        Hi, {{ .To_identity.Name }}.
+                    Hi, {{ .To_identity.Name }}
                     </p>
                     <p>
                         <span style="font-size: 18px; line-height: 24px;">Welcome to <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>!</span>
@@ -20,10 +20,12 @@ Welcome to EXFE
                     </p>
                     {{ if .NeedVerify }}
                     <p>
-                        <span style="font-size: 18px; line-height: 24px;">Please click here to verify your identity: <a style="color: #0591ac; text-decoration: none;" href="{{ .Link }}">{{ .PartLink }}</a></span>
+                        <span style="font-size:14px; color:#333; ">
+                            Please click here to verify your identity:
+                        </span>
+                        <a style="color:#191919; text-decoration: underline;" href="{{ .Config.Site_url }}/#token={{ .Token }}">{{ .Config.Site_url }}/#token={{ .Token | .Shoten }}</a>
                     </p>
                     {{ end }}
-
                     <p>
                         <span style="color: #0591ac;">X</span> (cross) is a gathering of people, for anything you want to do with them. We save you from calling up every one RSVP, losing in endless emails messages off the point.
                     </p>
@@ -40,7 +42,7 @@ Welcome to EXFE
                             “Rome wasn't built in a day.”
                         </p>
                         <p style="margin: 0;">
-                            <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>
+                        <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>
                             [ˈɛksfi] is still in
                             <span style ="font-weight: bold;">testing</span>
                             stage. We’re building up blocks of it, thus some bugs and unfinished pages. Any feedback, please email
@@ -58,7 +60,7 @@ Welcome to EXFE
                     This email is sent to
                     <a style="font-style: italic; color: #666666; text-decoration: none;" href="mailto:{{ .To_identity.External_id }}">{{ .To_identity.External_id }}</a>
                     per identity registration request on
-                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.&nbsp;&nbsp;&nbsp;&nbsp;<!--<a style="color:#999999; text-decoration: none;" href="">Report <span style="text-decoration: underline;">Spam</span></a>?-->
+                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
                 </td>
             </tr>
         </table>

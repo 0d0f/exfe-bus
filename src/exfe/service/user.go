@@ -14,18 +14,18 @@ import (
 
 type UserArg struct {
 	To_identity exfe_model.Identity
-	config *Config
+	User_name string
 	Token string
 	Action string
+
+	Config *Config
 }
 
-func (a *UserArg) Link() string {
-	return fmt.Sprintf("%s/#token=%s", a.config.Site_url, a.Token)
-}
-
-func (a *UserArg) PartLink() string {
-	max := len(a.Token)
-	return fmt.Sprintf("%s/#token=%s...%s", a.config.Site_url, a.Token[0:3], a.Token[max-5:max])
+func (a *UserArg) Shorten(s string) string {
+	if len(s) < 10 {
+		return s
+	}
+	return fmt.Sprintf("%s…%s", s[0:3], s[len(s)-5:len(s)])
 }
 
 func (a *UserArg) NeedVerify() bool {
@@ -75,7 +75,7 @@ func executeTemplate(name string, to *exfe_model.Identity, data interface{}, cli
 }
 
 func (s *User) Welcome(arg *UserArg, reply *int) error {
-	arg.config = s.config
+	arg.Config = s.config
 
 	err := executeTemplate("auth_welcome.html", &arg.To_identity, arg, s.client)
 	if err != nil {
@@ -85,7 +85,7 @@ func (s *User) Welcome(arg *UserArg, reply *int) error {
 }
 
 func (s *User) Verify(arg *UserArg, reply *int) error {
-	arg.config = s.config
+	arg.Config = s.config
 
 	template := fmt.Sprintf("user_%s", strings.ToLower(arg.Action))
 	err := executeTemplate(template, &arg.To_identity, arg, s.client)
