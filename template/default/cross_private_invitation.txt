@@ -1,2 +1,1 @@
-{{ if .IsHost }}You're successfully gathering this X{{ else }}Invitation{{ end }}: {{ .Cross.Title }}. {{ .Cross.Time.StringInZone .To_identity.Timezone }} at {{ .Cross.Place.String }}
-
+{{ if .IsHost }}You're successfully gathering this X{{ else }}Invitation{{ end }}: {{ .Cross.Title }}. {{ .Cross.Time.StringInZone .Timezone }} at {{ .Cross.Place.String }}

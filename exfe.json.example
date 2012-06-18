@@ -1,6 +1,8 @@
 {
   "site_url": "",
   "site_api": "",
+  "site_img": "",
+  "app_url": "",
   "redis": {
     "netaddr": "",
     "db": 0,

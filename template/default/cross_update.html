@@ -1,0 +1,170 @@
+{{ .Cross.Title }}
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+            .exfe_mail_identity_name {
+                color: #0591AC;
+            }
+            .exfe_mail_msg_identity_name {
+                color: #666666;
+            }
+            .exfe_mail_msg_at {
+                font-size: 12px;
+                color: #999999;
+            }
+            .exfe_mail_msg_time {
+                font-size: 12px;
+                color: #666666;
+            }
+        </style>
+    </head>
+    <body>
+        <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 20px; color: #191919; font-weight: normal; width: 640px; padding: 20px; background-color: #fbfbfb;">
+            <tr>
+                <td colspan="5" style="color: #333333;">
+                    Your
+                    <span style="color: #0591ac;">X</span>
+                    “<span style="color: #191919;">{{ .Old_cross.Title }}</span>”
+                    has been updated by
+                    {{ if index .By_identities 0 }}<span style="color: #191919;">{{ with index .By_identities 0 }}{{ .Name }}{{ end }}</span>,{{ end }}
+                    {{ if index .By_identities 1 }}<span style="color: #191919;">{{ with index .By_identities 1 }}{{ .Name }}{{ end }}</span>,{{ end }}
+                    etc.
+                </td>
+            </tr>
+            <tr><td colspan="5" height="10"></td></tr>
+            <tr>
+                <td colspan="5" style="font-size: 20px; line-height: 26px;">
+                    {{ .Cross.Title }}
+                </td>
+            </tr>
+            <tr><td colspan="5" height="10"></td></tr>
+            <tr>
+                <td valign="top" width="180">
+                    <p style="font-size: 20px; line-height: 26px; color: #333333; margin: 0;">
+                        {{ .Cross.Time.StringInZone .Timezone }}
+                    </p>
+                </td>
+                <td></td>
+                <td valign="top" width="180" style="word-break: break-all;">
+                    <p style="font-size: 20px; line-height: 26px; color: #333333; margin: 0;">
+                        {{ .Cross.Place.Title }}
+                    </p>
+                    <p style="color: #191919; margin: 0;">
+                        {{ .Cross.Place.Description }}
+                    </p>
+                </td>
+                <td></td>
+                <td valign="top" width="180">
+                    <!--Map-->
+                </td>
+            </tr>
+            <tr><td colspan="5" height="10"></td></tr>
+            <tr>
+                <td colspan="5">
+                    <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 20px; color: #191919; font-weight: normal; width: 640px; background-color: #fbfbfb;">
+                       <tr>
+                            <td width="12"><img src="{{ .Site_img }}/email/rsvp_declined_12.png" /></td>
+                            <td>
+                                <p style="margin: 0;">
+                                    <span class="exfe_mail_identity_name">{{ .Cross.TotalAccepted }}</span>
+                                    Accepted:
+                                    {{ range .Accepted }}
+                                    <span class="exfe_mail_identity_name">{{ .Name }}</span>,
+                                    {{ end }}
+                                    and {{ .OldAccepted }} others.
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="12"><img src="{{ .Site_img }}/email/rsvp_accepted_12_blue.png" /></td>
+                            <td>
+                                <p style="margin: 0;">
+                                    Declined: {{ range .Declined }}{{ .Name }}, {{ end }}.
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="12"><img src="{{ .Site_img }}/email/plus_12.png" /></td>
+                            <td>
+                                <p style="margin: 0;">
+                                    Newly invited:
+                                    {{ range .NewlyInvited }}
+                                    {{ if .IsAccepted }}
+                                    <span class="exfe_mail_identity_name">{{ .Name }}</span>,
+                                    {{ else }}
+                                    {{ .Name }},
+                                    {{ end }}
+                                    {{ end }}.
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="12"><img src="{{ .Site_img }}/email/minus_12.png" /></td>
+                            <td>
+                                <p style="margin: 0;">
+                                    Removed: {{ range .Removed }}{{ .Name }}, {{ end }}.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr><td colspan="5" height="10"></td></tr>
+            <tr>
+                <td colspan="5">
+                    {{ $api = .Config.Site_api }}
+                    {{ range .Cross.Exfee.Invitations }}
+                    <img style="padding-right: 5px;" width="40" height="40" src="{{ $api }}/v2/avatar/render?url={{ .Identity.Avatar_filename | urlquery }}&width=40&height=40{{ if not .IsAccepted }}&alpha=0.25{{ end }}{{ if .Host }}&&host=true{{ end }}">
+                    {{ end }}
+                </td>
+            </tr>
+            <tr><td colspan="5" height="10"></td></tr>
+            <tr><td colspan="5" height="1" background="{{ .Config.Site_img }}/email/dash.png"></td></tr>
+            <tr><td colspan="5" height="20"></td></tr>
+            <tr>
+                <td colspan="5">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                        {{ $timezone = .Timezone }}
+                        {{ range .Posts }}
+                        <tr>
+                            <td valign="top" width="50" align="left">
+                                <img width="40" height="40" src="{{ .By_identity.Avatar_filename }}">
+                            </td>
+                            <td valign="top">
+                              <span class="exfe_mail_message">{{ .Content }}</span>
+                                <br>
+                                <span class="exfe_mail_msg_identity_name">{{ .By_identity.Name }}</span>
+                                <span class="exfe_mail_msg_at">at</span>
+                                <span class="exfe_mail_msg_time">{{ .CreateAt $timezone }}</span>
+                            </td>
+                        </tr>
+                        <tr><td colspan="2" height="20"></td></tr>
+                        {{ end }}
+                    </table>
+                </td>
+            </tr>
+            <tr><td colspan="5" height="20"></td></tr>
+            <tr>
+                <td colspan="5" style="font-size: 11px; line-height: 15px; color: #7F7F7F;">
+                    Reply this email directly as conversation, or
+                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.App_url }}">try EXFE app</a>.
+                    <br>
+                    <span style="color: #B2B2B2">
+                    This update is sent from
+                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>
+                    automatically.
+                    <!--
+                    You can change
+                    <a style="color: #B2B2B2; text-decoration: undeline;" href="">notification preference</a>.
+                    -->
+                    <a style="color: #E6E6E6; text-decoration: none;" href="{{ .Config.Site_url }}/s/reportSpam?token={{ .Token }}">Unsubscribe?</a>
+                    </span>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

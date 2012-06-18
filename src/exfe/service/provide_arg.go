@@ -22,6 +22,15 @@ type ProviderArg struct {
 	Cross *exfe_model.Cross
 	Old_cross *exfe_model.Cross
 	To_identity *exfe_model.Identity
+	By_identities []*exfe_model.Identity
+	Posts []*exfe_model.Post
+
+	Config *Config
+
+	Accepted map[uint64]*exfe_model.Identity
+	Declined map[uint64]*exfe_model.Identity
+	NewlyInvited map[uint64]*exfe_model.Invitation
+	Removed map[uint64]*exfe_model.Identity
 }
 
 func (a *ProviderArg) IsHost() bool {
@@ -35,6 +44,13 @@ func (a *ProviderArg) Token() string {
 		}
 	}
 	return ""
+}
+
+func (a *ProviderArg) Timezone() string {
+	if a.To_identity.Timezone != "" {
+		return a.To_identity.Timezone
+	}
+	return a.Cross.Time.Begin_at.Timezone
 }
 
 func (a *ProviderArg) TextPublicInvitation() (string, error) {
@@ -140,5 +156,10 @@ func (a *ProviderArg) Diff(log *log.Logger) (accepted map[uint64]*exfe_model.Ide
 			removed[k] = &v.Identity
 		}
 	}
+
+	a.Accepted = accepted
+	a.Declined = declined
+	a.newlyInvited = newlyInvited
+	a.Removed = removed
 	return
 }

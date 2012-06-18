@@ -21,8 +21,13 @@ type Invitation struct {
 	Type string
 	Token string
 	Host bool
+	Mates uint64
 	Identity Identity
 	Rsvp_status string
 	By_identity Identity
 	Via string
+}
+
+func (i Invitation) IsAccepted() bool {
+	return i.Rsvp_status == "ACCEPTED"
 }

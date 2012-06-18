@@ -1,6 +1,7 @@
 package exfe_service
 
 import (
+	"strings"
 	"github.com/googollee/godis"
 	"time"
 	"exfe/model"
@@ -55,12 +56,11 @@ func (e *CrossEmail) Serve() {
 		if args != nil {
 			updates := args.([]OneIdentityUpdateArg)
 
-			cross := &updates[len(updates)-1].Cross
-			to := findInvitation(&updates[0].To_identity, &updates[0].Cross)
+			by_identities := make([]*exfe_model.Identity, 0, 0)
 			posts := make([]*exfe_model.Post, 0, 0)
-
 			var old_cross *exfe_model.Cross
 			for _, update := range updates {
+				by_identities = append(by_identities, &update.By_identity)
 				if old_cross == nil && update.Old_cross != nil {
 					old_cross = update.Old_cross
 				}
@@ -69,61 +69,51 @@ func (e *CrossEmail) Serve() {
 				}
 			}
 
-			e.sendMail(to, cross, old_cross, posts)
+			arg := &ProviderArg{
+				Cross: &updates[len(updates)-1].Cross,
+				Old_cross: old_cross,
+				To_identity: &updates[0].To_identity,
+				By_identities: by_identities,
+				Posts: posts,
+				Config: e.config,
+			}
+
+			if arg.Old_cross == nil {
+				e.sendMail(arg, "cross_invitation")
+			} else {
+				e.sendMail(arg, "cross_update")
+			}
 		}
 	}
 }
 
-type CrossTemplateData struct {
-	To *exfe_model.Invitation
-	Cross *exfe_model.Cross
-
-	Old_cross *exfe_model.Cross
-	Posts []*exfe_model.Post
-
-	Site_url string
-	App_url string
-}
-
-func findInvitation(to *exfe_model.Identity, cross *exfe_model.Cross) *exfe_model.Invitation {
-	for i := range cross.Exfee.Invitations {
-		if to.Id == cross.Exfee.Invitations[i].Identity.Id {
-			return &cross.Exfee.Invitations[i]
-		}
-	}
-	return nil
-}
-
-func (e *CrossEmail) sendMail(to *exfe_model.Invitation, cross, old_cross *exfe_model.Cross, posts []*exfe_model.Post) {
-	data := CrossTemplateData{to, cross, old_cross, posts, e.config.Site_url, "appurl"}
-
+func (e *CrossEmail) sendMail(arg *ProviderArg, filename string) {
 	html := bytes.NewBuffer(nil)
-	tmpl := template.Must(template.ParseFiles("./template/default/cross_email.html"))
-	err := tmpl.Execute(html, data)
+	tmpl := template.Must(template.ParseFiles(fmt.Sprintf("./template/default/%s.html", filename)))
+	err := tmpl.Execute(html, arg)
 	if err != nil {
 		e.log.Printf("template exec error:", err)
 		return
 	}
+	htmls := strings.SplitN(html.String(), "\n\n", 2)
 
 	ics := bytes.NewBuffer(nil)
-	tmpl = template.Must(template.ParseFiles("./template/default/cross_email.ics"))
-	err = tmpl.Execute(ics, data)
+	tmpl = template.Must(template.ParseFiles("./template/default/cross.ics"))
+	err = tmpl.Execute(ics, arg)
 	if err != nil {
 		e.log.Printf("template exec error:", err)
 		return
 	}
 
-	arg := gomail.Mail{
-		To: []gomail.MailUser{gomail.MailUser{to.Identity.External_id, to.Identity.Name}},
+	mailarg := gomail.Mail{
+		To: []gomail.MailUser{gomail.MailUser{arg.To_identity.External_id, arg.To_identity.Name}},
 		From: gomail.MailUser{"x@exfe.com", "x@exfe.com"},
-		Subject: cross.Title,
-		Html: html.String(),
+		Subject: htmls[0],
+		Html: htmls[1],
 		FileParts: []gomail.FilePart{
-			gomail.FilePart{fmt.Sprintf("x-%d.ics", cross.Id), ics.Bytes()},
+			gomail.FilePart{fmt.Sprintf("x-%d.ics", arg.Cross.Id), ics.Bytes()},
 		},
 	}
 
-	fmt.Println(html.String())
-	fmt.Println(ics.String())
-	e.client.Send("EmailSend", &arg, 5)
+	e.client.Send("EmailSend", &mailarg, 5)
 }

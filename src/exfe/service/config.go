@@ -11,6 +11,8 @@ import (
 type Config struct {
 	Site_url string
 	Site_api string
+	Site_img string
+	App_url string
 
 	Redis struct {
 		Netaddr string
