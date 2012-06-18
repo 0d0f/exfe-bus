@@ -91,8 +91,8 @@ Welcome to EXFE
                         </tr>
                         <tr>
                             <td valign="top">
-                                dsafa sdfasdf sadf sadf sadf asdf asd fasdf asdf asdfdf sadf sadf asdf asd fasdf asdf asdf sadf sadf dsf sd afsd fsd fsad fasd fasd asd fasd asdfsa sd sadf sadf asd fasd f d fasd fas d fasdfasd f sadf sdf sd fsadfasdjfasdf asdf sadf asd fa asdfsdf sdf sadf asd f
-                                <a style="font-style: italic; color: #666666; text-decoration: none;" href="">...more</a>
+                                {{ .Cross.Description }}
+                                <a style="font-style: italic; color: #666666; text-decoration: none;" href="{{ .Config.Site_url }}/#!{{ .Cross.Id }}">...more</a>
                             </td>
                         </tr>
                         {{ end }}
