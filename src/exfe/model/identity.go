@@ -3,7 +3,6 @@ package exfe_model
 type Identity struct {
 	Id uint64
 	Type string
-	Token string
 	Name string
 	Nickname string
 	Bio string

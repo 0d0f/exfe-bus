@@ -27,10 +27,10 @@ type ProviderArg struct {
 
 	Config *Config
 
-	Accepted map[uint64]*exfe_model.Identity
-	Declined map[uint64]*exfe_model.Identity
-	NewlyInvited map[uint64]*exfe_model.Invitation
-	Removed map[uint64]*exfe_model.Identity
+	Accepted []*exfe_model.Identity
+	Declined []*exfe_model.Identity
+	NewlyInvited []*exfe_model.Invitation
+	Removed []*exfe_model.Identity
 }
 
 func (a *ProviderArg) IsHost() bool {
@@ -51,6 +51,19 @@ func (a *ProviderArg) Timezone() string {
 		return a.To_identity.Timezone
 	}
 	return a.Cross.Time.Begin_at.Timezone
+}
+
+func (a *ProviderArg) Confirmed() bool {
+	for _, invitation := range a.Cross.Exfee.Invitations {
+		if invitation.Identity.Connected_user_id == a.To_identity.Connected_user_id {
+			return invitation.IsAccepted()
+		}
+	}
+	return false
+}
+
+func (a *ProviderArg) OldAccepted() int {
+	return a.Cross.TotalAccepted() - len(a.Accepted)
 }
 
 func (a *ProviderArg) TextPublicInvitation() (string, error) {
@@ -157,9 +170,21 @@ func (a *ProviderArg) Diff(log *log.Logger) (accepted map[uint64]*exfe_model.Ide
 		}
 	}
 
-	a.Accepted = accepted
-	a.Declined = declined
-	a.newlyInvited = newlyInvited
-	a.Removed = removed
+	a.Accepted = make([]*exfe_model.Identity, 0, 0)
+	for _, v := range accepted {
+		a.Accepted = append(a.Accepted, v)
+	}
+	a.Declined = make([]*exfe_model.Identity, 0, 0)
+	for _, v := range declined {
+		a.Declined = append(a.Declined, v)
+	}
+	a.NewlyInvited = make([]*exfe_model.Invitation, 0, 0)
+	for _, v := range newlyInvited {
+		a.NewlyInvited = append(a.NewlyInvited, v)
+	}
+	a.Removed = make([]*exfe_model.Identity, 0, 0)
+	for _, v := range removed {
+		a.Removed = append(a.Removed, v)
+	}
 	return
 }

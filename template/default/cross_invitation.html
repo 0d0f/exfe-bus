@@ -44,7 +44,7 @@ Welcome to EXFE
                         <tr>
                             <td valign="top" style="padding-bottom: 20px;">
                                 You're successfully gathering this <span style="color: #0591ac; text-decoration: none;">X</span>.
-                                Invitation from <span>{{ $a = index .By_identities 0 }}{{ $a.Name }}</span>.
+                                Invitation from <span>{{ $a := index .By_identities 0 }}{{ $a.Name }}</span>.
                             </td>
                         </tr>
                         <tr>
@@ -79,23 +79,23 @@ Welcome to EXFE
                         </tr>
                         <tr>
                             <td valign="top" style="padding-bottom: 30px;">
-                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px;" alt="Check it out" href="">Check it out...</a>
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px;" alt="Check it out" href="{{ .Config.Site_url }}/#!{{ .Cross.Id }}">Check it out...</a>
                             </td>
                         </tr>
                         {{ else }}
                         <tr>
                             <td valign="top" style="padding-top: 30px; padding-bottom: 30px;">
-                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #add1dc; color: #000000; padding: 5px 30px 5px 30px; margin-left: 25px;" alt="Accept" href="">Accept</a>
-                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px; margin-left: 15px;" alt="Check it out" href="">Check it out...</a>
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #add1dc; color: #000000; padding: 5px 30px 5px 30px; margin-left: 25px;" alt="Accept" href="{{ .Config.Site_url }}/#token={{ .Token }}">Accept</a>
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px; margin-left: 15px;" alt="Check it out" href="{{ .Config.Site_url }}/#!{{ .Cross.Id }}">Check it out...</a>
                             </td>
                         </tr>
+                        {{ end }}
                         <tr>
                             <td valign="top">
                                 {{ .Cross.Description }}
                                 <a style="font-style: italic; color: #666666; text-decoration: none;" href="{{ .Config.Site_url }}/#!{{ .Cross.Id }}">...more</a>
                             </td>
                         </tr>
-                        {{ end }}
                     </table>
                 </td>
                 <td width="30"></td>
@@ -109,6 +109,7 @@ Welcome to EXFE
                         <tr>
                             <td>
                                 <table border="0" style="color: #333333;" cellpadding="0" cellspacing="0">
+                                    {{ $api := .Config.Site_api }}
                                     {{ range .Cross.Exfee.Invitations }}
                                     <tr>
                                         <td width="25" height="25" align="left" valign="top">
@@ -117,7 +118,7 @@ Welcome to EXFE
                                         <td>
                                           <span>{{ .Identity.Name }}</span>
                                           {{ if .Mates }} <span class="exfe_mail_mates">+ {{ .Mates }}</span>{{ end }}
-                                          {{ .IsHost }} <span class="exfe_mail_label">host</span>{{ end }}
+                                          {{ if .Host }} <span class="exfe_mail_label">host</span>{{ end }}
                                           {{ if not .Identity.Connected_user_id }} <span class="exfe_mail_identity">{{ .Identity.External_id }}</span>{{ end }}
                                         </td>
                                     </tr>

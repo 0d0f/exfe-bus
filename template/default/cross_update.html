@@ -66,57 +66,68 @@
             <tr>
                 <td colspan="5">
                     <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 20px; color: #191919; font-weight: normal; width: 640px; background-color: #fbfbfb;">
+                       {{ if .Accepted }}
                        <tr>
-                            <td width="12"><img src="{{ .Site_img }}/email/rsvp_declined_12.png" /></td>
+                            <td width="12"><img src="{{ .Config.Site_img }}/email/rsvp_declined_12.png" /></td>
                             <td>
                                 <p style="margin: 0;">
                                     <span class="exfe_mail_identity_name">{{ .Cross.TotalAccepted }}</span>
                                     Accepted:
-                                    {{ range .Accepted }}
-                                    <span class="exfe_mail_identity_name">{{ .Name }}</span>,
+                                    {{ $a := .Accepted }}
+                                    {{ range $i, $e := $a }}
+                                    <span class="exfe_mail_identity_name">{{ .Name }}</span>{{ if last $i $a | not }}, {{ end }}
                                     {{ end }}
                                     and {{ .OldAccepted }} others.
                                 </p>
                             </td>
                         </tr>
+                        {{ end }}
+                        {{ if .Declined }}
                         <tr>
-                            <td width="12"><img src="{{ .Site_img }}/email/rsvp_accepted_12_blue.png" /></td>
+                            <td width="12"><img src="{{ .Config.Site_img }}/email/rsvp_accepted_12_blue.png" /></td>
                             <td>
                                 <p style="margin: 0;">
-                                    Declined: {{ range .Declined }}{{ .Name }}, {{ end }}.
+                                    Declined:
+                                    {{ $a := .Declined }}
+                                    {{ range $i, $e := $a }}
+                                    {{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.
                                 </p>
                             </td>
                         </tr>
+                        {{ end }}
+                        {{ if .NewlyInvited }}
                         <tr>
-                            <td width="12"><img src="{{ .Site_img }}/email/plus_12.png" /></td>
+                            <td width="12"><img src="{{ .Config.Site_img }}/email/plus_12.png" /></td>
                             <td>
                                 <p style="margin: 0;">
                                     Newly invited:
-                                    {{ range .NewlyInvited }}
-                                    {{ if .IsAccepted }}
-                                    <span class="exfe_mail_identity_name">{{ .Name }}</span>,
-                                    {{ else }}
-                                    {{ .Name }},
-                                    {{ end }}
-                                    {{ end }}.
+                                    {{ $a := .NewlyInvited }}
+                                    {{ range $i, $e := $a }}
+                                    {{ if .IsAccepted }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ else }}{{ .Identity.Name }}{{ end }}{{ if last $i $a | not }},{{ end }}{{ end }}.
                                 </p>
                             </td>
                         </tr>
+                        {{ end }}
+                        {{ if .Removed }}
                         <tr>
-                            <td width="12"><img src="{{ .Site_img }}/email/minus_12.png" /></td>
+                            <td width="12"><img src="{{ .Config.Site_img }}/email/minus_12.png" /></td>
                             <td>
                                 <p style="margin: 0;">
-                                    Removed: {{ range .Removed }}{{ .Name }}, {{ end }}.
+                                    Removed:
+                                    {{ $a := .Removed }}
+                                    {{ range $i, $e := $a }}
+                                    {{ .Name }}{{ if not last $i $a }}, {{ end }}{{ end }}.
                                 </p>
                             </td>
                         </tr>
+                        {{ end }}
                     </table>
                 </td>
             </tr>
             <tr><td colspan="5" height="10"></td></tr>
             <tr>
                 <td colspan="5">
-                    {{ $api = .Config.Site_api }}
+                    {{ $api := .Config.Site_api }}
                     {{ range .Cross.Exfee.Invitations }}
                     <img style="padding-right: 5px;" width="40" height="40" src="{{ $api }}/v2/avatar/render?url={{ .Identity.Avatar_filename | urlquery }}&width=40&height=40{{ if not .IsAccepted }}&alpha=0.25{{ end }}{{ if .Host }}&&host=true{{ end }}">
                     {{ end }}
@@ -128,7 +139,7 @@
             <tr>
                 <td colspan="5">
                     <table border="0" cellpadding="0" cellspacing="0">
-                        {{ $timezone = .Timezone }}
+                        {{ $timezone := .Timezone }}
                         {{ range .Posts }}
                         <tr>
                             <td valign="top" width="50" align="left">
@@ -139,7 +150,7 @@
                                 <br>
                                 <span class="exfe_mail_msg_identity_name">{{ .By_identity.Name }}</span>
                                 <span class="exfe_mail_msg_at">at</span>
-                                <span class="exfe_mail_msg_time">{{ .CreateAt $timezone }}</span>
+                                <span class="exfe_mail_msg_time">{{ .CreatedAt $timezone }}</span>
                             </td>
                         </tr>
                         <tr><td colspan="2" height="20"></td></tr>

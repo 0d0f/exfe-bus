@@ -12,6 +12,7 @@ import (
 	"log"
 	"gobus"
 	"os"
+	"reflect"
 )
 
 type CrossEmail struct {
@@ -19,6 +20,13 @@ type CrossEmail struct {
 	queue *gobus.TailDelayQueue
 	config *Config
 	client *gobus.Client
+	tmpl *template.Template
+}
+
+var helper = template.FuncMap{
+	"last": func(x int, a interface{}) bool {
+		return x == reflect.ValueOf(a).Len() - 1
+	},
 }
 
 func NewCrossEmail(config *Config) *CrossEmail {
@@ -32,11 +40,14 @@ func NewCrossEmail(config *Config) *CrossEmail {
 		panic(err)
 	}
 
+	t := template.Must(template.New("invitation").Funcs(helper).ParseFiles("./template/default/cross_invitation.html", "./template/default/cross_update.html", "./template/default/cross.ics"))
+
 	return &CrossEmail{
 		log: log,
 		queue: queue,
 		config: config,
 		client: gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, provider),
+		tmpl: t,
 	}
 }
 
@@ -78,32 +89,40 @@ func (e *CrossEmail) Serve() {
 				Config: e.config,
 			}
 
-			if arg.Old_cross == nil {
-				e.sendMail(arg, "cross_invitation")
-			} else {
-				e.sendMail(arg, "cross_update")
-			}
+			e.sendMail(arg)
 		}
 	}
 }
 
-func (e *CrossEmail) sendMail(arg *ProviderArg, filename string) {
+func (e *CrossEmail) GetBody(arg *ProviderArg, filename string) (string, string, error) {
 	html := bytes.NewBuffer(nil)
-	tmpl := template.Must(template.ParseFiles(fmt.Sprintf("./template/default/%s.html", filename)))
-	err := tmpl.Execute(html, arg)
+	err := e.tmpl.ExecuteTemplate(html, filename, arg)
 	if err != nil {
-		e.log.Printf("template exec error:", err)
-		return
+		return "", "", err
 	}
-	htmls := strings.SplitN(html.String(), "\n\n", 2)
 
 	ics := bytes.NewBuffer(nil)
-	tmpl = template.Must(template.ParseFiles("./template/default/cross.ics"))
-	err = tmpl.Execute(ics, arg)
+	err = e.tmpl.ExecuteTemplate(ics, "cross.ics", arg)
+	if err != nil {
+		return "", "", err
+	}
+
+	return html.String(), ics.String(), nil
+}
+
+func (e *CrossEmail) sendMail(arg *ProviderArg) {
+	filename := "cross_invitation.html"
+	if arg.Old_cross != nil {
+		arg.Diff(e.log)
+		filename = "cross_update.html"
+	}
+
+	html, ics, err := e.GetBody(arg, filename)
 	if err != nil {
 		e.log.Printf("template exec error:", err)
 		return
 	}
+	htmls := strings.SplitN(html, "\n\n", 2)
 
 	mailarg := gomail.Mail{
 		To: []gomail.MailUser{gomail.MailUser{arg.To_identity.External_id, arg.To_identity.Name}},
@@ -111,7 +130,7 @@ func (e *CrossEmail) sendMail(arg *ProviderArg, filename string) {
 		Subject: htmls[0],
 		Html: htmls[1],
 		FileParts: []gomail.FilePart{
-			gomail.FilePart{fmt.Sprintf("x-%d.ics", arg.Cross.Id), ics.Bytes()},
+			gomail.FilePart{fmt.Sprintf("x-%d.ics", arg.Cross.Id), []byte(ics)},
 		},
 	}
 

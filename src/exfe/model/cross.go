@@ -22,7 +22,7 @@ type Cross struct {
 }
 
 func (c *Cross) Link(host string) string {
-	return fmt.Sprintf("%s/!%s", host, c.Id)
+	return fmt.Sprintf("%s/!%d", host, c.Id)
 }
 
 func (c *Cross) LinkTo(host string, token string) string {
