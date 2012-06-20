@@ -61,7 +61,7 @@ Welcome to EXFE
                                                 {{ .Cross.Place.Title }}
                                             </p>
                                             <p style="color: #191919; margin: 0;">
-                                                {{ .Cross.Place.Description }}
+                                                {{ replace .Cross.Place.Description "\n" "<br />"}}
                                             </p>
                                         </td>
                                     </tr>
@@ -92,7 +92,7 @@ Welcome to EXFE
                         {{ end }}
                         <tr>
                             <td valign="top">
-                                {{ .Cross.Description }}
+                                {{ $s := .Cross.Description }}{{ replace $s "\n" "<br />" }}
                                 <a style="font-style: italic; color: #666666; text-decoration: none;" href="{{ .Cross.Link .Config.Site_url }}">...more</a>
                             </td>
                         </tr>

@@ -54,7 +54,7 @@
                         {{ .Cross.Place.Title }}
                     </p>
                     <p style="color: #191919; margin: 0;">
-                        {{ .Cross.Place.Description }}
+                        {{ replace .Cross.Place.Description "\n" "<br />"}}
                     </p>
                 </td>
                 <td></td>
