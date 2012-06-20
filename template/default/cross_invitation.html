@@ -79,21 +79,21 @@ Welcome to EXFE
                         </tr>
                         <tr>
                             <td valign="top" style="padding-bottom: 30px;">
-                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px;" alt="Check it out" href="{{ .Config.Site_url }}/#!{{ .Cross.Id }}">Check it out...</a>
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px;" alt="Check it out" href="{{ .Cross.LinkTo .Config.Site_url .Token}}">Check it out...</a>
                             </td>
                         </tr>
                         {{ else }}
                         <tr>
                             <td valign="top" style="padding-top: 30px; padding-bottom: 30px;">
-                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #add1dc; color: #000000; padding: 5px 30px 5px 30px; margin-left: 25px;" alt="Accept" href="{{ .Config.Site_url }}/#token={{ .Token }}">Accept</a>
-                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px; margin-left: 15px;" alt="Check it out" href="{{ .Config.Site_url }}/#!{{ .Cross.Id }}">Check it out...</a>
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #add1dc; color: #000000; padding: 5px 30px 5px 30px; margin-left: 25px;" alt="Accept" href="{{ .Cross.LinkTo .Config.Site_url .Token }}">Accept</a>
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px; margin-left: 15px;" alt="Check it out" href="{{ .Cross.LinkTo .Config.Site_url .Token }}">Check it out...</a>
                             </td>
                         </tr>
                         {{ end }}
                         <tr>
                             <td valign="top">
                                 {{ .Cross.Description }}
-                                <a style="font-style: italic; color: #666666; text-decoration: none;" href="{{ .Config.Site_url }}/#!{{ .Cross.Id }}">...more</a>
+                                <a style="font-style: italic; color: #666666; text-decoration: none;" href="{{ .Cross.Link .Config.Site_url }}">...more</a>
                             </td>
                         </tr>
                     </table>
@@ -135,7 +135,7 @@ Welcome to EXFE
                     <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.App_url }}">try EXFE app</a>.
                     <br>
                     This
-                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}/#!{{ .Cross.Id }}">X</a>
+                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Cross.Link .Config.Site_url }}">X</a>
                     invitation is sent by
                     <span class="exfe_mail_identity_name">dm.</span>
                     from
