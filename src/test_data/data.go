@@ -138,6 +138,15 @@ var Exfee1 = exfe_model.Exfee{
 			Rsvp_status: "NORESPONSE",
 			By_identity: She_email,
 		},
+		exfe_model.Invitation{
+			Id: 4,
+			Token: "rajemailtoken",
+			Host: false,
+			Mates: 0,
+			Identity: Raj_email,
+			Rsvp_status: "NORESPONSE",
+			By_identity: She_email,
+		},
 	},
 }
 
@@ -168,16 +177,7 @@ var Exfee2 = exfe_model.Exfee{
 			Host: false,
 			Mates: 1,
 			Identity: Leo_email,
-			Rsvp_status: "INTERESTED",
-			By_identity: She_email,
-		},
-		exfe_model.Invitation{
-			Id: 4,
-			Token: "rajemailtoken",
-			Host: false,
-			Mates: 0,
-			Identity: Raj_email,
-			Rsvp_status: "NORESPONSE",
+			Rsvp_status: "ACCEPTED",
 			By_identity: She_email,
 		},
 		exfe_model.Invitation{
@@ -214,7 +214,7 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse molestaie cillum.
 		Title: "Crab House Pier 39, 2nd floor",
 		Description: "Pier 39, 203 C, San Francisco, http://crabhouse39.com, (555) 434-2722",
 	},
-	By_identity: Leo_email,
+	By_identity: She_email,
 	Exfee: Exfee2,
 }
 

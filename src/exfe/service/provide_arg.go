@@ -10,11 +10,11 @@ import (
 
 func getTemplateString(name string, data interface{}) (string, error) {
 	buf := bytes.NewBuffer(nil)
-	tmpl, err := template.ParseFiles(fmt.Sprintf("./template/default/%s", name))
+	tmpl, err := template.New("twitter").Funcs(helper).ParseFiles(fmt.Sprintf("./template/default/%s", name))
 	if err != nil {
 		return "", err
 	}
-	err = tmpl.Execute(buf, data)
+	err = tmpl.ExecuteTemplate(buf, name, data)
 	return buf.String(), err
 }
 
@@ -86,13 +86,13 @@ func (a *ProviderArg) TextCrossChange() (string, error) {
 	return getTemplateString("cross_change.txt", a)
 }
 
-func (a *ProviderArg) TextAccepted(identities map[uint64]*exfe_model.Identity) (string, error) {
+func (a *ProviderArg) TextAccepted() (string, error) {
 	accepted := a.Cross.TotalAccepted()
-	otherCount := accepted - len(identities)
+	otherCount := accepted - len(a.Accepted)
 
 	data := make(map[string]interface{})
 	data["Arg"] = a
-	data["Identities"] = identities
+	data["Identities"] = a.Accepted
 	data["TotalAccepted"] = accepted
 	data["OtherCount"] = otherCount
 	data["HasOther"] = otherCount > 0
@@ -100,24 +100,24 @@ func (a *ProviderArg) TextAccepted(identities map[uint64]*exfe_model.Identity) (
 	return getTemplateString("cross_accepted.txt", data)
 }
 
-func (a *ProviderArg) TextDeclined(identities map[uint64]*exfe_model.Identity) (string, error) {
+func (a *ProviderArg) TextDeclined() (string, error) {
 	data := make(map[string]interface{})
 	data["Arg"] = a
-	data["Identities"] = identities
+	data["Identities"] = a.Declined
 	return getTemplateString("cross_declined.txt", data)
 }
 
-func (a *ProviderArg) TextNewlyInvited(invitations map[uint64]*exfe_model.Invitation) (string, error) {
+func (a *ProviderArg) TextNewlyInvited() (string, error) {
 	data := make(map[string]interface{})
 	data["Arg"] = a
-	data["Invitations"] = invitations
+	data["Invitations"] = a.NewlyInvited
 	return getTemplateString("cross_newly_invitations.txt", data)
 }
 
-func (a *ProviderArg) TextRemoved(identities map[uint64]*exfe_model.Identity) (string, error) {
+func (a *ProviderArg) TextRemoved() (string, error) {
 	data := make(map[string]interface{})
 	data["Arg"] = a
-	data["Identities"] = identities
+	data["Identities"] = a.Removed
 	return getTemplateString("cross_removed.txt", data)
 }
 

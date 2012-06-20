@@ -132,24 +132,24 @@ func (s *CrossTwitter) sendExfeeChange(arg *ProviderArg) {
 
 	var msg string
 	if len(accepted) > 0 {
-		msg, _ = arg.TextAccepted(accepted)
+		msg, _ = arg.TextAccepted()
 	}
 	if len(declined) > 0 {
-		msg, _ = arg.TextDeclined(declined)
+		msg, _ = arg.TextDeclined()
 	}
 	if len(newlyInvited) > 0 {
 		if _, ok := newlyInvited[arg.To_identity.Connected_user_id]; ok {
 			s.sendInvitation(arg)
 			return
 		} else {
-			msg, _ = arg.TextNewlyInvited(newlyInvited)
+			msg, _ = arg.TextNewlyInvited()
 		}
 	}
 	if len(removed) > 0 {
 		if _, ok := removed[arg.To_identity.Connected_user_id]; ok {
 			msg, _ = arg.TextQuit()
 		} else {
-			msg, _ = arg.TextRemoved(removed)
+			msg, _ = arg.TextRemoved()
 		}
 	}
 	s.send(arg, msg)

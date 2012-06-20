@@ -5,11 +5,11 @@ X-WR-CALNAME:{{ .Cross.Title }}
 X-WR-CALDESC:exfe cal
 X-WR-TIMEZONE:{{ .Timezone }}
 BEGIN:VEVENT
-UID:20120524T103639CEST-2554ieA6Vn@exfe
-DTSTAMP:20120524T080539Z
-DESCRIPTION:{{ .Cross.Description }}
-DTSTART:19700101T010000
-LOCATION: {{ .Cross.Title }} - {{ .Cross.Description }}
+UID:{{ .Cross.Id }}{{ .To_identity.Id }}@exfe
+DTSTAMP:{{ .Cross.Time.Begin_at.UTCTime "20060102T150405" }}
+DESCRIPTION:{{ $s := limit .Cross.Description 233 }}{{ replace $s "\n" "\\n" }}
+DTSTART:{{ .Cross.Time.Begin_at.UTCTime "20060102T150405" }}
+LOCATION: {{ replace .Cross.Title "\n" "\\n" }} - {{ replace .Cross.Description "\n" "\\n" }}
 SUMMARY:{{ .Cross.Title}}
 URL:https:{{ .Cross.Link .Config.Site_url }}
 BEGIN:VALARM

@@ -116,7 +116,7 @@
                                     Removed:
                                     {{ $a := .Removed }}
                                     {{ range $i, $e := $a }}
-                                    {{ .Name }}{{ if not last $i $a }}, {{ end }}{{ end }}.
+                                    {{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.
                                 </p>
                             </td>
                         </tr>

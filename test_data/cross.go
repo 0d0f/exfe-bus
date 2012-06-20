@@ -40,4 +40,40 @@ func main() {
 	fmt.Println("create cross update error:", err)
 	f, _ = os.Create("cross_update.html")
 	f.WriteString(html)
+
+	str, err := arg.TextPublicInvitation()
+	fmt.Println("public invitation error:", err)
+	fmt.Println(str)
+
+	str, err = arg.TextPrivateInvitation()
+	fmt.Println("private invitation error:", err)
+	fmt.Println(str)
+
+	str, err = arg.TextQuit()
+	fmt.Println("quit error:", err)
+	fmt.Println(str)
+
+	str, err = arg.TextTitleChange()
+	fmt.Println("title change error:", err)
+	fmt.Println(str)
+
+	str, err = arg.TextCrossChange()
+	fmt.Println("cross change error:", err)
+	fmt.Println(str)
+
+	str, err = arg.TextAccepted()
+	fmt.Println("accepted error:", err)
+	fmt.Println(str)
+
+	str, err = arg.TextDeclined()
+	fmt.Println("declined error:", err)
+	fmt.Println(str)
+
+	str, err = arg.TextNewlyInvited()
+	fmt.Println("newly invited error:", err)
+	fmt.Println(str)
+
+	str, err = arg.TextRemoved()
+	fmt.Println("removed error:", err)
+	fmt.Println(str)
 }

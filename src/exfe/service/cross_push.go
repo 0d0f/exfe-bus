@@ -56,11 +56,11 @@ func (s *CrossPush) sendExfeeChange(arg *ProviderArg) {
 	accepted, declined, newlyInvited, removed := arg.Diff(s.log)
 
 	if len(accepted) > 0 {
-		msg, _ := arg.TextAccepted(accepted)
+		msg, _ := arg.TextAccepted()
 		s.push(arg, msg, "default", "u", 0)
 	}
 	if len(declined) > 0 {
-		msg, _ := arg.TextDeclined(declined)
+		msg, _ := arg.TextDeclined()
 		s.push(arg, msg, "default", "u", 0)
 	}
 	if len(newlyInvited) > 0 {
@@ -68,7 +68,7 @@ func (s *CrossPush) sendExfeeChange(arg *ProviderArg) {
 			msg, _ := arg.TextPrivateInvitation()
 			s.push(arg, msg, "default", "i", 0)
 		} else {
-			msg, _ := arg.TextNewlyInvited(newlyInvited)
+			msg, _ := arg.TextNewlyInvited()
 			s.push(arg, msg, "default", "u", 0)
 		}
 	}
@@ -77,7 +77,7 @@ func (s *CrossPush) sendExfeeChange(arg *ProviderArg) {
 			msg, _ := arg.TextQuit()
 			s.push(arg, msg, "default", "r", 0)
 		} else {
-			msg, _ := arg.TextRemoved(removed)
+			msg, _ := arg.TextRemoved()
 			s.push(arg, msg, "default", "u", 0)
 		}
 	}

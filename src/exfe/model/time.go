@@ -110,6 +110,21 @@ func (t EFTime) StringInZone(targetZone string) (string, error) {
 	return ret, nil
 }
 
+func (t EFTime) UTCTime(layout string) (string, error) {
+	var time_ time.Time
+	var err error
+	if t.Time == "" {
+		time_, err = time.Parse("2006-01-02", t.Date)
+	} else {
+		str := fmt.Sprintf("%s %s", t.Date, t.Time)
+		time_, err = time.Parse("2006-01-02 15:04:05", str)
+	}
+	if err != nil {
+		return "", err
+	}
+	return time_.Format(layout), nil
+}
+
 type OutputFormat uint
 
 const (
