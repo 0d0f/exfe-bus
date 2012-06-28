@@ -17,6 +17,8 @@ func main() {
 	client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "twitter")
 	log.SetPrefix("exfe.twitter_bot")
 
+	log.Printf("service start")
+
 	InitTwitter(config.Twitter.Screen_name)
 
 	processTwitter(config)
