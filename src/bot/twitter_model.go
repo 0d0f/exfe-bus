@@ -9,7 +9,7 @@ import (
 var screenName string
 var hashPattern *regexp.Regexp
 
-func Init(screen_name string) {
+func InitTwitter(screen_name string) {
 	screenName = fmt.Sprintf("@%s", screen_name)
 	var err error
 	hashPattern, err = regexp.Compile("( |^)#[a-zA-Z][a-zA-Z0-9]( |$)")
@@ -19,14 +19,14 @@ func Init(screen_name string) {
 }
 
 type User struct {
-	Id_str string
+	Id_str      string
 	Screen_name string
 }
 
 type DirectMessage struct {
-	Sender User
+	Sender     User
 	Created_at string
-	Text string
+	Text       string
 }
 
 func (d *DirectMessage) screen_name() string {
@@ -49,11 +49,11 @@ type Tweet struct {
 	Entities struct {
 		User_mentions []User
 	}
-	Created_at string
-	Text string
+	Created_at                string
+	Text                      string
 	In_reply_to_status_id_str *string
-	User *User
-	Direct_message *DirectMessage
+	User                      *User
+	Direct_message            *DirectMessage
 }
 
 func (t *Tweet) text() string {

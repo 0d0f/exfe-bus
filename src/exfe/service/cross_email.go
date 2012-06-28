@@ -16,16 +16,16 @@ import (
 )
 
 type CrossEmail struct {
-	log *log.Logger
-	queue *gobus.TailDelayQueue
+	log    *log.Logger
+	queue  *gobus.TailDelayQueue
 	config *Config
 	client *gobus.Client
-	tmpl *template.Template
+	tmpl   *template.Template
 }
 
 var helper = template.FuncMap{
 	"last": func(x int, a interface{}) bool {
-		return x == reflect.ValueOf(a).Len() - 1
+		return x == reflect.ValueOf(a).Len()-1
 	},
 	"limit": func(s string, max int) string {
 		return s[0:max]
@@ -49,11 +49,11 @@ func NewCrossEmail(config *Config) *CrossEmail {
 	t := template.Must(template.New("invitation").Funcs(helper).ParseFiles("./template/default/cross_invitation.html", "./template/default/cross_update.html", "./template/default/cross.ics"))
 
 	return &CrossEmail{
-		log: log,
-		queue: queue,
+		log:    log,
+		queue:  queue,
 		config: config,
 		client: gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, provider),
-		tmpl: t,
+		tmpl:   t,
 	}
 }
 
@@ -87,12 +87,12 @@ func (e *CrossEmail) Serve() {
 			}
 
 			arg := &ProviderArg{
-				Cross: &updates[len(updates)-1].Cross,
-				Old_cross: old_cross,
-				To_identity: &updates[0].To_identity,
+				Cross:         &updates[len(updates)-1].Cross,
+				Old_cross:     old_cross,
+				To_identity:   &updates[0].To_identity,
 				By_identities: by_identities,
-				Posts: posts,
-				Config: e.config,
+				Posts:         posts,
+				Config:        e.config,
 			}
 
 			e.sendMail(arg)
@@ -116,7 +116,7 @@ func (e *CrossEmail) GetBody(arg *ProviderArg, filename string) (string, string,
 	var output []byte
 	line_count := 0
 	for _, c := range ics.Bytes() {
-		line_count ++
+		line_count++
 		output = append(output, c)
 		if line_count == 70 {
 			output = append(output, 0xd, 0xa, 0x20)
@@ -147,11 +147,12 @@ func (e *CrossEmail) sendMail(arg *ProviderArg) {
 	}
 	htmls := strings.SplitN(html, "\n\n", 2)
 
+	mail_addr := fmt.Sprintf("x+%d@exfe.com", arg.Cross.Id)
 	mailarg := gomail.Mail{
-		To: []gomail.MailUser{gomail.MailUser{arg.To_identity.External_id, arg.To_identity.Name}},
-		From: gomail.MailUser{"x@exfe.com", "x@exfe.com"},
+		To:      []gomail.MailUser{gomail.MailUser{arg.To_identity.External_id, arg.To_identity.Name}},
+		From:    gomail.MailUser{mail_addr, mail_addr},
 		Subject: htmls[0],
-		Html: htmls[1],
+		Html:    htmls[1],
 		FileParts: []gomail.FilePart{
 			gomail.FilePart{fmt.Sprintf("x-%d.ics", arg.Cross.Id), []byte(ics)},
 		},

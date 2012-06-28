@@ -1,19 +1,87 @@
 package main
 
 import (
-	"exfe/service"
-	"twitter/service"
+	"oauth"
+	"io"
 	"fmt"
-	"gobus"
+	"encoding/json"
+	"bytes"
+	"strings"
+	"twitter/service"
 	"log"
 	"io/ioutil"
+	"exfe/service"
 	"net/url"
 	"net/http"
 )
 
-var config *exfe_service.Config
-var helper string
-var client *gobus.Client
+func find(data []byte, c rune) int {
+	for i, d := range data {
+		if rune(d) == c {
+			return i
+		}
+	}
+	return -1
+}
+
+func connTwitter(clientToken, clientSecret, accessToken, accessSecret string) io.ReadCloser {
+	client := oauth.CreateClient(clientToken, clientSecret, accessToken, accessSecret, "https://userstream.twitter.com")
+	reader, err := client.Do("GET", "/2/user.json", nil)
+	if err != nil {
+		panic(err)
+	}
+	reader, err = client.Do("GET", "/2/user.json", nil)
+	if err != nil {
+		panic(err)
+	}
+	return reader
+}
+
+func read(clientToken, clientSecret, accessToken, accessSecret string, reader io.ReadCloser, ret chan Tweet) {
+	var cache []byte
+	var buf [20]byte
+	for {
+		n, err := reader.Read(buf[:])
+		if err != nil {
+			fmt.Println(err)
+			reader = connTwitter(clientToken, clientSecret, accessToken, accessSecret)
+			continue
+		}
+
+		cache = parseBuf(buf[0:n], cache, ret)
+	}
+}
+
+func parseBuf(buf []byte, cache []byte, ret chan Tweet) []byte {
+	for {
+		i := find(buf, '\r')
+		if i < 0 {
+			return append(cache, buf...)
+		} else {
+			cache = append(cache, buf[0:i]...)
+			item := strings.Trim(string(cache), "\r\n")
+			cache = nil
+			buf = buf[(i + 1):]
+
+			var t Tweet
+			buf := bytes.NewBufferString(item)
+			decoder := json.NewDecoder(buf)
+			err := decoder.Decode(&t)
+			if err == nil && (t.User != nil || t.Direct_message != nil) {
+				ret <- t
+			}
+		}
+	}
+	return nil
+}
+
+func connStreaming(clientToken, clientSecret, accessToken, accessSecret string) (chan Tweet, error) {
+	reader := connTwitter(clientToken, clientSecret, accessToken, accessSecret)
+	ret := make(chan Tweet)
+	go read(clientToken, clientSecret, accessToken, accessSecret, reader, ret)
+
+	return ret, nil
+}
 
 func sendHelp(screen_name string) {
 	f := &twitter_service.FriendshipsExistsArg{
@@ -53,14 +121,7 @@ func sendHelp(screen_name string) {
 	}
 }
 
-func main() {
-	config = exfe_service.InitConfig()
-	helper = fmt.Sprintf("WRONG SYNTAX. Please enclose the 2-character mark in your reply to indicate mentioning 'X', e.g.:\n@%s Sure, be there or be square! #Z4", config.Twitter.Screen_name)
-	client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "twitter")
-	log.SetPrefix("exfe.twitter_bot")
-
-	Init(config.Twitter.Screen_name)
-
+func processTwitter(config *exfe_service.Config) {
 	c, _ := connStreaming(config.Twitter.Client_token, config.Twitter.Client_secret, config.Twitter.Access_token, config.Twitter.Access_secret)
 
 	for t := range c {
