@@ -142,7 +142,7 @@ func processTwitter(config *exfe_service.Config) {
 		}
 
 		params := make(url.Values)
-		params.Add("per_user_hash", hash)
+		params.Add("iom", hash)
 		params.Add("content", post)
 		params.Add("external_id", external_id)
 		params.Add("provider", "twitter")

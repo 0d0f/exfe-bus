@@ -1,6 +1,7 @@
 package main
 
 import (
+	"time"
 	"fmt"
 	"strings"
 	"regexp"
@@ -38,7 +39,11 @@ func (d *DirectMessage) text() string {
 }
 
 func (d *DirectMessage) created_at() string {
-	return d.Created_at
+	t, err := time.Parse("Mon January 02 15:04:05 -0700 2006", d.Created_at)
+	if err != nil {
+		return d.Created_at
+	}
+	return t.Format("2006-01-02 15:04:05 -0700")
 }
 
 func (d *DirectMessage) external_id() string {

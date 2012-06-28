@@ -17,7 +17,7 @@ func main() {
 
 	c2dm, err := c2dm_service.NewC2DM(c.C2DM.Email, c.C2DM.Password, c.C2DM.Appid)
 	if err != nil {
-		log.Fatal("Launch service error: %s", err)
+		log.Fatal("Launch service error:", err)
 	}
 	server.Register(c2dm)
 
