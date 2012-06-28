@@ -7,18 +7,6 @@ import (
 	"regexp"
 )
 
-var screenName string
-var hashPattern *regexp.Regexp
-
-func InitTwitter(screen_name string) {
-	screenName = fmt.Sprintf("@%s", screen_name)
-	var err error
-	hashPattern, err = regexp.Compile("( |^)#[a-zA-Z][a-zA-Z0-9]( |$)")
-	if err != nil {
-		panic(err)
-	}
-}
-
 type User struct {
 	Id_str      string
 	Screen_name string
@@ -61,7 +49,7 @@ type Tweet struct {
 	Direct_message            *DirectMessage
 }
 
-func (t *Tweet) text() string {
+func (t *Tweet) text(screenName string) string {
 	if t.Direct_message != nil {
 		return t.Direct_message.text()
 	}
@@ -96,8 +84,8 @@ func (t *Tweet) external_id() string {
 	return t.User.Id_str
 }
 
-func (t *Tweet) parse() (hash, post string) {
-	post = t.text()
+func (t *Tweet) parse(hashPattern *regexp.Regexp, screenName string) (hash, post string) {
+	post = t.text(screenName)
 	hashs := hashPattern.FindAllString(post, -1)
 	if len(hashs) > 0 {
 		hash = strings.Trim(hashs[0], " #")

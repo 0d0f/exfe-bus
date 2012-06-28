@@ -13,7 +13,27 @@ import (
 	"exfe/service"
 	"net/url"
 	"net/http"
+	"regexp"
+	"gobus"
 )
+
+var helper string
+var screenName string
+var hashPattern *regexp.Regexp
+var config *exfe_service.Config
+var client *gobus.Client
+
+func InitTwitter(c *exfe_service.Config) {
+	config = c
+	client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "twitter")
+	screenName = fmt.Sprintf("@%s", config.Twitter.Screen_name)
+	helper = fmt.Sprintf("WRONG SYNTAX. Please enclose the 2-character mark in your reply to indicate mentioning 'X', e.g.:\n@%s Sure, be there or be square! #Z4", config.Twitter.Screen_name)
+	var err error
+	hashPattern, err = regexp.Compile("( |^)#[a-zA-Z][a-zA-Z0-9]( |$)")
+	if err != nil {
+		panic(err)
+	}
+}
 
 func find(data []byte, c rune) int {
 	for i, d := range data {
@@ -125,7 +145,7 @@ func processTwitter(config *exfe_service.Config) {
 	c, _ := connStreaming(config.Twitter.Client_token, config.Twitter.Client_secret, config.Twitter.Access_token, config.Twitter.Access_secret)
 
 	for t := range c {
-		hash, post := t.parse()
+		hash, post := t.parse(hashPattern, screenName)
 		time := t.created_at()
 		external_id := t.external_id()
 		screen_name := t.screen_name()
