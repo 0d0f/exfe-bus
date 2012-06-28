@@ -28,5 +28,5 @@ func main() {
 		server.Close()
 	}()
 
-	server.Serve(time.Duration(c.Email.Time_out * time.Second))
+	server.Serve(c.Email.Time_out * time.Second)
 }
