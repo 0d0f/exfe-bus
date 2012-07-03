@@ -63,9 +63,9 @@ func read(clientToken, clientSecret, accessToken, accessSecret string, reader io
 	for {
 		n, err := reader.Read(buf[:])
 		if err != nil {
-			fmt.Println(err)
-			reader = connTwitter(clientToken, clientSecret, accessToken, accessSecret)
-			continue
+			log.Printf("twitter connection read error: %s", err)
+			close(ret)
+			return
 		}
 
 		cache = parseBuf(buf[0:n], cache, ret)
@@ -141,7 +141,7 @@ func sendHelp(screen_name string) {
 	}
 }
 
-func processTwitter(config *exfe_service.Config) {
+func processTwitter(config *exfe_service.Config, quit chan int) {
 	c, _ := connStreaming(config.Twitter.Client_token, config.Twitter.Client_secret, config.Twitter.Access_token, config.Twitter.Access_secret)
 
 	for t := range c {
@@ -186,4 +186,6 @@ func processTwitter(config *exfe_service.Config) {
 			continue
 		}
 	}
+	log.Printf("twitter streaming quit")
+	quit <- 1
 }

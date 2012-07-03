@@ -12,46 +12,52 @@ type Config struct {
 	Site_url string
 	Site_api string
 	Site_img string
-	App_url string
+	App_url  string
 
 	Redis struct {
-		Netaddr string
-		Db int
+		Netaddr  string
+		Db       int
 		Password string
 	}
 	Cross struct {
 		Time_out time.Duration
-		Delay map[string]int
+		Delay    map[string]int
+	}
+	Bot struct {
+		Imap_time_out time.Duration
+		Imap_host     string
+		Imap_user     string
+		Imap_password string
 	}
 	User struct {
 		Time_out time.Duration
 	}
 	Twitter struct {
-		Client_token string
+		Client_token  string
 		Client_secret string
-		Access_token string
+		Access_token  string
 		Access_secret string
-		Screen_name string
-		Time_out time.Duration
+		Screen_name   string
+		Time_out      time.Duration
 	}
 	Apn struct {
 		Time_out time.Duration
-		Cert string
-		Key string
-		Server string
-		Rootca string
+		Cert     string
+		Key      string
+		Server   string
+		Rootca   string
 	}
 	C2DM struct {
 		Time_out time.Duration
-		Email string
+		Email    string
 		Password string
-		Appid string
+		Appid    string
 	}
 	Email struct {
 		Time_out time.Duration
-		Host string
-		Port uint
-		User string
+		Host     string
+		Port     uint
+		User     string
 		Password string
 	}
 }

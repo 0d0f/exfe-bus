@@ -13,5 +13,8 @@ func main() {
 
 	InitTwitter(config)
 
-	processTwitter(config)
+	quit := make(chan int)
+	go processTwitter(config, quit)
+
+	<-quit
 }
