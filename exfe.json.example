@@ -19,6 +19,12 @@
   "user": {
     "time_out": 5
   },
+  "bot": {
+    "imap_time_out": 5,
+    "imap_host": "",
+    "imap_user": "",
+    "imap_password": ""
+  },
   "twitter": {
     "client_token": "",
     "client_secret": "",

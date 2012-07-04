@@ -3,6 +3,7 @@ package main
 import (
 	"oauth"
 	"io"
+	"os"
 	"fmt"
 	"encoding/json"
 	"bytes"
@@ -21,11 +22,13 @@ var helper string
 var screenName string
 var hashPattern *regexp.Regexp
 var config *exfe_service.Config
-var client *gobus.Client
+var twitterBus *gobus.Client
+var twitterLog *log.Logger
 
 func InitTwitter(c *exfe_service.Config) {
 	config = c
-	client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "twitter")
+	twitterLog = log.New(os.Stderr, "bot.twitter", log.LstdFlags)
+	twitterBus = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "twitter")
 	screenName = fmt.Sprintf("@%s", config.Twitter.Screen_name)
 	helper = fmt.Sprintf("WRONG SYNTAX. Please enclose the 2-character mark in your reply to indicate mentioning 'X', e.g.:\n@%s Sure, be there or be square! #Z4", config.Twitter.Screen_name)
 	var err error
@@ -63,7 +66,7 @@ func read(clientToken, clientSecret, accessToken, accessSecret string, reader io
 	for {
 		n, err := reader.Read(buf[:])
 		if err != nil {
-			log.Printf("twitter connection read error: %s", err)
+			twitterLog.Printf("twitter connection read error: %s", err)
 			close(ret)
 			return
 		}
@@ -113,9 +116,9 @@ func sendHelp(screen_name string) {
 		UserB:        config.Twitter.Screen_name,
 	}
 	var isFriend bool
-	err := client.Do("GetFriendship", f, &isFriend, 10)
+	err := twitterBus.Do("GetFriendship", f, &isFriend, 10)
 	if err != nil {
-		log.Printf("Can't require user %s friendship: %s", screen_name, err)
+		twitterLog.Printf("Can't require user %s friendship: %s", screen_name, err)
 		isFriend = false
 	}
 
@@ -128,7 +131,7 @@ func sendHelp(screen_name string) {
 			Message:      helper,
 			ToUserName:   &screen_name,
 		}
-		client.Send("SendDM", dm, 5)
+		twitterBus.Send("SendDM", dm, 5)
 	} else {
 		tweet := &twitter_service.StatusesUpdateArg{
 			ClientToken:  config.Twitter.Client_token,
@@ -137,7 +140,7 @@ func sendHelp(screen_name string) {
 			AccessSecret: config.Twitter.Access_secret,
 			Tweet:        fmt.Sprintf("@%s %s", screen_name, helper),
 		}
-		client.Send("SendTweet", tweet, 5)
+		twitterBus.Send("SendTweet", tweet, 5)
 	}
 }
 
@@ -169,23 +172,23 @@ func processTwitter(config *exfe_service.Config, quit chan int) {
 		params.Add("time", time)
 		resp, err := http.PostForm(fmt.Sprintln("%s/v2/gobus/PostConversation", config.Site_api), params)
 		if err != nil {
-			log.Printf("Send post to server error: %s", err)
+			twitterLog.Printf("Send post to server error: %s", err)
 			continue
 		}
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			log.Printf("Get response body error: %s", err)
+			twitterLog.Printf("Get response body error: %s", err)
 			continue
 		}
 		if resp.StatusCode == 500 {
-			log.Printf("Server inner error: %s", string(body))
+			twitterLog.Printf("Server inner error: %s", string(body))
 			continue
 		}
 		if resp.StatusCode == 400 {
-			log.Printf("User status error: %s", string(body))
+			twitterLog.Printf("User status error: %s", string(body))
 			continue
 		}
 	}
-	log.Printf("twitter streaming quit")
+	twitterLog.Printf("twitter streaming quit")
 	quit <- 1
 }

@@ -20,27 +20,27 @@ import (
 
 var mailConfig *exfe_service.Config
 var mailPattern *regexp.Regexp
-var l *log.Logger
+var emailLog *log.Logger
 var mailBus *gobus.Client
 
-func EmailInit(c *exfe_service.Config) {
+func InitEmail(c *exfe_service.Config) {
 	mailConfig = c
 	mailPattern = regexp.MustCompile(`^.*?\+([0-9]*)@.*$`)
-	l = log.New(os.Stderr, "bot.mail", log.LstdFlags)
+	emailLog = log.New(os.Stderr, "bot.mail", log.LstdFlags)
 	mailBus = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "email")
 }
 
 func getCrossId(addrs []*mail.Address) (string, error) {
 	for _, addr := range addrs {
 		ids := mailPattern.FindStringSubmatch(addr.Address)
-		if len(ids) > 0 {
-			return ids[0], nil
+		if len(ids) > 1 {
+			return ids[1], nil
 		}
 	}
 	return "", fmt.Errorf("No valid mail address")
 }
 
-func EmailStream() {
+func processEmail(quit chan int) {
 	conn, _ := imap.NewClient(mailConfig.Bot.Imap_host)
 	defer func() {
 		conn.Logout()
@@ -52,46 +52,48 @@ func EmailStream() {
 	for {
 		ids, _ := conn.Search("unseen")
 		for _, id := range ids {
+			fmt.Println("Process message", id)
 			conn.StoreFlag(id, imap.Seen)
 
 			msg, err := conn.GetMessage(id)
 			if err != nil {
-				l.Printf("Get message(%v) error: %s", id, err)
+				emailLog.Printf("Get message(%v) error: %s", id, err)
 				return
 			}
 			tos, err := imap.ParseAddress(msg.Header.Get("To"))
 			if err != nil {
-				l.Printf("Parse message(%v) To field(%s) error: %s", id, msg.Header.Get("To"), err)
+				emailLog.Printf("Parse message(%v) To field(%s) error: %s", id, msg.Header.Get("To"), err)
 				continue
 			}
 			froms, err := imap.ParseAddress(msg.Header.Get("From"))
 			if err != nil {
-				l.Printf("Parse message(%v) From field(%s) error: %s", id, msg.Header.Get("From"), err)
+				emailLog.Printf("Parse message(%v) From field(%s) error: %s", id, msg.Header.Get("From"), err)
 				continue
 			}
 			content, mediatype, charset, err := imap.GetBody(msg, "text/plain")
 			if err != nil {
-				l.Printf("Get message(%v) body failed: %s", id, err)
+				emailLog.Printf("Get message(%v) body failed: %s", id, err)
 				continue
 			}
 			content, err = iconv.Conv(content, "UTF-8", charset)
 			if err != nil {
-				l.Printf("Convert message(%v) from %s to utf8 error: %s", id, charset, err)
+				emailLog.Printf("Convert message(%v) from %s to utf8 error: %s", id, charset, err)
 				continue
 			}
 			date, err := msg.Header.Date()
 			if err != nil {
-				l.Printf("Get message(%v) time error: id, err")
+				emailLog.Printf("Get message(%v) time error: id, err")
 				continue
 			}
 			if mediatype != "text/plain" {
 				content = stripGmail(content)
 				content = stripHtml(content)
-				content = stripReply(content)
 			}
+			content = stripReply(content)
+
 			crossId, err := getCrossId(tos)
 			if err != nil {
-				l.Printf("Find cross id from message(%v) To field(%s) error: %s", id, tos, err)
+				emailLog.Printf("Find cross id from message(%v) To field(%s) error: %s", id, tos, err)
 				sendErrorMail(froms[0], msg.Header.Get("Subject"), content)
 				continue
 			}
@@ -102,27 +104,28 @@ func EmailStream() {
 			params.Add("external_id", froms[0].Address)
 			params.Add("provider", "email")
 			params.Add("time", date.Format("2006-01-02 15:04:05 -0700"))
-			resp, err := http.PostForm(fmt.Sprintln("%s/v2/gobus/PostConversation", mailConfig.Site_api), params)
+			resp, err := http.PostForm(fmt.Sprintf("%s/v2/gobus/PostConversation", mailConfig.Site_api), params)
 			if err != nil {
-				l.Printf("Send post to server error: %s", err)
+				emailLog.Printf("Send post to server error: %s", err)
 				continue
 			}
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				l.Printf("Get response body error: %s", err)
+				emailLog.Printf("Get response body error: %s", err)
 				continue
 			}
 			if resp.StatusCode == 500 {
-				l.Printf("Server inner error: %s", string(body))
+				emailLog.Printf("Server inner error: %s", string(body))
 				continue
 			}
 			if resp.StatusCode == 400 {
-				l.Printf("User status error: %s", string(body))
+				emailLog.Printf("User status error: %s", string(body))
 				continue
 			}
 		}
 		time.Sleep(mailConfig.Bot.Imap_time_out * time.Second)
 	}
+	quit <- 1
 }
 
 func isReplys(line string) bool {
