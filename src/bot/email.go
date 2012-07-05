@@ -15,7 +15,7 @@ import (
 	"io/ioutil"
 	"fmt"
 	"gobus"
-	"gomail"
+	"email/service"
 )
 
 var mailConfig *exfe_service.Config
@@ -94,7 +94,7 @@ func processEmail(quit chan int) {
 			crossId, err := getCrossId(tos)
 			if err != nil {
 				emailLog.Printf("Find cross id from message(%v) To field(%s) error: %s", id, tos, err)
-				sendErrorMail(froms[0], msg.Header.Get("Subject"), content)
+				sendErrorMail(froms[0], msg.Header.Get("Subject"), content, msg.Header.Get("Message-Id"))
 				continue
 			}
 
@@ -192,14 +192,16 @@ func stripHtml(text string) string {
 	return strings.Trim(text, " \t\n\r")
 }
 
-func sendErrorMail(to *mail.Address, subject, content string) {
+func sendErrorMail(to *mail.Address, subject, content, id string) {
 	body := fmt.Sprintf("Sorry for the inconvenience, but email you just sent to EXFE was not sent from an attendee identity to the X (cross). Please try again from the correct email address.\n -- $s",
 		content)
-	mailarg := gomail.Mail{
-		To:      []gomail.MailUser{gomail.MailUser{to.Address, to.Name}},
-		From:    gomail.MailUser{"x@exfe.com", "x@exfe.com"},
+	mailarg := &email_service.MailArg{
+		To:      []*mail.Address{&mail.Address{to.Address, to.Name}},
+		From:    &mail.Address{"x@exfe.com", "x@exfe.com"},
 		Subject: fmt.Sprintf("Re: %s", subject),
 		Text:    body,
 	}
+	mailarg.Header.Set("In-Reply-To", id)
+	mailarg.Header.Set("References", id)
 	mailBus.Send("EmailSend", &mailarg, 5)
 }

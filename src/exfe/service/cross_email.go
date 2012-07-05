@@ -4,8 +4,8 @@ import (
 	"strings"
 	"github.com/googollee/godis"
 	"time"
+	"net/mail"
 	"exfe/model"
-	"gomail"
 	"fmt"
 	"bytes"
 	"text/template"
@@ -13,6 +13,7 @@ import (
 	"gobus"
 	"os"
 	"reflect"
+	"email/service"
 )
 
 type CrossEmail struct {
@@ -148,13 +149,13 @@ func (e *CrossEmail) sendMail(arg *ProviderArg) {
 	htmls := strings.SplitN(html, "\n\n", 2)
 
 	mail_addr := fmt.Sprintf("x+%d@exfe.com", arg.Cross.Id)
-	mailarg := gomail.Mail{
-		To:      []gomail.MailUser{gomail.MailUser{arg.To_identity.External_id, arg.To_identity.Name}},
-		From:    gomail.MailUser{mail_addr, mail_addr},
+	mailarg := &email_service.MailArg{
+		To:      []*mail.Address{&mail.Address{arg.To_identity.External_id, arg.To_identity.Name}},
+		From:    &mail.Address{mail_addr, mail_addr},
 		Subject: htmls[0],
 		Html:    htmls[1],
-		FileParts: []gomail.FilePart{
-			gomail.FilePart{fmt.Sprintf("x-%d.ics", arg.Cross.Id), []byte(ics)},
+		FileParts: []email_service.FilePart{
+			email_service.FilePart{fmt.Sprintf("x-%d.ics", arg.Cross.Id), []byte(ics)},
 		},
 	}
 

@@ -2,8 +2,8 @@ package exfe_service
 
 import (
 	"bytes"
-	"gomail"
 	"strings"
+	"email/service"
 	"log"
 	"exfe/model"
 	"fmt"
@@ -11,15 +11,16 @@ import (
 	"gobus"
 	"os"
 	"net/http"
+	"net/mail"
 	"encoding/json"
 	"twitter/service"
 )
 
 type UserArg struct {
 	To_identity exfe_model.Identity
-	User_name string
-	Token string
-	Action string
+	User_name   string
+	Token       string
+	Action      string
 
 	Config *Config
 }
@@ -36,9 +37,9 @@ func (a *UserArg) NeedVerify() bool {
 }
 
 type User struct {
-	config *Config
-	log *log.Logger
-	email *gobus.Client
+	config  *Config
+	log     *log.Logger
+	email   *gobus.Client
 	twitter *gobus.Client
 }
 
@@ -47,9 +48,9 @@ func NewUser(config *Config) *User {
 	email := gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "email")
 	twitter := gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "twitter")
 	return &User{
-		config: config,
-		log: log,
-		email: email,
+		config:  config,
+		log:     log,
+		email:   email,
 		twitter: twitter,
 	}
 }
@@ -68,11 +69,11 @@ func executeTemplate(name string, to *exfe_model.Identity, data interface{}, cli
 	fmt.Println(buf.String())
 	content := strings.SplitN(buf.String(), "\n", 2)
 
-	mailarg := gomail.Mail{
-		To: []gomail.MailUser{},
-		From: gomail.MailUser{"x@exfe.com", "x@exfe.com"},
+	mailarg := &email_service.MailArg{
+		To:      []*mail.Address{&mail.Address{to.Name, to.External_id}},
+		From:    &mail.Address{"x@exfe.com", "x@exfe.com"},
 		Subject: content[0],
-		Html: content[1],
+		Html:    content[1],
 	}
 
 	client.Send("EmailSend", &mailarg, 5)
@@ -110,9 +111,9 @@ func (s *User) TwitterFriends(arg *twitter_service.FriendsArg, reply *int) error
 	}
 	users := friendReply.Ids
 	lookupArg := twitter_service.UsersLookupArg{
-		ClientToken: arg.ClientToken,
+		ClientToken:  arg.ClientToken,
 		ClientSecret: arg.ClientSecret,
-		AccessToken: arg.AccessToken,
+		AccessToken:  arg.AccessToken,
 		AccessSecret: arg.AccessSecret,
 	}
 	for len(users) > 0 {
