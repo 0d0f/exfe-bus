@@ -3,6 +3,7 @@ package main
 import (
 	"exfe/service"
 	"log"
+	"bot/email"
 )
 
 func main() {
@@ -12,12 +13,15 @@ func main() {
 	log.Printf("service start")
 
 	InitTwitter(config)
-	InitEmail(config)
 
 	quit := make(chan int)
 
 	go processTwitter(config, quit)
-	go processEmail(quit)
+	go email.Daemon(config, quit)
 
 	<-quit
+	for i := 0; i < 1; i++ {
+		quit <- 1
+		<-quit
+	}
 }
