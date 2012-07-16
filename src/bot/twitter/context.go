@@ -3,8 +3,8 @@ package twitter
 import (
 	"fmt"
 	"gobot"
-	//	"io/ioutil"
-	//	"net/http"
+	"io/ioutil"
+	"net/http"
 	"time"
 )
 
@@ -35,18 +35,18 @@ func (c *Context) TweetWithIOM(input *Input) error {
 	}
 	fmt.Println("iom: ", input.Iom)
 	c.lastIom = input.Iom
-	/*	resp, err := http.PostForm(fmt.Sprintf("%s/v2/gobus/PostConversation", c.b.config.Site_api), input.ToUrl())
-		if err != nil {
-			return fmt.Errorf("message(%s) send to server error: %s", input.ScreenName, err)
-		}
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("message(%s) get response body error: %s", input.ScreenName, err)
-		}
-		if resp.StatusCode != 200 {
-			return fmt.Errorf("message(%s) send error(%s): %s", input.ScreenName, resp.Status, string(body))
-		}
-	*/return nil
+	resp, err := http.PostForm(fmt.Sprintf("%s/v2/gobus/PostConversation", c.b.config.Site_api), input.ToUrl())
+	if err != nil {
+		return fmt.Errorf("message(%s) send to server error: %s", input.ScreenName, err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("message(%s) get response body error: %s", input.ScreenName, err)
+	}
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("message(%s) send error(%s): %s", input.ScreenName, resp.Status, string(body))
+	}
+	return nil
 }
 
 func (c *Context) Default(input *Input) error {
