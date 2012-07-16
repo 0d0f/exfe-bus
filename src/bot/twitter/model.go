@@ -49,7 +49,6 @@ func (r *StreamingReader) ReadTweet() (tweet *Tweet, err error) {
 		}
 	}
 
-	fmt.Println("streaming:", string(cache))
 	buf := bytes.NewBuffer(cache)
 	decoder := json.NewDecoder(buf)
 	tweet = new(Tweet)
