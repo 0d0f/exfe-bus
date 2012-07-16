@@ -4,19 +4,17 @@ import (
 	"exfe/service"
 	"log"
 	"bot/email"
+	"bot/twitter"
 )
 
 func main() {
 	config := exfe_service.InitConfig()
 	log.SetPrefix("exfe.bot")
-
 	log.Printf("service start")
-
-	InitTwitter(config)
 
 	quit := make(chan int)
 
-	go processTwitter(config, quit)
+	go twitter.Daemon(config, quit)
 	go email.Daemon(config, quit)
 
 	<-quit

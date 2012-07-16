@@ -24,6 +24,7 @@ type Config struct {
 		Delay    map[string]int
 	}
 	Bot struct {
+		Iom_timeout   time.Duration
 		Imap_time_out time.Duration
 		Imap_host     string
 		Imap_user     string

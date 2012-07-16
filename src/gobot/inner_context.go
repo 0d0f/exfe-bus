@@ -1,8 +1,8 @@
 package bot
 
 import (
-	"reflect"
 	"fmt"
+	"reflect"
 )
 
 var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
@@ -87,8 +87,8 @@ func (c *innerContext) feed(input interface{}) error {
 		if err.Interface() == nil {
 			return nil
 		}
-		if err.Type() == typeOfInterrupted {
-			return err.Interface().(error)
+		if e := err.Interface().(error); e != BotNotMatched {
+			return e
 		}
 	}
 	return BotNoProcessed
