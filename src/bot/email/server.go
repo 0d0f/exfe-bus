@@ -3,11 +3,11 @@ package email
 import (
 	"exfe/service"
 	"fmt"
-	"gobot"
-	"os"
-	"log"
-	"time"
 	"github.com/googollee/goimap"
+	"gobot"
+	"log"
+	"os"
+	"time"
 )
 
 type EmailBotServer struct {
@@ -17,8 +17,11 @@ type EmailBotServer struct {
 }
 
 func NewEmailBotServer(c *exfe_service.Config) *EmailBotServer {
+	b := bot.NewBot(NewEmailBot(c))
+	b.Register("EmailWithCrossID")
+	b.Register("Default")
 	return &EmailBotServer{
-		bot:    bot.NewBot(NewEmailBot(c)),
+		bot:    b,
 		conn:   nil,
 		config: c,
 	}

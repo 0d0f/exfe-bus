@@ -2,7 +2,6 @@ package twitter
 
 import (
 	"exfe/service"
-	"fmt"
 	"gobot"
 	"log"
 	"oauth"
@@ -34,7 +33,6 @@ func Daemon(config *exfe_service.Config, quit chan int) {
 	e := make(chan error)
 	go func() {
 		for {
-			fmt.Printf(".")
 			tweet, err := r.ReadTweet()
 			if err != nil {
 				e <- err

@@ -1,15 +1,15 @@
 package email
 
 import (
+	"exfe/service"
 	"fmt"
-	"gobot"
 	"github.com/googollee/goimap"
 	"github.com/sloonz/go-iconv"
-	"strings"
+	"gobot"
+	"gobus"
 	"net/mail"
 	"regexp"
-	"exfe/service"
-	"gobus"
+	"strings"
 )
 
 var replyLine = [...]string{
@@ -99,17 +99,13 @@ func (b *EmailBot) GetIDFromInput(input interface{}) (id string, content interfa
 		text = b.stripHtml(text)
 	}
 	text = b.stripReply(text)
-	crossId, err := b.getCrossId(to)
-	if err != nil {
-		e = fmt.Errorf("Find cross id from message(%v) To field(%s) error: %s", id, to, err)
-		return
-	}
+
 	id = from[0].Address
 	content = &Email{
 		From:      from[0],
 		To:        to,
 		Subject:   msg.Header.Get("Subject"),
-		CrossId:   crossId,
+		CrossId:   b.getCrossId(to),
 		Date:      date,
 		MessageId: msg.Header.Get("Message-Id"),
 		Text:      text,
@@ -117,14 +113,14 @@ func (b *EmailBot) GetIDFromInput(input interface{}) (id string, content interfa
 	return
 }
 
-func (b *EmailBot) getCrossId(addrs []*mail.Address) (string, error) {
+func (b *EmailBot) getCrossId(addrs []*mail.Address) string {
 	for _, addr := range addrs {
 		ids := b.crossId.FindStringSubmatch(addr.Address)
 		if len(ids) > 1 {
-			return ids[1], nil
+			return ids[1]
 		}
 	}
-	return "", fmt.Errorf("No valid mail address")
+	return ""
 }
 
 func (b *EmailBot) isReplys(line string) bool {

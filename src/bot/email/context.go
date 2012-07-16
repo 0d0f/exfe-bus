@@ -1,15 +1,15 @@
 package email
 
 import (
-	"net/textproto"
 	"email/service"
-	"io/ioutil"
 	"fmt"
-	"time"
 	"gobot"
-	"net/mail"
+	"io/ioutil"
 	"net/http"
+	"net/mail"
+	"net/textproto"
 	"net/url"
+	"time"
 )
 
 type Email struct {
