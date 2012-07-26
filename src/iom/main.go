@@ -1,14 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"regexp"
-	"net/http"
-	"exfe/service"
-	"log"
-	"flag"
 	"config"
+	"exfe/service"
+	"flag"
+	"fmt"
+	"log"
+	"net/http"
 	"os"
+	"regexp"
 )
 
 const HashUserPattern = "^/iom/(.*?)$"
@@ -16,9 +16,9 @@ const HashTagPattern = "^/iom/(.*?)/(.*?)$"
 
 type HashHTTP struct {
 	handler *HashHandler
-	log *log.Logger
+	log     *log.Logger
 	userReg *regexp.Regexp
-	tagReg *regexp.Regexp
+	tagReg  *regexp.Regexp
 }
 
 func (h *HashHTTP) Get(userid, hash string) (string, error) {
@@ -34,6 +34,7 @@ func (h *HashHTTP) Post(userid, data string) (string, error) {
 }
 
 func (h *HashHTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.log.Printf("request: %s", r.URL.String())
 	var e error
 	switch r.Method {
 	case "GET":
@@ -67,6 +68,8 @@ func (h *HashHTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			e = fmt.Errorf("can't parse url")
 		}
+	default:
+		e = fmt.Errorf("don't know how to handle %s", r.Method)
 	}
 	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprintf(w, "%s", e)
@@ -98,12 +101,12 @@ func main() {
 
 	handler := &HashHTTP{
 		handler: NewHashHandler(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password),
-		log: log,
+		log:     log,
 		userReg: regexp.MustCompile(HashUserPattern),
-		tagReg: regexp.MustCompile(HashTagPattern),
+		tagReg:  regexp.MustCompile(HashTagPattern),
 	}
-	http.Handle("/puh/", handler)
-	err := http.ListenAndServe(":8080", nil)
+	http.Handle("/iom/", handler)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", c.Iom.Port), nil)
 	if err != nil {
 		log.Printf("Error: %s", err)
 	}

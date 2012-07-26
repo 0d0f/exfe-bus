@@ -1,11 +1,11 @@
 package exfe_service
 
 import (
-	"time"
-	"flag"
 	"config"
-	"os"
+	"flag"
 	"fmt"
+	"os"
+	"time"
 )
 
 type Config struct {
@@ -18,6 +18,9 @@ type Config struct {
 		Netaddr  string
 		Db       int
 		Password string
+	}
+	Iom struct {
+		Port int
 	}
 	Cross struct {
 		Time_out time.Duration

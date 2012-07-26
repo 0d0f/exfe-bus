@@ -8,6 +8,9 @@
     "db": 0,
     "password": ""
   },
+  "iom": {
+    "port": 1234
+  },
   "cross": {
     "time_out": 5,
     "delay": {
