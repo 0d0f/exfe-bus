@@ -106,6 +106,7 @@ func main() {
 		tagReg:  regexp.MustCompile(HashTagPattern),
 	}
 	http.Handle("/iom/", handler)
+	log.Printf("listen to :%d", c.Iom.Port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", c.Iom.Port), nil)
 	if err != nil {
 		log.Printf("Error: %s", err)
