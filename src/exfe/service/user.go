@@ -2,17 +2,17 @@ package exfe_service
 
 import (
 	"bytes"
-	"strings"
 	"email/service"
-	"log"
+	"encoding/json"
 	"exfe/model"
 	"fmt"
-	"text/template"
 	"gobus"
-	"os"
+	"log"
 	"net/http"
 	"net/mail"
-	"encoding/json"
+	"os"
+	"strings"
+	"text/template"
 	"twitter/service"
 )
 
@@ -84,7 +84,7 @@ func executeTemplate(name string, to *exfe_model.Identity, data interface{}, cli
 func (s *User) Welcome(arg *UserArg, reply *int) error {
 	arg.Config = s.config
 
-	err := executeTemplate("auth_welcome.html", &arg.To_identity, arg, s.email)
+	err := executeTemplate("user_welcome.html", &arg.To_identity, arg, s.email)
 	if err != nil {
 		log.Printf("Execute template error: %s", err)
 	}
