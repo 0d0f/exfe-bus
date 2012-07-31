@@ -1,38 +1,38 @@
 package exfe_service
 
 import (
-	"log"
-	"github.com/googollee/godis"
-	"gobus"
 	"exfe/model"
 	"fmt"
-	"time"
+	"github.com/googollee/godis"
+	"gobus"
+	"log"
 	"os"
+	"time"
 )
 
 type UpdateCrossArg struct {
-	Cross exfe_model.Cross
+	Cross         exfe_model.Cross
 	To_identities []exfe_model.Identity
-	By_identity exfe_model.Identity
+	By_identity   exfe_model.Identity
 
 	Old_cross *exfe_model.Cross
-	Post *exfe_model.Post
+	Post      *exfe_model.Post
 }
 
 type OneIdentityUpdateArg struct {
-	Cross exfe_model.Cross
+	Cross       exfe_model.Cross
 	To_identity exfe_model.Identity
 	By_identity exfe_model.Identity
 
 	Old_cross *exfe_model.Cross
-	Post *exfe_model.Post
+	Post      *exfe_model.Post
 }
 
 type Cross struct {
 	queues map[string]*gobus.TailDelayQueue
 	config *Config
-	log *log.Logger
-	post *CrossPost
+	log    *log.Logger
+	post   *CrossPost
 }
 
 func NewCross(config *Config) *Cross {
@@ -50,8 +50,8 @@ func NewCross(config *Config) *Cross {
 	return &Cross{
 		queues: queues,
 		config: config,
-		log: log,
-		post: NewCrossPost(config),
+		log:    log,
+		post:   NewCrossPost(config),
 	}
 }
 
@@ -59,11 +59,11 @@ func (s *Cross) Update(args []*UpdateCrossArg) error {
 	for _, arg := range args {
 		for _, to := range arg.To_identities {
 			update := OneIdentityUpdateArg{
-				Cross: arg.Cross,
+				Cross:       arg.Cross,
 				To_identity: to,
 				By_identity: arg.By_identity,
-				Old_cross: arg.Old_cross,
-				Post: arg.Post,
+				Old_cross:   arg.Old_cross,
+				Post:        arg.Post,
 			}
 			s.dispatch(&update)
 		}
@@ -87,14 +87,21 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 
 	queue, ok := s.queues[arg.To_identity.Provider]
 	if !ok {
-		if arg.To_identity.Provider == "iOSAPN" || arg.To_identity.Provider == "Android" {
+		switch arg.To_identity.Provider {
+		case "iOSAPN":
+			fallthrough
+		case "Android":
 			queue, ok = s.queues["push"]
+		case "facebook":
+			queue, ok = s.queues["email"]
+			arg.To_identity.External_id = fmt.Sprintf("%s@facebook.com", arg.To_identity.External_id)
 		}
 	}
 	if !ok {
 		log.Printf("Not support provider: %s", arg.To_identity.Provider)
 		return
 	}
+
 	if arg.To_identity.Provider != "email" {
 		if arg.Post != nil {
 			s.post.SendPost(arg)
@@ -104,19 +111,19 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 	queue.Push(id, arg)
 }
 
-func getProviderQueueName(provider string) string{
+func getProviderQueueName(provider string) string {
 	return fmt.Sprintf("exfe:queue:cross:%s", provider)
 }
 
-type CrossProviderHandler interface{
+type CrossProviderHandler interface {
 	Handle(arg *ProviderArg)
 }
 
 type CrossProviderBase struct {
-	log *log.Logger
-	queue *gobus.TailDelayQueue
-	config *Config
-	client *gobus.Client
+	log     *log.Logger
+	queue   *gobus.TailDelayQueue
+	config  *Config
+	client  *gobus.Client
 	handler CrossProviderHandler
 }
 
@@ -152,8 +159,8 @@ func (b *CrossProviderBase) Serve() {
 		if args != nil {
 			updates := args.([]OneIdentityUpdateArg)
 			arg := &ProviderArg{
-				Old_cross: updates[0].Old_cross,
-				Cross: &updates[len(updates)-1].Cross,
+				Old_cross:   updates[0].Old_cross,
+				Cross:       &updates[len(updates)-1].Cross,
 				To_identity: &updates[0].To_identity,
 			}
 
