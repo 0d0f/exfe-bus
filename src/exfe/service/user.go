@@ -66,7 +66,6 @@ func executeTemplate(name string, to *exfe_model.Identity, data interface{}, cli
 		return err
 	}
 
-	fmt.Println(buf.String())
 	content := strings.SplitN(buf.String(), "\n", 2)
 
 	mailarg := &email_service.MailArg{
