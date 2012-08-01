@@ -93,7 +93,7 @@ func (s *User) Welcome(arg *UserArg, reply *int) error {
 func (s *User) Verify(arg *UserArg, reply *int) error {
 	arg.Config = s.config
 
-	template := fmt.Sprintf("user_%s", strings.ToLower(arg.Action))
+	template := fmt.Sprintf("user_%s.html", strings.ToLower(arg.Action))
 	err := executeTemplate(template, &arg.To_identity, arg, s.email)
 	if err != nil {
 		log.Printf("Execute template error: %s", err)
