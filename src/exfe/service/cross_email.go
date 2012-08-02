@@ -1,19 +1,19 @@
 package exfe_service
 
 import (
-	"strings"
-	"github.com/googollee/godis"
-	"time"
-	"net/mail"
+	"bytes"
+	"email/service"
 	"exfe/model"
 	"fmt"
-	"bytes"
-	"text/template"
-	"log"
+	"github.com/googollee/godis"
 	"gobus"
+	"log"
+	"net/mail"
 	"os"
 	"reflect"
-	"email/service"
+	"strings"
+	"text/template"
+	"time"
 )
 
 type CrossEmail struct {
@@ -29,6 +29,9 @@ var helper = template.FuncMap{
 		return x == reflect.ValueOf(a).Len()-1
 	},
 	"limit": func(s string, max int) string {
+		if max > len(s) {
+			max = len(s)
+		}
 		return s[0:max]
 	},
 	"replace": func(s, old, new string) string {
