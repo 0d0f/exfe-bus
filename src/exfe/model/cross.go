@@ -5,24 +5,24 @@ import (
 )
 
 type Cross struct {
-	Id uint64
-	Title string
+	Id          uint64
+	Title       string
 	Description string
-	Time CrossTime
-	Place Place
-	Attribute map[string]string
-	Exfee Exfee
-	Widget []interface{}
-/*	Relative []struct {
+	Time        CrossTime
+	Place       Place
+	Attribute   map[string]string
+	Exfee       Exfee
+	Widget      []interface{}
+	/*	Relative []struct {
 		Id uint64
 		Relation string
 	}*/
-	Type string
+	Type        string
 	By_identity Identity
 }
 
 func (c *Cross) Link(host string) string {
-	return fmt.Sprintf("%s/!%d", host, c.Id)
+	return fmt.Sprintf("%s/#!%d", host, c.Id)
 }
 
 func (c *Cross) LinkTo(host string, token string) string {
