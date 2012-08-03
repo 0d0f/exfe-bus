@@ -49,7 +49,7 @@ func (s *CrossPost) SendPost(arg *OneIdentityUpdateArg) {
 func (s *CrossPost) SendTwitter(arg *OneIdentityUpdateArg, msg string) {
 	params := make(url.Values)
 	params.Add("data", fmt.Sprintf("%s", arg.Cross.Id))
-	resp, err := http.PostForm(fmt.Sprintf("%s/%s", s.config.Iom_url, arg.To_identity.Id), params)
+	resp, err := http.PostForm(fmt.Sprintf("%s/%d", s.config.Iom_url, arg.To_identity.Id), params)
 	if err != nil {
 		s.log.Printf("access iom server error: %s", err)
 		return
