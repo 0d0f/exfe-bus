@@ -1,33 +1,33 @@
 package exfe_service
 
 import (
-	"gobus"
-	"fmt"
-	"twitter/service"
 	"apn/service"
 	"c2dm/service"
+	"fmt"
+	"gobus"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
-	"log"
 	"os"
-	"io/ioutil"
+	"twitter/service"
 )
 
 type CrossPost struct {
 	twitter *gobus.Client
-	ios *gobus.Client
+	ios     *gobus.Client
 	android *gobus.Client
-	log *log.Logger
-	config *Config
+	log     *log.Logger
+	config  *Config
 }
 
 func NewCrossPost(config *Config) *CrossPost {
 	return &CrossPost{
 		twitter: gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "twitter"),
-		ios: gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "iOSAPN"),
+		ios:     gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "iOSAPN"),
 		android: gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "Android"),
-		log: log.New(os.Stderr, "exfe.cross.post", log.LstdFlags),
-		config: config,
+		log:     log.New(os.Stderr, "exfe.cross.post", log.LstdFlags),
+		config:  config,
 	}
 }
 
@@ -49,7 +49,7 @@ func (s *CrossPost) SendPost(arg *OneIdentityUpdateArg) {
 func (s *CrossPost) SendTwitter(arg *OneIdentityUpdateArg, msg string) {
 	params := make(url.Values)
 	params.Add("data", fmt.Sprintf("%s", arg.Cross.Id))
-	resp, err := http.PostForm(fmt.Sprintf("%s/iom/%s"), params)
+	resp, err := http.PostForm(fmt.Sprintf("%s/%s", s.config.Iom_url, arg.To_identity.Id), params)
 	if err != nil {
 		s.log.Printf("access iom server error: %s", err)
 		return
@@ -107,11 +107,11 @@ func (s *CrossPost) SendTwitter(arg *OneIdentityUpdateArg, msg string) {
 func (s *CrossPost) SendApn(arg *OneIdentityUpdateArg, msg string) {
 	a := apn_service.ApnSendArg{
 		DeviceToken: arg.To_identity.External_id,
-		Alert: msg,
-		Badge: 0,
-		Sound: "default",
-		Cid: arg.Cross.Id,
-		T: "c",
+		Alert:       msg,
+		Badge:       0,
+		Sound:       "default",
+		Cid:         arg.Cross.Id,
+		T:           "c",
 	}
 	s.ios.Send("ApnSend", &a, 5)
 }
@@ -119,11 +119,11 @@ func (s *CrossPost) SendApn(arg *OneIdentityUpdateArg, msg string) {
 func (s *CrossPost) SendAndroid(arg *OneIdentityUpdateArg, msg string) {
 	a := c2dm_service.C2DMSendArg{
 		DeviceID: arg.To_identity.External_id,
-		Message: msg,
-		Cid: arg.Cross.Id,
-		T: "c",
-		Badge: 0,
-		Sound: "default",
+		Message:  msg,
+		Cid:      arg.Cross.Id,
+		T:        "c",
+		Badge:    0,
+		Sound:    "default",
 	}
 	s.android.Send("C2DMSend", &a, 5)
 }
