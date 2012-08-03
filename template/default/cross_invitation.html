@@ -113,7 +113,7 @@ Welcome to EXFE
                                     {{ range .Cross.Exfee.Invitations }}
                                     <tr>
                                         <td width="25" height="25" align="left" valign="top">
-                                            <img width="20" height="20" src="{{ $api }}/v2/avatar/render?url={{ .Identity.Avatar_filename | urlquery }}&width=25&height=25{{ if not .IsAccepted }}&alpha=0.25{{ end }}">
+                                            <img width="20" height="20" src="{{ $api }}/v2/avatar/render?url={{ .Identity.Avatar_filename | base64 | urlquery }}&width=25&height=25{{ if not .IsAccepted }}&alpha=0.25{{ end }}">
                                         </td>
                                         <td>
                                           <span>{{ .Identity.Name }}</span>
