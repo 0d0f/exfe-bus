@@ -70,7 +70,7 @@ func executeTemplate(name string, to *exfe_model.Identity, data interface{}, cli
 
 	mailarg := &email_service.MailArg{
 		To:      []*mail.Address{&mail.Address{to.Name, to.External_id}},
-		From:    &mail.Address{"x@exfe.com", "x@exfe.com"},
+		From:    &mail.Address{"EXFE ·X·", "x@exfe.com"},
 		Subject: content[0],
 		Html:    content[1],
 	}
