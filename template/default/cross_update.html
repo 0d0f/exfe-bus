@@ -28,7 +28,7 @@
                 <td colspan="5" style="color: #333333;">
                     Your
                     <span style="color: #0591ac;">X</span>
-                    “<span style="color: #191919;">{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }} {{ .Cross.Title }}</span>”
+                    “<span style="color: #191919;">{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}</span>”
                     has been updated by
                     {{ if index .By_identities 0 }}<span style="color: #191919;">{{ with index .By_identities 0 }}{{ .Name }}{{ end }}</span>,{{ end }}
                     {{ if index .By_identities 1 }}<span style="color: #191919;">{{ with index .By_identities 1 }}{{ .Name }}{{ end }}</span>,{{ end }}
