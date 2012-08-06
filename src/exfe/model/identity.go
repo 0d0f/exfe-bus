@@ -1,32 +1,51 @@
 package exfe_model
 
+import (
+	"fmt"
+)
+
 type Identity struct {
-	Id uint64
-	Type string
-	Name string
-	Nickname string
-	Bio string
-	Provider string
-	Timezone string
+	Id                uint64
+	Type              string
+	Name              string
+	Nickname          string
+	Bio               string
+	Provider          string
+	Timezone          string
 	Connected_user_id uint64
 
-	External_id string
+	External_id       string
 	External_username string
-	Avatar_filename string
+	Avatar_filename   string
 }
 
 type Invitation struct {
-	Id uint64
-	Type string
-	Token string
-	Host bool
-	Mates uint64
-	Identity Identity
+	Id          uint64
+	Type        string
+	Token       string
+	Host        bool
+	Mates       uint64
+	Identity    Identity
 	Rsvp_status string
 	By_identity Identity
-	Via string
+	Via         string
 }
 
 func (i Invitation) IsAccepted() bool {
 	return i.Rsvp_status == "ACCEPTED"
+}
+
+func (i Identity) UserId() string {
+	return fmt.Sprintf("%d", i.Connected_user_id)
+}
+
+func (i Identity) ExternalId() string {
+	return fmt.Sprintf("%s@%s", i.External_id, i.Provider)
+}
+
+func (i Identity) DiffId() string {
+	if i.Connected_user_id != 0 {
+		return i.UserId()
+	}
+	return i.ExternalId()
 }

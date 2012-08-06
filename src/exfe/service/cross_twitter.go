@@ -142,7 +142,7 @@ func (s *CrossTwitter) sendExfeeChange(arg *ProviderArg) {
 	}
 	if len(newlyInvited) > 0 {
 		needSend = true
-		if _, ok := newlyInvited[arg.To_identity.Connected_user_id]; ok {
+		if _, ok := newlyInvited[arg.To_identity.DiffId()]; ok {
 			s.sendInvitation(arg)
 			return
 		} else {
@@ -151,7 +151,7 @@ func (s *CrossTwitter) sendExfeeChange(arg *ProviderArg) {
 	}
 	if len(removed) > 0 {
 		needSend = true
-		if _, ok := removed[arg.To_identity.Connected_user_id]; ok {
+		if _, ok := removed[arg.To_identity.DiffId()]; ok {
 			msg, _ = arg.TextQuit()
 		} else {
 			msg, _ = arg.TextRemoved()

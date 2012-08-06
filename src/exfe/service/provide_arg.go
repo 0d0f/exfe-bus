@@ -121,14 +121,14 @@ func (a *ProviderArg) TextRemoved() (string, error) {
 	return getTemplateString("cross_removed.txt", data)
 }
 
-func (a *ProviderArg) Diff(log *log.Logger) (accepted map[uint64]*exfe_model.Identity, declined map[uint64]*exfe_model.Identity, newlyInvited map[uint64]*exfe_model.Invitation, removed map[uint64]*exfe_model.Identity) {
-	oldId := make(map[uint64]*exfe_model.Invitation)
-	newId := make(map[uint64]*exfe_model.Invitation)
+func (a *ProviderArg) Diff(log *log.Logger) (accepted map[string]*exfe_model.Identity, declined map[string]*exfe_model.Identity, newlyInvited map[string]*exfe_model.Invitation, removed map[string]*exfe_model.Identity) {
+	oldId := make(map[string]*exfe_model.Invitation)
+	newId := make(map[string]*exfe_model.Invitation)
 
-	accepted = make(map[uint64]*exfe_model.Identity)
-	declined = make(map[uint64]*exfe_model.Identity)
-	newlyInvited = make(map[uint64]*exfe_model.Invitation)
-	removed = make(map[uint64]*exfe_model.Identity)
+	accepted = make(map[string]*exfe_model.Identity)
+	declined = make(map[string]*exfe_model.Identity)
+	newlyInvited = make(map[string]*exfe_model.Invitation)
+	removed = make(map[string]*exfe_model.Identity)
 
 	if a.Old_cross == nil {
 		return
@@ -138,38 +138,46 @@ func (a *ProviderArg) Diff(log *log.Logger) (accepted map[uint64]*exfe_model.Ide
 		if v.Rsvp_status == "NOTIFICATION" {
 			continue
 		}
-		if _, ok := oldId[v.Identity.Connected_user_id]; ok {
+		if _, ok := oldId[v.Identity.DiffId()]; ok {
 			log.Printf("more than one non-notification status in exfee %d, user id %d", a.Old_cross.Id, v.Identity.Connected_user_id)
 		}
-		oldId[v.Identity.Connected_user_id] = &a.Old_cross.Exfee.Invitations[i]
+		oldId[v.Identity.DiffId()] = &a.Old_cross.Exfee.Invitations[i]
 	}
 	for i, v := range a.Cross.Exfee.Invitations {
 		if v.Rsvp_status == "NOTIFICATION" {
 			continue
 		}
-		if _, ok := newId[v.Identity.Connected_user_id]; ok {
+		if _, ok := newId[v.Identity.DiffId()]; ok {
 			log.Printf("more than one non-notification status in exfee %d, user id %d", a.Old_cross.Id, v.Identity.Connected_user_id)
 		}
-		newId[v.Identity.Connected_user_id] = &a.Cross.Exfee.Invitations[i]
+		newId[v.Identity.DiffId()] = &a.Cross.Exfee.Invitations[i]
 	}
 
 	for k, v := range newId {
+		inv, ok := oldId[k]
+		if !ok {
+			inv, ok = oldId[v.Identity.ExternalId()]
+		}
 		switch v.Rsvp_status {
 		case "ACCEPTED":
-			if inv, ok := oldId[k]; !ok || inv.Rsvp_status != v.Rsvp_status {
+			if !ok || inv.Rsvp_status != v.Rsvp_status {
 				accepted[k] = &v.Identity
 			}
 		case "DECLINED":
-			if inv, ok := oldId[k]; !ok || inv.Rsvp_status != v.Rsvp_status {
+			if !ok || inv.Rsvp_status != v.Rsvp_status {
 				declined[k] = &v.Identity
 			}
 		}
-		if _, ok := oldId[k]; !ok {
+		if !ok {
 			newlyInvited[k] = v
 		}
 	}
 	for k, v := range oldId {
-		if _, ok := newId[k]; !ok {
+		_, ok := newId[k]
+		if !ok {
+			_, ok = newId[v.Identity.UserId()]
+		}
+		if !ok {
 			removed[k] = &v.Identity
 		}
 	}

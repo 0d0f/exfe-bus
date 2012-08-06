@@ -64,7 +64,7 @@ func (s *CrossPush) sendExfeeChange(arg *ProviderArg) {
 		s.push(arg, msg, "default", "u", 0)
 	}
 	if len(newlyInvited) > 0 {
-		if _, ok := newlyInvited[arg.To_identity.Connected_user_id]; ok {
+		if _, ok := newlyInvited[arg.To_identity.DiffId()]; ok {
 			msg, _ := arg.TextPrivateInvitation()
 			s.push(arg, msg, "default", "i", 0)
 		} else {
@@ -73,7 +73,7 @@ func (s *CrossPush) sendExfeeChange(arg *ProviderArg) {
 		}
 	}
 	if len(removed) > 0 {
-		if _, ok := removed[arg.To_identity.Connected_user_id]; ok {
+		if _, ok := removed[arg.To_identity.DiffId()]; ok {
 			msg, _ := arg.TextQuit()
 			s.push(arg, msg, "default", "r", 0)
 		} else {
@@ -88,21 +88,21 @@ func (s *CrossPush) push(arg *ProviderArg, message, sound, messageType string, b
 	case "iOSAPN":
 		arg := apn_service.ApnSendArg{
 			DeviceToken: arg.To_identity.External_id,
-			Alert: message,
-			Badge: badge,
-			Sound: sound,
-			Cid: arg.Cross.Id,
-			T: messageType,
+			Alert:       message,
+			Badge:       badge,
+			Sound:       sound,
+			Cid:         arg.Cross.Id,
+			T:           messageType,
 		}
 		s.client.Send("ApnSend", &arg, 5)
 	case "Android":
 		arg := c2dm_service.C2DMSendArg{
 			DeviceID: arg.To_identity.External_id,
-			Message: message,
-			Cid: arg.Cross.Id,
-			T: messageType,
-			Badge: badge,
-			Sound: sound,
+			Message:  message,
+			Cid:      arg.Cross.Id,
+			T:        messageType,
+			Badge:    badge,
+			Sound:    sound,
 		}
 		s.android.Send("C2DMSend", &arg, 5)
 	}
