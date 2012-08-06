@@ -1,11 +1,11 @@
 package exfe_service
 
 import (
+	"bytes"
+	"exfe/model"
 	"fmt"
 	"log"
-	"bytes"
 	"text/template"
-	"exfe/model"
 )
 
 func getTemplateString(name string, data interface{}) (string, error) {
@@ -19,18 +19,18 @@ func getTemplateString(name string, data interface{}) (string, error) {
 }
 
 type ProviderArg struct {
-	Cross *exfe_model.Cross
-	Old_cross *exfe_model.Cross
-	To_identity *exfe_model.Identity
+	Cross         *exfe_model.Cross
+	Old_cross     *exfe_model.Cross
+	To_identity   *exfe_model.Identity
 	By_identities []*exfe_model.Identity
-	Posts []*exfe_model.Post
+	Posts         []*exfe_model.Post
 
 	Config *Config
 
-	Accepted []*exfe_model.Identity
-	Declined []*exfe_model.Identity
+	Accepted     []*exfe_model.Identity
+	Declined     []*exfe_model.Identity
 	NewlyInvited []*exfe_model.Invitation
-	Removed []*exfe_model.Identity
+	Removed      []*exfe_model.Identity
 }
 
 func (a *ProviderArg) IsHost() bool {
@@ -129,6 +129,10 @@ func (a *ProviderArg) Diff(log *log.Logger) (accepted map[uint64]*exfe_model.Ide
 	declined = make(map[uint64]*exfe_model.Identity)
 	newlyInvited = make(map[uint64]*exfe_model.Invitation)
 	removed = make(map[uint64]*exfe_model.Identity)
+
+	if a.Old_cross == nil {
+		return
+	}
 
 	for i, v := range a.Old_cross.Exfee.Invitations {
 		if v.Rsvp_status == "NOTIFICATION" {
