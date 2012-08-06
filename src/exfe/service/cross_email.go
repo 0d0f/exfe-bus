@@ -150,7 +150,7 @@ func (e *CrossEmail) sendMail(arg *ProviderArg) {
 
 	html, ics, err := e.GetBody(arg, filename)
 	if err != nil {
-		e.log.Printf("template exec error:", err)
+		e.log.Printf("template exec error: %s", err)
 		return
 	}
 	htmls := strings.SplitN(html, "\n\n", 2)
