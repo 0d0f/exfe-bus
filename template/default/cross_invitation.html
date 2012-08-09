@@ -1,4 +1,33 @@
 Welcome to EXFE
+//////////////////////////////////
+
+{{ .Cross.Title }}
+To: {{ .To_identity.Name }}
+
+{{ if .IsHost }}You're gathering this ·X·.{{ else }}Invitation from {{ $a := index .By_identities 0 }}{{ $a.Name }}. {{ end }}
+
+{{ .Cross.Time.StringInZone .Timezone }}
+
+{{ .Cross.Place.Title }}
+{{ .Cross.Place.Description }}
+
+{{ if .Confirmed }}
+You've been CONFIRMED to attend. Check it out: {{ .Cross.LinkTo .Config.Site_url .Token}}
+{{ else }}
+I'm in. Check it out: {{ .Cross.LinkTo .Config.Site_url .Token}}
+{{ end }}
+
+{{ .Cross.Description }}
+
+
+Invitations:
+{{ $api := .Config.Site_api }}{{ range .Cross.Exfee.Invitations }}
+{{ .Identity.Name }}{{ if not .Identity.Connected_user_id }} {{ .Identity.External_id }}{{ end }}{{ if .IsAccepted }} Accepted{{ end }}{{ if .Host }} Host{{ end }}{{ if .Mates }} w/ {{ .Mates }} people{{ end }}
+{{ end }}
+
+Reply this email directly as conversation, or try EXFE app( {{ .Config.App_url }} ).
+This ·X· invitation is sent by {{ .Cross.By_identity.Name }} from EXFE( {{ .Config.Site_url }} ).
+//////////////////////////////////
 
 <!DOCTYPE html>
 <html>
@@ -148,4 +177,3 @@ Welcome to EXFE
         </table>
     </body>
 </html>
-

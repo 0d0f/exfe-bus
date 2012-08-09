@@ -153,14 +153,15 @@ func (e *CrossEmail) sendMail(arg *ProviderArg) {
 		e.log.Printf("template exec error: %s", err)
 		return
 	}
-	htmls := strings.SplitN(html, "\n\n", 2)
+	htmls := strings.SplitN(html, "//////////////////////////////////\n\n", 3)
 
 	mail_addr := fmt.Sprintf("x+%d@exfe.com", arg.Cross.Id)
 	mailarg := &email_service.MailArg{
 		To:      []*mail.Address{&mail.Address{arg.To_identity.Name, arg.To_identity.External_id}},
 		From:    &mail.Address{"EXFE ·X·", mail_addr},
 		Subject: htmls[0],
-		Html:    htmls[1],
+		Text:    htmls[1],
+		Html:    htmls[2],
 		FileParts: []email_service.FilePart{
 			email_service.FilePart{fmt.Sprintf("x-%d.ics", arg.Cross.Id), []byte(ics)},
 		},
