@@ -1,19 +1,20 @@
 package exfe_service
 
 import (
-	"strings"
-	"github.com/googollee/godis"
-	"time"
-	"net/mail"
+	"bytes"
+	"email/service"
+	"encoding/base64"
 	"exfe/model"
 	"fmt"
-	"bytes"
-	"text/template"
-	"log"
+	"github.com/googollee/godis"
 	"gobus"
+	"log"
+	"net/mail"
 	"os"
 	"reflect"
-	"email/service"
+	"strings"
+	"text/template"
+	"time"
 )
 
 type CrossEmail struct {
@@ -29,10 +30,16 @@ var helper = template.FuncMap{
 		return x == reflect.ValueOf(a).Len()-1
 	},
 	"limit": func(s string, max int) string {
+		if max > len(s) {
+			max = len(s)
+		}
 		return s[0:max]
 	},
 	"replace": func(s, old, new string) string {
 		return strings.Replace(s, old, new, -1)
+	},
+	"base64": func(s string) string {
+		return base64.StdEncoding.EncodeToString([]byte(s))
 	},
 }
 
@@ -136,22 +143,22 @@ func (e *CrossEmail) GetBody(arg *ProviderArg, filename string) (string, string,
 
 func (e *CrossEmail) sendMail(arg *ProviderArg) {
 	filename := "cross_invitation.html"
-	if arg.Old_cross != nil {
+	if arg.Old_cross != nil || len(arg.Posts) > 0 {
 		arg.Diff(e.log)
 		filename = "cross_update.html"
 	}
 
 	html, ics, err := e.GetBody(arg, filename)
 	if err != nil {
-		e.log.Printf("template exec error:", err)
+		e.log.Printf("template exec error: %s", err)
 		return
 	}
 	htmls := strings.SplitN(html, "\n\n", 2)
 
 	mail_addr := fmt.Sprintf("x+%d@exfe.com", arg.Cross.Id)
 	mailarg := &email_service.MailArg{
-		To:      []*mail.Address{&mail.Address{arg.To_identity.External_id, arg.To_identity.Name}},
-		From:    &mail.Address{mail_addr, mail_addr},
+		To:      []*mail.Address{&mail.Address{arg.To_identity.Name, arg.To_identity.External_id}},
+		From:    &mail.Address{"EXFE ·X·", mail_addr},
 		Subject: htmls[0],
 		Html:    htmls[1],
 		FileParts: []email_service.FilePart{

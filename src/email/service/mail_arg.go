@@ -1,13 +1,13 @@
 package email_service
 
 import (
-	"net/smtp"
 	"bytes"
 	"fmt"
 	"mime/multipart"
+	"net/mail"
+	"net/smtp"
 	"net/textproto"
 	"strings"
-	"net/mail"
 )
 
 type FilePart struct {
@@ -26,7 +26,7 @@ type MailArg struct {
 }
 
 func (m *MailArg) String() string {
-	return fmt.Sprintf("Mail send from %s to %s with subject: %s", m.From, m.To, m.Header.Get("Subject"))
+	return fmt.Sprintf("Mail send from %s to %s with subject: %s", m.From, m.To, m.Subject)
 }
 
 func (m *MailArg) makeMessage() ([]byte, error) {
@@ -113,17 +113,19 @@ func (m *MailArg) makeHeader() ([]byte, error) {
 }
 
 func (m *MailArg) makeContent() ([]byte, error) {
-	header, err := m.makeHeader()
-	if err != nil {
-		return nil, err
-	}
-
+	// make message first to get boundary
+	var err error
 	var body []byte
 	if len(m.FileParts) == 0 {
 		body, err = m.makeMessage()
 	} else {
 		body, err = m.makeMessageWithAttachments()
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	header, err := m.makeHeader()
 	if err != nil {
 		return nil, err
 	}
@@ -135,6 +137,9 @@ func (m *MailArg) makeContent() ([]byte, error) {
 }
 
 func (m *MailArg) SendViaSMTP(server string, auth smtp.Auth) error {
+	if m.Header == nil {
+		m.Header = make(textproto.MIMEHeader)
+	}
 	mails := make([]string, len(m.To), len(m.To))
 	for i, addr := range m.To {
 		mails[i] = addr.Address

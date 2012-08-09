@@ -28,7 +28,7 @@ Welcome to EXFE
         <table width="640" border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 19px; color: #191919; font-weight: normal; padding: 30px 40px 30px 40px; background-color: #fbfbfb; min-height: 562px;">
             <tr>
                 <td colspan="3" valign="top" style="font-size: 32px; line-height: 38px; padding-bottom: 18px;">
-                    <a href="%cross_url%" style="color: #0591ac; text-decoration: none;">
+                    <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #0591ac; text-decoration: none;">
                         {{ .Cross.Title }}
                     </a>
                 </td>
@@ -43,8 +43,11 @@ Welcome to EXFE
                         </tr>
                         <tr>
                             <td valign="top" style="padding-bottom: 20px;">
-                                You're successfully gathering this <span style="color: #0591ac; text-decoration: none;">X</span>.
+                                {{ if .IsHost }}
+                                You're gathering this <span style="color: #0591ac; text-decoration: none;">·X·</span>.
+                                {{ else }}
                                 Invitation from <span>{{ $a := index .By_identities 0 }}{{ $a.Name }}</span>.
+                                {{ end }}
                             </td>
                         </tr>
                         <tr>
@@ -72,7 +75,7 @@ Welcome to EXFE
                         <tr>
                             <td style="line-height:19px; padding-top: 30px;">
                                 <span style="display: block; float: left; color: #333333;">
-                                You're
+                                You've been
                                 <span style="font-weight: bold; color: #0591AC;">CONFIRMED</span>
                                 to attend.</span>
                             </td>
@@ -85,7 +88,7 @@ Welcome to EXFE
                         {{ else }}
                         <tr>
                             <td valign="top" style="padding-top: 30px; padding-bottom: 30px;">
-                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #add1dc; color: #000000; padding: 5px 30px 5px 30px; margin-left: 25px;" alt="Accept" href="{{ .Cross.LinkTo .Config.Site_url .Token }}">Accept</a>
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #add1dc; color: #000000; padding: 5px 30px 5px 30px; margin-left: 25px;" alt="Accept" href="{{ .Cross.LinkTo .Config.Site_url .Token }}">I'm in</a>
                                 <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px; margin-left: 15px;" alt="Check it out" href="{{ .Cross.LinkTo .Config.Site_url .Token }}">Check it out...</a>
                             </td>
                         </tr>
@@ -113,7 +116,7 @@ Welcome to EXFE
                                     {{ range .Cross.Exfee.Invitations }}
                                     <tr>
                                         <td width="25" height="25" align="left" valign="top">
-                                            <img width="20" height="20" src="{{ $api }}/v2/avatar/render?url={{ .Identity.Avatar_filename | urlquery }}&width=25&height=25{{ if not .IsAccepted }}&alpha=0.25{{ end }}">
+                                            <img width="20" height="20" src="{{ $api }}/v2/avatar/render?url={{ .Identity.Avatar_filename | base64 | urlquery }}&width=25&height=25{{ if not .IsAccepted }}&alpha=0.25{{ end }}">
                                         </td>
                                         <td>
                                           <span>{{ .Identity.Name }}</span>
@@ -131,13 +134,13 @@ Welcome to EXFE
             </tr>
             <tr>
                 <td colspan="3" style="font-size: 11px; line-height: 15px; color: #7F7F7F; padding-top: 40px;">
-                    Reply this email directly as conversation, or
-                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.App_url }}">try EXFE app</a>.
+                    Reply this email directly as conversation, or Try
+                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a> app.
                     <br>
                     This
-                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Cross.Link .Config.Site_url }}">X</a>
+                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Cross.Link .Config.Site_url }}">·X·</a>
                     invitation is sent by
-                    <span class="exfe_mail_identity_name">dm.</span>
+                    <span class="exfe_mail_identity_name">{{ .Cross.By_identity.Name }}</span>
                     from
                     <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
                 </td>

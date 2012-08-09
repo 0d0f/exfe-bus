@@ -13,6 +13,7 @@ type Config struct {
 	Site_api string
 	Site_img string
 	App_url  string
+	Iom_url  string
 
 	Redis struct {
 		Netaddr  string

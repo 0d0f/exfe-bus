@@ -2,8 +2,8 @@ package exfe_service
 
 import (
 	"exfe/model"
-	"twitter/service"
 	"fmt"
+	"twitter/service"
 )
 
 type CrossTwitter struct {
@@ -11,7 +11,7 @@ type CrossTwitter struct {
 }
 
 func NewCrossTwitter(config *Config) (ret *CrossTwitter) {
-	ret = &CrossTwitter {
+	ret = &CrossTwitter{
 		CrossProviderBase: NewCrossProviderBase("twitter", config),
 	}
 	ret.handler = ret
@@ -131,14 +131,18 @@ func (s *CrossTwitter) sendExfeeChange(arg *ProviderArg) {
 	accepted, declined, newlyInvited, removed := arg.Diff(s.log)
 
 	var msg string
+	needSend := false
 	if len(accepted) > 0 {
+		needSend = true
 		msg, _ = arg.TextAccepted()
 	}
 	if len(declined) > 0 {
+		needSend = true
 		msg, _ = arg.TextDeclined()
 	}
 	if len(newlyInvited) > 0 {
-		if _, ok := newlyInvited[arg.To_identity.Connected_user_id]; ok {
+		needSend = true
+		if _, ok := newlyInvited[arg.To_identity.DiffId()]; ok {
 			s.sendInvitation(arg)
 			return
 		} else {
@@ -146,13 +150,16 @@ func (s *CrossTwitter) sendExfeeChange(arg *ProviderArg) {
 		}
 	}
 	if len(removed) > 0 {
-		if _, ok := removed[arg.To_identity.Connected_user_id]; ok {
+		needSend = true
+		if _, ok := removed[arg.To_identity.DiffId()]; ok {
 			msg, _ = arg.TextQuit()
 		} else {
 			msg, _ = arg.TextRemoved()
 		}
 	}
-	s.send(arg, msg)
+	if needSend {
+		s.send(arg, msg)
+	}
 }
 
 func (s *CrossTwitter) send(arg *ProviderArg, msg string) {
