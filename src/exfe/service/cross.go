@@ -87,14 +87,21 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 
 	queue, ok := s.queues[arg.To_identity.Provider]
 	if !ok {
-		if arg.To_identity.Provider == "iOSAPN" || arg.To_identity.Provider == "Android" {
+		switch arg.To_identity.Provider {
+		case "iOSAPN":
+			fallthrough
+		case "Android":
 			queue, ok = s.queues["push"]
+		case "facebook":
+			queue, ok = s.queues["email"]
+			arg.To_identity.External_id = fmt.Sprintf("%s@facebook.com", arg.To_identity.External_username)
 		}
 	}
 	if !ok {
 		log.Printf("Not support provider: %s", arg.To_identity.Provider)
 		return
 	}
+
 	if arg.To_identity.Provider != "email" {
 		if arg.Post != nil {
 			s.post.SendPost(arg)
