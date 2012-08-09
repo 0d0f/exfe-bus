@@ -1,6 +1,17 @@
 EXFE identity verification
 //////////////////////////////////
 
+Hi, {{ .To_identity.Name }}.
+
+Your email has been requested for verification {{ if .User_name }} by {{ .User_name }}</span>{{ end }} on EXFE.
+
+Please click here to verify your identity: {{ .Config.Site_url }}/#token={{ .Token }}
+
+If you didn’t request, just ignore this mail. Sorry for disturbing.
+
+EXFE is an utility for hanging out with friends. We save you from calling up every one RSVP, losing in endless emails and messages off the point.
+
+This email is sent to {{ .To_identity.External_id }} per identity verification request on EXFE( {{ .Config.Site_url }} ).
 //////////////////////////////////
 
 <!DOCTYPE html>

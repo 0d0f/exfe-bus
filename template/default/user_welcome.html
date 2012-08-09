@@ -1,6 +1,20 @@
 Welcome to EXFE
 //////////////////////////////////
 
+Hi, {{ .To_identity.Name }}.
+
+Welcome to EXFE! An utility for hanging out with friends.
+
+{{ if .NeedVerify }}Please click here to verify your identity: {{ .Config.Site_url }}/#token={{ .Token }}{{ end }}
+
+·X·(cross) is a gathering of people, for anything you want to do with them. We save you from calling up every one RSVP, losing in endless emails messages off the point.
+
+EXFE your friends. Gather a ·X·
+
+“Rome wasn't built in a day.”
+EXFE [ˈɛksfi] is still in testing> stage. We’re building up blocks of it, thus some bugs and unfinished pages. Any feedback, please email to feedback@exfe.com. Our apologies for any trouble you may encounter, much appreciated.
+
+This email is sent to {{ .To_identity.External_id }} per identity registration request on EXFE( {{ .Config.Site_url }} ).
 //////////////////////////////////
 
 <!DOCTYPE html>
