@@ -94,7 +94,7 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 			queue, ok = s.queues["push"]
 		case "facebook":
 			queue, ok = s.queues["email"]
-			arg.To_identity.External_id = fmt.Sprintf("%s@facebook.com", arg.To_identity.External_id)
+			arg.To_identity.External_id = fmt.Sprintf("%s@facebook.com", arg.To_identity.External_username)
 		}
 	}
 	if !ok {
