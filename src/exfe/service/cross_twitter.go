@@ -107,7 +107,7 @@ func (s *CrossTwitter) sendInvitation(arg *ProviderArg) {
 		s.sendDM(arg, msg, arg.Cross.LinkTo(s.config.Site_url, arg.Token()))
 	} else {
 		msg, _ := arg.TextPublicInvitation()
-		s.sendTweet(arg, msg, arg.Cross.Link(s.config.Site_url))
+		s.sendTweet(arg, msg, fmt.Sprintf("%s/%s", arg.Cross.Link(s.config.Site_url), arg.Token()[1:4]))
 	}
 }
 
