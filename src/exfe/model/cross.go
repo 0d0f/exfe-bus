@@ -26,7 +26,7 @@ func (c *Cross) Link(host string) string {
 }
 
 func (c *Cross) LinkTo(host string, token string) string {
-	return fmt.Sprintf("%s?token=%s", c.Link(host), token)
+	return fmt.Sprintf("%s/#!token=%s", host, token)
 }
 
 func (c *Cross) TotalAccepted() int {
