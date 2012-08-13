@@ -27,7 +27,7 @@ type ProviderArg struct {
 
 	Config *Config
 
-	Accepted     []*exfe_model.Identity
+	Accepted     []*exfe_model.Invitation
 	Declined     []*exfe_model.Identity
 	NewlyInvited []*exfe_model.Invitation
 	Removed      []*exfe_model.Identity
@@ -63,7 +63,11 @@ func (a *ProviderArg) Confirmed() bool {
 }
 
 func (a *ProviderArg) OldAccepted() int {
-	return a.Cross.TotalAccepted() - len(a.Accepted)
+	acceptedCount := 0
+	for _, i := range a.Accepted {
+		acceptedCount += 1 + int(i.Mates)
+	}
+	return a.Cross.TotalAccepted() - acceptedCount
 }
 
 func (a *ProviderArg) TextPublicInvitation() (string, error) {
@@ -121,11 +125,11 @@ func (a *ProviderArg) TextRemoved() (string, error) {
 	return getTemplateString("cross_removed.txt", data)
 }
 
-func (a *ProviderArg) Diff(log *log.Logger) (accepted map[string]*exfe_model.Identity, declined map[string]*exfe_model.Identity, newlyInvited map[string]*exfe_model.Invitation, removed map[string]*exfe_model.Identity) {
+func (a *ProviderArg) Diff(log *log.Logger) (accepted map[string]*exfe_model.Invitation, declined map[string]*exfe_model.Identity, newlyInvited map[string]*exfe_model.Invitation, removed map[string]*exfe_model.Identity) {
 	oldId := make(map[string]*exfe_model.Invitation)
 	newId := make(map[string]*exfe_model.Invitation)
 
-	accepted = make(map[string]*exfe_model.Identity)
+	accepted = make(map[string]*exfe_model.Invitation)
 	declined = make(map[string]*exfe_model.Identity)
 	newlyInvited = make(map[string]*exfe_model.Invitation)
 	removed = make(map[string]*exfe_model.Identity)
@@ -161,7 +165,7 @@ func (a *ProviderArg) Diff(log *log.Logger) (accepted map[string]*exfe_model.Ide
 		switch v.Rsvp_status {
 		case "ACCEPTED":
 			if !ok || inv.Rsvp_status != v.Rsvp_status {
-				accepted[k] = &v.Identity
+				accepted[k] = v
 			}
 		case "DECLINED":
 			if !ok || inv.Rsvp_status != v.Rsvp_status {
@@ -182,7 +186,7 @@ func (a *ProviderArg) Diff(log *log.Logger) (accepted map[string]*exfe_model.Ide
 		}
 	}
 
-	a.Accepted = make([]*exfe_model.Identity, 0, 0)
+	a.Accepted = make([]*exfe_model.Invitation, 0, 0)
 	for _, v := range accepted {
 		a.Accepted = append(a.Accepted, v)
 	}

@@ -34,6 +34,7 @@ func (c *Cross) TotalAccepted() int {
 	for _, i := range c.Exfee.Invitations {
 		if i.Rsvp_status == "ACCEPTED" {
 			ret++
+			ret += int(i.Mates)
 		}
 	}
 	return ret
