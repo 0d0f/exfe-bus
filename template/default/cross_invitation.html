@@ -8,22 +8,15 @@ To: {{ .To_identity.Name }}
 
 {{ .Cross.Time.StringInZone .Timezone }}
 
-{{ .Cross.Place.Title }}
-{{ .Cross.Place.Description }}
+{{ .Cross.Place.Title }}{{ if .Cross.Place.Description }}
+{{ .Cross.Place.Description }}{{ end }}
 
-{{ if .Confirmed }}
-You've been CONFIRMED to attend. Check it out: {{ .Cross.LinkTo .Config.Site_url .Token}}
-{{ else }}
-I'm in. Check it out: {{ .Cross.LinkTo .Config.Site_url .Token}}
-{{ end }}
+{{ if .Confirmed }}You've been CONFIRMED to attend. Check it out: {{ .Cross.LinkTo .Config.Site_url .Token}}{{ else }}I'm in. Check it out: {{ .Cross.LinkTo .Config.Site_url .Token}}{{ end }}
+{{ if .Cross.Description }}
+{{ .Cross.Description }}{{ end }}
 
-{{ .Cross.Description }}
-
-
-Invitations:
-{{ $api := .Config.Site_api }}{{ range .Cross.Exfee.Invitations }}
-{{ .Identity.Name }}{{ if not .Identity.Connected_user_id }} {{ .Identity.External_id }}{{ end }}{{ if .IsAccepted }} Accepted{{ end }}{{ if .Host }} Host{{ end }}{{ if .Mates }} w/ {{ .Mates }} people{{ end }}
-{{ end }}
+Invitations:{{ $api := .Config.Site_api }}{{ range .Cross.Exfee.Invitations }}
+{{ .Identity.Name }}{{ if not .Identity.Connected_user_id }} {{ .Identity.External_id }}{{ end }}{{ if .IsAccepted }} Accepted{{ end }}{{ if .Host }} Host{{ end }}{{ if .Mates }} w/ {{ .Mates }} people{{ end }}{{ end }}
 
 Reply this email directly as conversation, or try EXFE app( {{ .Config.App_url }} ).
 This ·X· invitation is sent by {{ .Cross.By_identity.Name }} from EXFE( {{ .Config.Site_url }} ).

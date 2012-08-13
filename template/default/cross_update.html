@@ -7,26 +7,20 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
 
 {{ .Cross.Time.StringInZone .Timezone }}
 
-{{ .Cross.Place.Title }}
-{{ .Cross.Place.Description }}
+{{ .Cross.Place.Title }}{{ if .Cross.Place.Description }}
+{{ .Cross.Place.Description }}{{ end }}
+{{ if .Accepted }}
+{{ .Cross.TotalAccepted }} Accepted: {{ $a := .Accepted }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}and {{ .OldAccepted }} others.{{ end }}{{ if .Declined }}
+Unavailable: {{ $a := .Declined }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.{{ end }}{{ if .NewlyInvited }}
+Newly invited: {{ $a := .NewlyInvited }}{{ range $i, $e := $a }}{{ if .IsAccepted }}{{ .Identity.Name }}{{ else }}{{ .Identity.Name }}{{ end }}{{ if last $i $a | not }},{{ end }}{{ end }}.{{ end }}{{ if .Removed }}
+Removed: {{ $a := .Removed }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.{{ end }}
 
-{{ if .Accepted }}{{ .Cross.TotalAccepted }} Accepted: {{ $a := .Accepted }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}and {{ .OldAccepted }} others.{{ end }}
-{{ if .Declined }}Unavailable: {{ $a := .Declined }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.{{ end }}
-{{ if .NewlyInvited }}Newly invited: {{ $a := .NewlyInvited }}{{ range $i, $e := $a }}{{ if .IsAccepted }}{{ .Identity.Name }}{{ else }}{{ .Identity.Name }}{{ end }}{{ if last $i $a | not }},{{ end }}{{ end }}.{{ end }}
-{{ if .Removed }}Removed: {{ $a := .Removed }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.{{ end }}
-
-Invitations:
-{{ $api := .Config.Site_api }}{{ range .Cross.Exfee.Invitations }}
-{{ .Identity.Name }}{{ if .IsAccepted }} Accepted{{ end }}{{ if .Host }} Host{{ end }}{{ if .Mates }} w/ {{ .Mates }} people{{ end }}
+Invitations:{{ $api := .Config.Site_api }}{{ range .Cross.Exfee.Invitations }}
+{{ .Identity.Name }}{{ if .IsAccepted }} Accepted{{ end }}{{ if .Host }} Host{{ end }}{{ if .Mates }} w/ {{ .Mates }} people{{ end }}{{ end }}
+{{ $timezone := .Timezone }}{{ range .Posts }}
+- {{ .By_identity.Name }} at {{ .CreatedAt $timezone }} said:
+    {{ .Content }}
 {{ end }}
-
-{{ $timezone := .Timezone }}
-{{ range .Posts }}
-{{ .By_identity.Name }} at {{ .CreatedAt $timezone }} said:
-  {{ .Content }}
-
-{{ end }}
-
 Reply this email directly as conversation, or try EXFE app( {{ .Config.App_url }} ).
 This update is sent from EXFE( {{ .Config.Site_url }} ) automatically. Unsubscribe? {{ .Config.Site_url }}/s/reportSpam?token={{ .Token }}
 //////////////////////////////////
