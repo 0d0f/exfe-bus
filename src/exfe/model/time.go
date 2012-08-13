@@ -1,14 +1,14 @@
 package exfe_model
 
 import (
-	"time"
 	"fmt"
 	"regexp"
+	"time"
 )
 
 const (
-	HourInSeconds int = 1/*hour*/ * 60/*minutes*/ * 60/*seconds*/
-	MinuteInSeconds int = 1/*minute*/ * 60/*seconds*/
+	HourInSeconds   int = 1 /*hour*/ * 60 /*minutes*/ * 60 /*seconds*/
+	MinuteInSeconds int = 1 /*minute*/ * 60                /*seconds*/
 )
 
 func LoadLocation(zone string) (*time.Location, error) {
@@ -22,16 +22,16 @@ func LoadLocation(zone string) (*time.Location, error) {
 
 	var hour, minute int
 	fmt.Sscanf(zone, "%d:%d", &hour, &minute)
-	offset := hour * HourInSeconds + minute * MinuteInSeconds
+	offset := hour*HourInSeconds + minute*MinuteInSeconds
 	return time.FixedZone(fmt.Sprintf("%+03d:%02d", hour, minute), offset), nil
 }
 
 type EFTime struct {
 	Date_word string
-	Date string
+	Date      string
 	Time_word string
-	Time string
-	Timezone string
+	Time      string
+	Timezone  string
 }
 
 func (t EFTime) differentZone(targetZone string) bool {
@@ -79,7 +79,9 @@ func (t EFTime) StringInZone(targetZone string) (string, error) {
 	}
 
 	if t.Time != "" {
-		if ret != "" { ret += " at " }
+		if ret != "" {
+			ret += " at "
+		}
 		ret += t_.Format("3:04PM")
 	}
 
@@ -93,12 +95,16 @@ func (t EFTime) StringInZone(targetZone string) (string, error) {
 	}
 
 	if t.Date_word != "" {
-		if ret != "" { ret += " " }
+		if ret != "" {
+			ret += " "
+		}
 		ret += t.Date_word
 	}
 
 	if t.Date != "" {
-		if ret != "" { ret += " on " }
+		if ret != "" {
+			ret += " on "
+		}
 		now := time.Now()
 		if now.Year() == t_.Year() {
 			ret += t_.Format("Mon, Jan 2")
@@ -129,16 +135,16 @@ type OutputFormat uint
 
 const (
 	Format OutputFormat = 0
-	Origin = 1
+	Origin              = 1
 )
 
 type CrossTime struct {
-	Begin_at EFTime
-	Origin string
+	Begin_at     EFTime
+	Origin       string
 	OutputFormat OutputFormat
 }
 
-func (t CrossTime)StringInZone(targetZone string) (string, error) {
+func (t CrossTime) StringInZone(targetZone string) (string, error) {
 	switch t.OutputFormat {
 	case Format:
 		ret, err := t.Begin_at.StringInZone(targetZone)

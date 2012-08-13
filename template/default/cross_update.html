@@ -3,24 +3,34 @@ Update: {{ .Cross.Title }}
 
 Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}” has been updated by {{ if index .By_identities 0 }}{{ with index .By_identities 0 }}{{ .Name }}{{ end }},{{ end }} etc.
 
-=={{ .Cross.Title }}==
-{{ .Cross.LinkTo .Config.Site_url .Token}}
+{{ .Cross.Title }}
+=======
+{{ .Cross.Link .Config.Site_url }}
+{{ $time := .Cross.Time.StringInZone .Timezone }}{{ if $time }}
+{{ $time }}
+-------{{ else }}
+Time
+-------
+  To be decided.{{ end }}
 
---{{ .Cross.Time.StringInZone .Timezone }}--
+{{ if .Cross.Place.Title }}{{ .Cross.Place.Title }}{{ else }}Place{{ end }}
+-------{{ if .Cross.Place.Description }}
+  {{ .Cross.Place.Description }}{{ end }}
 
---{{ .Cross.Place.Title }}--{{ if .Cross.Place.Description }}
-{{ .Cross.Place.Description }}{{ end }}
 
-Accepted:{{ $a := .Cross.Exfee.Invitations }}{{ range $i, $e := $a }}{{ if .IsAccepted }}{{ .Identity.Name }}{{ if .Host }} (Host){{ end }}{{ if .Mates }} w/ {{ .Mates }} people{{ end }}{{ if last $i $a | not}}, {{ end }}{{ end }}{{ end }}{{ if .Declined }}
-Unavailable: {{ $a := .Declined }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.{{ end }}{{ if .NewlyInvited }}
-Newly invited: {{ $a := .NewlyInvited }}{{ range $i, $e := $a }}{{ if .IsAccepted }}{{ .Identity.Name }}{{ else }}{{ .Identity.Name }}{{ end }}{{ if last $i $a | not }},{{ end }}{{ end }}.{{ end }}{{ if .Removed }}
-Removed: {{ $a := .Removed }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.{{ end }}
+· {{ .Cross.TotalAccepted }}Accepted:{{ $a := .Cross.Exfee.Invitations }}{{ range $i, $e := $a }}{{ if .IsAccepted }}{{ .Identity.Name }}{{ if .Host }} (Host){{ end }}{{ if last $i $a | not}}, {{ end }}{{ end }}{{ end }}{{ if .Declined }}
+· Unavailable: {{ $a := .Declined }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.{{ end }}{{ if .NewlyInvited }}
+· Newly invited: {{ $a := .NewlyInvited }}{{ range $i, $e := $a }}{{ if .IsAccepted }}{{ .Identity.Name }}{{ else }}{{ .Identity.Name }}{{ end }}{{ if last $i $a | not }},{{ end }}{{ end }}.{{ end }}{{ if .Removed }}
+· Removed: {{ $a := .Removed }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.{{ end }}
+
 {{ $timezone := .Timezone }}{{ range .Posts }}
 - {{ .By_identity.Name }} at {{ .CreatedAt $timezone }} said:
     {{ .Content }}{{ end }}
     
-Reply this email directly as conversation, or try EXFE app( {{ .Config.App_url }} ).
-This update is sent from EXFE( {{ .Config.Site_url }} ) automatically. Unsubscribe? {{ .Config.Site_url }}/s/reportSpam?token={{ .Token }}
+{{ if .ManyPosts }}
+{{ .Cross.Link .Config.Site_url }}
+{{ end }}
+# Reply this email directly as conversation. #
 //////////////////////////////////
 
 <!DOCTYPE html>

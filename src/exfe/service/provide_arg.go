@@ -62,6 +62,14 @@ func (a *ProviderArg) Confirmed() bool {
 	return false
 }
 
+func (a *ProviderArg) ManyPosts() bool {
+	return len(a.Posts) >= 11
+}
+
+func (a *ProviderArg) LongDescription() bool {
+	return len(a.Cross.Description) > 200
+}
+
 func (a *ProviderArg) OldAccepted() int {
 	acceptedCount := 0
 	for _, i := range a.Accepted {
