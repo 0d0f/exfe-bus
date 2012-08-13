@@ -1,7 +1,9 @@
 Welcome to EXFE
 //////////////////////////////////
 
-{{ .Cross.Title }}
+=={{ .Cross.Title }}==
+{{ .Cross.LinkTo .Config.Site_url .Token}}
+
 To: {{ .To_identity.Name }}
 
 {{ if .IsHost }}You're gathering this ·X·.{{ else }}Invitation from {{ $a := index .By_identities 0 }}{{ $a.Name }}. {{ end }}
@@ -15,8 +17,9 @@ To: {{ .To_identity.Name }}
 {{ if .Cross.Description }}
 {{ .Cross.Description }}{{ end }}
 
-Invitations:{{ $api := .Config.Site_api }}{{ range .Cross.Exfee.Invitations }}
-{{ .Identity.Name }}{{ if not .Identity.Connected_user_id }} {{ .Identity.External_id }}{{ end }}{{ if .IsAccepted }} Accepted{{ end }}{{ if .Host }} Host{{ end }}{{ if .Mates }} w/ {{ .Mates }} people{{ end }}{{ end }}
+Accepted:{{ range .Cross.Exfee.Invitations }}{{ if .IsAccepted }}
+- {{ .Identity.Name }}{{ if not .Identity.Connected_user_id }} {{ .Identity.External_id }}{{ end }}{{ if .Host }} (Host){{ end }}{{ if .Mates }} w/ {{ .Mates }} people{{ end }}{{ end }}{{ end }}{{ range .Cross.Exfee.Invitations }}{{ if not .IsAccepted }}
+· {{ .Identity.Name }}{{ if not .Identity.Connected_user_id }} {{ .Identity.External_id }}{{ end }}{{ if .Host }} (Host){{ end }}{{ if .Mates }} w/ {{ .Mates }} people{{ end }}{{ end }}{{ end }}
 
 Reply this email directly as conversation, or try EXFE app( {{ .Config.App_url }} ).
 This ·X· invitation is sent by {{ .Cross.By_identity.Name }} from EXFE( {{ .Config.Site_url }} ).
@@ -50,7 +53,7 @@ This ·X· invitation is sent by {{ .Cross.By_identity.Name }} from EXFE( {{ .Co
         <table width="640" border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 19px; color: #191919; font-weight: normal; padding: 30px 40px 30px 40px; background-color: #fbfbfb; min-height: 562px;">
             <tr>
                 <td colspan="3" valign="top" style="font-size: 32px; line-height: 38px; padding-bottom: 18px;">
-                    <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #0591ac; text-decoration: none;">
+                    <a href="{{ .Cross.LinkTo .Config.Site_url .Token }}" style="color: #0591ac; text-decoration: none;">
                         {{ .Cross.Title }}
                     </a>
                 </td>
