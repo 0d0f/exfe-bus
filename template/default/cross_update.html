@@ -61,8 +61,8 @@ Time
                 <td colspan="5" style="color: #333333;">
                     Your&nbsp;<span style="color: #0591ac;">·X·</span>&nbsp;
                     “<span style="color: #191919;">{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}</span>”
-                    has been updated by
-                    {{ if index .By_identities 0 }}<span style="color: #191919;">{{ with index .By_identities 0 }}{{ .Name }}{{ end }}</span>,{{ end }}
+                    &nbsp;has&nbsp;been&nbsp;updated&nbsp;by&nbsp;
+                    {{ if index .By_identities 0 }}<span style="color: #191919;">{{ with index .By_identities 0 }}{{ .Name }}{{ end }}</span>,{{ end }}&nbsp;
                     etc.
                 </td>
             </tr>
@@ -104,9 +104,9 @@ Time
                             <td width="12"><img src="{{ .Config.Site_img }}/email/rsvp_accepted_12_blue.png" /></td>
                             <td>
                                 <p style="margin: 0;">
-                                    <span class="exfe_mail_identity_name">{{ .Cross.TotalAccepted }}</span> Accepted: {{ $a := .Accepted }}{{ range $i, $e := $a }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ if last $i $a | not }}, {{ end }}
+                                    <span class="exfe_mail_identity_name">{{ .Cross.TotalAccepted }}</span>&nbsp;Accepted:&nbsp;{{ $a := .Accepted }}{{ range $i, $e := $a }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ if last $i $a | not }},&nbsp;{{ end }}
                                     {{ end }}
-                                    and {{ .OldAccepted }} others.
+                                    &nbsp;and&nbsp;{{ .OldAccepted }}&nbsp;others.
                                 </p>
                             </td>
                         </tr>
@@ -116,10 +116,10 @@ Time
                             <td width="12"><img src="{{ .Config.Site_img }}/email/rsvp_declined_12.png" /></td>
                             <td>
                                 <p style="margin: 0;">
-                                    Unavailable:
+                                    Unavailable:&nbsp;
                                     {{ $a := .Declined }}
                                     {{ range $i, $e := $a }}
-                                    {{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.
+                                    {{ .Name }}{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}.
                                 </p>
                             </td>
                         </tr>
@@ -129,10 +129,10 @@ Time
                             <td width="12"><img src="{{ .Config.Site_img }}/email/plus_12_blue.png" /></td>
                             <td>
                                 <p style="margin: 0;">
-                                    Newly invited:
+                                    Newly invited:&nbsp;
                                     {{ $a := .NewlyInvited }}
                                     {{ range $i, $e := $a }}
-                                    {{ if .IsAccepted }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ else }}{{ .Identity.Name }}{{ end }}{{ if last $i $a | not }},{{ end }}{{ end }}.
+                                    {{ if .IsAccepted }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ else }}{{ .Identity.Name }}{{ end }}{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}.
                                 </p>
                             </td>
                         </tr>
@@ -142,10 +142,10 @@ Time
                             <td width="12"><img src="{{ .Config.Site_img }}/email/minus_12.png" /></td>
                             <td>
                                 <p style="margin: 0;">
-                                    Removed:
+                                    Removed:&nbsp;
                                     {{ $a := .Removed }}
                                     {{ range $i, $e := $a }}
-                                    {{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.
+                                    {{ .Name }}{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}.
                                 </p>
                             </td>
                         </tr>
@@ -190,13 +190,13 @@ Time
             <tr><td colspan="5" height="20"></td></tr>
             <tr>
                 <td colspan="5" style="font-size: 11px; line-height: 15px; color: #7F7F7F;">
-                    Reply this email directly as conversation, or try
-                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a> app.
+                    Reply&nbsp;this&nbsp;email&nbsp;directly&nbsp;as&nbsp;conversation,&nbsp;or&nbsp;try&nbsp;
+                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a>&nbsp;app.
                     <br>
                     <span style="color: #B2B2B2">
-                    This update is sent from
+                    This&nbsp;update&nbsp;is&nbsp;sent&nbsp;from&nbsp;
                     <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>
-                    automatically.
+                    &nbsp;automatically.&nbsp;
                     <!--
                     You can change
                     <a style="color: #B2B2B2; text-decoration: undeline;" href="">notification preference</a>.

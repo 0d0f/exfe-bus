@@ -73,15 +73,15 @@ Description
                     <table border="0" cellpadding="0" cellspacing="0">
                         <tr>
                             <td height="19" valign="top" style="padding-bottom: 10px;">
-                                To: <span style="font-weight: bold;">{{ .To_identity.Name }}</span>
+                                To:&nbsp;<span style="font-weight: bold;">{{ .To_identity.Name }}</span>
                             </td>
                         </tr>
                         <tr>
                             <td valign="top" style="padding-bottom: 20px;">
                                 {{ if .IsHost }}
-                                You're gathering this <span style="color: #0591ac; text-decoration: none;">·X·</span>.
+                                You're&nbsp;gathering&nbsp;this&nbsp;<span style="color: #0591ac; text-decoration: none;">·X·</span>.
                                 {{ else }}
-                                Invitation from <span>{{ $a := index .By_identities 0 }}{{ $a.Name }}</span>.
+                                Invitation&nbsp;from&nbsp;<span>{{ $a := index .By_identities 0 }}{{ $a.Name }}</span>.
                                 {{ end }}
                             </td>
                         </tr>
@@ -110,21 +110,21 @@ Description
                         <tr>
                             <td style="line-height:19px; padding-top: 30px;">
                                 <span style="display: block; float: left; color: #333333;">
-                                You've been
+                                You've&nbsp;been&nbsp;
                                 <span style="font-weight: bold; color: #0591AC;">CONFIRMED</span>
-                                to attend.</span>
+                                &nbsp;to&nbsp;attend.</span>
                             </td>
                         </tr>
                         <tr>
                             <td valign="top" style="padding-bottom: 30px;">
-                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px;" alt="Check it out" href="{{ .Cross.LinkTo .Config.Site_url .Token}}">Check it out...</a>
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px;" alt="Check it out" href="{{ .Cross.LinkTo .Config.Site_url .Token}}">Check&nbsp;it&nbsp;out...</a>
                             </td>
                         </tr>
                         {{ else }}
                         <tr>
                             <td valign="top" style="padding-top: 30px; padding-bottom: 30px;">
-                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #add1dc; color: #000000; padding: 5px 30px 5px 30px; margin-left: 25px;" alt="Accept" href="{{ .Cross.LinkTo .Config.Site_url .Token }}">I'm in</a>
-                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px; margin-left: 15px;" alt="Check it out" href="{{ .Cross.LinkTo .Config.Site_url .Token }}">Check it out...</a>
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #add1dc; color: #000000; padding: 5px 30px 5px 30px; margin-left: 25px;" alt="Accept" href="{{ .Cross.LinkTo .Config.Site_url .Token }}">I'm&nbsp;in</a>
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #fbfbfb; color: #000000; padding: 5px 25px 5px 25px; margin-left: 15px;" alt="Check it out" href="{{ .Cross.LinkTo .Config.Site_url .Token }}">Check&nbsp;it&nbsp;out...</a>
                             </td>
                         </tr>
                         {{ end }}
@@ -157,9 +157,9 @@ Description
                                         </td>
                                         <td>
                                           <span>{{ .Identity.Name }}</span>
-                                          {{ if .Mates }} <span class="exfe_mail_mates">+ {{ .Mates }}</span>{{ end }}
-                                          {{ if .Host }} <span class="exfe_mail_label">host</span>{{ end }}
-                                          {{ if not .Identity.Connected_user_id }} <span class="exfe_mail_identity">{{ .Identity.External_id }}</span>{{ end }}
+                                          {{ if .Mates }}&nbsp;<span class="exfe_mail_mates">+&nbsp;{{ .Mates }}</span>{{ end }}
+                                          {{ if .Host }}&nbsp;<span class="exfe_mail_label">host</span>{{ end }}
+                                          {{ if not .Identity.Connected_user_id }}&nbsp;<span class="exfe_mail_identity">{{ .Identity.External_id }}</span>{{ end }}
                                         </td>
                                     </tr>
                                     {{ end }}
@@ -171,14 +171,14 @@ Description
             </tr>
             <tr>
                 <td colspan="3" style="font-size: 11px; line-height: 15px; color: #7F7F7F; padding-top: 40px;">
-                    Reply this email directly as conversation, or Try
-                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a> app.
+                    Reply&nbsp;this&nbsp;email&nbsp;directly&nbsp;as&nbsp;conversation,&nbsp;or&nbsp;Try&nbsp;
+                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a>&nbsp;app.
                     <br>
-                    This
+                    This&nbsp;
                     <a style="color: #0591ac; text-decoration: none;" href="{{ .Cross.Link .Config.Site_url }}">·X·</a>
-                    invitation is sent by
+                    &nbsp;invitation&nbsp;is&nbsp;sent&nbsp;by&nbsp;
                     <span class="exfe_mail_identity_name">{{ .Cross.By_identity.Name }}</span>
-                    from
+                    &nbsp;from&nbsp;
                     <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
                 </td>
             </tr>
