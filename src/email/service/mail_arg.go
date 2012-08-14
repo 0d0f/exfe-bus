@@ -107,8 +107,8 @@ func (m *MailArg) makeHeader() ([]byte, error) {
 			buf.WriteString(", ")
 		}
 	}
-	buf.WriteString(fmt.Sprintf("From: %s\r\n", m.From))
 	buf.WriteString("\r\n")
+	buf.WriteString(fmt.Sprintf("From: %s\r\n", m.From))
 	return buf.Bytes(), nil
 }
 
