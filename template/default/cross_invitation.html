@@ -130,7 +130,9 @@ Description
                         <tr>
                             <td valign="top">
                                 {{ $s := .Cross.Description }}{{ replace $s "\n" "<br />" }}
+                                {{ if .LongDescription }}
                                 <a style="font-style: italic; color: #666666; text-decoration: none;" href="{{ .Cross.Link .Config.Site_url }}">...more</a>
+                                {{ end }}
                             </td>
                         </tr>
                     </table>

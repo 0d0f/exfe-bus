@@ -109,7 +109,7 @@ Time
                                     Accepted:
                                     {{ $a := .Accepted }}
                                     {{ range $i, $e := $a }}
-                                    <span class="exfe_mail_identity_name">{{ .Name }}</span>{{ if last $i $a | not }}, {{ end }}
+                                    <span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ if last $i $a | not }}, {{ end }}
                                     {{ end }}
                                     and {{ .OldAccepted }} others.
                                 </p>
