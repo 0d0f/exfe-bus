@@ -101,13 +101,13 @@ func (m *MailArg) makeHeader() ([]byte, error) {
 	}
 	buf.WriteString(fmt.Sprintf("Subject: %s\r\n", m.Subject))
 	buf.WriteString("To: ")
-	buf.WriteString(fmt.Sprintf("From: %s\r\n", m.From))
 	for i, t := range m.To {
 		buf.WriteString(t.String())
 		if i != (len(m.To) - 1) {
 			buf.WriteString(", ")
 		}
 	}
+	buf.WriteString(fmt.Sprintf("From: %s\r\n", m.From))
 	buf.WriteString("\r\n")
 	return buf.Bytes(), nil
 }
