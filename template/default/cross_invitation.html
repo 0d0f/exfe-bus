@@ -5,17 +5,19 @@ Welcome to EXFE
 
 
 {{ .Cross.Title }}
-======
-{{ .Cross.LinkTo .Config.Site_url .Token}}
-_______________
+=======
+{{ .Cross.Link .Config.Site_url }}
 {{ $time := .Cross.Time.StringInZone .Timezone }}{{ if $time }}
-{{ $time }}{{ else }}
+{{ $time }}
+======={{ else }}
 Time
+=======
   To be decided.{{ end }}
 
 {{ if .Cross.Place.Title }}{{ .Cross.Place.Title }}{{ else }}Place{{ end }}
+=======
   {{ if .Cross.Place.Description }}{{ .Cross.Place.Description }}{{ else }}To be decided.{{ end }}
-_______________
+
 
 {{ if .Confirmed }}You've been CONFIRMED to attend. Check it out: {{ .Cross.LinkTo .Config.Site_url .Token}}{{ else }}I'm in. Check it out: {{ .Cross.LinkTo .Config.Site_url .Token}}{{ end }}
 
