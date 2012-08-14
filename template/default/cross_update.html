@@ -6,17 +6,15 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
 {{ .Cross.Title }}
 =======
 {{ .Cross.Link .Config.Site_url }}
+_______________
 {{ $time := .Cross.Time.StringInZone .Timezone }}{{ if $time }}
-{{ $time }}
--------{{ else }}
+{{ $time }}{{ else }}
 Time
--------
   To be decided.{{ end }}
 
 {{ if .Cross.Place.Title }}{{ .Cross.Place.Title }}{{ else }}Place{{ end }}
--------{{ if .Cross.Place.Description }}
-  {{ .Cross.Place.Description }}{{ end }}
-
+  {{ if .Cross.Place.Description }}{{ .Cross.Place.Description }}{{ else }}To be decided.{{ end }}
+_______________
 
 · {{ .Cross.TotalAccepted }}Accepted:{{ $a := .Cross.Exfee.Invitations }}{{ range $i, $e := $a }}{{ if .IsAccepted }}{{ .Identity.Name }}{{ if .Host }} (Host){{ end }}{{ if last $i $a | not}}, {{ end }}{{ end }}{{ end }}{{ if .Declined }}
 · Unavailable: {{ $a := .Declined }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.{{ end }}{{ if .NewlyInvited }}
@@ -59,9 +57,7 @@ Time
         <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 20px; color: #191919; font-weight: normal; width: 640px; padding: 20px; background-color: #fbfbfb;">
             <tr>
                 <td colspan="5" style="color: #333333;">
-                    Your
-                    <span style="color: #0591ac;">·X·</span>
-                    “<span style="color: #191919;">{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}</span>”
+                    Your <span style="color: #0591ac;">·X·</span> “<span style="color: #191919;">{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}</span>”
                     has been updated by
                     {{ if index .By_identities 0 }}<span style="color: #191919;">{{ with index .By_identities 0 }}{{ .Name }}{{ end }}</span>,{{ end }}
                     etc.
@@ -182,9 +178,7 @@ Time
                             <td valign="top">
                               <span class="exfe_mail_message">{{ .Content }}</span>
                                 <br>
-                                <span class="exfe_mail_msg_identity_name">{{ .By_identity.Name }}</span>
-                                <span class="exfe_mail_msg_at">at</span>
-                                <span class="exfe_mail_msg_time">{{ .CreatedAt $timezone }}</span>
+                                <span class="exfe_mail_msg_identity_name">{{ .By_identity.Name }}</span> <span class="exfe_mail_msg_at">at</span> <span class="exfe_mail_msg_time">{{ .CreatedAt $timezone }}</span>
                             </td>
                         </tr>
                         <tr><td colspan="2" height="20"></td></tr>
