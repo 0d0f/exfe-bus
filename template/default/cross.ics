@@ -6,7 +6,7 @@ X-WR-CALDESC:exfe cal
 X-WR-TIMEZONE:{{ .Timezone }}
 BEGIN:VEVENT
 UID:{{ .Cross.Id }}{{ .To_identity.Id }}@exfe
-DTSTAMP:{{ if .Cross.Time.Begin_at.UTCTime }}{{ .Cross.Time.Begin_at.UTCTime "20060102T150405" }}{{ else }}Time to be decided{{ end }}
+DTSTAMP:{{ if .Cross.Time.Begin_at.UTCTime "20060102T150405" }}{{ .Cross.Time.Begin_at.UTCTime "20060102T150405" }}{{ else }}Time to be decided{{ end }}
 DESCRIPTION:{{ $s := limit .Cross.Description 233 }}{{ replace $s "\n" "\\n" }}
 DTSTART:{{ .Cross.Time.Begin_at.UTCTime "20060102T150405" }}
 LOCATION: {{ replace .Cross.Title "\n" "\\n" }} - {{ replace .Cross.Description "\n" "\\n" }}
