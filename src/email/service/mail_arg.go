@@ -99,7 +99,6 @@ func (m *MailArg) makeHeader() ([]byte, error) {
 		buf.Write([]byte(strings.Join(v, ", ")))
 		buf.WriteString("\r\n")
 	}
-	buf.WriteString(fmt.Sprintf("Subject: %s\r\n", m.Subject))
 	buf.WriteString("To: ")
 	for i, t := range m.To {
 		buf.WriteString(t.String())
@@ -109,6 +108,7 @@ func (m *MailArg) makeHeader() ([]byte, error) {
 	}
 	buf.WriteString("\r\n")
 	buf.WriteString(fmt.Sprintf("From: %s\r\n", m.From))
+	buf.WriteString(fmt.Sprintf("Subject: %s\r\n", m.Subject))
 	return buf.Bytes(), nil
 }
 
