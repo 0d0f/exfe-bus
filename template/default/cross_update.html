@@ -162,6 +162,7 @@ Time
                     {{ end }}
                 </td>
             </tr>
+            {{ if .Posts }}
             <tr><td colspan="5" height="10"></td></tr>
             <tr><td colspan="5" height="1" background="{{ .Config.Site_img }}/email/dash.png"></td></tr>
             <tr><td colspan="5" height="20"></td></tr>
@@ -187,6 +188,7 @@ Time
                     </table>
                 </td>
             </tr>
+            {{ end }}
             <tr><td colspan="5" height="20"></td></tr>
             <tr>
                 <td colspan="5" style="font-size: 11px; line-height: 15px; color: #7F7F7F;">
