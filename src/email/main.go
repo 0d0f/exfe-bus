@@ -1,8 +1,8 @@
 package main
 
 import (
-	"exfe/service"
 	"email/service"
+	"exfe/service"
 	"fmt"
 	"gobus"
 	"log"
@@ -23,10 +23,6 @@ func main() {
 			Server: fmt.Sprintf("%s:%d", c.Email.Host, c.Email.Port),
 			Auth:   smtp.PlainAuth("", c.Email.User, c.Email.Password, c.Email.Host),
 		})
-	defer func() {
-		log.Print("Service stop")
-		server.Close()
-	}()
 
 	server.Serve(c.Email.Time_out * time.Second)
 }
