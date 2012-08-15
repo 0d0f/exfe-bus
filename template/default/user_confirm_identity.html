@@ -3,13 +3,11 @@ EXFE identity verification
 
 Hi, {{ .To_identity.Name }}.
 
-Your email has been requested for verification {{ if .User_name }} by {{ .User_name }}</span>{{ end }} on EXFE.
+Your email {{ .To_identiy.External_id }} has been requested for verification{{ if .User_name }} by {{ .User_name }}{{ end }} on EXFE.
 
-Please click here to verify your identity: {{ .Config.Site_url }}/#token={{ .Token }}
+Please click here to verify: {{ .Config.Site_url }}/#token={{ .Token }}
 
-If you didn’t request, just ignore this mail. Sorry for disturbing.
-
-EXFE is an utility for hanging out with friends. We save you from calling up every one RSVP, losing in endless emails and messages off the point.
+EXFE is a utility for hanging out with friends. We save you from calling up every one RSVP, losing in endless emails and messages off the point.
 
 This email is sent to {{ .To_identity.External_id }} per identity verification request on EXFE( {{ .Config.Site_url }} ).
 //////////////////////////////////
@@ -24,45 +22,37 @@ This email is sent to {{ .To_identity.External_id }} per identity verification r
         <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 14px; line-height: 20px; color: #333333; font-weight: normal; width: 640px; padding: 20px; background-color: #fbfbfb;">
             <tr>
                 <td>
-                    Hi, <span style="color: #191919;">{{ .To_identity.Name }}.</span>
+                    Hi,&nbsp;<span style="color: #191919;">{{ .To_identity.Name }}.</span>
                 </td>
             </tr>
             <tr><td height="20"></td></tr>
             <tr>
                 <td>
-                    Your email has been requested for verification
-                    {{ if .User_name }} by <span style="color: #191919;">{{ .User_name }}</span>{{ end }}
-                    on <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
+                    Your&nbsp;email&nbsp;<span style="font-style: italic;">{{ .To_identity.External_id }}</span>&nbsp;has&nbsp;been&nbsp;requested&nbsp;for&nbsp;verification{{ if .User_name }}&nbsp;by&nbsp;<span style="color: #191919;">{{ .User_name }}</span>{{ end }}&nbsp;on&nbsp;<a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
                 </td>
             </tr>
             <tr><td height="20"></td></tr>
             <tr>
                 <td>
                     <a style="color:#333333; text-decoration: none;" href="{{ .Config.Site_url }}/#token={{ .Token }}">
-                        Please click here to verify your identity: <span style="text-decoration: underline;">{{ .Config.Site_url }}/#token={{ .Token | .Shorten }}</span>
+                        Please&nbsp;click&nbsp;here&nbsp;to&nbsp;verify:&nbsp;<span style="text-decoration: underline;">{{ .Config.Site_url }}/#token={{ .Token | .Shorten }}</span>
                     </a>
                 </td>
             </tr>
             <tr><td height="20"></td></tr>
             <tr>
                 <td>
-                    If you didn’t request, just ignore this mail. Sorry for disturbing.
-                </td>
-            </tr>
-            <tr><td height="20"></td></tr>
-            <tr>
-                <td>
-                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>
-                    is an utility for hanging out with friends. We save you from calling up every one RSVP, losing in endless emails and messages off the point.
+                    <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>&nbsp;
+                    is&nbsp;a&nbsp;utility&nbsp;for&nbsp;hanging&nbsp;out&nbsp;with&nbsp;friends.&nbsp;We&nbsp;save&nbsp;you&nbsp;from&nbsp;calling&nbsp;up&nbsp;every&nbsp;one&nbsp;RSVP,&nbsp;losing&nbsp;in&nbsp;endless&nbsp;emails&nbsp;and&nbsp;messages&nbsp;off&nbsp;the&nbsp;point.
                 </td>
             </tr>
             <tr><td height="40"></td></tr>
             <tr>
                 <td style="font-size: 11px; line-height: 13px; color: #666666;">
-                    This email is sent to
+                    This&nbsp;email&nbsp;is&nbsp;sent&nbsp;to&nbsp;
                     <a style="color: #666666; text-decoration: none; font-style: italic;" href="mailto:{{ .To_identity.External_id }}">{{ .To_identity.External_id }}</a>
-                    per identity verification request on
-                    <a style="color: #0591ac; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
+                    &nbsp;per&nbsp;identity&nbsp;verification&nbsp;request&nbsp;on&nbsp;
+                    <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
                 </td>
             </tr>
         </table>
