@@ -66,13 +66,14 @@ func executeTemplate(name string, to *exfe_model.Identity, data interface{}, cli
 		return err
 	}
 
-	content := strings.SplitN(buf.String(), "\n", 2)
+	content := strings.SplitN(buf.String(), "//////////////////////////////////\n\n", 3)
 
 	mailarg := &email_service.MailArg{
 		To:      []*mail.Address{&mail.Address{to.Name, to.External_id}},
 		From:    &mail.Address{"EXFE ·X·", "x@exfe.com"},
 		Subject: content[0],
-		Html:    content[1],
+		Text:    content[1],
+		Html:    content[2],
 	}
 
 	client.Send("EmailSend", &mailarg, 5)
