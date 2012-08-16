@@ -3,7 +3,7 @@ EXFE identity verification
 
 Hi, {{ .To_identity.Name }}.
 
-Your email {{ .To_identiy.External_id }} has been requested for verification{{ if .User_name }} by {{ .User_name }}{{ end }} on EXFE.
+Your email {{ .To_identity.External_id }} has been requested for verification{{ if .User_name }} by {{ .User_name }}{{ end }} on EXFE.
 
 Please click here to verify: {{ .Config.Site_url }}/#token={{ .Token }}
 
