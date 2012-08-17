@@ -157,6 +157,8 @@ func (a *ProviderArg) TextRemoved() (string, error) {
 func (a *ProviderArg) Diff(log *log.Logger) (accepted map[string]*exfe_model.Invitation, declined map[string]*exfe_model.Identity, newlyInvited map[string]*exfe_model.Invitation, removed map[string]*exfe_model.Identity) {
 	oldId := make(map[string]*exfe_model.Invitation)
 	newId := make(map[string]*exfe_model.Invitation)
+	oldExId := make(map[string]*exfe_model.Invitation)
+	newExId := make(map[string]*exfe_model.Invitation)
 
 	accepted = make(map[string]*exfe_model.Invitation)
 	declined = make(map[string]*exfe_model.Identity)
@@ -175,6 +177,7 @@ func (a *ProviderArg) Diff(log *log.Logger) (accepted map[string]*exfe_model.Inv
 			log.Printf("more than one non-notification status in exfee %d, user id %d", a.Old_cross.Id, v.Identity.Connected_user_id)
 		}
 		oldId[v.Identity.DiffId()] = &a.Old_cross.Exfee.Invitations[i]
+		oldExId[v.Identity.ExternalId()] = &a.Old_cross.Exfee.Invitations[i]
 	}
 	for i, v := range a.Cross.Exfee.Invitations {
 		if v.Rsvp_status == "NOTIFICATION" || v.Rsvp_status == "REMOVED" {
@@ -184,12 +187,13 @@ func (a *ProviderArg) Diff(log *log.Logger) (accepted map[string]*exfe_model.Inv
 			log.Printf("more than one non-notification status in exfee %d, user id %d", a.Old_cross.Id, v.Identity.Connected_user_id)
 		}
 		newId[v.Identity.DiffId()] = &a.Cross.Exfee.Invitations[i]
+		newExId[v.Identity.ExternalId()] = &a.Cross.Exfee.Invitations[i]
 	}
 
 	for k, v := range newId {
 		inv, ok := oldId[k]
 		if !ok {
-			inv, ok = oldId[v.Identity.ExternalId()]
+			inv, ok = oldExId[v.Identity.ExternalId()]
 		}
 		switch v.Rsvp_status {
 		case "ACCEPTED":
@@ -208,7 +212,7 @@ func (a *ProviderArg) Diff(log *log.Logger) (accepted map[string]*exfe_model.Inv
 	for k, v := range oldId {
 		_, ok := newId[k]
 		if !ok {
-			_, ok = newId[v.Identity.UserId()]
+			_, ok = newExId[v.Identity.ExternalId()]
 		}
 		if !ok {
 			removed[k] = &v.Identity
