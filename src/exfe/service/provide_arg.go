@@ -168,7 +168,7 @@ func (a *ProviderArg) Diff(log *log.Logger) (accepted map[string]*exfe_model.Inv
 	}
 
 	for i, v := range a.Old_cross.Exfee.Invitations {
-		if v.Rsvp_status == "NOTIFICATION" {
+		if v.Rsvp_status == "NOTIFICATION" || v.Rsvp_status == "REMOVED" {
 			continue
 		}
 		if _, ok := oldId[v.Identity.DiffId()]; ok {
@@ -177,7 +177,7 @@ func (a *ProviderArg) Diff(log *log.Logger) (accepted map[string]*exfe_model.Inv
 		oldId[v.Identity.DiffId()] = &a.Old_cross.Exfee.Invitations[i]
 	}
 	for i, v := range a.Cross.Exfee.Invitations {
-		if v.Rsvp_status == "NOTIFICATION" {
+		if v.Rsvp_status == "NOTIFICATION" || v.Rsvp_status == "REMOVED" {
 			continue
 		}
 		if _, ok := newId[v.Identity.DiffId()]; ok {
