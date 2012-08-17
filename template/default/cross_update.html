@@ -202,11 +202,13 @@ Time
                                 <img width="40" height="40" src="{{ .By_identity.Avatar_filename }}">
                             </td>
                             <td valign="top">
-                              <span class="exfe_mail_message">{{ .Content }}</span>
-                                <br>
-                                <span class="exfe_mail_msg_identity_name">{{ .By_identity.Name }}</span>
-                                &nbsp;<span class="exfe_mail_msg_at">at</span>&nbsp;
-                                <span class="exfe_mail_msg_time">{{ .CreatedAt $timezone }}</span>
+                                <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="text-decoration: none;">
+                                    <span class="exfe_mail_message">{{ .Content }}</span>
+                                    <br>
+                                    <span class="exfe_mail_msg_identity_name">{{ .By_identity.Name }}</span>
+                                    &nbsp;<span class="exfe_mail_msg_at">at</span>&nbsp;
+                                    <span class="exfe_mail_msg_time">{{ .CreatedAt $timezone }}</span>
+                                </a>
                             </td>
                         </tr>
                         <tr><td colspan="2" height="20"></td></tr>
