@@ -132,9 +132,7 @@ Description
                         <tr>
                             <td style="line-height:19px; padding-top: 30px;">
                                 <span style="display: block; float: left; color: #333333;">
-                                You've&nbsp;been&nbsp;
-                                <span style="font-weight: bold; color: #3a6ea5;">CONFIRMED</span>
-                                &nbsp;to&nbsp;attend.</span>
+                                You've&nbsp;been&nbsp;<span style="font-weight: bold; color: #3a6ea5;">CONFIRMED</span>&nbsp;to&nbsp;attend.</span>
                             </td>
                         </tr>
                         <tr>
@@ -178,10 +176,7 @@ Description
                                             <img width="20" height="20" src="{{ $api }}/v2/avatar/render?url={{ .Identity.Avatar_filename | base64 | urlquery }}&width=25&height=25{{ if not .IsAccepted }}&alpha=0.25{{ end }}">
                                         </td>
                                         <td>
-                                          <span>{{ .Identity.Name }}</span>
-                                          {{ if .Mates }}&nbsp;<span class="exfe_mail_mates">+&nbsp;{{ .Mates }}</span>{{ end }}
-                                          {{ if .Host }}&nbsp;<span class="exfe_mail_label">host</span>{{ end }}
-                                          {{ if not .Identity.Connected_user_id }}&nbsp;<span class="exfe_mail_identity">{{ .Identity.External_id }}</span>{{ end }}
+                                          <span>{{ .Identity.Name }}</span>{{ if .Mates }}&nbsp;<span class="exfe_mail_mates">+&nbsp;{{ .Mates }}</span>{{ end }}{{ if .Host }}&nbsp;<span class="exfe_mail_label">host</span>{{ end }}{{ if not .Identity.Connected_user_id }}&nbsp;<span class="exfe_mail_identity">{{ .Identity.External_id }}</span>{{ end }}
                                         </td>
                                     </tr>
                                     {{ end }}
@@ -193,15 +188,8 @@ Description
             </tr>
             <tr>
                 <td colspan="3" style="font-size: 11px; line-height: 15px; color: #7F7F7F; padding-top: 40px;">
-                    Reply&nbsp;this&nbsp;email&nbsp;directly&nbsp;as&nbsp;conversation,&nbsp;or&nbsp;Try&nbsp;
-                    <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a>&nbsp;app.
-                    <br>
-                    This&nbsp;
-                    <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Cross.Link .Config.Site_url }}">·X·</a>
-                    &nbsp;invitation&nbsp;is&nbsp;sent&nbsp;by&nbsp;
-                    <span class="exfe_mail_identity_name">{{ .Cross.By_identity.Name }}</span>
-                    &nbsp;from&nbsp;
-                    <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
+                    Reply&nbsp;this&nbsp;email&nbsp;directly&nbsp;as&nbsp;conversation,&nbsp;or&nbsp;Try&nbsp;<a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a>&nbsp;app.<br>
+                    This&nbsp;<a style="color: #3a6ea5; text-decoration: none;" href="{{ .Cross.Link .Config.Site_url }}">·X·</a>&nbsp;invitation&nbsp;is&nbsp;sent&nbsp;by&nbsp;<span class="exfe_mail_identity_name">{{ .Cross.By_identity.Name }}</span>&nbsp;from&nbsp;<a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
                 </td>
             </tr>
         </table>
