@@ -12,7 +12,7 @@ type Identity struct {
 	Bio               string
 	Provider          string
 	Timezone          string
-	Connected_user_id uint64
+	Connected_user_id int64
 
 	External_id       string
 	External_username string
