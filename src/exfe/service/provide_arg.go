@@ -44,8 +44,8 @@ func (a *ProviderArg) IsTimeChanged() bool {
 	if a.Old_cross == nil {
 		return false
 	}
-	crossTime, _ := a.Cross.Time.StringInZone(a.To_identity.Timezone)
-	oldTime, _ := a.Old_cross.Time.StringInZone(a.To_identity.Timezone)
+	crossTime, _ := a.Cross.Time.StringInZone(a.Timezone())
+	oldTime, _ := a.Old_cross.Time.StringInZone(a.Timezone())
 	return crossTime != oldTime
 }
 
