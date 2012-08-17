@@ -33,17 +33,39 @@ type ProviderArg struct {
 	Removed      []*exfe_model.Identity
 }
 
+func (a *ProviderArg) IsTitleChanged() bool {
+	if a.Old_cross == nil {
+		return false
+	}
+	return a.Cross.Title != a.Old_cross.Title
+}
+
+func (a *ProviderArg) IsTimeChanged() bool {
+	if a.Old_cross == nil {
+		return false
+	}
+	crossTime, _ := a.Cross.Time.StringInZone(a.To_identity.Timezone)
+	oldTime, _ := a.Old_cross.Time.StringInZone(a.To_identity.Timezone)
+	return crossTime != oldTime
+}
+
+func (a *ProviderArg) IsPlaceChanged() bool {
+	if a.Old_cross == nil {
+		return false
+	}
+	return (a.Cross.Place.Title != a.Old_cross.Place.Title) || (a.Cross.Place.Description != a.Old_cross.Place.Description)
+}
+
 func (a *ProviderArg) IsHost() bool {
-	return a.Cross.By_identity.Connected_user_id == a.To_identity.Connected_user_id
+	return a.Cross.By_identity.DiffId() == a.To_identity.DiffId()
 }
 
 func (a *ProviderArg) Token() string {
-	for _, invitation := range a.Cross.Exfee.Invitations {
-		if invitation.Identity.Connected_user_id == a.To_identity.Connected_user_id {
-			return invitation.Token
-		}
+	inv := a.Cross.Exfee.FindInvitation(a.To_identity)
+	if inv == nil {
+		return ""
 	}
-	return ""
+	return inv.Token
 }
 
 func (a *ProviderArg) Timezone() string {
@@ -54,12 +76,11 @@ func (a *ProviderArg) Timezone() string {
 }
 
 func (a *ProviderArg) Confirmed() bool {
-	for _, invitation := range a.Cross.Exfee.Invitations {
-		if invitation.Identity.Connected_user_id == a.To_identity.Connected_user_id {
-			return invitation.IsAccepted()
-		}
+	inv := a.Cross.Exfee.FindInvitation(a.To_identity)
+	if inv == nil {
+		return false
 	}
-	return false
+	return inv.IsAccepted()
 }
 
 func (a *ProviderArg) ManyPosts() bool {

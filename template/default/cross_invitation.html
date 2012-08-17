@@ -90,17 +90,39 @@ Description
                                 <table border="0" cellpadding="0" cellspacing="0">
                                     <tr>
                                         <td valign="top" width="160">
-                                            <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
-                                                {{ .Cross.Time.StringInZone .Timezone }}
-                                            </p>
+                                            <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="text-decoration: none;">
+                                                {{ if $time }}
+                                                <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
+                                                    {{ $time }}
+                                                </p>
+                                                {{ else }}
+                                                <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
+                                                    Time
+                                                </p>
+                                                <p style="color: #191919; margin: 0;">
+                                                    To be decided
+                                                </p>
+                                                {{ end }}
+                                            </a>
                                         </td>
                                         <td valign="top">
-                                            <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
-                                                {{ .Cross.Place.Title }}
-                                            </p>
-                                            <p style="color: #191919; margin: 0;">
-                                                {{ replace .Cross.Place.Description "\n" "<br />"}}
-                                            </p>
+                                            <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="text-decoration: none;">
+                                                {{ if .Cross.Place.Title }}
+                                                <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
+                                                    {{ .Cross.Place.Title }}
+                                                </p>
+                                                <p style="color: #191919; margin: 0;">
+                                                    {{ replace .Cross.Place.Description "\n" "<br />"}}
+                                                </p>
+                                                {{ else }}
+                                                <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
+                                                    Place
+                                                </p>
+                                                <p style="color: #191919; margin: 0;">
+                                                    To be decided
+                                                </p> 
+                                                {{ end }}
+                                            </a>
                                         </td>
                                     </tr>
                                 </table>
