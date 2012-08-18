@@ -70,6 +70,20 @@ func (s *CrossTwitter) sendTweet(arg *ProviderArg, message, url string) {
 		Urls:         urls,
 	}
 	s.client.Send("SendTweet", tweet, 5)
+	var twitterId *string
+	if arg.To_identity.External_id != "" {
+		twitterId = &arg.To_identity.External_id
+	}
+	info := &twitter_service.UsersShowArg{
+		ClientToken:  s.config.Twitter.Client_token,
+		ClientSecret: s.config.Twitter.Client_secret,
+		AccessToken:  s.config.Twitter.Access_token,
+		AccessSecret: s.config.Twitter.Access_secret,
+		ScreenName:   &arg.To_identity.External_username,
+		UserId:       twitterId,
+		IdentityId:   &arg.To_identity.Id,
+	}
+	s.client.Send("GetInfo", info, 5)
 }
 
 func (s *CrossTwitter) sendDM(arg *ProviderArg, t, url string) {
@@ -116,12 +130,14 @@ func (s *CrossTwitter) sendCrossChange(arg *ProviderArg) {
 		return
 	}
 
-	if arg.Old_cross.Title != arg.Cross.Title {
+	if arg.IsTitleChanged() {
 		msg, _ := arg.TextTitleChange()
 		s.send(arg, msg)
 	}
-	msg, _ := arg.TextCrossChange()
-	s.send(arg, msg)
+	if arg.IsTimeChanged() || arg.IsPlaceChanged() {
+		msg, _ := arg.TextCrossChange()
+		s.send(arg, msg)
+	}
 }
 
 func (s *CrossTwitter) sendExfeeChange(arg *ProviderArg) {
