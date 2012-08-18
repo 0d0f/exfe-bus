@@ -7,7 +7,7 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
 =======
 {{ .Cross.Link .Config.Site_url }}
 {{ $time := .Cross.Time.StringInZone .Timezone }}{{ if $time }}
-{{ if .IsTimeChanged }}*{{ end }}{{ $time }}{{ if .IsTimeChanged }}*{{ end }
+{{ if .IsTimeChanged }}*{{ end }}{{ $time }}{{ if .IsTimeChanged }}*{{ end }}
 ======={{ else }}
 {{ if .IsTimeChanged }}*{{ end }Time{{ if .IsTimeChanged }}*{{ end }
 =======
