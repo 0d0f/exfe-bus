@@ -66,7 +66,7 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
             <tr><td colspan="5" height="10"></td></tr>
             <tr>
                 <td colspan="5" style="font-size: 20px; line-height: 26px;">
-                    <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="color:{{ if .IsTitleChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">
+                    <a href="{{ .Cross.Link .Config.Site_url }}" style="color:{{ if .IsTitleChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">
                         {{ .Cross.Title }}
                     </a>
                 </td>
@@ -76,14 +76,14 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
                 <td valign="top" width="180">
                     {{ if $time }}
                     <p style="font-size: 20px; line-height: 26px; margin: 0;">
-                        <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="color: {{ if .IsTimeChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">{{ $time }}</a>
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsTimeChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">{{ $time }}</a>
                     </p>
                     {{ else }}
                     <p style="font-size: 20px; line-height: 26px; margin: 0;">
-                        <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="color: {{ if .IsTimeChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">Time</a>
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsTimeChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">Time</a>
                     </p>
                     <p style="margin: 0;">
-                        <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">To be decided</a>
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">To be decided</a>
                     </p>
                     {{ end }}
                 </td>
@@ -91,17 +91,17 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
                 <td valign="top" width="180" style="word-break: break-all;">
                     {{ if .Cross.Place.Title }}
                     <p style="font-size: 20px; line-height: 26px; margin: 0;">
-                        <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">{{ .Cross.Place.Title }}</a>
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">{{ .Cross.Place.Title }}</a>
                     </p>
                     <p style="margin: 0;">
-                        <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">{{ replace .Cross.Place.Description "\n" "<br />"}}</a>
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">{{ replace .Cross.Place.Description "\n" "<br />"}}</a>
                     </p>
                     {{ else }}
                     <p style="font-size: 20px; line-height: 26px; margin: 0;">
-                        <a href="{{ .Cross.LinkTo .Config.Site_url .Token}};" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">Place</a>
+                        <a href="{{ .Cross.Link .Config.Site_url }};" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">Place</a>
                     </p>
                     <p style="margin: 0;">
-                        <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">To be decided</a>
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">To be decided</a>
                     </p> 
                     {{ end }}
                 </td>
@@ -118,7 +118,7 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
                         <tr>
                             <td width="12"><img src="{{ .Config.Site_img }}/email/rsvp_accepted_12_blue.png" /></td>
                             <td>
-                                <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="color: #191919; text-decoration: none;">
+                                <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
                                         <span class="exfe_mail_identity_name">{{ .Cross.TotalAccepted }}</span>&nbsp;Accepted:&nbsp;{{ $a := .Accepted }}{{ range $i, $e := $a }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}&nbsp;and&nbsp;{{ .OldAccepted }}&nbsp;others.
                                     </p>
@@ -130,7 +130,7 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
                         <tr>
                             <td width="12"><img src="{{ .Config.Site_img }}/email/rsvp_declined_12.png" /></td>
                             <td>
-                                <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="color: #191919; text-decoration: none;">
+                                <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
                                         Unavailable:&nbsp;{{ $a := .Declined }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}.
                                     </p>
@@ -142,7 +142,7 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
                         <tr>
                             <td width="12"><img src="{{ .Config.Site_img }}/email/plus_12_blue.png" /></td>
                             <td>
-                                <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="color: #191919; text-decoration: none;">
+                                <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
                                         Newly invited:&nbsp;{{ $a := .NewlyInvited }}{{ range $i, $e := $a }}{{ if .IsAccepted }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ else }}{{ .Identity.Name }}{{ end }}{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}.
                                     </p>
@@ -154,7 +154,7 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
                         <tr>
                             <td width="12"><img src="{{ .Config.Site_img }}/email/minus_12.png" /></td>
                             <td>
-                                <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="color: #191919; text-decoration: none;">
+                                <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
                                         Removed:&nbsp;{{ $a := .Removed }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}.
                                     </p>
@@ -181,7 +181,7 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
             <tr>
                 <td colspan="5">
                     <table border="0" cellpadding="0" cellspacing="0">
-                        {{ $timezone := .Timezone }}{{ $url := .Cross.LinkTo .Config.Site_url .Token }}
+                        {{ $timezone := .Timezone }}{{ $url := .Cross.Link .Config.Site_url }}
                         {{ range .Posts }}
                         <tr>
                             <td valign="top" width="50" align="left">
