@@ -40,7 +40,7 @@ func (i Identity) UserId() string {
 }
 
 func (i Identity) ExternalId() string {
-	return fmt.Sprintf("%s@%s", i.External_id, i.Provider)
+	return fmt.Sprintf("%s@%s", i.External_username, i.Provider)
 }
 
 func (i Identity) DiffId() string {

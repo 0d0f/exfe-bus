@@ -25,8 +25,9 @@ func (s *CrossTwitter) Handle(arg *ProviderArg) {
 }
 
 func (s *CrossTwitter) getIdentityInfo(id *exfe_model.Identity) {
+	var twitterId *string
 	if id.External_id != "" {
-		return
+		twitterId = &id.External_id
 	}
 	// get to_identity info
 	s.client.Send("GetInfo", &twitter_service.UsersShowArg{
@@ -35,6 +36,7 @@ func (s *CrossTwitter) getIdentityInfo(id *exfe_model.Identity) {
 		AccessToken:  s.config.Twitter.Access_token,
 		AccessSecret: s.config.Twitter.Access_secret,
 		ScreenName:   &id.External_username,
+		UserId:       twitterId,
 		IdentityId:   &id.Id,
 	}, 5)
 }
@@ -70,20 +72,6 @@ func (s *CrossTwitter) sendTweet(arg *ProviderArg, message, url string) {
 		Urls:         urls,
 	}
 	s.client.Send("SendTweet", tweet, 5)
-	var twitterId *string
-	if arg.To_identity.External_id != "" {
-		twitterId = &arg.To_identity.External_id
-	}
-	info := &twitter_service.UsersShowArg{
-		ClientToken:  s.config.Twitter.Client_token,
-		ClientSecret: s.config.Twitter.Client_secret,
-		AccessToken:  s.config.Twitter.Access_token,
-		AccessSecret: s.config.Twitter.Access_secret,
-		ScreenName:   &arg.To_identity.External_username,
-		UserId:       twitterId,
-		IdentityId:   &arg.To_identity.Id,
-	}
-	s.client.Send("GetInfo", info, 5)
 }
 
 func (s *CrossTwitter) sendDM(arg *ProviderArg, t, url string) {
