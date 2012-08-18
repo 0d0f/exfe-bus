@@ -94,7 +94,7 @@ func (e *CrossEmail) Serve() {
 				}
 			}
 
-			fmt.Println(len(updates))
+			e.log.Printf("Got %d updates", len(updates))
 			arg := &ProviderArg{
 				Cross:         &updates[len(updates)-1].Cross,
 				Old_cross:     old_cross,
