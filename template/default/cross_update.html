@@ -170,7 +170,7 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
                 <td colspan="5">
                     {{ $api := .Config.Site_api }}
                     {{ range .Cross.Exfee.Invitations }}
-                    <img style="padding-right: 5px;" width="40" height="40" src="{{ $api }}/v2/avatar/render?url={{ .Identity.Avatar_filename | base64 | urlquery }}&width=40&height=40{{ if not .IsAccepted }}&alpha=0.25{{ end }}{{ if .Host }}&&ishost=true{{ end }}{{ if .Mates }}&&mates={{ .Mates }}{{ end }}">
+                    <img style="padding-right: 5px;" width="40" height="40" src="{{ $api }}/v2/avatar/render?url={{ .Identity.Avatar_filename | base64 | urlquery }}&width=40&height=40{{ if not .IsAccepted }}&alpha=0.33{{ end }}{{ if .Host }}&&ishost=true{{ end }}{{ if .Mates }}&&mates={{ .Mates }}{{ end }}">
                     {{ end }}
                 </td>
             </tr>

@@ -163,6 +163,7 @@ func (b *CrossProviderBase) Serve() {
 				To_identity: &updates[0].To_identity,
 			}
 
+			log.Printf("Got %d updates to %s", len(updates), updates[0].To_identity.ExternalId())
 			b.handler.Handle(arg)
 		}
 	}
