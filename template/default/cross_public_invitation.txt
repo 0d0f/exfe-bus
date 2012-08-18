@@ -1,1 +1,1 @@
-{{ if .IsHost }}Invited{{ else }}Invitation{{ end }}: {{ .Cross.Title }}. {{ .Cross.Time.StringInZone .Timezone }} at {{ .Cross.Place.String }}
+{{ if .IsHost }}Invited{{ else }}Invitation{{ end }}: {{ .Cross.Title }}.{{ $time := .Cross.Time.StringInZone .Timezone }}{{ if $time }} {{ $time }}{{ end }}{{ $place := .Cross.Place.String }}{{ if $place }} at {{ $place }}{{ end }}
