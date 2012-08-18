@@ -143,6 +143,10 @@ func (e *CrossEmail) GetBody(arg *ProviderArg, filename string) (string, string,
 }
 
 func (e *CrossEmail) sendMail(arg *ProviderArg) {
+	if !arg.IsTitleChanged() && !arg.IsTimeChanged() && !arg.IsPlaceChanged() && len(arg.Posts) == 0 {
+		return
+	}
+	
 	filename := "cross_invitation.html"
 	if arg.Old_cross != nil || len(arg.Posts) > 0 {
 		_, _, newlyInvited, _ := arg.Diff(e.log)
