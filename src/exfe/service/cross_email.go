@@ -149,8 +149,8 @@ func (e *CrossEmail) sendMail(arg *ProviderArg) {
 		if _, ok := newlyInvited[arg.To_identity.DiffId()]; !ok {
 			filename = "cross_update.html"
 		}
-		if !arg.IsTitleChanged() && !arg.IsTimeChanged() && !arg.IsPlaceChanged() && 
-		(len(arg.Posts) + len(accepted) + len(declined) + len(newlyInvited) + len(removed)) == 0 {
+		if !arg.IsTitleChanged() && !arg.IsTimeChanged() && !arg.IsPlaceChanged() &&
+			(len(arg.Posts)+len(accepted)+len(declined)+len(newlyInvited)+len(removed)) == 0 {
 			return
 		}
 	}
