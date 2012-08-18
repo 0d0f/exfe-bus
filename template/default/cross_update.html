@@ -98,7 +98,7 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
                     </p>
                     {{ else }}
                     <p style="font-size: 20px; line-height: 26px; margin: 0;">
-                        <a href="{{ .Cross.Link .Config.Site_url }};" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">Place</a>
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">Place</a>
                     </p>
                     <p style="margin: 0;">
                         <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">To be decided</a>
