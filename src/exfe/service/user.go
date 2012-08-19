@@ -86,7 +86,7 @@ func (s *User) Welcome(arg *UserArg, reply *int) error {
 
 	err := executeTemplate("user_welcome.html", &arg.To_identity, arg, s.email)
 	if err != nil {
-		log.Printf("Execute template error: %s", err)
+		s.log.Printf("Execute template error: %s", err)
 	}
 	return nil
 }
@@ -97,17 +97,42 @@ func (s *User) Verify(arg *UserArg, reply *int) error {
 	template := fmt.Sprintf("user_%s.html", strings.ToLower(arg.Action))
 	err := executeTemplate(template, &arg.To_identity, arg, s.email)
 	if err != nil {
-		log.Printf("Execute template error: %s", err)
+		s.log.Printf("Execute template error: %s", err)
 	}
 	return nil
 }
 
-func (s *User) TwitterFriends(arg *twitter_service.FriendsArg, reply *int) error {
+type GetFriendsArg struct {
+	ClientToken  string `json:"client_token"`
+	ClientSecret string `json:"client_secret"`
+	AccessToken  string `json:"access_token"`
+	AccessSecret string `json:"access_secret"`
+	UserID       string `json:"user_id"`
+	Provider     string `json:"provider"`
+}
+
+func (s *User) TwitterFriends(arg *GetFriendsArg, reply *int) error {
+	switch arg.Provider {
+	case "twitter":
+		s.getTwitterFriends(arg)
+	default:
+		s.log.Printf("don't know how to get provider %s friend", arg.Provider)
+	}
+	return nil
+}
+
+func (s *User) getTwitterFriends(arg *GetFriendsArg) {
+	friendsArg := &twitter_service.FriendsArg{
+		ClientToken:  arg.ClientToken,
+		ClientSecret: arg.ClientSecret,
+		AccessToken:  arg.AccessToken,
+		AccessSecret: arg.AccessSecret,
+		UserId:       arg.UserID,
+	}
 	var friendReply twitter_service.FriendsReply
-	err := s.twitter.Do("Friends", arg, &friendReply, 5)
+	err := s.twitter.Do("Friends", friendsArg, &friendReply, 5)
 	if err != nil {
-		log.Printf("Get friend error: %s", err)
-		return err
+		s.log.Printf("Get friend error: %s", err)
 	}
 	users := friendReply.Ids
 	lookupArg := twitter_service.UsersLookupArg{
@@ -124,45 +149,50 @@ func (s *User) TwitterFriends(arg *twitter_service.FriendsArg, reply *int) error
 			lookupArg.UserId = users
 			users = nil
 		}
+		var identities []*exfe_model.Identity
 		var reply []twitter_service.UserInfo
 		err := s.twitter.Do("Lookup", &lookupArg, &reply, 5)
 		if err != nil {
-			log.Printf("Lookup users error: %s", err)
+			s.log.Printf("Lookup users error: %s", err)
 			continue
 		}
 
-		infos := make([]map[string]string, 0, 0)
 		for _, i := range reply {
-			info := make(map[string]string)
-			info["provider"] = "twitter"
-			info["external_id"] = fmt.Sprintf("%d", i.Id)
-			if i.Name != nil {
-				info["name"] = *i.Name
+			identity := &exfe_model.Identity{
+				Name:              *i.Name,
+				Bio:               *i.Description,
+				Avatar_filename:   *i.Profile_image_url,
+				External_id:       fmt.Sprintf("%d", i.Id),
+				External_username: *i.Screen_name,
+				Provider:          "twitter",
 			}
-			if i.Description != nil {
-				info["bio"] = *i.Description
-			}
-			if i.Profile_image_url != nil {
-				info["avatar_filename"] = *i.Profile_image_url
-			}
-			if i.Screen_name != nil {
-				info["external_username"] = *i.Screen_name
-			}
-			infos = append(infos, info)
+			identities = append(identities, identity)
 		}
 
-		buf := bytes.NewBuffer(nil)
-		e := json.NewEncoder(buf)
-		e.Encode(infos)
-		resp, err := http.Post(fmt.Sprintf("%s/v2/Friends", s.config.Site_api), "application/json", buf)
-		if err != nil {
-			log.Printf("Send twitter friend to server error: %s", err)
-			continue
-		}
-		if resp.StatusCode != 200 {
-			log.Printf("Send twitter friend to server error: %s", resp.Status)
-			continue
-		}
+		go s.UpdateIdentities(arg.UserID, identities)
 	}
-	return nil
+}
+
+type UpdateIdentitiesArg struct {
+	UserId     string                 `json:"user_id"`
+	Identities []*exfe_model.Identity `json:"identities"`
+}
+
+func (s *User) UpdateIdentities(userId string, identities []*exfe_model.Identity) {
+	arg := &UpdateIdentitiesArg{
+		UserId:     userId,
+		Identities: identities,
+	}
+
+	buf := bytes.NewBuffer(nil)
+	e := json.NewEncoder(buf)
+	e.Encode(arg)
+	resp, err := http.Post(fmt.Sprintf("%s/v2/Friends", s.config.Site_api), "application/json", buf)
+	if err != nil {
+		s.log.Printf("Send twitter friend to server error: %s", err)
+		return
+	}
+	if resp.StatusCode != 200 {
+		s.log.Printf("Send twitter friend to server error: %s", resp.Status)
+	}
 }
