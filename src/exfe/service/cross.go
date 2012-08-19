@@ -56,6 +56,7 @@ func NewCross(config *Config) *Cross {
 }
 
 func (s *Cross) Update(args []*UpdateCrossArg) error {
+	s.log.Printf("received %d updates", len(args))
 	for _, arg := range args {
 		for _, to := range arg.To_identities {
 			update := OneIdentityUpdateArg{
@@ -107,6 +108,7 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 			s.post.SendPost(arg)
 		}
 	}
+	s.log.Printf("dispatch %s to %s", id, queue)
 	queue.Push(id, arg)
 }
 
