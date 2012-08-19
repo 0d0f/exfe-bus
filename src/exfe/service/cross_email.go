@@ -94,6 +94,7 @@ func (e *CrossEmail) Serve() {
 				}
 			}
 
+			e.log.Printf("Got %d updates to %s", len(updates), updates[0].To_identity.ExternalId())
 			arg := &ProviderArg{
 				Cross:         &updates[len(updates)-1].Cross,
 				Old_cross:     old_cross,
@@ -144,8 +145,14 @@ func (e *CrossEmail) GetBody(arg *ProviderArg, filename string) (string, string,
 func (e *CrossEmail) sendMail(arg *ProviderArg) {
 	filename := "cross_invitation.html"
 	if arg.Old_cross != nil || len(arg.Posts) > 0 {
-		arg.Diff(e.log)
-		filename = "cross_update.html"
+		accepted, declined, newlyInvited, removed := arg.Diff(e.log)
+		if _, ok := newlyInvited[arg.To_identity.DiffId()]; !ok {
+			filename = "cross_update.html"
+		}
+		if !arg.IsTitleChanged() && !arg.IsTimeChanged() && !arg.IsPlaceChanged() &&
+			(len(arg.Posts)+len(accepted)+len(declined)+len(newlyInvited)+len(removed)) == 0 {
+			return
+		}
 	}
 
 	html, ics, err := e.GetBody(arg, filename)

@@ -72,9 +72,9 @@ func (s *Cross) Update(args []*UpdateCrossArg) error {
 	return nil
 }
 
-func (s *Cross) getUserIdentityMap(cross *exfe_model.Cross) (identityMap map[uint64]*exfe_model.Identity, userMap map[uint64]*exfe_model.Identity) {
+func (s *Cross) getUserIdentityMap(cross *exfe_model.Cross) (identityMap map[uint64]*exfe_model.Identity, userMap map[int64]*exfe_model.Identity) {
 	identityMap = make(map[uint64]*exfe_model.Identity)
-	userMap = make(map[uint64]*exfe_model.Identity)
+	userMap = make(map[int64]*exfe_model.Identity)
 
 	for _, invitation := range cross.Exfee.Invitations {
 		identityMap[invitation.Identity.Id] = &invitation.Identity
@@ -165,6 +165,7 @@ func (b *CrossProviderBase) Serve() {
 				To_identity: &updates[0].To_identity,
 			}
 
+			log.Printf("Got %d updates to %s", len(updates), updates[0].To_identity.ExternalId())
 			b.handler.Handle(arg)
 		}
 	}

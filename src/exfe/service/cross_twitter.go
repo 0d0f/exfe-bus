@@ -25,8 +25,9 @@ func (s *CrossTwitter) Handle(arg *ProviderArg) {
 }
 
 func (s *CrossTwitter) getIdentityInfo(id *exfe_model.Identity) {
+	var twitterId *string
 	if id.External_id != "" {
-		return
+		twitterId = &id.External_id
 	}
 	// get to_identity info
 	s.client.Send("GetInfo", &twitter_service.UsersShowArg{
@@ -35,6 +36,7 @@ func (s *CrossTwitter) getIdentityInfo(id *exfe_model.Identity) {
 		AccessToken:  s.config.Twitter.Access_token,
 		AccessSecret: s.config.Twitter.Access_secret,
 		ScreenName:   &id.External_username,
+		UserId:       twitterId,
 		IdentityId:   &id.Id,
 	}, 5)
 }
@@ -103,10 +105,16 @@ func (s *CrossTwitter) sendInvitation(arg *ProviderArg) {
 	isFriend := s.checkFriend(arg.To_identity)
 
 	if isFriend {
-		msg, _ := arg.TextPrivateInvitation()
+		msg, err := arg.TextPrivateInvitation()
+		if err != nil {
+			s.log.Printf("template error: %s", err)
+		}
 		s.sendDM(arg, msg, arg.Cross.LinkTo(s.config.Site_url, arg.Token()))
 	} else {
-		msg, _ := arg.TextPublicInvitation()
+		msg, err := arg.TextPublicInvitation()
+		if err != nil {
+			s.log.Printf("template error: %s", err)
+		}
 		s.sendTweet(arg, msg, fmt.Sprintf("%s/%s", arg.Cross.Link(s.config.Site_url), arg.Token()[1:4]))
 	}
 }
@@ -116,12 +124,20 @@ func (s *CrossTwitter) sendCrossChange(arg *ProviderArg) {
 		return
 	}
 
-	if arg.Old_cross.Title != arg.Cross.Title {
-		msg, _ := arg.TextTitleChange()
+	if arg.IsTitleChanged() {
+		msg, err := arg.TextTitleChange()
+		if err != nil {
+			s.log.Printf("template error: %s", err)
+		}
 		s.send(arg, msg)
 	}
-	msg, _ := arg.TextCrossChange()
-	s.send(arg, msg)
+	if arg.IsTimeChanged() || arg.IsPlaceChanged() {
+		msg, err := arg.TextCrossChange()
+		if err != nil {
+			s.log.Printf("template error: %s", err)
+		}
+		s.send(arg, msg)
+	}
 }
 
 func (s *CrossTwitter) sendExfeeChange(arg *ProviderArg) {
@@ -131,14 +147,21 @@ func (s *CrossTwitter) sendExfeeChange(arg *ProviderArg) {
 	accepted, declined, newlyInvited, removed := arg.Diff(s.log)
 
 	var msg string
+	var err error
 	needSend := false
 	if len(accepted) > 0 {
 		needSend = true
-		msg, _ = arg.TextAccepted()
+		msg, err = arg.TextAccepted()
+		if err != nil {
+			s.log.Printf("template error: %s", err)
+		}
 	}
 	if len(declined) > 0 {
 		needSend = true
-		msg, _ = arg.TextDeclined()
+		msg, err = arg.TextDeclined()
+		if err != nil {
+			s.log.Printf("template error: %s", err)
+		}
 	}
 	if len(newlyInvited) > 0 {
 		needSend = true
@@ -152,9 +175,15 @@ func (s *CrossTwitter) sendExfeeChange(arg *ProviderArg) {
 	if len(removed) > 0 {
 		needSend = true
 		if _, ok := removed[arg.To_identity.DiffId()]; ok {
-			msg, _ = arg.TextQuit()
+			msg, err = arg.TextQuit()
+			if err != nil {
+				s.log.Printf("template error: %s", err)
+			}
 		} else {
-			msg, _ = arg.TextRemoved()
+			msg, err = arg.TextRemoved()
+			if err != nil {
+				s.log.Printf("template error: %s", err)
+			}
 		}
 	}
 	if needSend {

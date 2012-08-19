@@ -12,7 +12,7 @@ type Identity struct {
 	Bio               string
 	Provider          string
 	Timezone          string
-	Connected_user_id uint64
+	Connected_user_id int64
 
 	External_id       string
 	External_username string
@@ -40,7 +40,7 @@ func (i Identity) UserId() string {
 }
 
 func (i Identity) ExternalId() string {
-	return fmt.Sprintf("%s@%s", i.External_id, i.Provider)
+	return fmt.Sprintf("%s@%s", i.External_username, i.Provider)
 }
 
 func (i Identity) DiffId() string {

@@ -15,6 +15,7 @@ var exfee = exfe_model.Exfee{
 			Rsvp_status: "ACCEPTED",
 			Identity: exfe_model.Identity{
 				Id:                1,
+				External_id:       "tester1",
 				Name:              "Tester1",
 				Connected_user_id: 1,
 			},
@@ -23,6 +24,7 @@ var exfee = exfe_model.Exfee{
 			Rsvp_status: "ACCEPTED",
 			Identity: exfe_model.Identity{
 				Id:                2,
+				External_id:       "tester2",
 				Name:              "Tester2",
 				Connected_user_id: 2,
 			},
@@ -31,6 +33,7 @@ var exfee = exfe_model.Exfee{
 			Rsvp_status: "ACCEPTED",
 			Identity: exfe_model.Identity{
 				Id:                3,
+				External_id:       "tester3",
 				Name:              "Tester3",
 				Connected_user_id: 3,
 			},
@@ -39,6 +42,7 @@ var exfee = exfe_model.Exfee{
 			Rsvp_status: "ACCEPTED",
 			Identity: exfe_model.Identity{
 				Id:                4,
+				External_id:       "tester4",
 				Name:              "Tester4",
 				Connected_user_id: 4,
 			},
@@ -61,9 +65,11 @@ func TestProvideArgDiff(t *testing.T) {
 	d2 := json.NewDecoder(buf2)
 	d2.Decode(&old)
 
-	new_.Invitations[0].Identity.Connected_user_id = 5
 	old.Invitations[1].Identity.Connected_user_id = 6
+	old.Invitations[1].Identity.External_id = "test6"
 	old.Invitations[2].Rsvp_status = "DECLINED"
+	new_.Invitations[0].Identity.Connected_user_id = 5
+	new_.Invitations[0].Identity.External_id = "test5"
 	new_.Invitations[3].Rsvp_status = "DECLINED"
 
 	cross_old := &exfe_model.Cross{

@@ -3,17 +3,17 @@ Update: {{ .Cross.Title }}
 
 Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}” has been updated by {{ if index .By_identities 0 }}{{ with index .By_identities 0 }}{{ .Name }}{{ end }},{{ end }} etc.
 
-{{ .Cross.Title }}
+{{ if .IsTitleChanged }}*{{ end }}{{ .Cross.Title }}{{ if .IsTitleChanged }}*{{ end }}
 =======
 {{ .Cross.Link .Config.Site_url }}
 {{ $time := .Cross.Time.StringInZone .Timezone }}{{ if $time }}
-{{ $time }}
+{{ if .IsTimeChanged }}*{{ end }}{{ $time }}{{ if .IsTimeChanged }}*{{ end }}
 ======={{ else }}
-Time
+{{ if .IsTimeChanged }}*{{ end }}Time{{ if .IsTimeChanged }}*{{ end }}
 =======
   To be decided.{{ end }}
 
-{{ if .Cross.Place.Title }}{{ .Cross.Place.Title }}{{ else }}Place{{ end }}
+{{ if .IsPlaceChanged }}*{{ end }}{{ if .Cross.Place.Title }}{{ .Cross.Place.Title }}{{ else }}Place{{ end }}{{ if .IsPlaceChanged }}*{{ end }}
 =======
   {{ if .Cross.Place.Description }}{{ .Cross.Place.Description }}{{ else }}To be decided.{{ end }}
 
@@ -59,17 +59,14 @@ Time
         <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 20px; color: #191919; font-weight: normal; width: 640px; padding: 20px; background-color: #fbfbfb;">
             <tr>
                 <td colspan="5" style="color: #333333;">
-                    Your&nbsp;<span style="color: #3a6ea5;">·X·</span>&nbsp;
-                    “<span style="color: #191919;">{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}</span>”
-                    &nbsp;has&nbsp;been&nbsp;updated&nbsp;by&nbsp;
-                    {{ if index .By_identities 0 }}<span style="color: #3a6ea5;">{{ with index .By_identities 0 }}{{ .Name }}{{ end }}</span>,{{ end }}&nbsp;
+                    Your&nbsp;<span style="color: #3a6ea5;">·X·</span>&nbsp;“<span style="color: #191919;">{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}</span>”&nbsp;has&nbsp;been&nbsp;updated&nbsp;by&nbsp;{{ if index .By_identities 0 }}<span style="color: #3a6ea5;">{{ with index .By_identities 0 }}{{ .Name }}{{ end }}</span>,{{ end }}&nbsp;
                     etc.
                 </td>
             </tr>
             <tr><td colspan="5" height="10"></td></tr>
             <tr>
                 <td colspan="5" style="font-size: 20px; line-height: 26px;">
-                    <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="color: #3a6ea5; text-decoration: none;">
+                    <a href="{{ .Cross.Link .Config.Site_url }}" style="color:{{ if .IsTitleChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">
                         {{ .Cross.Title }}
                     </a>
                 </td>
@@ -77,18 +74,36 @@ Time
             <tr><td colspan="5" height="10"></td></tr>
             <tr>
                 <td valign="top" width="180">
-                    <p style="font-size: 20px; line-height: 26px; color: #333333; margin: 0;">
-                        {{ .Cross.Time.StringInZone .Timezone }}
+                    {{ if $time }}
+                    <p style="font-size: 20px; line-height: 26px; margin: 0;">
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsTimeChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">{{ $time }}</a>
                     </p>
+                    {{ else }}
+                    <p style="font-size: 20px; line-height: 26px; margin: 0;">
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsTimeChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">Time</a>
+                    </p>
+                    <p style="margin: 0;">
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">To be decided</a>
+                    </p>
+                    {{ end }}
                 </td>
                 <td></td>
                 <td valign="top" width="180" style="word-break: break-all;">
-                    <p style="font-size: 20px; line-height: 26px; color: #333333; margin: 0;">
-                        {{ .Cross.Place.Title }}
+                    {{ if .Cross.Place.Title }}
+                    <p style="font-size: 20px; line-height: 26px; margin: 0;">
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">{{ .Cross.Place.Title }}</a>
                     </p>
-                    <p style="color: #191919; margin: 0;">
-                        {{ replace .Cross.Place.Description "\n" "<br />"}}
+                    <p style="margin: 0;">
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">{{ replace .Cross.Place.Description "\n" "<br />"}}</a>
                     </p>
+                    {{ else }}
+                    <p style="font-size: 20px; line-height: 26px; margin: 0;">
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">Place</a>
+                    </p>
+                    <p style="margin: 0;">
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">To be decided</a>
+                    </p> 
+                    {{ end }}
                 </td>
                 <td></td>
                 <td valign="top" width="180">
@@ -99,15 +114,15 @@ Time
             <tr>
                 <td colspan="5">
                     <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 20px; color: #191919; font-weight: normal; width: 640px; background-color: #fbfbfb;">
-                       {{ if .Accepted }}
-                       <tr>
+                        {{ if .Accepted }}
+                        <tr>
                             <td width="12"><img src="{{ .Config.Site_img }}/email/rsvp_accepted_12_blue.png" /></td>
                             <td>
-                                <p style="margin: 0;">
-                                    <span class="exfe_mail_identity_name">{{ .Cross.TotalAccepted }}</span>&nbsp;Accepted:&nbsp;{{ $a := .Accepted }}{{ range $i, $e := $a }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ if last $i $a | not }},&nbsp;{{ end }}
-                                    {{ end }}
-                                    &nbsp;and&nbsp;{{ .OldAccepted }}&nbsp;others.
-                                </p>
+                                <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #191919; text-decoration: none;">
+                                    <p style="margin: 0;">
+                                        <span class="exfe_mail_identity_name">{{ .Cross.TotalAccepted }}</span>&nbsp;Accepted:&nbsp;{{ $a := .Accepted }}{{ range $i, $e := $a }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}&nbsp;and&nbsp;{{ .OldAccepted }}&nbsp;others.
+                                    </p>
+                                </a>
                             </td>
                         </tr>
                         {{ end }}
@@ -115,12 +130,11 @@ Time
                         <tr>
                             <td width="12"><img src="{{ .Config.Site_img }}/email/rsvp_declined_12.png" /></td>
                             <td>
-                                <p style="margin: 0;">
-                                    Unavailable:&nbsp;
-                                    {{ $a := .Declined }}
-                                    {{ range $i, $e := $a }}
-                                    {{ .Name }}{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}.
-                                </p>
+                                <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #191919; text-decoration: none;">
+                                    <p style="margin: 0;">
+                                        Unavailable:&nbsp;{{ $a := .Declined }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}.
+                                    </p>
+                                </a>
                             </td>
                         </tr>
                         {{ end }}
@@ -128,12 +142,11 @@ Time
                         <tr>
                             <td width="12"><img src="{{ .Config.Site_img }}/email/plus_12_blue.png" /></td>
                             <td>
-                                <p style="margin: 0;">
-                                    Newly invited:&nbsp;
-                                    {{ $a := .NewlyInvited }}
-                                    {{ range $i, $e := $a }}
-                                    {{ if .IsAccepted }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ else }}{{ .Identity.Name }}{{ end }}{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}.
-                                </p>
+                                <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #191919; text-decoration: none;">
+                                    <p style="margin: 0;">
+                                        Newly invited:&nbsp;{{ $a := .NewlyInvited }}{{ range $i, $e := $a }}{{ if .IsAccepted }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ else }}{{ .Identity.Name }}{{ end }}{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}.
+                                    </p>
+                                </a>
                             </td>
                         </tr>
                         {{ end }}
@@ -141,12 +154,11 @@ Time
                         <tr>
                             <td width="12"><img src="{{ .Config.Site_img }}/email/minus_12.png" /></td>
                             <td>
-                                <p style="margin: 0;">
-                                    Removed:&nbsp;
-                                    {{ $a := .Removed }}
-                                    {{ range $i, $e := $a }}
-                                    {{ .Name }}{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}.
-                                </p>
+                                <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #191919; text-decoration: none;">
+                                    <p style="margin: 0;">
+                                        Removed:&nbsp;{{ $a := .Removed }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }},&nbsp;{{ end }}{{ end }}.
+                                    </p>
+                                </a>
                             </td>
                         </tr>
                         {{ end }}
@@ -158,7 +170,7 @@ Time
                 <td colspan="5">
                     {{ $api := .Config.Site_api }}
                     {{ range .Cross.Exfee.Invitations }}
-                    <img style="padding-right: 5px;" width="40" height="40" src="{{ $api }}/v2/avatar/render?url={{ .Identity.Avatar_filename | base64 | urlquery }}&width=40&height=40{{ if not .IsAccepted }}&alpha=0.25{{ end }}{{ if .Host }}&&ishost=true{{ end }}{{ if .Mates }}&&mates={{ .Mates }}{{ end }}">
+                    <img style="padding-right: 5px;" width="40" height="40" src="{{ $api }}/v2/avatar/render?url={{ .Identity.Avatar_filename | base64 | urlquery }}&width=40&height=40{{ if not .IsAccepted }}&alpha=0.33{{ end }}{{ if .Host }}&&ishost=true{{ end }}{{ if .Mates }}&&mates={{ .Mates }}{{ end }}">
                     {{ end }}
                 </td>
             </tr>
@@ -169,18 +181,18 @@ Time
             <tr>
                 <td colspan="5">
                     <table border="0" cellpadding="0" cellspacing="0">
-                        {{ $timezone := .Timezone }}
+                        {{ $timezone := .Timezone }}{{ $url := .Cross.Link .Config.Site_url }}
                         {{ range .Posts }}
                         <tr>
                             <td valign="top" width="50" align="left">
                                 <img width="40" height="40" src="{{ .By_identity.Avatar_filename }}">
                             </td>
                             <td valign="top">
-                              <span class="exfe_mail_message">{{ .Content }}</span>
-                                <br>
-                                <span class="exfe_mail_msg_identity_name">{{ .By_identity.Name }}</span>
-                                &nbsp;<span class="exfe_mail_msg_at">at</span>&nbsp;
-                                <span class="exfe_mail_msg_time">{{ .CreatedAt $timezone }}</span>
+                                <a href="{{ $url }}" style="text-decoration: none;">
+                                    <span class="exfe_mail_message">{{ .Content }}</span>
+                                    <br>
+                                    <span class="exfe_mail_msg_identity_name">{{ .By_identity.Name }}</span>&nbsp;<span class="exfe_mail_msg_at">at</span>&nbsp;<span class="exfe_mail_msg_time">{{ .CreatedAt $timezone }}</span>
+                                </a>
                             </td>
                         </tr>
                         <tr><td colspan="2" height="20"></td></tr>
@@ -192,18 +204,12 @@ Time
             <tr><td colspan="5" height="20"></td></tr>
             <tr>
                 <td colspan="5" style="font-size: 11px; line-height: 15px; color: #7F7F7F;">
-                    Reply&nbsp;this&nbsp;email&nbsp;directly&nbsp;as&nbsp;conversation,&nbsp;or&nbsp;try&nbsp;
-                    <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a>&nbsp;app.
-                    <br>
-                    <span style="color: #B2B2B2">
-                    This&nbsp;update&nbsp;is&nbsp;sent&nbsp;from&nbsp;
-                    <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>
-                    &nbsp;automatically.&nbsp;
+                    Reply&nbsp;this&nbsp;email&nbsp;directly&nbsp;as&nbsp;conversation,&nbsp;or&nbsp;try&nbsp;<a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a>&nbsp;app.<br>
+                    <span style="color: #B2B2B2">This&nbsp;update&nbsp;is&nbsp;sent&nbsp;from&nbsp;<a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>&nbsp;automatically.&nbsp;<a style="color: #E6E6E6; text-decoration: none;" href="{{ .Config.Site_url }}/s/reportSpam?token={{ .Token }}">Unsubscribe?</a>
                     <!--
                     You can change
                     <a style="color: #B2B2B2; text-decoration: undeline;" href="">notification preference</a>.
                     -->
-                    <a style="color: #E6E6E6; text-decoration: none;" href="{{ .Config.Site_url }}/s/reportSpam?token={{ .Token }}">Unsubscribe?</a>
                     </span>
                 </td>
             </tr>
