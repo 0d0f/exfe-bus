@@ -108,7 +108,8 @@ type GetFriendsArg struct {
 	ClientSecret string `json:"client_secret"`
 	AccessToken  string `json:"access_token"`
 	AccessSecret string `json:"access_secret"`
-	UserID       string `json:"user_id"`
+	UserID       uint64 `json:"user_id"`
+	ExternalID   string `json:"external_id"`
 	Provider     string `json:"provider"`
 }
 
@@ -128,7 +129,7 @@ func (s *User) getTwitterFriends(arg *GetFriendsArg) {
 		ClientSecret: arg.ClientSecret,
 		AccessToken:  arg.AccessToken,
 		AccessSecret: arg.AccessSecret,
-		UserId:       arg.UserID,
+		UserId:       arg.ExternalID,
 	}
 	var friendReply twitter_service.FriendsReply
 	err := s.twitter.Do("Friends", friendsArg, &friendReply, 5)
@@ -231,11 +232,11 @@ func (s *User) getFacebookFriends(arg *GetFriendsArg) {
 }
 
 type UpdateIdentitiesArg struct {
-	UserId     string                 `json:"user_id"`
+	UserId     uint64                 `json:"user_id"`
 	Identities []*exfe_model.Identity `json:"identities"`
 }
 
-func (s *User) UpdateIdentities(userId string, identities []*exfe_model.Identity) {
+func (s *User) UpdateIdentities(userId uint64, identities []*exfe_model.Identity) {
 	arg := &UpdateIdentitiesArg{
 		UserId:     userId,
 		Identities: identities,
