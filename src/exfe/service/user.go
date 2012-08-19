@@ -191,7 +191,7 @@ type FacebookFriendsReply struct {
 }
 
 func (s *User) getFacebookFriends(arg *GetFriendsArg) {
-	url := fmt.Sprintf("https://graph.facebook.com/%s/friends?access_token=%s", arg.UserID, arg.AccessToken)
+	url := fmt.Sprintf("https://graph.facebook.com/%s/friends?access_token=%s", arg.ExternalID, arg.AccessToken)
 	for {
 		resp, err := http.Get(url)
 		if err != nil {
