@@ -5,18 +5,18 @@ import (
 )
 
 type Identity struct {
-	Id                uint64
-	Type              string
-	Name              string
-	Nickname          string
-	Bio               string
-	Provider          string
-	Timezone          string
-	Connected_user_id int64
+	Id                uint64 `json:"id"`
+	Type              string `json:"type"`
+	Name              string `json:"name"`
+	Nickname          string `json:"nickname"`
+	Bio               string `json:"bio"`
+	Provider          string `json:"provider"`
+	Timezone          string `json:"timezone"`
+	Connected_user_id int64  `json:"connected_user_id"`
 
-	External_id       string
-	External_username string
-	Avatar_filename   string
+	External_id       string `json:"external_id"`
+	External_username string `json:"external_username"`
+	Avatar_filename   string `json:"avatar_filename"`
 }
 
 type Invitation struct {
