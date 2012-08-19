@@ -7,6 +7,7 @@ import (
 	"exfe/model"
 	"fmt"
 	"gobus"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/mail"
@@ -170,6 +171,62 @@ func (s *User) getTwitterFriends(arg *GetFriendsArg) {
 		}
 
 		go s.UpdateIdentities(arg.UserID, identities)
+	}
+}
+
+type FacebookUser struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	Username string `json:"username"`
+}
+
+type FacebookPaging struct {
+	Next string `json:"next"`
+}
+
+type FacebookFriendsReply struct {
+	Data   []FacebookUser `json:"data"`
+	Paging FacebookPaging `json:"paging"`
+}
+
+func (s *User) getFacebookFriends(arg *GetFriendsArg) {
+	url := fmt.Sprintf("https://graph.facebook.com/%s/friends?access_token=%s", arg.UserID, arg.AccessToken)
+	for {
+		resp, err := http.Get(url)
+		if err != nil {
+			s.log.Printf("facebook get friends from %s error: %s", url, err)
+			return
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			s.log.Printf("facebook get body from %s fail: %s", url, err)
+		}
+		if resp.StatusCode != 200 {
+			s.log.Printf("facebook get friends from %s fail: (%s) %s", url, resp.Status, string(body))
+			return
+		}
+		var friends FacebookFriendsReply
+		err = json.Unmarshal(body, &friends)
+		if err != nil {
+			s.log.Printf("facebook get friends json error: %s", err)
+			return
+		}
+		if len(friends.Data) == 0 {
+			break
+		}
+		var identities []*exfe_model.Identity
+		for _, f := range friends.Data {
+			identity := &exfe_model.Identity{
+				Name:              f.Name,
+				Avatar_filename:   fmt.Sprintf("http://graph.facebook.com/%s/picture", f.Username),
+				External_id:       f.Id,
+				External_username: f.Username,
+				Provider:          "facebook",
+			}
+			identities = append(identities, identity)
+		}
+		s.UpdateIdentities(arg.UserID, identities)
+		url = friends.Paging.Next
 	}
 }
 
