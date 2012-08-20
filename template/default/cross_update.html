@@ -185,7 +185,7 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
                         {{ range .Posts }}
                         <tr>
                             <td valign="top" width="50" align="left">
-                                <img width="40" height="40" src="{{ .By_identity.Avatar_filename }}">
+                                <img width="40" height="40" title="{{ .By_identity.Name }}" alt="{{ .By_identity.Name }}" src="{{ .By_identity.Avatar_filename }}">
                             </td>
                             <td valign="top">
                                 <a href="{{ $url }}" style="text-decoration: none;">
