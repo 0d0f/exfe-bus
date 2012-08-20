@@ -66,7 +66,7 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
             <tr><td colspan="5" height="10"></td></tr>
             <tr>
                 <td colspan="5" style="font-size: 20px; line-height: 26px;">
-                    <a href="{{ .Cross.Link .Config.Site_url }}" style="color:{{ if .IsTitleChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">
+                    <a href="{{ .Cross.Link .Config.Site_url }}" style="color:{{ if .IsTitleChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none; font-weight: lighter;">
                         {{ .Cross.Title }}
                     </a>
                 </td>
@@ -83,7 +83,7 @@ Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title
                         <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsTimeChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">Time</a>
                     </p>
                     <p style="margin: 0;">
-                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">To be decided</a>
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsTimeChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">To be decided</a>
                     </p>
                     {{ end }}
                 </td>
