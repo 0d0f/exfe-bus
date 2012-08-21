@@ -138,7 +138,7 @@ func (s *User) getTwitterFriends(arg *GetFriendsArg) {
 		UserId:       arg.ExternalID,
 	}
 	var friendReply twitter_service.FriendsReply
-	err := s.twitter.Do("Friends", friendsArg, &friendReply, 10)
+	err := s.twitter.Do("Friends", friendsArg, &friendReply, 30)
 	if err != nil {
 		s.log.Printf("Get friend error: %s", err)
 		return
@@ -160,7 +160,7 @@ func (s *User) getTwitterFriends(arg *GetFriendsArg) {
 		}
 		var identities []*exfe_model.Identity
 		var reply []twitter_service.UserInfo
-		err := s.twitter.Do("Lookup", &lookupArg, &reply, 10)
+		err := s.twitter.Do("Lookup", &lookupArg, &reply, 30)
 		if err != nil {
 			s.log.Printf("Lookup users error: %s", err)
 			continue
