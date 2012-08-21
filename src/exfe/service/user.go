@@ -138,9 +138,10 @@ func (s *User) getTwitterFriends(arg *GetFriendsArg) {
 		UserId:       arg.ExternalID,
 	}
 	var friendReply twitter_service.FriendsReply
-	err := s.twitter.Do("Friends", friendsArg, &friendReply, 5)
+	err := s.twitter.Do("Friends", friendsArg, &friendReply, 10)
 	if err != nil {
 		s.log.Printf("Get friend error: %s", err)
+		return
 	}
 	users := friendReply.Ids
 	lookupArg := twitter_service.UsersLookupArg{
@@ -159,7 +160,7 @@ func (s *User) getTwitterFriends(arg *GetFriendsArg) {
 		}
 		var identities []*exfe_model.Identity
 		var reply []twitter_service.UserInfo
-		err := s.twitter.Do("Lookup", &lookupArg, &reply, 5)
+		err := s.twitter.Do("Lookup", &lookupArg, &reply, 10)
 		if err != nil {
 			s.log.Printf("Lookup users error: %s", err)
 			continue
@@ -255,7 +256,7 @@ func (s *User) UpdateIdentities(userId uint64, identities []*exfe_model.Identity
 		s.log.Printf("encoding arg error: %s", err)
 		return
 	}
-	url := fmt.Sprintf("%s/v2/AddFriends", s.config.Site_api)
+	url := fmt.Sprintf("%s/v2/Gobus/AddFriends", s.config.Site_api)
 	s.log.Printf("send to url: %s, post: %s", url, buf.String())
 	resp, err := http.Post(url, "application/json", buf)
 	if err != nil {

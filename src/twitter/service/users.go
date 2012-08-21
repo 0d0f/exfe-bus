@@ -1,13 +1,13 @@
 package twitter_service
 
 import (
-	"fmt"
-	"oauth"
-	"net/url"
-	"log"
-	"os"
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"log"
+	"net/url"
+	"oauth"
+	"os"
 	"strings"
 )
 
@@ -69,12 +69,12 @@ func (arg *UsersShowArg) getValues() (url.Values, error) {
 }
 
 type UsersLookupArg struct {
-	ClientToken string
+	ClientToken  string
 	ClientSecret string
-	AccessToken string
+	AccessToken  string
 	AccessSecret string
 
-	UserId []uint64
+	UserId     []uint64
 	ScreenName []string
 }
 
@@ -97,9 +97,9 @@ func (a *UsersLookupArg) getValues() (url.Values, error) {
 }
 
 type FriendsArg struct {
-	ClientToken string
+	ClientToken  string
 	ClientSecret string
-	AccessToken string
+	AccessToken  string
 	AccessSecret string
 
 	UserId string
