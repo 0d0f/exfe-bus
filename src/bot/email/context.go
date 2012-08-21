@@ -9,6 +9,7 @@ import (
 	"net/mail"
 	"net/textproto"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -66,10 +67,10 @@ func (c *EmailContext) Default(input *Email) error {
 		input.Text)
 	mailarg := &email_service.MailArg{
 		To:      []*mail.Address{input.From},
-		From:    &mail.Address{"x@exfe.com", "x@exfe.com"},
+		From:    &mail.Address{"EXFE ·X·", "x@exfe.com"},
 		Subject: fmt.Sprintf("Re: %s", input.Subject),
 		Text:    body,
-		Html:    fmt.Sprintf("<html><body><p>%s</p></body></html>", body),
+		Html:    fmt.Sprintf("<html><body><p>%s</p></body></html>", strings.Replace(body, "\n", "<br />", -1)),
 		Header:  make(textproto.MIMEHeader),
 	}
 	mailarg.Header.Set("In-Reply-To", input.MessageId)
