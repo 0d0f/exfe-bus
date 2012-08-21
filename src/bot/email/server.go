@@ -53,9 +53,16 @@ func (s *EmailBotServer) Serve() error {
 			return fmt.Errorf("Get message(%v) error: %s", id, err)
 		}
 		err = s.bot.Feed(msg)
-		if err != nil {
-			return fmt.Errorf("Process message(%v) error: %s", id, err)
+		switch err {
+		case nil:
+			s.conn.Do(fmt.Sprintf("copy %s posted", id))
+		default:
+			s.conn.Do(fmt.Sprintf("copy %s error", id))
+			if err != badrequest {
+				return fmt.Errorf("Process message(%v) error: %s", id, err)
+			}
 		}
+		s.conn.StoreFlag(id, imap.Deleted)
 	}
 	return nil
 }

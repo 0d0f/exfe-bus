@@ -33,6 +33,8 @@ func (m *Email) ToUrlValues() url.Values {
 	return ret
 }
 
+var badrequest = fmt.Errorf("email bad request")
+
 type EmailContext struct {
 	*bot.BaseContext
 	mailBot *EmailBot
@@ -76,5 +78,5 @@ func (c *EmailContext) Default(input *Email) error {
 	mailarg.Header.Set("In-Reply-To", input.MessageId)
 	mailarg.Header.Set("References", input.MessageId)
 	c.mailBot.bus.Send("EmailSend", &mailarg, 5)
-	return nil
+	return badrequest
 }
