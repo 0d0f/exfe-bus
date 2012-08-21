@@ -255,8 +255,8 @@ func (s *User) UpdateIdentities(userId uint64, identities []*exfe_model.Identity
 		s.log.Printf("encoding arg error: %s", err)
 		return
 	}
-	url := fmt.Sprintf("%s/v2/Friends", s.config.Site_api)
-	s.log.Printf("send to url: %s")
+	url := fmt.Sprintf("%s/v2/AddFriends", s.config.Site_api)
+	s.log.Printf("send to url: %s, post: %s", url, buf.String())
 	resp, err := http.Post(url, "application/json", buf)
 	if err != nil {
 		s.log.Printf("Send twitter friend to server error: %s", err)
