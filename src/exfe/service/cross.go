@@ -84,7 +84,7 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 		queueName = "email"
 		arg.To_identity.External_id = fmt.Sprintf("%s@facebook.com", arg.To_identity.External_username)
 	}
-	if queueName != "push" || queueName != "email" || queueName != "twitter" {
+	if queueName != "push" && queueName != "email" && queueName != "twitter" {
 		log.Printf("Not support provider: %s", arg.To_identity.Provider)
 		return
 	}
