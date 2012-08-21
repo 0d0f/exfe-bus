@@ -50,7 +50,7 @@ func (b *Bot) SendHelp(screenName string) error {
 		UserB:        b.config.Twitter.Screen_name,
 	}
 	var isFriend bool
-	err := b.bus.Do("GetFriendship", f, &isFriend, 10)
+	err := b.bus.Do("GetFriendship", f, &isFriend, 30)
 	if err != nil {
 		return fmt.Errorf("Can't require user %s friendship: %s", screenName, err)
 	}

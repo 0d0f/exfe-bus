@@ -50,7 +50,7 @@ func (s *CrossTwitter) checkFriend(to *exfe_model.Identity) (isFriend bool) {
 		UserA:        to.External_username,
 		UserB:        s.config.Twitter.Screen_name,
 	}
-	err := s.client.Do("GetFriendship", f, &isFriend, 10)
+	err := s.client.Do("GetFriendship", f, &isFriend, 30)
 	if err != nil {
 		s.log.Printf("Can't require identity %d friendship: %s", to.Id, err)
 		isFriend = false
