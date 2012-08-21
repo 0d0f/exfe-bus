@@ -29,26 +29,14 @@ type OneIdentityUpdateArg struct {
 }
 
 type Cross struct {
-	queues map[string]*gobus.TailDelayQueue
 	config *Config
 	log    *log.Logger
 	post   *CrossPost
 }
 
 func NewCross(config *Config) *Cross {
-	arg := []OneIdentityUpdateArg{}
-	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
 	log := log.New(os.Stderr, "exfe.cross", log.LstdFlags)
-	queues := make(map[string]*gobus.TailDelayQueue)
-	for _, p := range [...]string{"twitter", "push", "email"} {
-		queue, err := gobus.NewTailDelayQueue(getProviderQueueName(p), config.Cross.Delay[p], arg, redis)
-		if err != nil {
-			panic(err)
-		}
-		queues[p] = queue
-	}
 	return &Cross{
-		queues: queues,
 		config: config,
 		log:    log,
 		post:   NewCrossPost(config),
@@ -86,19 +74,17 @@ func (s *Cross) getUserIdentityMap(cross *exfe_model.Cross) (identityMap map[uin
 func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 	id := fmt.Sprintf("%d-%d", arg.Cross.Id, arg.To_identity.Id)
 
-	queue, ok := s.queues[arg.To_identity.Provider]
-	if !ok {
-		switch arg.To_identity.Provider {
-		case "iOSAPN":
-			fallthrough
-		case "Android":
-			queue, ok = s.queues["push"]
-		case "facebook":
-			queue, ok = s.queues["email"]
-			arg.To_identity.External_id = fmt.Sprintf("%s@facebook.com", arg.To_identity.External_username)
-		}
+	queueName := arg.To_identity.Provider
+	switch arg.To_identity.Provider {
+	case "iOSAPN":
+		fallthrough
+	case "Android":
+		queueName = "push"
+	case "facebook":
+		queueName = "email"
+		arg.To_identity.External_id = fmt.Sprintf("%s@facebook.com", arg.To_identity.External_username)
 	}
-	if !ok {
+	if queueName != "push" || queueName != "email" || queueName != "twitter" {
 		log.Printf("Not support provider: %s", arg.To_identity.Provider)
 		return
 	}
@@ -108,8 +94,18 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 			s.post.SendPost(arg)
 		}
 	}
+
+	redis := godis.New(s.config.Redis.Netaddr, s.config.Redis.Db, s.config.Redis.Password)
+	queue, err := gobus.NewTailDelayQueue(getProviderQueueName(queueName), s.config.Cross.Delay[queueName], []OneIdentityUpdateArg{}, redis)
+	if err != nil {
+		log.Printf("can't connect to redis: %s", err)
+		return
+	}
+	err = queue.Push(id, arg)
+	if err != nil {
+		log.Printf("can't push to queue(%s): %s", queue, err)
+	}
 	s.log.Printf("dispatch %s to %s", id, queue)
-	queue.Push(id, arg)
 }
 
 func getProviderQueueName(provider string) string {
