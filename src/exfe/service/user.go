@@ -83,6 +83,7 @@ func executeTemplate(name string, to *exfe_model.Identity, data interface{}, cli
 }
 
 func (s *User) Welcome(arg *UserArg, reply *int) error {
+	s.log.Printf("welcome to %s", arg.To_identity.ExternalId())
 	arg.Config = s.config
 
 	err := executeTemplate("user_welcome.html", &arg.To_identity, arg, s.email)
@@ -93,6 +94,7 @@ func (s *User) Welcome(arg *UserArg, reply *int) error {
 }
 
 func (s *User) Verify(arg *UserArg, reply *int) error {
+	s.log.Printf("verify to %s", arg.To_identity.ExternalId())
 	arg.Config = s.config
 
 	template := fmt.Sprintf("user_%s.html", strings.ToLower(arg.Action))
@@ -113,10 +115,14 @@ type GetFriendsArg struct {
 	Provider     string `json:"provider"`
 }
 
-func (s *User) TwitterFriends(arg *GetFriendsArg, reply *int) error {
+func (s *User) GetFriends(arg *GetFriendsArg, reply *int) error {
+	s.log.Printf("get friend from %s@%s(%d)", arg.ExternalID, arg.Provider, arg.UserID)
+
 	switch arg.Provider {
 	case "twitter":
 		s.getTwitterFriends(arg)
+	case "facebook":
+		s.getFacebookFriends(arg)
 	default:
 		s.log.Printf("don't know how to get provider %s friend", arg.Provider)
 	}
@@ -244,8 +250,14 @@ func (s *User) UpdateIdentities(userId uint64, identities []*exfe_model.Identity
 
 	buf := bytes.NewBuffer(nil)
 	e := json.NewEncoder(buf)
-	e.Encode(arg)
-	resp, err := http.Post(fmt.Sprintf("%s/v2/Friends", s.config.Site_api), "application/json", buf)
+	err := e.Encode(arg)
+	if err != nil {
+		s.log.Printf("encoding arg error: %s", err)
+		return
+	}
+	url := fmt.Sprintf("%s/v2/Friends", s.config.Site_api)
+	s.log.Printf("send to url: %s")
+	resp, err := http.Post(url, "application/json", buf)
 	if err != nil {
 		s.log.Printf("Send twitter friend to server error: %s", err)
 		return
