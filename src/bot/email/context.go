@@ -69,6 +69,7 @@ func (c *EmailContext) Default(input *Email) error {
 		From:    &mail.Address{"x@exfe.com", "x@exfe.com"},
 		Subject: fmt.Sprintf("Re: %s", input.Subject),
 		Text:    body,
+		Html:    fmt.Sprintf("<html><body><p>%s</p></body></html>", body),
 		Header:  make(textproto.MIMEHeader),
 	}
 	mailarg.Header.Set("In-Reply-To", input.MessageId)
