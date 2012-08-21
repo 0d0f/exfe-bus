@@ -3,4 +3,3 @@
 apns_dev_*.pem
 bin/*
 pkg/*
-deploy/*
