@@ -257,7 +257,7 @@ func (s *User) UpdateIdentities(userId uint64, identities []*exfe_model.Identity
 		return
 	}
 	url := fmt.Sprintf("%s/v2/Gobus/AddFriends", s.config.Site_api)
-	s.log.Printf("send to url: %s, post: %s", url, buf.String())
+	s.log.Printf("send to url: %s", url)
 	resp, err := http.Post(url, "application/json", buf)
 	if err != nil {
 		s.log.Printf("Send twitter friend to server error: %s", err)
