@@ -147,7 +147,6 @@ func (b *CrossProviderBase) Serve() {
 			log.Printf("next wakeup error: %s", err)
 			break
 		}
-		b.log.Printf("sleeping %s", t)
 		time.Sleep(t)
 		args, err := b.queue.Pop()
 		if err != nil {

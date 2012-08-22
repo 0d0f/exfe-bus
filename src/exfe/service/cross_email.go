@@ -72,7 +72,6 @@ func (e *CrossEmail) Serve() {
 			e.log.Printf("next wakeup error: %s", err)
 			break
 		}
-		e.log.Printf("sleeping %s", t)
 		time.Sleep(t)
 		args, err := e.queue.Pop()
 		if err != nil {
