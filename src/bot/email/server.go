@@ -81,6 +81,8 @@ func Daemon(config *exfe_service.Config, quit chan int) {
 		err := s.Serve()
 		if err != nil {
 			l.Printf("email error: %s", err)
+			quit <- 1
+			return
 		}
 		select {
 		case <-quit:
