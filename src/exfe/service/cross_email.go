@@ -162,10 +162,10 @@ func (e *CrossEmail) sendMail(arg *ProviderArg) {
 	}
 	htmls := strings.SplitN(html, "//////////////////////////////////\n\n", 3)
 
-	mail_addr := fmt.Sprintf("x+%d@exfe.com", arg.Cross.Id)
+	mail_addr := fmt.Sprintf("x+%d@%s", arg.Cross.Id, e.config.EmailDomain)
 	mailarg := &email_service.MailArg{
 		To:      []*mail.Address{&mail.Address{arg.To_identity.Name, arg.To_identity.External_id}},
-		From:    &mail.Address{"EXFE ·X·", mail_addr},
+		From:    &mail.Address{e.config.EmailName, mail_addr},
 		Subject: htmls[0],
 		Text:    htmls[1],
 		Html:    htmls[2],

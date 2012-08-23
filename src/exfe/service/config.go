@@ -9,13 +9,13 @@ import (
 )
 
 type Config struct {
-	Site_url     string
-	Site_api     string
-	Site_img     string
-	App_url      string
-	Iom_url      string
-	EmailName    string
-	EmailAddress string
+	Site_url    string
+	Site_api    string
+	Site_img    string
+	App_url     string
+	Iom_url     string
+	EmailName   string `json:"email_name"`
+	EmailDomain string `json:"email_domain"`
 
 	Redis struct {
 		Netaddr  string

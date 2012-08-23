@@ -69,7 +69,7 @@ func (c *EmailContext) Default(input *Email) error {
 		input.Text)
 	mailarg := &email_service.MailArg{
 		To:      []*mail.Address{input.From},
-		From:    &mail.Address{"EXFE ·X·", "x@exfe.com"},
+		From:    &mail.Address{c.mailBot.config.EmailName, fmt.Sprintf("x@%s", c.mailBot.config.EmailDomain)},
 		Subject: fmt.Sprintf("Re: %s", input.Subject),
 		Text:    body,
 		Html:    fmt.Sprintf("<html><body><p>%s</p></body></html>", strings.Replace(body, "\n", "<br />", -1)),

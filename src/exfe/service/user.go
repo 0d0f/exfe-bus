@@ -56,7 +56,7 @@ func NewUser(config *Config) *User {
 	}
 }
 
-func executeTemplate(name string, to *exfe_model.Identity, data interface{}, client *gobus.Client) error {
+func (s *User) executeTemplate(name string, to *exfe_model.Identity, data interface{}, client *gobus.Client) error {
 	buf := bytes.NewBuffer(nil)
 	tmpl, err := template.ParseFiles(fmt.Sprintf("./template/default/%s", name))
 	if err != nil {
@@ -71,7 +71,7 @@ func executeTemplate(name string, to *exfe_model.Identity, data interface{}, cli
 
 	mailarg := &email_service.MailArg{
 		To:      []*mail.Address{&mail.Address{to.Name, to.External_id}},
-		From:    &mail.Address{"EXFE ·X·", "x@exfe.com"},
+		From:    &mail.Address{s.config.EmailName, fmt.Sprintf("x@%s", s.config.EmailDomain)},
 		Subject: content[0],
 		Text:    content[1],
 		Html:    content[2],
@@ -86,7 +86,7 @@ func (s *User) Welcome(arg *UserArg, reply *int) error {
 	s.log.Printf("welcome to %s", arg.To_identity.ExternalId())
 	arg.Config = s.config
 
-	err := executeTemplate("user_welcome.html", &arg.To_identity, arg, s.email)
+	err := s.executeTemplate("user_welcome.html", &arg.To_identity, arg, s.email)
 	if err != nil {
 		s.log.Printf("Execute template error: %s", err)
 	}
@@ -98,7 +98,7 @@ func (s *User) Verify(arg *UserArg, reply *int) error {
 	arg.Config = s.config
 
 	template := fmt.Sprintf("user_%s.html", strings.ToLower(arg.Action))
-	err := executeTemplate(template, &arg.To_identity, arg, s.email)
+	err := s.executeTemplate(template, &arg.To_identity, arg, s.email)
 	if err != nil {
 		s.log.Printf("Execute template error: %s", err)
 	}
