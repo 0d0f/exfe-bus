@@ -1,7 +1,7 @@
-{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}
+{{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}
 //////////////////////////////////
 
-Your ·X· “{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}” has been updated by {{ if index .By_identities 0 }}{{ with index .By_identities 0 }}{{ .Name }}{{ end }},{{ end }} etc.
+Your ·X· “{{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}” has been updated by {{ if index .By_identities 0 }}{{ with index .By_identities 0 }}{{ .Name }}{{ end }},{{ end }} etc.
 
 {{ if .IsTitleChanged }}*{{ end }}{{ .Cross.Title }}{{ if .IsTitleChanged }}*{{ end }}
 =======
