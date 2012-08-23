@@ -59,8 +59,7 @@ Your ·X· “{{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.
         <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 20px; color: #191919; font-weight: normal; width: 640px; padding: 20px; background-color: #fbfbfb;">
             <tr>
                 <td colspan="5" style="color: #333333;">
-                    Your&nbsp;<span style="color: #3a6ea5;">·X·</span>&nbsp;“<span style="color: #191919;">{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}</span>”&nbsp;has&nbsp;been&nbsp;updated&nbsp;by&nbsp;{{ if index .By_identities 0 }}<span style="color: #3a6ea5;">{{ with index .By_identities 0 }}{{ .Name }}{{ end }}</span>,{{ end }}&nbsp;
-                    etc.
+                    Your&nbsp;<span style="color: #3a6ea5;">·X·</span>&nbsp;“<span style="color: #191919;">{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}</span>”&nbsp;has&nbsp;been&nbsp;updated{{ with index .By_identities 0 }}{{ if .Name }}&nbsp;by&nbsp;<span style="color: #3a6ea5;">{{ .Name }}</span>,{{ end }}{{ end }}&nbsp;etc.
                 </td>
             </tr>
             <tr><td colspan="5" height="10"></td></tr>
