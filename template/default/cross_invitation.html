@@ -1,4 +1,4 @@
-Welcome to EXFE
+{{ .Cross.Title }}
 //////////////////////////////////
 
 {{ if .IsHost }}You're gathering this ·X·.{{ else }}Invitation from {{ $a := index .By_identities 0 }}{{ $a.Name }}. {{ end }}
