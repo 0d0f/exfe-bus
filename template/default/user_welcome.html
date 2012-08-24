@@ -28,26 +28,23 @@ This email is sent to {{ .To_identity.External_id }} per identity registration r
             <tr>
                 <td valign="top">
                     <p style="font-size: 18px; line-height: 24px;">
-                    Hi,&nbsp;{{ .To_identity.Name }}
+                    Hi, {{ .To_identity.Name }}
                     </p>
                     <p>
-                        <span style="font-size: 18px; line-height: 24px;">Welcome&nbsp;to&nbsp;<a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>!</span>
+                        <span style="font-size: 18px; line-height: 24px;">Welcome to <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>!</span>
                         <br>
-                        <span>An&nbsp;utility&nbsp;for&nbsp;hanging&nbsp;out&nbsp;with&nbsp;friends.</span>
+                        <span>An utility for hanging out with friends.</span>
                     </p>
                     {{ if .NeedVerify }}
                     <p>
-                        <span style="font-size:14px; color:#333; ">
-                            Please&nbsp;click&nbsp;here&nbsp;to&nbsp;verify&nbsp;your&nbsp;identity:&nbsp;
-                        </span>
-                        <a style="color:#191919; text-decoration: underline;" href="{{ .Config.Site_url }}/#token={{ .Token }}">{{ .Config.Site_url }}/#token={{ .Token | .Shorten }}</a>
+                        <span style="font-size:14px; color:#333; ">Please click here to verify your identity:</span> <a style="color:#191919; text-decoration: underline;" href="{{ .Config.Site_url }}/#token={{ .Token }}">{{ .Config.Site_url }}/#token={{ .Token | .Shorten }}</a>
                     </p>
                     {{ end }}
                     <p>
-                        <span style="color: #3a6ea5;">·X·</span>&nbsp;(cross)&nbsp;is&nbsp;a&nbsp;gathering&nbsp;of&nbsp;people,&nbsp;on&nbsp;purpose&nbsp;or&nbsp;not.&nbsp;We&nbsp;save&nbsp;you&nbsp;from&nbsp;calling&nbsp;up&nbsp;every&nbsp;one&nbsp;RSVP,&nbsp;losing&nbsp;in&nbsp;endless&nbsp;emails&nbsp;messages&nbsp;off&nbsp;the&nbsp;point.
+                        <span style="color: #3a6ea5;">·X·</span> (cross) is a gathering of people, on purpose or not. We save you from calling up every one RSVP, losing in endless emails messages off the point.
                     </p>
                     <p>
-                        <span style="color: #3a6ea5;">EXFE</span>&nbsp;your&nbsp;friends.&nbsp;Gather&nbsp;a&nbsp;<span style="color: #3a6ea5;">·X·</span>
+                        <span style="color: #3a6ea5;">EXFE</span> your friends. Gather a <span style="color: #3a6ea5;">·X·</span>
                     </p>
                 </td>
             </tr>
@@ -59,14 +56,10 @@ This email is sent to {{ .To_identity.External_id }} per identity registration r
                     <img style="float: left; margin-left: 20px; margin-right: 40px; margin-bottom: 10px;" src="{{ .Config.Site_img }}/email/rome.png">
                     <div style="color:#333333;">
                         <p style="font-size: 18px; line-height: 24px; margin: 0 0 20px 0">
-                            “Rome&nbsp;wasn't&nbsp;built&nbsp;in&nbsp;a&nbsp;day.”
+                            “Rome wasn't built in a day.”
                         </p>
                         <p style="margin: 0;">
-                        <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>&nbsp;
-                            [ˈɛksfi]&nbsp;is&nbsp;still&nbsp;in&nbsp;
-                            <span style ="font-weight: bold;">pilot</span>
-                            &nbsp;stage.&nbsp;We’re&nbsp;building&nbsp;up&nbsp;blocks&nbsp;of&nbsp;it,&nbsp;consequently&nbsp;some&nbsp;bugs&nbsp;or&nbsp;unfinished&nbsp;pages&nbsp;may&nbsp;happen.&nbsp;Any&nbsp;feedback,&nbsp;please&nbsp;email&nbsp;
-                            <a style="font-style: italic; color: #333333; text-decoration: underline;" href="mailto:feedback@exfe.com">feedback@exfe.com</a>.&nbsp;Much&nbsp;appreciated.
+                        <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a> [ˈɛksfi] is still in <span style ="font-weight: bold;">pilot</span> stage. We’re building up blocks of it, consequently some bugs or unfinished pages may happen. Any feedback, please email <a style="font-style: italic; color: #333333; text-decoration: underline;" href="mailto:feedback@exfe.com">feedback@exfe.com</a>. Much appreciated.
                         </p>
                     </div>
                 </td>
@@ -76,10 +69,7 @@ This email is sent to {{ .To_identity.External_id }} per identity registration r
             </tr>
             <tr>
                 <td style="color: #666666; font-size: 11px;">
-                    This&nbsp;email&nbsp;is&nbsp;sent&nbsp;to&nbsp;
-                    <a style="font-style: italic; color: #666666; text-decoration: none;" href="mailto:{{ .To_identity.External_id }}">{{ .To_identity.External_id }}</a>
-                    &nbsp;per&nbsp;identity&nbsp;registration&nbsp;request&nbsp;on&nbsp;
-                    <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
+                    This email is sent to <a style="font-style: italic; color: #666666; text-decoration: none;" href="mailto:{{ .To_identity.External_id }}">{{ .To_identity.External_id }}</a> per identity registration request on <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
                 </td>
             </tr>
         </table>

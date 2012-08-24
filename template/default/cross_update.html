@@ -189,7 +189,7 @@ Your ·X· “{{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.
                             <td valign="top">
                                 <a href="{{ $url }}" style="text-decoration: none;">
                                     <span style="color:#212121; text-decoration: none;">{{ .Content }}</span>
-                                    <br>
+                                    <br />
                                     <span style="font-size: 12px; color:#797979; text-decoration: none;">{{ .By_identity.Name }}</span> <span style="font-size: 12px; color:#A9A9A9; text-decoration: none;">at</span> <span  style="font-size: 12px; color:#797979; text-decoration: none;">{{ .CreatedAt $timezone }}</span>
                                 </a>
                             </td>
@@ -203,7 +203,8 @@ Your ·X· “{{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.
             <tr><td colspan="5" height="20"></td></tr>
             <tr>
                 <td colspan="5" style="font-size: 11px; line-height: 15px; color: #7F7F7F;">
-                    Reply this email directly as conversation.<!--, or try <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a> app.--><br>
+                    Reply this email directly as conversation.<!--, or try <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a> app.-->
+                    <br />
                     <span style="color: #B2B2B2">This update is sent from <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a> automatically. <a style="color: #E6E6E6; text-decoration: none;" href="{{ .Config.Site_url }}/s/reportSpam?token={{ .Token }}">Unsubscribe?</a>
                     <!--
                     You can change
