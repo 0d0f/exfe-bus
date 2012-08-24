@@ -34,25 +34,19 @@ This email is sent to {{ .To_identity.External_id }} per identity verification r
             <tr><td height="20"></td></tr>
             <tr>
                 <td>
-                    <a style="color:#333333; text-decoration: none;" href="{{ .Config.Site_url }}/#token={{ .Token }}">
-                        Please&nbsp;click&nbsp;here&nbsp;to&nbsp;verify:&nbsp;<span style="text-decoration: underline;">{{ .Config.Site_url }}/#token={{ .Token | .Shorten }}</span>
-                    </a>
+                    <a style="color:#333333; text-decoration: none;" href="{{ .Config.Site_url }}/#token={{ .Token }}">Please&nbsp;click&nbsp;here&nbsp;to&nbsp;verify:&nbsp;<span style="text-decoration: underline;">{{ .Config.Site_url }}/#token={{ .Token | .Shorten }}</span></a>
                 </td>
             </tr>
             <tr><td height="20"></td></tr>
             <tr>
                 <td>
-                    <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>&nbsp;
-                    is&nbsp;a&nbsp;utility&nbsp;for&nbsp;hanging&nbsp;out&nbsp;with&nbsp;friends.&nbsp;We&nbsp;save&nbsp;you&nbsp;from&nbsp;calling&nbsp;up&nbsp;every&nbsp;one&nbsp;RSVP,&nbsp;losing&nbsp;in&nbsp;endless&nbsp;emails&nbsp;and&nbsp;messages&nbsp;off&nbsp;the&nbsp;point.
+                    <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>&nbsp;is&nbsp;a&nbsp;utility&nbsp;for&nbsp;hanging&nbsp;out&nbsp;with&nbsp;friends.&nbsp;We&nbsp;save&nbsp;you&nbsp;from&nbsp;calling&nbsp;up&nbsp;every&nbsp;one&nbsp;RSVP,&nbsp;losing&nbsp;in&nbsp;endless&nbsp;emails&nbsp;and&nbsp;messages&nbsp;off&nbsp;the&nbsp;point.
                 </td>
             </tr>
             <tr><td height="40"></td></tr>
             <tr>
                 <td style="font-size: 11px; line-height: 13px; color: #666666;">
-                    This&nbsp;email&nbsp;is&nbsp;sent&nbsp;to&nbsp;
-                    <a style="color: #666666; text-decoration: none; font-style: italic;" href="mailto:{{ .To_identity.External_id }}">{{ .To_identity.External_id }}</a>
-                    &nbsp;per&nbsp;identity&nbsp;verification&nbsp;request&nbsp;on&nbsp;
-                    <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
+                    This&nbsp;email&nbsp;is&nbsp;sent&nbsp;to&nbsp;<a style="color: #666666; text-decoration: none; font-style: italic;" href="mailto:{{ .To_identity.External_id }}">{{ .To_identity.External_id }}</a>&nbsp;per&nbsp;identity&nbsp;verification&nbsp;request&nbsp;on&nbsp;<a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
                 </td>
             </tr>
         </table>
