@@ -28,7 +28,7 @@ This email is sent to {{ .To_identity.External_id }} per identity verification r
             <tr><td height="20"></td></tr>
             <tr>
                 <td>
-                    Your email <span style="font-style: italic;">{{ .To_identity.External_id }}</span> has been requested for verification{{ if .User_name }} by <span style="color: #191919;">{{ .User_name }}</span>{{ end }} on <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
+                    Your email <a href="{{ .To_identity.External_id }}" style="text-decoration: none; color: #333333; font-style: italic;">{{ .To_identity.External_id }}</a> has been requested for verification{{ if .User_name }} by <span style="color: #191919;">{{ .User_name }}</span>{{ end }} on <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
                 </td>
             </tr>
             <tr><td height="20"></td></tr>
