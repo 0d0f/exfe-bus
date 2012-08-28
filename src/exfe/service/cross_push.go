@@ -3,7 +3,7 @@ package exfe_service
 import (
 	"apn/service"
 	"c2dm/service"
-	"gobus"
+	"old_gobus"
 )
 
 type CrossPush struct {

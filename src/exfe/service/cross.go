@@ -4,8 +4,8 @@ import (
 	"exfe/model"
 	"fmt"
 	"github.com/googollee/godis"
-	"gobus"
 	"log"
+	"old_gobus"
 	"os"
 	"time"
 )

@@ -2,8 +2,8 @@ package main
 
 import (
 	"exfe/service"
-	"gobus"
 	"log"
+	"old_gobus"
 )
 
 func main() {

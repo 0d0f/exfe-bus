@@ -6,8 +6,8 @@ import (
 	"github.com/googollee/goimap"
 	"github.com/sloonz/go-iconv"
 	"gobot"
-	"gobus"
 	"net/mail"
+	"old_gobus"
 	"regexp"
 	"strings"
 )

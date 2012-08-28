@@ -1,17 +1,17 @@
 package main
 
 import (
-	"twitter/service"
 	"exfe/service"
-	"gobus"
 	"log"
+	"old_gobus"
+	"twitter/service"
 )
 
 const (
 	queue_friendship = "twitter:friendship"
-	queue_info = "twitter:userinfo"
-	queue_tweet = "twitter:tweet"
-	queue_dm = "twitter:directmessage"
+	queue_info       = "twitter:userinfo"
+	queue_tweet      = "twitter:tweet"
+	queue_dm         = "twitter:directmessage"
 )
 
 func main() {
