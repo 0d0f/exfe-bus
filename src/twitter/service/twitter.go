@@ -2,22 +2,22 @@ package twitter_service
 
 import (
 	"fmt"
-	"net/url"
 	"net/http"
+	"net/url"
 )
 
 const UrlLength = 20
 const MaxTweetLength = 140
 
 type UserInfo struct {
-	Id uint64
-	Screen_name *string
+	Id                uint64
+	Screen_name       *string
 	Profile_image_url *string
-	Description *string
-	Name *string
+	Description       *string
+	Name              *string
 }
 
-func (i *UserInfo) makeUrlValues(id uint64) (v url.Values) {
+func (i *UserInfo) makeUrlValues(id int64) (v url.Values) {
 	v = make(url.Values)
 	v.Add("id", fmt.Sprintf("%d", id))
 	v.Add("provider", "twitter")
@@ -41,7 +41,7 @@ type UpdateInfoService struct {
 	SiteApi string
 }
 
-func (s *UpdateInfoService) UpdateUserInfo(id uint64, i *UserInfo, _ int) error {
+func (s *UpdateInfoService) UpdateUserInfo(id int64, i *UserInfo, _ int) error {
 	url := fmt.Sprintf("%s/v2/gobus/UpdateIdentity", s.SiteApi)
 	resp, err := http.PostForm(url, i.makeUrlValues(id))
 	if err != nil {
@@ -54,7 +54,7 @@ func (s *UpdateInfoService) UpdateUserInfo(id uint64, i *UserInfo, _ int) error 
 }
 
 func makeText(message string, urls []string) string {
-	maxMessageLength := MaxTweetLength - (len(urls) + 1/* space */) * UrlLength
+	maxMessageLength := MaxTweetLength - (len(urls)+1 /* space */)*UrlLength
 
 	if len(message) > maxMessageLength {
 		message = fmt.Sprintf("%s…", message[0:(maxMessageLength-1)])

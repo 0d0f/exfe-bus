@@ -60,17 +60,6 @@ func (s *Cross) Update(args []*UpdateCrossArg) error {
 	return nil
 }
 
-func (s *Cross) getUserIdentityMap(cross *exfe_model.Cross) (identityMap map[uint64]*exfe_model.Identity, userMap map[int64]*exfe_model.Identity) {
-	identityMap = make(map[uint64]*exfe_model.Identity)
-	userMap = make(map[int64]*exfe_model.Identity)
-
-	for _, invitation := range cross.Exfee.Invitations {
-		identityMap[invitation.Identity.Id] = &invitation.Identity
-		userMap[invitation.Identity.Connected_user_id] = &invitation.Identity
-	}
-	return
-}
-
 func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 	id := fmt.Sprintf("%d-%d", arg.Cross.Id, arg.To_identity.Id)
 

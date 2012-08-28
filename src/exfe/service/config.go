@@ -1,12 +1,25 @@
 package exfe_service
 
 import (
-	"config"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"time"
 )
+
+func LoadFile(filename string, config interface{}) {
+	f, err := os.Open(filename)
+	if err != nil {
+		panic(err)
+	}
+
+	decoder := json.NewDecoder(f)
+	err = decoder.Decode(config)
+	if err != nil {
+		panic(err)
+	}
+}
 
 type Config struct {
 	Site_url    string
@@ -79,7 +92,7 @@ func InitConfig() *Config {
 	flag.StringVar(&configFile, "config", "exfe.json", "Specify the configuration file")
 	flag.Parse()
 
-	config.LoadFile(configFile, &c)
+	LoadFile(configFile, &c)
 
 	flag.Parse()
 	if pidfile != "" {

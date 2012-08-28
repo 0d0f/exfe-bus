@@ -1,7 +1,7 @@
 package main
 
 import (
-	"config"
+	"encoding/json"
 	"exfe/service"
 	"flag"
 	"fmt"
@@ -75,6 +75,19 @@ func (h *HashHTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", e)
 }
 
+func LoadFile(filename string, config interface{}) {
+	f, err := os.Open(filename)
+	if err != nil {
+		panic(err)
+	}
+
+	decoder := json.NewDecoder(f)
+	err = decoder.Decode(config)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	log := log.New(os.Stderr, "exfe.hash", log.LstdFlags)
 	log.Print("Service start")
@@ -88,7 +101,7 @@ func main() {
 	flag.StringVar(&configFile, "config", "exfe.json", "Specify the configuration file")
 	flag.Parse()
 
-	config.LoadFile(configFile, &c)
+	LoadFile(configFile, &c)
 
 	flag.Parse()
 	if pidfile != "" {

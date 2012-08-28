@@ -33,7 +33,7 @@ type UsersShowArg struct {
 	UserId     *string
 	ScreenName *string
 
-	IdentityId *uint64
+	IdentityId *int64
 }
 
 func (i *UsersShowArg) String() string {
