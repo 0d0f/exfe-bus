@@ -40,7 +40,7 @@ func (mng *TokenManager) Generate(meta *gobus.HTTPMeta, arg *TokenGenerateArgs, 
 	}
 	*reply, err = mng.manager.GenerateToken(arg.Resource, expire)
 	if err != nil {
-		mng.log.Warning("(%d)generate token fail: %s", serial, err)
+		mng.log.Info("(%d)generate token with resource(%s), expire(%ds) fail: %s", serial, arg.Resource, arg.ExpireAfterSeconds, err)
 	} else {
 		mng.log.Debug("(%d)return token: %s", serial, *reply)
 	}
@@ -61,7 +61,7 @@ func (mng *TokenManager) Get(meta *gobus.HTTPMeta, token *string, reply *TokenGe
 		err = nil
 	}
 	if err != nil {
-		mng.log.Warning("(%d)get resource fail: %s", serial, err)
+		mng.log.Info("(%d)get resource with token(%s) fail: %s", serial, *token, err)
 	} else {
 		mng.log.Debug("(%d)return resource: %s, is expired: %v", serial, reply.Resource, reply.IsExpired)
 	}
@@ -87,7 +87,7 @@ func (mng *TokenManager) Verify(meta *gobus.HTTPMeta, args *TokenVerifyArg, repl
 		err = nil
 	}
 	if err != nil {
-		mng.log.Warning("(%d)verify fail: %s", serial, err)
+		mng.log.Info("(%d)verify with token(%s)&resource(%s) fail: %s", serial, args.Token, args.Resource, err)
 	} else {
 		mng.log.Debug("(%d)return verify matched: %v, is expired: %v", serial, reply.Matched, reply.IsExpired)
 	}
@@ -99,7 +99,7 @@ func (mng *TokenManager) Delete(meta *gobus.HTTPMeta, token *string, reply *int)
 	mng.log.Debug("(%d)delete token: %s", serial, *token)
 	err = mng.manager.DeleteToken(*token)
 	if err != nil {
-		mng.log.Warning("(%d)delete fail: %s", serial, err)
+		mng.log.Info("(%d)delete token(%s) fail: %s", serial, *token, err)
 	} else {
 		mng.log.Debug("(%d)ok", serial)
 	}
@@ -120,7 +120,7 @@ func (mng *TokenManager) Refresh(meta *gobus.HTTPMeta, args *TokenRefreshArg, re
 	}
 	err = mng.manager.RefreshToken(args.Token, expire)
 	if err != nil {
-		mng.log.Warning("(%d)refresh fail: %s", serial, err)
+		mng.log.Info("(%d)refresh token(%s) with expire(%ds) fail: %s", serial, args.Token, args.ExpireAfterSeconds, err)
 	} else {
 		mng.log.Debug("(%d)ok", serial)
 	}
@@ -132,7 +132,7 @@ func (mng *TokenManager) Expire(meta *gobus.HTTPMeta, token *string, reply *int)
 	mng.log.Debug("(%d)expire token: %s", serial, *token)
 	err = mng.manager.ExpireToken(*token)
 	if err != nil {
-		mng.log.Warning("(%d)expire fail: %s", serial, err)
+		mng.log.Info("(%d)expire token(%s) fail: %s", serial, *token, err)
 	} else {
 		mng.log.Debug("(%d)ok", serial)
 	}
