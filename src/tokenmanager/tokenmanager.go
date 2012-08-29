@@ -13,36 +13,46 @@ import (
 const TOKEN_RANDOM_LENGTH = 16
 
 const (
-	CREATE        = "CREATE TABLE `tokens` (`id` SERIAL NOT NULL, `token` CHAR(64) NOT NULL, `created_at` DATETIME NOT NULL, `expire_at` DATETIME, `resource` TEXT)"
-	INSERT        = "INSERT INTO `tokens` VALUES (null, '%s', '%s', '%s', '%s')"
-	SELECT        = "SELECT expire_at, resource FROM `tokens` WHERE token='%s'"
-	UPDATE_EXPIRE = "UPDATE `tokens` SET expire_at='%s' WHERE token='%s'"
-	DELETE        = "DELETE FROM `tokens` WHERE token='%s'"
+	CREATE        = "CREATE TABLE `%s` (`id` SERIAL NOT NULL, `token` CHAR(64) NOT NULL, `created_at` DATETIME NOT NULL, `expire_at` DATETIME, `resource` TEXT)"
+	INSERT        = "INSERT INTO `%s` VALUES (null, '%%s', '%%s', '%%s', '%%s')"
+	SELECT        = "SELECT expire_at, resource FROM `%s` WHERE token='%%s'"
+	UPDATE_EXPIRE = "UPDATE `%s` SET expire_at='%%s' WHERE token='%%s'"
+	DELETE        = "DELETE FROM `%s` WHERE token='%%s'"
 )
 
 var ExpiredError = fmt.Errorf("token expired")
 var NeverExpire = time.Duration(-1)
 
 type TokenManager struct {
-	db *mysql.Client
-	r  *rand.Rand
+	db      *mysql.Client
+	r       *rand.Rand
+	create  string
+	insert  string
+	select_ string
+	update  string
+	delete  string
 }
 
-func New(db *mysql.Client) *TokenManager {
+func New(db *mysql.Client, tableName string) *TokenManager {
 	return &TokenManager{
-		db: db,
-		r:  rand.New(rand.NewSource(time.Now().UnixNano())),
+		db:      db,
+		r:       rand.New(rand.NewSource(time.Now().UnixNano())),
+		create:  fmt.Sprintf(CREATE, tableName),
+		insert:  fmt.Sprintf(INSERT, tableName),
+		select_: fmt.Sprintf(SELECT, tableName),
+		update:  fmt.Sprintf(UPDATE_EXPIRE, tableName),
+		delete:  fmt.Sprintf(DELETE, tableName),
 	}
 }
 
-func (m *TokenManager) GenerateToken(resource string, expire_duration time.Duration) (string, error) {
+func (m *TokenManager) GenerateToken(resource string, expireAfterSecond time.Duration) (string, error) {
 	now := time.Now().UTC()
 	stamp := fmt.Sprintf("%s-%d", resource, now.Unix())
 	hash := md5.New()
 	io.WriteString(hash, stamp)
 	token := fmt.Sprintf("%x%x", hash.Sum(nil), m.randBytes(TOKEN_RANDOM_LENGTH))
 
-	sql := fmt.Sprintf(INSERT, token, now.Format(time.RFC3339), m.getExpireStr(expire_duration), resource)
+	sql := fmt.Sprintf(m.insert, token, now.Format(time.RFC3339), m.getExpireStr(expireAfterSecond), resource)
 	err := m.db.Query(sql)
 	if err != nil {
 		return "", err
@@ -51,7 +61,7 @@ func (m *TokenManager) GenerateToken(resource string, expire_duration time.Durat
 }
 
 func (m *TokenManager) GetResource(token string) (string, error) {
-	sql := fmt.Sprintf(SELECT, token)
+	sql := fmt.Sprintf(m.select_, token)
 	err := m.db.Query(sql)
 	if err != nil {
 		return "", err
@@ -93,13 +103,13 @@ func (m *TokenManager) VerifyToken(token, resource string) (bool, error) {
 }
 
 func (m *TokenManager) DeleteToken(token string) error {
-	sql := fmt.Sprintf(DELETE, token)
+	sql := fmt.Sprintf(m.delete, token)
 	err := m.db.Query(sql)
 	return err
 }
 
 func (m *TokenManager) RefreshToken(token string, duration time.Duration) error {
-	sql := fmt.Sprintf(UPDATE_EXPIRE, m.getExpireStr(duration), token)
+	sql := fmt.Sprintf(m.update, m.getExpireStr(duration), token)
 	err := m.db.Query(sql)
 	return err
 }

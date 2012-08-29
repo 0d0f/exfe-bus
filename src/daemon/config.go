@@ -10,7 +10,7 @@ import (
 	"syscall"
 )
 
-func Init(logPrefix string, defaultConfig string, config interface{}) (logger *log.Logger, quit <-chan os.Signal) {
+func Init(defaultConfig string, config interface{}) (loggerOutput log.OutType, quit <-chan os.Signal) {
 	var pidfile string
 	var configFile string
 	var syslog bool
@@ -41,12 +41,9 @@ func Init(logPrefix string, defaultConfig string, config interface{}) (logger *l
 	}
 
 	if syslog {
-		logger, err = log.New(log.Syslog, logPrefix, log.Lshortfile)
+		loggerOutput = log.Syslog
 	} else {
-		logger, err = log.New(log.Stderr, logPrefix, log.LstdFlags)
-	}
-	if err != nil {
-		panic(fmt.Sprintf("open log error: %s", err))
+		loggerOutput = log.Stderr
 	}
 
 	sigChan := make(chan os.Signal)

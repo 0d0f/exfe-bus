@@ -11,7 +11,7 @@ func TestTokenManager(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	mgr := New(client)
+	mgr := New(client, "tokens")
 	resource := "resource"
 	tk := "fjadsklfjkldasfdasiffjuoru21urjew"
 
