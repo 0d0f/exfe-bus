@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-log"
+	"github.com/googollee/go-logger"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -20,7 +20,7 @@ type GobusServer struct {
 	delayDispatcher *DelayDispatcher
 }
 
-func NewGobusServer(u string, l *log.Logger) (*GobusServer, error) {
+func NewGobusServer(u string, l *logger.Logger) (*GobusServer, error) {
 	u_, err := url.Parse(u)
 	if err != nil {
 		return nil, err

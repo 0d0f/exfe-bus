@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/googollee/go-log"
+	"github.com/googollee/go-logger"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-func Init(defaultConfig string, config interface{}) (loggerOutput log.OutType, quit <-chan os.Signal) {
+func Init(defaultConfig string, config interface{}) (loggerOutput *os.File, quit <-chan os.Signal) {
 	var pidfile string
 	var configFile string
 	var syslog bool
@@ -41,9 +41,9 @@ func Init(defaultConfig string, config interface{}) (loggerOutput log.OutType, q
 	}
 
 	if syslog {
-		loggerOutput = log.Syslog
+		loggerOutput = logger.Syslog
 	} else {
-		loggerOutput = log.Stderr
+		loggerOutput = logger.Stderr
 	}
 
 	sigChan := make(chan os.Signal)

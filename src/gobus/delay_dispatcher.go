@@ -3,7 +3,7 @@ package gobus
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-log"
+	"github.com/googollee/go-logger"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -73,10 +73,10 @@ func newServiceMethod(service DelayService) (*serviceMethod, error) {
 
 type DelayDispatcher struct {
 	services map[string]*serviceMethod
-	logger   *log.Logger
+	logger   *logger.Logger
 }
 
-func NewDelayDispatcher(l *log.Logger) *DelayDispatcher {
+func NewDelayDispatcher(l *logger.Logger) *DelayDispatcher {
 	return &DelayDispatcher{
 		services: make(map[string]*serviceMethod),
 		logger:   l,

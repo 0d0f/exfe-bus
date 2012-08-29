@@ -5,7 +5,7 @@ go get $1 github.com/googollee/go_c2dm
 go get $1 github.com/googollee/goimap
 go get $1 github.com/googollee/go-encoding-ex
 go get $1 github.com/sloonz/go-iconv
-go get $1 github.com/googollee/go-log
+go get $1 github.com/googollee/go-logger
 go get $1 github.com/googollee/go-mysql
 cat build.list | while read l;
 do

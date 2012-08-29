@@ -3,7 +3,7 @@ package main
 import (
 	"daemon"
 	"fmt"
-	"github.com/googollee/go-log"
+	"github.com/googollee/go-logger"
 	"github.com/googollee/go-mysql"
 	"gobus"
 	"os"
@@ -25,7 +25,7 @@ type Config struct {
 		TableName string `json:"table_name"`
 	} `json:"token_manager"`
 
-	loggerOutput log.OutType
+	loggerOutput *os.File
 	loggerFlags  int
 }
 
@@ -33,9 +33,9 @@ func main() {
 	var config Config
 	var quit <-chan os.Signal
 	config.loggerOutput, quit = daemon.Init("exfe.json", &config)
-	config.loggerFlags = log.Lshortfile
+	config.loggerFlags = logger.Lshortfile
 
-	l, err := log.New(config.loggerOutput, "service bus", config.loggerFlags)
+	l, err := logger.New(config.loggerOutput, "service bus", config.loggerFlags)
 	if err != nil {
 		panic(err)
 	}
@@ -47,7 +47,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	tkMng, err := NewTokenManager(&config, db)
+	tkMng, err := NewTokenManager(&config, db, l)
 	if err != nil {
 		l.Crit("create token manager failed: %s", err)
 		os.Exit(-1)

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/googollee/go-log"
+	"github.com/googollee/go-logger"
 	"github.com/googollee/go-mysql"
 	"gobus"
 	"time"
@@ -10,18 +10,14 @@ import (
 
 type TokenManager struct {
 	manager *tokenmanager.TokenManager
-	log     *log.Logger
+	log     *logger.SubLogger
 	config  *Config
 }
 
-func NewTokenManager(config *Config, db *mysql.Client) (*TokenManager, error) {
-	l, err := log.New(config.loggerOutput, "service bus.token manager", config.loggerFlags)
-	if err != nil {
-		return nil, err
-	}
+func NewTokenManager(config *Config, db *mysql.Client, log *logger.Logger) (*TokenManager, error) {
 	return &TokenManager{
 		manager: tokenmanager.New(db, config.TokenManager.TableName),
-		log:     l,
+		log:     log.SubPrefix("token manager"),
 		config:  config,
 	}, nil
 }
@@ -32,17 +28,17 @@ type TokenGenerateArgs struct {
 }
 
 func (mng *TokenManager) Generate(meta *gobus.HTTPMeta, arg *TokenGenerateArgs, reply *string) (err error) {
-	serial := mng.log.SerialCode()
-	mng.log.Debug("(%d)generate with resource: %s, expire: %ds", serial, arg.Resource, arg.ExpireAfterSeconds)
+	log := mng.log.SubCode()
+	log.Debug("generate with resource: %s, expire: %ds", arg.Resource, arg.ExpireAfterSeconds)
 	expire := time.Duration(arg.ExpireAfterSeconds) * time.Second
 	if arg.ExpireAfterSeconds < 0 {
 		expire = tokenmanager.NeverExpire
 	}
 	*reply, err = mng.manager.GenerateToken(arg.Resource, expire)
 	if err != nil {
-		mng.log.Info("(%d)generate token with resource(%s), expire(%ds) fail: %s", serial, arg.Resource, arg.ExpireAfterSeconds, err)
+		log.Info("generate token with resource(%s), expire(%ds) fail: %s", arg.Resource, arg.ExpireAfterSeconds, err)
 	} else {
-		mng.log.Debug("(%d)return token: %s", serial, *reply)
+		log.Debug("return token: %s", *reply)
 	}
 	return err
 }
@@ -53,17 +49,17 @@ type TokenGetReply struct {
 }
 
 func (mng *TokenManager) Get(meta *gobus.HTTPMeta, token *string, reply *TokenGetReply) (err error) {
-	serial := mng.log.SerialCode()
-	mng.log.Debug("(%d)get with token: %s", serial, *token)
+	log := mng.log.SubCode()
+	log.Debug("get with token: %s", *token)
 	reply.Resource, err = mng.manager.GetResource(*token)
 	reply.IsExpired = err == tokenmanager.ExpiredError
 	if err == tokenmanager.ExpiredError {
 		err = nil
 	}
 	if err != nil {
-		mng.log.Info("(%d)get resource with token(%s) fail: %s", serial, *token, err)
+		log.Info("get resource with token(%s) fail: %s", *token, err)
 	} else {
-		mng.log.Debug("(%d)return resource: %s, is expired: %v", serial, reply.Resource, reply.IsExpired)
+		log.Debug("return resource: %s, is expired: %v", reply.Resource, reply.IsExpired)
 	}
 	return err
 }
@@ -79,29 +75,29 @@ type TokenVerifyReply struct {
 }
 
 func (mng *TokenManager) Verify(meta *gobus.HTTPMeta, args *TokenVerifyArg, reply *TokenVerifyReply) (err error) {
-	serial := mng.log.SerialCode()
-	mng.log.Debug("(%d)verify with token: %s, resource: %s", serial, args.Token, args.Resource)
+	log := mng.log.SubCode()
+	log.Debug("verify with token: %s, resource: %s", args.Token, args.Resource)
 	reply.Matched, err = mng.manager.VerifyToken(args.Token, args.Resource)
 	reply.IsExpired = err == tokenmanager.ExpiredError
 	if err == tokenmanager.ExpiredError {
 		err = nil
 	}
 	if err != nil {
-		mng.log.Info("(%d)verify with token(%s)&resource(%s) fail: %s", serial, args.Token, args.Resource, err)
+		log.Info("verify with token(%s)&resource(%s) fail: %s", args.Token, args.Resource, err)
 	} else {
-		mng.log.Debug("(%d)return verify matched: %v, is expired: %v", serial, reply.Matched, reply.IsExpired)
+		log.Debug("return verify matched: %v, is expired: %v", reply.Matched, reply.IsExpired)
 	}
 	return err
 }
 
 func (mng *TokenManager) Delete(meta *gobus.HTTPMeta, token *string, reply *int) (err error) {
-	serial := mng.log.SerialCode()
-	mng.log.Debug("(%d)delete token: %s", serial, *token)
+	log := mng.log.SubCode()
+	log.Debug("delete token: %s", *token)
 	err = mng.manager.DeleteToken(*token)
 	if err != nil {
-		mng.log.Info("(%d)delete token(%s) fail: %s", serial, *token, err)
+		log.Info("delete token(%s) fail: %s", *token, err)
 	} else {
-		mng.log.Debug("(%d)ok", serial)
+		log.Debug("ok")
 	}
 	return err
 }
@@ -112,29 +108,29 @@ type TokenRefreshArg struct {
 }
 
 func (mng *TokenManager) Refresh(meta *gobus.HTTPMeta, args *TokenRefreshArg, reply *int) (err error) {
-	serial := mng.log.SerialCode()
-	mng.log.Debug("(%d)refresh token: %s, expire: %ds", serial, args.Token, args.ExpireAfterSeconds)
+	log := mng.log.SubCode()
+	log.Debug("refresh token: %s, expire: %ds", args.Token, args.ExpireAfterSeconds)
 	expire := time.Duration(args.ExpireAfterSeconds) * time.Second
 	if args.ExpireAfterSeconds < 0 {
 		expire = tokenmanager.NeverExpire
 	}
 	err = mng.manager.RefreshToken(args.Token, expire)
 	if err != nil {
-		mng.log.Info("(%d)refresh token(%s) with expire(%ds) fail: %s", serial, args.Token, args.ExpireAfterSeconds, err)
+		log.Info("refresh token(%s) with expire(%ds) fail: %s", args.Token, args.ExpireAfterSeconds, err)
 	} else {
-		mng.log.Debug("(%d)ok", serial)
+		log.Debug("ok")
 	}
 	return err
 }
 
 func (mng *TokenManager) Expire(meta *gobus.HTTPMeta, token *string, reply *int) (err error) {
-	serial := mng.log.SerialCode()
-	mng.log.Debug("(%d)expire token: %s", serial, *token)
+	log := mng.log.SubCode()
+	log.Debug("expire token: %s", *token)
 	err = mng.manager.ExpireToken(*token)
 	if err != nil {
-		mng.log.Info("(%d)expire token(%s) fail: %s", serial, *token, err)
+		log.Info("expire token(%s) fail: %s", *token, err)
 	} else {
-		mng.log.Debug("(%d)ok", serial)
+		log.Debug("ok")
 	}
 	return err
 }
