@@ -1,0 +1,47 @@
+package gobus
+
+import (
+	"testing"
+)
+
+QueueFullError := fmt.Errorf("Queue is full, wait and try again")
+
+type Queue interface {
+	NextWakeup() time.Duration
+	Push(data interface{}) error
+	Pop() []interface{}
+}
+
+type ServerBusyError struct {
+	Delay time.Duration
+}
+
+func (e ServerBusyError) String() string {
+	return fmt.Sprintf("Server is busy, need delay a while")
+}
+
+type DelayServer interface {
+	DeclareQueue() Queue
+}
+
+func (s *DelayServer) Func(args []int) error {
+}
+
+type InstanceServer struct {
+}
+
+func (s *InstanceServer) Func(arg *Arg, reply *Reply) error {
+}
+
+func ExampleTest(t *testing.T) {
+	server := gobus.NewServer("http://ooooo/oo")
+
+	server.Register(server1)
+	// differ the instance server and queue server with different register function
+	// as custom func need to convert arg from interface{} to right one, it should be inside server.
+	server.RegisterWithQueue(delay_server)
+
+	server.Conn("http://xxx/xx/xx")
+
+	server.Serve()
+}
