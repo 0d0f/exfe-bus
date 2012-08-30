@@ -1,13 +1,13 @@
 package twitter_service
 
 import (
-	"net/url"
-	"os"
-	"fmt"
-	"oauth"
-	"log"
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"log"
+	"net/url"
+	"oauth"
+	"os"
 )
 
 type DirectMessagesNewArg struct {
@@ -16,12 +16,12 @@ type DirectMessagesNewArg struct {
 	AccessToken  string
 	AccessSecret string
 
-	Message      string
-	Urls         []string
-	ToUserName   *string
-	ToUserId     *string
+	Message    string
+	Urls       []string
+	ToUserName *string
+	ToUserId   *string
 
-	IdentityId *uint64
+	IdentityId *int64
 }
 
 func (m *DirectMessagesNewArg) String() string {
@@ -56,7 +56,7 @@ func (m *DirectMessagesNewArg) getValues() (v url.Values, err error) {
 }
 
 type DirectMessagesNewReply struct {
-	Sender UserInfo
+	Sender    UserInfo
 	Recipient UserInfo
 }
 
