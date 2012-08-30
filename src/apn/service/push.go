@@ -52,17 +52,19 @@ type ApnSendArg struct {
 }
 
 func (a *Apn) ApnSend(args []ApnSendArg) error {
+	context := goapns.Context{}
 	for _, arg := range args {
+		context.Aps.Alert = arg.Alert
+		context.Aps.Badge = arg.Badge
+		context.Aps.Sound = arg.Sound
+		context.Arg = ExfePush{
+			Cid: arg.Cid,
+			T:   arg.T,
+		}
 		notification := goapns.Notification{
-			Device_token: arg.DeviceToken,
-			Alert:        arg.Alert,
-			Badge:        arg.Badge,
-			Sound:        arg.Sound,
-			Args: ExfePush{
-				Cid: arg.Cid,
-				T:   arg.T,
-			},
-			Identifier: a.id,
+			DeviceToken: arg.DeviceToken,
+			Identifier:  a.id,
+			Context:     &context,
 		}
 		a.id++
 		err := a.apn.SendNotification(&notification)

@@ -19,7 +19,7 @@ type CrossPost struct {
 
 func NewCrossPost(config *Config) *CrossPost {
 	return &CrossPost{
-		ios:     gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "iOSAPN"),
+		ios:     gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "iOS"),
 		android: gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "Android"),
 		log:     log.New(os.Stderr, "exfe.cross.post", log.LstdFlags),
 		config:  config,

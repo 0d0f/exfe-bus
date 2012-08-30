@@ -15,7 +15,7 @@ func NewCrossPush(config *Config) (ret *CrossPush) {
 	ret = &CrossPush{
 		CrossProviderBase: NewCrossProviderBase("push", config),
 	}
-	ret.client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "iOSAPN")
+	ret.client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "iOS")
 	ret.android = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "Android")
 	ret.handler = ret
 	ret.log.SetPrefix("exfe.cross.push")
