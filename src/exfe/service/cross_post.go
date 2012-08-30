@@ -43,7 +43,7 @@ func (s *CrossPost) SendApn(arg *OneIdentityUpdateArg, msg string) {
 	a := apn_service.ApnSendArg{
 		DeviceToken: arg.To_identity.External_id,
 		Alert:       msg,
-		Badge:       0,
+		Badge:       1,
 		Sound:       "default",
 		Cid:         arg.Cross.Id,
 		T:           "c",
