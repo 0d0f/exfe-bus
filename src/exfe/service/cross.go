@@ -92,6 +92,7 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 	if arg.To_identity.Provider != "email" {
 		if arg.Post != nil {
 			s.post.SendPost(arg)
+			return
 		}
 	}
 
