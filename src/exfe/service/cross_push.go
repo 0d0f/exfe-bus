@@ -18,6 +18,7 @@ func NewCrossPush(config *Config) (ret *CrossPush) {
 	ret.client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "iOSAPN")
 	ret.android = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "Android")
 	ret.handler = ret
+	ret.log.SetPrefix("exfe.cross.push")
 	return
 }
 
@@ -85,7 +86,7 @@ func (s *CrossPush) sendExfeeChange(arg *ProviderArg) {
 
 func (s *CrossPush) push(arg *ProviderArg, message, sound, messageType string, badge uint) {
 	switch arg.To_identity.Provider {
-	case "iOSAPN":
+	case "iOS":
 		arg := apn_service.ApnSendArg{
 			DeviceToken: arg.To_identity.External_id,
 			Alert:       message,

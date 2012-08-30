@@ -65,7 +65,7 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 
 	queueName := arg.To_identity.Provider
 	switch arg.To_identity.Provider {
-	case "iOSAPN":
+	case "iOS":
 		fallthrough
 	case "Android":
 		queueName = "push"
