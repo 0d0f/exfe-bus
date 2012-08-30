@@ -27,6 +27,9 @@ func NewCrossPost(config *Config) *CrossPost {
 }
 
 func (s *CrossPost) SendPost(arg *OneIdentityUpdateArg) {
+	if arg.By_identity.Connected_user_id == arg.To_identity.Connected_user_id {
+		return
+	}
 	by := arg.By_identity.Name
 	switch arg.To_identity.Provider {
 	case "iOS":
