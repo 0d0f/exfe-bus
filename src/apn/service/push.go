@@ -1,8 +1,6 @@
 package apn_service
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/virushuo/Go-Apns"
 	"log"
 )
@@ -40,13 +38,8 @@ func errorListen(apn *Apn) {
 }
 
 type ExfePush struct {
-	Cid uint64
-	T   string
-}
-
-func (p *ExfePush) MarshalJSON() ([]byte, error) {
-	t, _ := json.Marshal(p.T)
-	return []byte(fmt.Sprintf("{\"cid\":\"%d\",\"t\":%s}", p.Cid, t)), nil
+	Cid uint64 `json:"cid"`
+	T   string `json:"t"`
 }
 
 type ApnSendArg struct {
