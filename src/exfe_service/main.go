@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/googollee/go-logger"
 	"github.com/googollee/go-mysql"
+	"github.com/googollee/godis"
 	"gobus"
 	"os"
 )
@@ -17,6 +18,11 @@ type Config struct {
 		Password string `json:"password"`
 		DbName   string `json:"db_name"`
 	} `json:"db"`
+	Redis struct {
+		Netaddr  string `json:"netaddr"`
+		Db       int    `json:"db"`
+		Password string `json:"password"`
+	} `json:"redis"`
 	ExfeService struct {
 		Addr string `json:"addr"`
 		Port int    `json:"port"`
@@ -35,7 +41,7 @@ func main() {
 	config.loggerOutput, quit = daemon.Init("exfe.json", &config)
 	config.loggerFlags = logger.Lshortfile
 
-	l, err := logger.New(config.loggerOutput, "service bus", config.loggerFlags)
+	log, err := logger.New(config.loggerOutput, "service bus", config.loggerFlags)
 	if err != nil {
 		panic(err)
 	}
@@ -43,28 +49,33 @@ func main() {
 	dbAddr := fmt.Sprintf("%s:%d", config.DB.Addr, config.DB.Port)
 	db, err := mysql.DialTCP(dbAddr, config.DB.Username, config.DB.Password, config.DB.DbName)
 	if err != nil {
-		l.Crit("db connect failed: %s", err)
+		log.Crit("db connect failed: %s", err)
 		os.Exit(-1)
 	}
 
-	tkMng, err := NewTokenManager(&config, db, l)
+	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
+
+	tkMng, err := NewTokenManager(&config, db, log)
 	if err != nil {
-		l.Crit("create token manager failed: %s", err)
+		log.Crit("create token manager failed: %s", err)
 		os.Exit(-1)
 	}
+
+	iom := NewIom(&config, redis, log)
 
 	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
-	l.Info("start at %s", url)
-	bus, err := gobus.NewGobusServer(url, l)
+	log.Info("start at %s", url)
+	bus, err := gobus.NewGobusServer(url, log)
 	if err != nil {
-		l.Crit("gobus launch failed: %s", err)
+		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
 	}
 	bus.Register(tkMng)
+	bus.Register(iom)
 
 	go func() {
 		<-quit
-		l.Info("quit")
+		log.Info("quit")
 		os.Exit(-1)
 	}()
 	bus.ListenAndServe()

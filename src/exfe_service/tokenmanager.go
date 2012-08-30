@@ -27,6 +27,12 @@ type TokenGenerateArgs struct {
 	ExpireAfterSeconds int    `json:"expire_after_seconds"`
 }
 
+// 根据资源resource和过期时间expire_after_seconds生成一个token。如果expire_after_seconds是-1，则此token无过期时间
+//
+// 例子：
+//
+//     > curl http://127.0.0.1:23333/TokenManager?method=Generate -d '{"resource":"abcde","expire_after_seconds":12}'
+//     "deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220"
 func (mng *TokenManager) Generate(meta *gobus.HTTPMeta, arg *TokenGenerateArgs, reply *string) (err error) {
 	log := mng.log.SubCode()
 	log.Debug("generate with resource: %s, expire: %ds", arg.Resource, arg.ExpireAfterSeconds)
@@ -48,6 +54,12 @@ type TokenGetReply struct {
 	IsExpired bool   `json:"is_expired"`
 }
 
+// 根据token返回资源resource和是否过期is_expired
+//
+// 例子：
+//
+//     > curl http://127.0.0.1:23333/TokenManager?method=Get -d '"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220"'
+//     {"resource":"abcde","is_expired":true}
 func (mng *TokenManager) Get(meta *gobus.HTTPMeta, token *string, reply *TokenGetReply) (err error) {
 	log := mng.log.SubCode()
 	log.Debug("get with token: %s", *token)
@@ -74,6 +86,12 @@ type TokenVerifyReply struct {
 	IsExpired bool `json:"is_expired"`
 }
 
+// 根据token和资源resource来验证两者是否一致matched，并返回token是否过期is_expired
+//
+// 例子：
+//
+//     > curl http://127.0.0.1:23333/TokenManager?method=Verify -d '{"token":"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220","resource":"abcde"}'
+//     {"matched":true,"is_expired":false}
 func (mng *TokenManager) Verify(meta *gobus.HTTPMeta, args *TokenVerifyArg, reply *TokenVerifyReply) (err error) {
 	log := mng.log.SubCode()
 	log.Debug("verify with token: %s, resource: %s", args.Token, args.Resource)
@@ -90,6 +108,12 @@ func (mng *TokenManager) Verify(meta *gobus.HTTPMeta, args *TokenVerifyArg, repl
 	return err
 }
 
+// 删除token，如果成功返回0
+//
+// 例子：
+//
+//     > curl http://127.0.0.1:23333/TokenManager?method=Delete -d '"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220"'
+//     0
 func (mng *TokenManager) Delete(meta *gobus.HTTPMeta, token *string, reply *int) (err error) {
 	log := mng.log.SubCode()
 	log.Debug("delete token: %s", *token)
@@ -107,6 +131,12 @@ type TokenRefreshArg struct {
 	ExpireAfterSeconds int    `json:"expire_after_seconds"`
 }
 
+// 将token的过期时间设为expire_after_seconds秒之后过期。如果expire_after_seconds为-1，则token永不过期。
+//
+// 例子：
+//
+//     > curl http://127.0.0.1:23333/TokenManager?method=Refresh -d '{"token":"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220","expire_after_seconds":-1}'
+//     0
 func (mng *TokenManager) Refresh(meta *gobus.HTTPMeta, args *TokenRefreshArg, reply *int) (err error) {
 	log := mng.log.SubCode()
 	log.Debug("refresh token: %s, expire: %ds", args.Token, args.ExpireAfterSeconds)
@@ -123,6 +153,12 @@ func (mng *TokenManager) Refresh(meta *gobus.HTTPMeta, args *TokenRefreshArg, re
 	return err
 }
 
+// 立刻使token过期。
+//
+// 例子：
+//
+//     > curl http://127.0.0.1:23333/TokenManager?method=Expire -d '"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220"'
+//     0
 func (mng *TokenManager) Expire(meta *gobus.HTTPMeta, token *string, reply *int) (err error) {
 	log := mng.log.SubCode()
 	log.Debug("expire token: %s", *token)

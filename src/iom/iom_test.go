@@ -1,24 +1,25 @@
-package main
+package iom
 
 import (
-	"testing"
-	"strings"
 	"fmt"
+	"github.com/googollee/godis"
+	"strings"
+	"testing"
 )
 
 func TestHashFromCount(t *testing.T) {
 	type TestData struct {
 		count int64
-		hash string
+		hash  string
 	}
 
 	datas := []TestData{
 		{0, "AA"},
-		{25, "AZ"},
-		{26, "A0"},
-		{35, "A9"},
-		{36, "BA"},
-		{26*36-1, "Z9"},
+		{23, "AZ"},
+		{24, "A0"},
+		{33, "A9"},
+		{34, "BA"},
+		{24*34 - 1, "Z9"},
 	}
 
 	for _, d := range datas {
@@ -33,7 +34,8 @@ func TestHashFromCount(t *testing.T) {
 }
 
 func TestHashCreate(t *testing.T) {
-	handler := NewHashHandler("", 0, "")
+	redis := godis.New("", 0, "")
+	handler := NewIom(redis)
 	h, _ := handler.Create("123", "http://123/a")
 	url, _ := handler.Get("123", h)
 	if url != "http://123/a" {
@@ -57,7 +59,8 @@ func TestHashCreate(t *testing.T) {
 }
 
 func TestHashUpdate(t *testing.T) {
-	handler := NewHashHandler("", 0, "")
+	redis := godis.New("", 0, "")
+	handler := NewIom(redis)
 	for _, userid := range []string{"234", "345"} {
 		for _, crossid := range []string{"a", "b", "c", "d"} {
 			_, _ = handler.Create(userid, fmt.Sprintf("http://%s/%s", userid, crossid))

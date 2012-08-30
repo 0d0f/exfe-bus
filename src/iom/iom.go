@@ -1,19 +1,21 @@
-package main
+package iom
 
 import (
-	"time"
-	"strings"
+	"encoding/base64"
 	"fmt"
 	"github.com/googollee/godis"
-	"encoding/base64"
+	"strings"
+	"time"
 )
 
 var a float64 = 1.0
 var b float64 = 0.0
 var Inf float64 = a / b
-const CharPos = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789" // A-Z, 0-9
+
+const CharPos = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789" // A-Z without IO, 0-9
 const SizePerPosition = len(CharPos)
 const MaxSize = SizePerPosition * SizePerPosition
+
 var ErrorOutOfRange = fmt.Errorf("count out of range")
 
 func HashFromCount(count int64) (string, error) {
@@ -21,21 +23,21 @@ func HashFromCount(count int64) (string, error) {
 	if first >= 24 {
 		return "", ErrorOutOfRange
 	}
-	second := count - first * int64(SizePerPosition)
+	second := count - first*int64(SizePerPosition)
 	return fmt.Sprintf("%c%c", CharPos[first], CharPos[second]), nil
 }
 
-type HashHandler struct {
+type Iom struct {
 	redis *godis.Client
 }
 
-func NewHashHandler(netaddr string, db int, password string) *HashHandler {
-	return &HashHandler{
-		redis: godis.New(netaddr, db, password),
+func NewIom(redis *godis.Client) *Iom {
+	return &Iom{
+		redis: redis,
 	}
 }
 
-func (h *HashHandler) Get(userid string, hash string) (string, error) {
+func (h *Iom) Get(userid string, hash string) (string, error) {
 	hash = strings.ToUpper(hash)
 	url64, err := h.redis.Get(hashKey(userid, hash))
 	if err != nil {
@@ -49,7 +51,7 @@ func (h *HashHandler) Get(userid string, hash string) (string, error) {
 	return string(url), err
 }
 
-func (h *HashHandler) FindByData(userid string, data string) (string, error) {
+func (h *Iom) FindByData(userid string, data string) (string, error) {
 	hash, err := h.redis.Get(dataKey(userid, data))
 	if err == nil {
 		err = h.Update(userid, string(hash))
@@ -57,17 +59,17 @@ func (h *HashHandler) FindByData(userid string, data string) (string, error) {
 	return string(hash), err
 }
 
-func (h *HashHandler) Update(userid string, hash string) error {
+func (h *Iom) Update(userid string, hash string) error {
 	_, err := h.redis.Zadd(timeKey(userid), time.Now().UnixNano(), hash)
 	return err
 }
 
-func (h *HashHandler) FindLatestHash(userid string) (string, error) {
+func (h *Iom) FindLatestHash(userid string) (string, error) {
 	reply, err := h.redis.Zrangebyscore(timeKey(userid), "-Inf", "+Inf", "LIMIT", "offset", "1")
 	return string(reply.Elems[0].Elem), err
 }
 
-func (h *HashHandler) Create(userid string, data string) (string, error) {
+func (h *Iom) Create(userid string, data string) (string, error) {
 	data64 := base64.URLEncoding.EncodeToString([]byte(data))
 	count, err := h.redis.Zcount(timeKey(userid), -Inf, +Inf)
 	if err != nil {
