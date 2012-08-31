@@ -19,7 +19,7 @@ type CrossPost struct {
 
 func NewCrossPost(config *Config) *CrossPost {
 	return &CrossPost{
-		ios:     gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "iOSAPN"),
+		ios:     gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "iOS"),
 		android: gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "Android"),
 		log:     log.New(os.Stderr, "exfe.cross.post", log.LstdFlags),
 		config:  config,
@@ -43,7 +43,7 @@ func (s *CrossPost) SendApn(arg *OneIdentityUpdateArg, msg string) {
 	a := apn_service.ApnSendArg{
 		DeviceToken: arg.To_identity.External_id,
 		Alert:       msg,
-		Badge:       0,
+		Badge:       1,
 		Sound:       "default",
 		Cid:         arg.Cross.Id,
 		T:           "c",

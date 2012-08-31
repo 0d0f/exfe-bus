@@ -13,7 +13,7 @@ func main() {
 
 	c := exfe_service.InitConfig()
 
-	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "iOSAPN")
+	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "iOS")
 
 	apn, err := apn_service.NewApn(c.Apn.Cert, c.Apn.Key, c.Apn.Server, c.Apn.Rootca)
 	if err != nil {

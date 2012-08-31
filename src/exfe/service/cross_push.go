@@ -15,7 +15,7 @@ func NewCrossPush(config *Config) (ret *CrossPush) {
 	ret = &CrossPush{
 		CrossProviderBase: NewCrossProviderBase("push", config),
 	}
-	ret.client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "iOSAPN")
+	ret.client = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "iOS")
 	ret.android = gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "Android")
 	ret.handler = ret
 	ret.log.SetPrefix("exfe.cross.push")
@@ -34,7 +34,7 @@ func (s *CrossPush) sendNewCross(arg *ProviderArg) {
 	}
 
 	str, _ := arg.TextPrivateInvitation()
-	s.push(arg, str, "default", "i", 0)
+	s.push(arg, str, "default", "i", 1)
 }
 
 func (s *CrossPush) sendCrossChange(arg *ProviderArg) {
@@ -44,10 +44,10 @@ func (s *CrossPush) sendCrossChange(arg *ProviderArg) {
 
 	if arg.Old_cross.Title != arg.Cross.Title {
 		msg, _ := arg.TextTitleChange()
-		s.push(arg, msg, "default", "u", 0)
+		s.push(arg, msg, "default", "u", 1)
 	}
 	msg, _ := arg.TextCrossChange()
-	s.push(arg, msg, "default", "u", 0)
+	s.push(arg, msg, "default", "u", 1)
 }
 
 func (s *CrossPush) sendExfeeChange(arg *ProviderArg) {
@@ -58,28 +58,28 @@ func (s *CrossPush) sendExfeeChange(arg *ProviderArg) {
 
 	if len(accepted) > 0 {
 		msg, _ := arg.TextAccepted()
-		s.push(arg, msg, "default", "u", 0)
+		s.push(arg, msg, "default", "u", 1)
 	}
 	if len(declined) > 0 {
 		msg, _ := arg.TextDeclined()
-		s.push(arg, msg, "default", "u", 0)
+		s.push(arg, msg, "default", "u", 1)
 	}
 	if len(newlyInvited) > 0 {
 		if _, ok := newlyInvited[arg.To_identity.DiffId()]; ok {
 			msg, _ := arg.TextPrivateInvitation()
-			s.push(arg, msg, "default", "i", 0)
+			s.push(arg, msg, "default", "i", 1)
 		} else {
 			msg, _ := arg.TextNewlyInvited()
-			s.push(arg, msg, "default", "u", 0)
+			s.push(arg, msg, "default", "u", 1)
 		}
 	}
 	if len(removed) > 0 {
 		if _, ok := removed[arg.To_identity.DiffId()]; ok {
 			msg, _ := arg.TextQuit()
-			s.push(arg, msg, "default", "r", 0)
+			s.push(arg, msg, "default", "r", 1)
 		} else {
 			msg, _ := arg.TextRemoved()
-			s.push(arg, msg, "default", "u", 0)
+			s.push(arg, msg, "default", "u", 1)
 		}
 	}
 }

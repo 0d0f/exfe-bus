@@ -80,7 +80,9 @@ func (s *Cross) dispatch(arg *OneIdentityUpdateArg) {
 
 	if arg.To_identity.Provider != "email" {
 		if arg.Post != nil {
+			log.Printf("push post to %s@%s", arg.To_identity.External_id, arg.To_identity.Provider)
 			s.post.SendPost(arg)
+			return
 		}
 	}
 
