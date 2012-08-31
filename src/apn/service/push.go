@@ -31,7 +31,7 @@ func NewApn(cert, key, server, rootca string) (*Apn, error) {
 
 func errorListen(apn *Apn) {
 	for {
-		apnerr := <-apn.apn.Errorchan
+		apnerr := <-apn.apn.ErrorChan
 		log.Printf("Apn error: cmd %d, status %d, id %d", apnerr.Command, apnerr.Status, apnerr.Identifier)
 		panic("apn error")
 	}
@@ -52,19 +52,19 @@ type ApnSendArg struct {
 }
 
 func (a *Apn) ApnSend(args []ApnSendArg) error {
-	context := goapns.Context{}
+	payload := goapns.Payload{}
 	for _, arg := range args {
-		context.Aps.Alert = arg.Alert
-		context.Aps.Badge = arg.Badge
-		context.Aps.Sound = arg.Sound
-		context.Arg = ExfePush{
+		payload.Aps.Alert = arg.Alert
+		payload.Aps.Badge = int(arg.Badge)
+		payload.Aps.Sound = arg.Sound
+		payload.Set("arg", ExfePush{
 			Cid: arg.Cid,
 			T:   arg.T,
-		}
+		})
 		notification := goapns.Notification{
 			DeviceToken: arg.DeviceToken,
 			Identifier:  a.id,
-			Context:     &context,
+			Payload:     &payload,
 		}
 		a.id++
 		err := a.apn.SendNotification(&notification)
