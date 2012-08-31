@@ -33,6 +33,14 @@ type ProviderArg struct {
 	Removed      []*exfe_model.Identity
 }
 
+func (a *ProviderArg) IsCrossChanged() bool {
+	return a.IsTimeChanged() || a.IsTimeChanged() || a.IsPlaceChanged()
+}
+
+func (a *ProviderArg) CrossChangedWithPosts() bool {
+	return a.IsCrossChanged() && (len(a.Posts) > 0)
+}
+
 func (a *ProviderArg) IsTitleChanged() bool {
 	if a.Old_cross == nil {
 		return false
