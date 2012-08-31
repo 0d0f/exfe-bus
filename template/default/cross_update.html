@@ -1,7 +1,7 @@
 {{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}
 //////////////////////////////////
-
-Your ·X· “{{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}” has been updated{{ if index .By_identities 0 }}{{ with index .By_identities 0 }} by {{ .Name }}{{ end }}{{ end }}.
+{{ if .IsCrossChanged }}
+Updates ·X·{{ if .IsTitleChanged }} “{{ .Old_cross.Title }}”{{ end }}{{ if index .By_identities 0 }}{{ with index .By_identities 0 }} by {{ .Name }}{{ end }}{{ end }}.
 
 {{ if .IsTitleChanged }}*{{ end }}{{ .Cross.Title }}{{ if .IsTitleChanged }}*{{ end }}
 =======
@@ -15,7 +15,8 @@ Your ·X· “{{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.
 
 {{ if .IsPlaceChanged }}*{{ end }}{{ if .Cross.Place.Title }}{{ .Cross.Place.Title }}{{ else }}Place{{ end }}{{ if .IsPlaceChanged }}*{{ end }}
 =======
-  {{ if .Cross.Place.Description }}{{ .Cross.Place.Description }}{{ else }}To be decided.{{ end }}
+  {{ if .Cross.Place.Description }}{{ .Cross.Place.Description }}{{ else }}To be decided.{{ end }}{{ else }}
+Updates of ·X· “{{ .Cross.Title }}”{{ end }}
 
 
 · {{ .Cross.TotalAccepted }} Accepted:{{ $a := .Cross.Exfee.Invitations }}{{ range $i, $e := $a }}{{ if .IsAccepted }}{{ .Identity.Name }}{{ if .Host }} (Host){{ end }}{{ if last $i $a | not }}, {{ end }}{{ end }}{{ end }}{{ if .Declined }}
@@ -57,9 +58,10 @@ Your ·X· “{{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.
     </head>
     <body>
         <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 20px; color: #191919; font-weight: normal; width: 640px; padding: 20px; background-color: #fbfbfb;">
+            {{ if .IsCrossChanged }}
             <tr>
                 <td colspan="5" style="color: #333333;">
-                    Your <span style="color: #3a6ea5;">·X·</span> “<span style="color: #191919;">{{ if .Old_cross }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}</span>” has been updated{{ with index .By_identities 0 }}{{ if .Name }} by {{ .Name }}{{ end }}{{ end }}.
+                    Updates <span style="color: #3a6ea5;">·X·</span>{{ if .Old_cross }} “<span style="color: #191919;">{{ .Old_cross.Title }}</span>”{{ end }}{{ with index .By_identities 0 }}{{ if .Name }} by {{ .Name }}{{ end }}{{ end }}.
                 </td>
             </tr>
             <tr><td colspan="5" height="10"></td></tr>
@@ -173,10 +175,13 @@ Your ·X· “{{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.
                     {{ end }}
                 </td>
             </tr>
-            {{ if .Posts }}
+            {{ end }}
+            {{ if .CrossChangedWithPosts }}
             <tr><td colspan="5" height="10"></td></tr>
             <tr><td colspan="5" height="1" background="{{ .Config.Site_img }}/email/dash.png"></td></tr>
             <tr><td colspan="5" height="20"></td></tr>
+            {{ end }}
+            {{ if .Posts }}
             <tr>
                 <td colspan="5">
                     <table border="0" cellpadding="0" cellspacing="0">
