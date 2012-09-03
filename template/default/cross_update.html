@@ -1,12 +1,12 @@
-{{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}
+{{ $time := .Cross.Time.StringInZone .Timezone }}{{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}
 //////////////////////////////////
-{{ if .IsCrossChanged }}
-Updates ·X·{{ if .IsTitleChanged }} “{{ .Old_cross.Title }}”{{ end }}{{ if index .By_identities 0 }}{{ with index .By_identities 0 }} by {{ .Name }}{{ end }}{{ end }}.
+
+{{ if .IsCrossChanged }}Updates of ·X·{{ if .IsTitleChanged }} “{{ .Old_cross.Title }}”{{ end }} has been updated{{ if index .By_identities 0 }}{{ with index .By_identities 0 }} by {{ .Name }}{{ end }}{{ end }}.
 
 {{ if .IsTitleChanged }}*{{ end }}{{ .Cross.Title }}{{ if .IsTitleChanged }}*{{ end }}
 =======
 {{ .Cross.Link .Config.Site_url }}
-{{ $time := .Cross.Time.StringInZone .Timezone }}{{ if $time }}
+{{ if $time }}
 {{ if .IsTimeChanged }}*{{ end }}{{ $time }}{{ if .IsTimeChanged }}*{{ end }}
 ======={{ else }}
 {{ if .IsTimeChanged }}*{{ end }}Time{{ if .IsTimeChanged }}*{{ end }}
@@ -15,14 +15,13 @@ Updates ·X·{{ if .IsTitleChanged }} “{{ .Old_cross.Title }}”{{ end }}{{ if
 
 {{ if .IsPlaceChanged }}*{{ end }}{{ if .Cross.Place.Title }}{{ .Cross.Place.Title }}{{ else }}Place{{ end }}{{ if .IsPlaceChanged }}*{{ end }}
 =======
-  {{ if .Cross.Place.Description }}{{ .Cross.Place.Description }}{{ else }}To be decided.{{ end }}{{ else }}
-Updates of ·X· “{{ .Cross.Title }}”{{ end }}
+  {{ if .Cross.Place.Description }}{{ .Cross.Place.Description }}{{ else }}To be decided.{{ end }}
 
 
 · {{ .Cross.TotalAccepted }} Accepted:{{ $a := .Cross.Exfee.Invitations }}{{ range $i, $e := $a }}{{ if .IsAccepted }}{{ .Identity.Name }}{{ if .Host }} (Host){{ end }}{{ if last $i $a | not }}, {{ end }}{{ end }}{{ end }}{{ if .Declined }}
 · Unavailable: {{ $a := .Declined }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.{{ end }}{{ if .NewlyInvited }}
 · Newly invited: {{ $a := .NewlyInvited }}{{ range $i, $e := $a }}{{ if .IsAccepted }}{{ .Identity.Name }}{{ else }}{{ .Identity.Name }}{{ end }}{{ if last $i $a | not }},{{ end }}{{ end }}.{{ end }}{{ if .Removed }}
-· Removed: {{ $a := .Removed }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.{{ end }}
+· Removed: {{ $a := .Removed }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.{{ end }}{{ else }}Updates of ·X· “{{ .Cross.Title }}”.{{ end }}
 
 {{ $timezone := .Timezone }}{{ range .Posts }}
 · {{ .By_identity.Name }} at {{ .CreatedAt $timezone }} said:
@@ -61,7 +60,7 @@ Updates of ·X· “{{ .Cross.Title }}”{{ end }}
             {{ if .IsCrossChanged }}
             <tr>
                 <td colspan="5" style="color: #333333;">
-                    Updates <span style="color: #3a6ea5;">·X·</span>{{ if .Old_cross }} “<span style="color: #191919;">{{ .Old_cross.Title }}</span>”{{ end }}{{ with index .By_identities 0 }}{{ if .Name }} by {{ .Name }}{{ end }}{{ end }}.
+                    Updates of <span style="color: #3a6ea5;">·X·</span>{{ if .Old_cross }} “<span style="color: #191919;">{{ .Old_cross.Title }}</span>”{{ end }} has been updated{{ with index .By_identities 0 }}{{ if .Name }} by {{ .Name }}{{ end }}{{ end }}.
                 </td>
             </tr>
             <tr><td colspan="5" height="10"></td></tr>
@@ -175,6 +174,13 @@ Updates of ·X· “{{ .Cross.Title }}”{{ end }}
                     {{ end }}
                 </td>
             </tr>
+            {{ else }}
+            <tr>
+                <td colspan="5" style="color: #333333;">
+                    Updates of <span style="color: #3a6ea5;">·X·</span> “<span style="color: #191919;">{{ .Cross.Title }}</span>”.
+                </td>
+            </tr>                
+            <tr><td colspan="5" height="10"></td></tr>
             {{ end }}
             {{ if .CrossChangedWithPosts }}
             <tr><td colspan="5" height="10"></td></tr>

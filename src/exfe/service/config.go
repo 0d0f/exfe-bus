@@ -67,11 +67,9 @@ type Config struct {
 		Server   string
 		Rootca   string
 	}
-	C2DM struct {
+	GCM struct {
 		Time_out time.Duration
-		Email    string
-		Password string
-		Appid    string
+		Key      string
 	}
 	Email struct {
 		Time_out time.Duration

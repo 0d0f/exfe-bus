@@ -52,13 +52,13 @@ func (s *CrossPost) SendApn(arg *OneIdentityUpdateArg, msg string) {
 }
 
 func (s *CrossPost) SendAndroid(arg *OneIdentityUpdateArg, msg string) {
-	a := c2dm_service.C2DMSendArg{
+	a := gcm_service.SendArg{
 		DeviceID: arg.To_identity.External_id,
-		Message:  msg,
+		Text:     msg,
 		Cid:      arg.Cross.Id,
 		T:        "c",
 		Badge:    0,
 		Sound:    "default",
 	}
-	s.android.Send("C2DMSend", &a, 5)
+	s.android.Send("Send", &a, 5)
 }

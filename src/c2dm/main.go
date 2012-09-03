@@ -8,18 +8,15 @@ import (
 )
 
 func main() {
-	log.SetPrefix("exfe.c2dm")
+	log.SetPrefix("exfe.gcm")
 	log.Print("Service start")
 
 	c := exfe_service.InitConfig()
 
 	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "Android")
 
-	c2dm, err := c2dm_service.NewC2DM(c.C2DM.Email, c.C2DM.Password, c.C2DM.Appid)
-	if err != nil {
-		log.Fatal("Launch service error:", err)
-	}
-	server.Register(c2dm)
+	gcm := gcm_service.NewGCM(c.GCM.Key)
+	server.Register(gcm)
 
-	server.Serve(c.C2DM.Time_out * 1e9)
+	server.Serve(c.GCM.Time_out * 1e9)
 }

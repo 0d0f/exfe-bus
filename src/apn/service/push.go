@@ -57,7 +57,7 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 		payload.Aps.Alert = arg.Alert
 		payload.Aps.Badge = int(arg.Badge)
 		payload.Aps.Sound = arg.Sound
-		payload.SetCustom("arg", ExfePush{
+		payload.SetCustom("args", ExfePush{
 			Cid: arg.Cid,
 			T:   arg.T,
 		})

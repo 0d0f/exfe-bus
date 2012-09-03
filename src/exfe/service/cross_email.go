@@ -170,7 +170,7 @@ func (e *CrossEmail) sendMail(arg *ProviderArg) {
 		Text:    htmls[1],
 		Html:    htmls[2],
 		FileParts: []email_service.FilePart{
-			email_service.FilePart{fmt.Sprintf("x-%d.ics", arg.Cross.Id), []byte(ics)},
+			email_service.FilePart{fmt.Sprintf("%s.ics", arg.Cross.Title), []byte(ics)},
 		},
 	}
 
