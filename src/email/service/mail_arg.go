@@ -2,6 +2,7 @@ package email_service
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"mime/multipart"
 	"net/mail"
@@ -108,7 +109,7 @@ func (m *MailArg) makeHeader() ([]byte, error) {
 	}
 	buf.WriteString("\r\n")
 	buf.WriteString(fmt.Sprintf("From: %s\r\n", m.From))
-	buf.WriteString(fmt.Sprintf("Subject: %s\r\n", m.Subject))
+	buf.WriteString(fmt.Sprintf("Subject: =?utf-8?B?%s?=\r\n", base64.StdEncoding.EncodeToString([]byte(m.Subject))))
 	return buf.Bytes(), nil
 }
 
