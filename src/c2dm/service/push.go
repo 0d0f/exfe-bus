@@ -1,47 +1,49 @@
-package c2dm_service
+package gcm_service
 
 import (
-	"github.com/googollee/go_c2dm"
-	"fmt"
+	"github.com/googollee/go-gcm"
 	"log"
 )
 
-type C2DM struct {
-	c2dm *go_c2dm.Client
+type GCM struct {
+	client *gcm.Client
 }
 
-func NewC2DM(email, password, appid string) (*C2DM, error) {
-	client, err := go_c2dm.NewClient(email, password, appid)
-	if err != nil {
-		return nil, err
+func NewGCM(key string) *GCM {
+	return &GCM{
+		client: gcm.New(key),
 	}
-	return &C2DM{
-		c2dm: client,
-	}, nil
 }
 
-type C2DMSendArg struct {
+type SendArg struct {
 	DeviceID string
-	Message string
-	Badge uint
-	Sound string
-	Cid uint64
-	T string
+	Text     string
+	Badge    uint
+	Sound    string
+	Cid      uint64
+	T        string
 }
 
-func (c *C2DM) C2DMSend(args []C2DMSendArg) error {
+func (c *GCM) Send(args []SendArg) error {
 	for _, arg := range args {
-		load := go_c2dm.NewLoad(arg.DeviceID, arg.Message)
-		load.Add("badge", fmt.Sprintf("%d", arg.Badge))
-		load.Add("sound", arg.Sound)
-		load.Add("cid", fmt.Sprintf("%d", arg.Cid))
-		load.Add("t", arg.T)
-		load.DelayWhileIdle = true
-		load.CollapseKey = 3
+		log.Printf("Sending message(%s) to device(%s)", arg.Text, arg.DeviceID)
+		message := gcm.NewMessage(arg.DeviceID)
+		message.AddPayload("text", arg.Text)
+		message.AddPayload("badge", arg.Badge)
+		message.AddPayload("sound", arg.Sound)
+		message.AddPayload("cid", arg.Cid)
+		message.AddPayload("t", arg.T)
+		message.DelayWhileIdle = true
+		message.CollapseKey = "exfe"
 
-		_, err := c.c2dm.Send(load)
+		resp, err := c.client.Send(message)
 		if err != nil {
-			log.Printf("Send notification(%s) to device(%s) error: %s", arg.Message, arg.DeviceID, err)
+			log.Printf("net error: %s", err)
+		} else {
+			errors := resp.ErrorIndexes()
+			for _, i := range errors {
+				log.Printf("google report error: %s", resp.Results[i].Error)
+			}
 		}
 	}
 	return nil

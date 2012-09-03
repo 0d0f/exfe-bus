@@ -97,14 +97,14 @@ func (s *CrossPush) push(arg *ProviderArg, message, sound, messageType string, b
 		}
 		s.client.Send("ApnSend", &arg, 5)
 	case "Android":
-		arg := c2dm_service.C2DMSendArg{
+		arg := gcm_service.SendArg{
 			DeviceID: arg.To_identity.External_id,
-			Message:  message,
+			Text:     message,
 			Cid:      arg.Cross.Id,
 			T:        messageType,
 			Badge:    badge,
 			Sound:    sound,
 		}
-		s.android.Send("C2DMSend", &arg, 5)
+		s.android.Send("Send", &arg, 5)
 	}
 }
