@@ -20,8 +20,9 @@ func main() {
 
 	server.Register(
 		&email_service.EmailSenderService{
-			Server: fmt.Sprintf("%s:%d", c.Email.Host, c.Email.Port),
-			Auth:   smtp.PlainAuth("", c.Email.User, c.Email.Password, c.Email.Host),
+			SenderDomain: c.EmailDomain,
+			Server:       fmt.Sprintf("%s:%d", c.Email.Host, c.Email.Port),
+			Auth:         smtp.PlainAuth("", c.Email.User, c.Email.Password, c.Email.Host),
 		})
 
 	server.Serve(c.Email.Time_out * time.Second)
