@@ -56,6 +56,11 @@ func (m *EmailSenderService) EmailSend(arg *MailArg, reply *string) error {
 			to = append(to, t)
 		}
 	}
+	if len(to) == 0 {
+		log.Printf("no valid receiver")
+		*reply = "no valid receiver"
+		return nil
+	}
 	arg.To = to
 
 	err := arg.SendViaSMTP(m.Server, m.Auth)
