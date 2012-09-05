@@ -10,4 +10,5 @@ for f in ../bin/*
 do
   NAME=${f##.*/}
   cat launcher.templ | sed "s/{{bin_name}}/$NAME/g" > "$OUTPUT/exfebus_$NAME"
+  chmod +x "$OUTPUT/exfebus_$NAME"
 done
