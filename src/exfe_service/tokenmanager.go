@@ -24,23 +24,24 @@ func NewTokenManager(config *Config, db *mysql.Client, log *logger.Logger) (*Tok
 
 type TokenGenerateArgs struct {
 	Resource           string `json:"resource"`
+	Data               string `json:"data"`
 	ExpireAfterSeconds int    `json:"expire_after_seconds"`
 }
 
-// 根据资源resource和过期时间expire_after_seconds生成一个token。如果expire_after_seconds是-1，则此token无过期时间
+// 根据资源resource，数据data和过期时间expire_after_seconds生成一个token。如果expire_after_seconds是-1，则此token无过期时间
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=Generate -d '{"resource":"abcde","expire_after_seconds":12}'
+//     > curl http://127.0.0.1:23333/TokenManager?method=Generate -d '{"resource":"abcde","data":"","expire_after_seconds":12}'
 //     "deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220"
 func (mng *TokenManager) Generate(meta *gobus.HTTPMeta, arg *TokenGenerateArgs, reply *string) (err error) {
 	log := mng.log.SubCode()
-	log.Debug("generate with resource: %s, expire: %ds", arg.Resource, arg.ExpireAfterSeconds)
+	log.Debug("generate with %+v", arg)
 	expire := time.Duration(arg.ExpireAfterSeconds) * time.Second
 	if arg.ExpireAfterSeconds < 0 {
 		expire = tokenmanager.NeverExpire
 	}
-	*reply, err = mng.manager.GenerateToken(arg.Resource, expire)
+	*reply, err = mng.manager.GenerateToken(arg.Resource, arg.Data, expire)
 	if err != nil {
 		log.Info("generate token with resource(%s), expire(%ds) fail: %s", arg.Resource, arg.ExpireAfterSeconds, err)
 	} else {
