@@ -51,19 +51,20 @@ func (mng *TokenManager) Generate(meta *gobus.HTTPMeta, arg *TokenGenerateArgs, 
 
 type TokenGetReply struct {
 	Resource  string `json:"resource"`
+	Data      string `json:"data"`
 	IsExpired bool   `json:"is_expired"`
 }
 
-// 根据token返回资源resource和是否过期is_expired
+// 根据token返回资源resource，数据data和是否过期is_expired
 //
 // 例子：
 //
 //     > curl http://127.0.0.1:23333/TokenManager?method=Get -d '"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220"'
-//     {"resource":"abcde","is_expired":true}
+//     {"resource":"abcde","data":"","is_expired":true}
 func (mng *TokenManager) Get(meta *gobus.HTTPMeta, token *string, reply *TokenGetReply) (err error) {
 	log := mng.log.SubCode()
 	log.Debug("get with token: %s", *token)
-	reply.Resource, err = mng.manager.GetResource(*token)
+	reply.Resource, reply.Data, err = mng.manager.GetResource(*token)
 	reply.IsExpired = err == tokenmanager.ExpiredError
 	if err == tokenmanager.ExpiredError {
 		err = nil
@@ -76,26 +77,51 @@ func (mng *TokenManager) Get(meta *gobus.HTTPMeta, token *string, reply *TokenGe
 	return err
 }
 
+// 更新token对应的数据data
+//
+// 例子：
+//
+// > curl http://127.0.0.1:23333/TokenManager?method=Update -d '{"token":"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220","data":"123"}'
+// 0
+
+type TokenUpdateArg struct {
+	Token string `json:"token"`
+	Data  string `json:"data"`
+}
+
+func (mng *TokenManager) Update(meta *gobus.HTTPMeta, arg *TokenUpdateArg, reply *int) (err error) {
+	log := mng.log.SubCode()
+	log.Debug("update token: %s with data: %s", arg.Token, arg.Data)
+	err = mng.manager.UpdateData(arg.Token, arg.Data)
+	if err != nil {
+		log.Info("update token(%s) with data(%s) fail: %s", arg.Token, arg.Data, err)
+	} else {
+		log.Debug("success")
+	}
+	return
+}
+
 type TokenVerifyArg struct {
 	Token    string `json:"token"`
 	Resource string `json:"resource"`
 }
 
 type TokenVerifyReply struct {
-	Matched   bool `json:"matched"`
-	IsExpired bool `json:"is_expired"`
+	Matched   bool   `json:"matched"`
+	IsExpired bool   `json:"is_expired"`
+	Data      string `json:"data"`
 }
 
-// 根据token和资源resource来验证两者是否一致matched，并返回token是否过期is_expired
+// 根据token和资源resource来验证两者是否一致matched，并返回token是否过期is_expired和token对应的数据data
 //
 // 例子：
 //
 //     > curl http://127.0.0.1:23333/TokenManager?method=Verify -d '{"token":"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220","resource":"abcde"}'
-//     {"matched":true,"is_expired":false}
+//     {"matched":true,"is_expired":false,"data":""}
 func (mng *TokenManager) Verify(meta *gobus.HTTPMeta, args *TokenVerifyArg, reply *TokenVerifyReply) (err error) {
 	log := mng.log.SubCode()
 	log.Debug("verify with token: %s, resource: %s", args.Token, args.Resource)
-	reply.Matched, err = mng.manager.VerifyToken(args.Token, args.Resource)
+	reply.Matched, reply.Data, err = mng.manager.VerifyToken(args.Token, args.Resource)
 	reply.IsExpired = err == tokenmanager.ExpiredError
 	if err == tokenmanager.ExpiredError {
 		err = nil
