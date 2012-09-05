@@ -15,7 +15,7 @@ type Iom struct {
 func NewIom(config *Config, redis *godis.Client) *Iom {
 	return &Iom{
 		handler: iom.NewIom(redis),
-		log:     config.log.SubPrefix("iom"),
+		log:     config.Log.SubPrefix("iom"),
 	}
 }
 

@@ -31,7 +31,7 @@ type Config struct {
 		TableName string `json:"table_name"`
 	} `json:"token_manager"`
 
-	log *logger.Logger
+	Log *logger.Logger
 }
 
 func main() {
@@ -42,7 +42,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	config.log = log
+	config.Log = log
 
 	dbAddr := fmt.Sprintf("%s:%d", config.DB.Addr, config.DB.Port)
 	db, err := mysql.DialTCP(dbAddr, config.DB.Username, config.DB.Password, config.DB.DbName)

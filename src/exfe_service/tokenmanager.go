@@ -17,7 +17,7 @@ type TokenManager struct {
 func NewTokenManager(config *Config, db *mysql.Client) (*TokenManager, error) {
 	return &TokenManager{
 		manager: tokenmanager.New(db, config.TokenManager.TableName),
-		log:     config.log.SubPrefix("token manager"),
+		log:     config.Log.SubPrefix("token manager"),
 		config:  config,
 	}, nil
 }
