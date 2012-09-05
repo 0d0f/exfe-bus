@@ -54,6 +54,38 @@ func TestTokenManager(t *testing.T) {
 		if got, expect := d, ""; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
+
+		err = mgr.UpdateData(tk, "abc")
+		if err != nil {
+			t.Errorf("tk(%s) update data failed: %s", tk, err)
+		}
+
+		ok, d, err = mgr.VerifyToken(tk, resource)
+		if err != nil {
+			t.Errorf("tk(%s) verify with resource(%s) failed: %s", tk, resource, err)
+		}
+		if !ok {
+			t.Errorf("tk(%s) should verify with resource(%s), but not", tk, resource)
+		}
+		if got, expect := d, "abc"; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
+
+		err = mgr.UpdateData(tk, "123")
+		if err != nil {
+			t.Errorf("tk(%s) update data failed: %s", tk, err)
+		}
+
+		ok, d, err = mgr.VerifyToken(tk, resource)
+		if err != nil {
+			t.Errorf("tk(%s) verify with resource(%s) failed: %s", tk, resource, err)
+		}
+		if !ok {
+			t.Errorf("tk(%s) should verify with resource(%s), but not", tk, resource)
+		}
+		if got, expect := d, "123"; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
 	}
 
 	time.Sleep(time.Second * 2)

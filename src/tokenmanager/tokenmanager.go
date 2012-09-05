@@ -25,24 +25,26 @@ var ExpiredError = fmt.Errorf("token expired")
 var NeverExpire = time.Duration(-1)
 
 type TokenManager struct {
-	db      *mysql.Client
-	r       *rand.Rand
-	create  string
-	insert  string
-	select_ string
-	update  string
-	delete  string
+	db            *mysql.Client
+	r             *rand.Rand
+	create        string
+	insert        string
+	select_       string
+	update_expire string
+	update_data   string
+	delete        string
 }
 
 func New(db *mysql.Client, tableName string) *TokenManager {
 	return &TokenManager{
-		db:      db,
-		r:       rand.New(rand.NewSource(time.Now().UnixNano())),
-		create:  fmt.Sprintf(CREATE, tableName),
-		insert:  fmt.Sprintf(INSERT, tableName),
-		select_: fmt.Sprintf(SELECT, tableName),
-		update:  fmt.Sprintf(UPDATE_EXPIRE, tableName),
-		delete:  fmt.Sprintf(DELETE, tableName),
+		db:            db,
+		r:             rand.New(rand.NewSource(time.Now().UnixNano())),
+		create:        fmt.Sprintf(CREATE, tableName),
+		insert:        fmt.Sprintf(INSERT, tableName),
+		select_:       fmt.Sprintf(SELECT, tableName),
+		update_expire: fmt.Sprintf(UPDATE_EXPIRE, tableName),
+		update_data:   fmt.Sprintf(UPDATE_DATA, tableName),
+		delete:        fmt.Sprintf(DELETE, tableName),
 	}
 }
 
@@ -103,6 +105,11 @@ func (m *TokenManager) GetResource(token string) (resource, data string, err err
 	return
 }
 
+func (m *TokenManager) UpdateData(token, data string) error {
+	sql := fmt.Sprintf(m.update_data, data, token)
+	return m.db.Query(sql)
+}
+
 func (m *TokenManager) VerifyToken(token, resource string) (bool, string, error) {
 	r, data, err := m.GetResource(token)
 	if err != nil && err != ExpiredError {
@@ -121,7 +128,7 @@ func (m *TokenManager) DeleteToken(token string) error {
 }
 
 func (m *TokenManager) RefreshToken(token string, duration time.Duration) error {
-	sql := fmt.Sprintf(m.update, m.getExpireStr(duration), token)
+	sql := fmt.Sprintf(m.update_expire, m.getExpireStr(duration), token)
 	err := m.db.Query(sql)
 	return err
 }
