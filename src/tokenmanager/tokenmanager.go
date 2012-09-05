@@ -14,7 +14,7 @@ const TOKEN_RANDOM_LENGTH = 16
 
 const (
 	CREATE        = "CREATE TABLE `%s` (`id` SERIAL NOT NULL, `token` CHAR(64) NOT NULL, `created_at` DATETIME NOT NULL, `expire_at` DATETIME NOT NULL, `resource` TEXT NOT NULL, `data` TEXT NOT NULL)"
-	INSERT        = "INSERT INTO `%s` VALUES (null, '%%s', '%%s', '%%s', '%%s', '')"
+	INSERT        = "INSERT INTO `%s` VALUES (null, '%%s', '%%s', '%%s', '%%s', '%%s')"
 	SELECT        = "SELECT expire_at, resource, data FROM `%s` WHERE token='%%s'"
 	UPDATE_EXPIRE = "UPDATE `%s` SET expire_at='%%s' WHERE token='%%s'"
 	UPDATE_DATA   = "UPDATE `%s` SET data='%%s' WHERE token='%%s'"
@@ -48,15 +48,14 @@ func New(db *mysql.Client, tableName string) *TokenManager {
 	}
 }
 
-func (m *TokenManager) GenerateToken(resource string, expireAfterSecond time.Duration) (string, error) {
+func (m *TokenManager) GenerateToken(resource, data string, expireAfterSecond time.Duration) (string, error) {
 	now := time.Now().UTC()
 	stamp := fmt.Sprintf("%s-%d", resource, now.Unix())
 	hash := md5.New()
 	io.WriteString(hash, stamp)
 	token := fmt.Sprintf("%x%x", hash.Sum(nil), m.randBytes(TOKEN_RANDOM_LENGTH))
 
-	sql := fmt.Sprintf(m.insert, token, now.Format(time.RFC3339), m.getExpireStr(expireAfterSecond), resource)
-	err := m.db.Query(sql)
+	err := m.query(m.insert, token, now.Format(time.RFC3339), m.getExpireStr(expireAfterSecond), resource, data)
 	if err != nil {
 		return "", err
 	}
@@ -64,8 +63,7 @@ func (m *TokenManager) GenerateToken(resource string, expireAfterSecond time.Dur
 }
 
 func (m *TokenManager) GetResource(token string) (resource, data string, err error) {
-	sql := fmt.Sprintf(m.select_, token)
-	err = m.db.Query(sql)
+	err = m.query(m.select_, token)
 	if err != nil {
 		return
 	}
@@ -106,8 +104,7 @@ func (m *TokenManager) GetResource(token string) (resource, data string, err err
 }
 
 func (m *TokenManager) UpdateData(token, data string) error {
-	sql := fmt.Sprintf(m.update_data, data, token)
-	return m.db.Query(sql)
+	return m.query(m.update_data, data, token)
 }
 
 func (m *TokenManager) VerifyToken(token, resource string) (bool, string, error) {
@@ -122,15 +119,11 @@ func (m *TokenManager) VerifyToken(token, resource string) (bool, string, error)
 }
 
 func (m *TokenManager) DeleteToken(token string) error {
-	sql := fmt.Sprintf(m.delete, token)
-	err := m.db.Query(sql)
-	return err
+	return m.query(m.delete, token)
 }
 
 func (m *TokenManager) RefreshToken(token string, duration time.Duration) error {
-	sql := fmt.Sprintf(m.update_expire, m.getExpireStr(duration), token)
-	err := m.db.Query(sql)
-	return err
+	return m.query(m.update_expire, m.getExpireStr(duration), token)
 }
 
 func (m *TokenManager) ExpireToken(token string) error {
@@ -151,4 +144,14 @@ func (m *TokenManager) randBytes(length int) []byte {
 		ret[i] = byte(m.r.Int31n(math.MaxInt8))
 	}
 	return ret
+}
+
+func (m *TokenManager) query(sql string, v ...interface{}) error {
+	for i, vi := range v {
+		if s, ok := vi.(string); ok {
+			v[i] = m.db.Escape(s)
+		}
+	}
+	cmd := fmt.Sprintf(sql, v...)
+	return m.db.Query(cmd)
 }

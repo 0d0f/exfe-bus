@@ -27,7 +27,7 @@ func TestTokenManager(t *testing.T) {
 		}
 	}
 
-	tk, err = mgr.GenerateToken(resource, time.Second)
+	tk, err = mgr.GenerateToken(resource, "", time.Second)
 	if err != nil {
 		t.Fatalf("generate token failed: %s", err)
 	}
