@@ -12,10 +12,10 @@ type Iom struct {
 	log     *logger.SubLogger
 }
 
-func NewIom(config *Config, redis *godis.Client, log *logger.Logger) *Iom {
+func NewIom(config *Config, redis *godis.Client) *Iom {
 	return &Iom{
 		handler: iom.NewIom(redis),
-		log:     log.SubPrefix("iom"),
+		log:     config.log.SubPrefix("iom"),
 	}
 }
 

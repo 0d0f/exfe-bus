@@ -31,20 +31,18 @@ type Config struct {
 		TableName string `json:"table_name"`
 	} `json:"token_manager"`
 
-	loggerOutput *os.File
-	loggerFlags  int
+	log *logger.Logger
 }
 
 func main() {
 	var config Config
-	var quit <-chan os.Signal
-	config.loggerOutput, quit = daemon.Init("exfe.json", &config)
-	config.loggerFlags = logger.Lshortfile
+	output, quit := daemon.Init("exfe.json", &config)
 
-	log, err := logger.New(config.loggerOutput, "service bus", config.loggerFlags)
+	log, err := logger.New(output, "service bus", logger.Lshortfile)
 	if err != nil {
 		panic(err)
 	}
+	config.log = log
 
 	dbAddr := fmt.Sprintf("%s:%d", config.DB.Addr, config.DB.Port)
 	db, err := mysql.DialTCP(dbAddr, config.DB.Username, config.DB.Password, config.DB.DbName)
@@ -55,16 +53,17 @@ func main() {
 
 	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
 
-	tkMng, err := NewTokenManager(&config, db, log)
+	tkMng, err := NewTokenManager(&config, db)
 	if err != nil {
 		log.Crit("create token manager failed: %s", err)
 		os.Exit(-1)
 	}
 
-	iom := NewIom(&config, redis, log)
+	iom := NewIom(&config, redis)
 
 	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
+
 	bus, err := gobus.NewGobusServer(url, log)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
