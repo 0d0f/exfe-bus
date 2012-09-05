@@ -13,10 +13,11 @@ import (
 const TOKEN_RANDOM_LENGTH = 16
 
 const (
-	CREATE        = "CREATE TABLE `%s` (`id` SERIAL NOT NULL, `token` CHAR(64) NOT NULL, `created_at` DATETIME NOT NULL, `expire_at` DATETIME, `resource` TEXT)"
-	INSERT        = "INSERT INTO `%s` VALUES (null, '%%s', '%%s', '%%s', '%%s')"
-	SELECT        = "SELECT expire_at, resource FROM `%s` WHERE token='%%s'"
+	CREATE        = "CREATE TABLE `%s` (`id` SERIAL NOT NULL, `token` CHAR(64) NOT NULL, `created_at` DATETIME NOT NULL, `expire_at` DATETIME NOT NULL, `resource` TEXT NOT NULL, `data` TEXT NOT NULL)"
+	INSERT        = "INSERT INTO `%s` VALUES (null, '%%s', '%%s', '%%s', '%%s', '')"
+	SELECT        = "SELECT expire_at, resource, data FROM `%s` WHERE token='%%s'"
 	UPDATE_EXPIRE = "UPDATE `%s` SET expire_at='%%s' WHERE token='%%s'"
+	UPDATE_DATA   = "UPDATE `%s` SET data='%%s' WHERE token='%%s'"
 	DELETE        = "DELETE FROM `%s` WHERE token='%%s'"
 )
 
@@ -60,46 +61,57 @@ func (m *TokenManager) GenerateToken(resource string, expireAfterSecond time.Dur
 	return token, nil
 }
 
-func (m *TokenManager) GetResource(token string) (string, error) {
+func (m *TokenManager) GetResource(token string) (resource, data string, err error) {
 	sql := fmt.Sprintf(m.select_, token)
-	err := m.db.Query(sql)
+	err = m.db.Query(sql)
 	if err != nil {
-		return "", err
+		return
 	}
 
-	res, err := m.db.StoreResult()
+	var res *mysql.Result
+	res, err = m.db.StoreResult()
 	if err != nil {
-		return "", err
+		return
 	}
 	defer res.Free()
 
 	row := res.FetchRow()
 	if row == nil {
-		return "", fmt.Errorf("no token")
+		err = fmt.Errorf("no token")
+		return
 	}
 
-	expire_at_str, resource := string(row[0].([]byte)), string(row[1].([]byte))
+	expire_at_str := string(row[0].([]byte))
+	if row[1] != nil {
+		resource = string(row[1].([]byte))
+	}
+	if row[2] != nil {
+		data = string(row[2].([]byte))
+	}
 	if expire_at_str == "0000-00-00 00:00:00" {
-		return resource, nil
+		return
 	}
 
 	expire_at, err := time.Parse("2006-01-02 15:04:05", expire_at_str)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	if expire_at.Sub(time.Now()) <= 0 {
 		err = ExpiredError
 	}
-	return resource, err
+	return
 }
 
-func (m *TokenManager) VerifyToken(token, resource string) (bool, error) {
-	r, err := m.GetResource(token)
+func (m *TokenManager) VerifyToken(token, resource string) (bool, string, error) {
+	r, data, err := m.GetResource(token)
 	if err != nil && err != ExpiredError {
-		return false, err
+		return false, "", err
 	}
-	return r == resource, err
+	if r != resource {
+		return false, "", err
+	}
+	return true, data, err
 }
 
 func (m *TokenManager) DeleteToken(token string) error {

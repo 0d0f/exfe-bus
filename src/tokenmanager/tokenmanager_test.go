@@ -16,12 +16,12 @@ func TestTokenManager(t *testing.T) {
 	tk := "fjadsklfjkldasfdasiffjuoru21urjew"
 
 	{
-		_, err := mgr.GetResource(tk)
+		_, _, err := mgr.GetResource(tk)
 		if err == nil {
 			t.Fatalf("get resource should failed")
 		}
 
-		ok, err := mgr.VerifyToken(tk, resource)
+		ok, _, err := mgr.VerifyToken(tk, resource)
 		if err == nil || ok {
 			t.Errorf("tk(%s) verify with resource(%s) should failed", tk, resource)
 		}
@@ -33,27 +33,33 @@ func TestTokenManager(t *testing.T) {
 	}
 
 	{
-		r, err := mgr.GetResource(tk)
+		r, d, err := mgr.GetResource(tk)
 		if err != nil {
 			t.Fatalf("get resource failed: %s", err)
 		}
 		if got, expect := r, resource; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
+		if got, expect := d, ""; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
 
-		ok, err := mgr.VerifyToken(tk, resource)
+		ok, d, err := mgr.VerifyToken(tk, resource)
 		if err != nil {
 			t.Errorf("tk(%s) verify with resource(%s) failed: %s", tk, resource, err)
 		}
 		if !ok {
 			t.Errorf("tk(%s) should verify with resource(%s), but not", tk, resource)
 		}
+		if got, expect := d, ""; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
 	}
 
 	time.Sleep(time.Second * 2)
 
 	{
-		r, err := mgr.GetResource(tk)
+		r, _, err := mgr.GetResource(tk)
 		if err != ExpiredError {
 			t.Fatalf("get resource should expired")
 		}
@@ -61,7 +67,7 @@ func TestTokenManager(t *testing.T) {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
-		ok, err := mgr.VerifyToken(tk, resource)
+		ok, _, err := mgr.VerifyToken(tk, resource)
 		if err == nil {
 			t.Errorf("tk(%s) verify with resource(%s) should expired", tk, resource)
 		}
@@ -73,7 +79,7 @@ func TestTokenManager(t *testing.T) {
 	mgr.RefreshToken(tk, time.Second)
 
 	{
-		r, err := mgr.GetResource(tk)
+		r, _, err := mgr.GetResource(tk)
 		if err != nil {
 			t.Fatalf("get resource failed: %s", err)
 		}
@@ -81,7 +87,7 @@ func TestTokenManager(t *testing.T) {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
-		ok, err := mgr.VerifyToken(tk, resource)
+		ok, _, err := mgr.VerifyToken(tk, resource)
 		if err != nil {
 			t.Errorf("tk(%s) verify with resource(%s) failed: %s", tk, resource, err)
 		}
@@ -93,7 +99,7 @@ func TestTokenManager(t *testing.T) {
 	mgr.ExpireToken(tk)
 
 	{
-		r, err := mgr.GetResource(tk)
+		r, _, err := mgr.GetResource(tk)
 		if err != ExpiredError {
 			t.Fatalf("get resource should expired")
 		}
@@ -101,7 +107,7 @@ func TestTokenManager(t *testing.T) {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
-		ok, err := mgr.VerifyToken(tk, resource)
+		ok, _, err := mgr.VerifyToken(tk, resource)
 		if err == nil {
 			t.Errorf("tk(%s) verify with resource(%s) should expired", tk, resource)
 		}
@@ -113,7 +119,7 @@ func TestTokenManager(t *testing.T) {
 	mgr.RefreshToken(tk, NeverExpire)
 
 	{
-		r, err := mgr.GetResource(tk)
+		r, _, err := mgr.GetResource(tk)
 		if err != nil {
 			t.Fatalf("get resource failed: %s", err)
 		}
@@ -121,7 +127,7 @@ func TestTokenManager(t *testing.T) {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
-		ok, err := mgr.VerifyToken(tk, resource)
+		ok, _, err := mgr.VerifyToken(tk, resource)
 		if err != nil {
 			t.Errorf("tk(%s) verify with resource(%s) failed: %s", tk, resource, err)
 		}
@@ -133,7 +139,7 @@ func TestTokenManager(t *testing.T) {
 	time.Sleep(time.Second * 2)
 
 	{
-		r, err := mgr.GetResource(tk)
+		r, _, err := mgr.GetResource(tk)
 		if err != nil {
 			t.Fatalf("get resource failed: %s", err)
 		}
@@ -141,7 +147,7 @@ func TestTokenManager(t *testing.T) {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
-		ok, err := mgr.VerifyToken(tk, resource)
+		ok, _, err := mgr.VerifyToken(tk, resource)
 		if err != nil {
 			t.Errorf("tk(%s) verify with resource(%s) failed: %s", tk, resource, err)
 		}
