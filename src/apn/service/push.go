@@ -46,6 +46,7 @@ func closeTimer(apn *Apn) {
 		timer := time.After(30 * time.Minute)
 		select {
 		case <-timer:
+			log.Printf("Apn connection timeout")
 			apn.isClosed = true
 			apn.apn.Close()
 		case <-apn.retimer:
@@ -68,7 +69,9 @@ type ApnSendArg struct {
 }
 
 func (a *Apn) ApnSend(args []ApnSendArg) error {
+	log.Printf("apn send")
 	if a.isClosed {
+		log.Printf("apn connection reconnect")
 		a.apn.Reconnect()
 		a.isClosed = true
 	}
