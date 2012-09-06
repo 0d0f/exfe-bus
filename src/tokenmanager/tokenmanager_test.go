@@ -44,7 +44,7 @@ func TestTokenManager(t *testing.T) {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
-		tks, expires, err := mgr.GetTokens(r)
+		tks, expires, err := mgr.FindTokens(r)
 		if err != nil {
 			t.Errorf("get tokens failed: %s", err)
 		}

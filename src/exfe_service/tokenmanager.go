@@ -78,6 +78,36 @@ func (mng *TokenManager) Get(meta *gobus.HTTPMeta, token *string, reply *TokenGe
 	return err
 }
 
+type TokenFindReply struct {
+	Token     string `json:"token"`
+	IsExpired bool   `json:"is_expired"`
+}
+
+// 根据resource，查找对应的所有token，并返回token是否过期is_expired
+//
+// 例子：
+//
+//     > curl http://127.0.0.1:23333/TokenManager?method=Find -d '"abcde"'
+//     [{"token":"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220","is_expired":true}]
+func (mng *TokenManager) Find(meta *gobus.HTTPMeta, resource *string, reply *[]TokenFindReply) error {
+	log := mng.log.SubCode()
+	log.Debug("find with resource: %s", *resource)
+	tokens, isExpires, err := mng.manager.FindTokens(*resource)
+	if err != nil {
+		log.Info("find tokens with resource(%s) fail: %s", *resource, err)
+		return err
+	}
+
+	*reply = make([]TokenFindReply, len(tokens))
+	for i, _ := range tokens {
+		(*reply)[i].Token = tokens[i]
+		(*reply)[i].IsExpired = isExpires[i]
+	}
+
+	log.Debug("return tokens: %+v", reply)
+	return err
+}
+
 // 更新token对应的数据data
 //
 // 例子：

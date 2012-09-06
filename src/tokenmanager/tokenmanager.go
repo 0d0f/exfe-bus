@@ -106,7 +106,7 @@ func (m *TokenManager) GetResource(token string) (resource, data string, err err
 	return
 }
 
-func (m *TokenManager) GetTokens(resource string) (tokens []string, isExpire []bool, err error) {
+func (m *TokenManager) FindTokens(resource string) (tokens []string, isExpire []bool, err error) {
 	err = m.query(m.select_resource, resource)
 	if err != nil {
 		return
@@ -119,13 +119,9 @@ func (m *TokenManager) GetTokens(resource string) (tokens []string, isExpire []b
 	}
 	defer res.Free()
 
-	if res.RowCount() == 0 {
-		return
-	}
-
 	tokens = make([]string, res.RowCount())
 	isExpire = make([]bool, res.RowCount())
-	for i, _ := range tokens {
+	for i := uint64(0); i < res.RowCount(); i++ {
 		row := res.FetchRow()
 		tokens[i] = row[0].(string)
 		expireAtStr := string(row[1].([]byte))
