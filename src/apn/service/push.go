@@ -3,14 +3,17 @@ package apn_service
 import (
 	"github.com/virushuo/Go-Apns"
 	"log"
+	"time"
 )
 
 type Apn struct {
-	cert   string
-	key    string
-	server string
-	apn    *goapns.Apn
-	id     uint32
+	cert     string
+	key      string
+	server   string
+	apn      *goapns.Apn
+	id       uint32
+	isClosed bool
+	retimer  chan int
 }
 
 func NewApn(cert, key, server, rootca string) (*Apn, error) {
@@ -19,11 +22,12 @@ func NewApn(cert, key, server, rootca string) (*Apn, error) {
 		return nil, err
 	}
 	ret := &Apn{
-		cert:   cert,
-		key:    key,
-		server: server,
-		apn:    apn,
-		id:     0,
+		cert:    cert,
+		key:     key,
+		server:  server,
+		apn:     apn,
+		id:      0,
+		retimer: make(chan int),
 	}
 	go errorListen(ret)
 	return ret, nil
@@ -34,6 +38,18 @@ func errorListen(apn *Apn) {
 		apnerr := <-apn.apn.ErrorChan
 		log.Printf("Apn error: cmd %d, status %d, id %d", apnerr.Command, apnerr.Status, apnerr.Identifier)
 		panic("apn error")
+	}
+}
+
+func closeTimer(apn *Apn) {
+	for {
+		timer := time.After(30 * time.Minute)
+		select {
+		case <-timer:
+			apn.isClosed = true
+			apn.apn.Close()
+		case <-apn.retimer:
+		}
 	}
 }
 
@@ -52,6 +68,13 @@ type ApnSendArg struct {
 }
 
 func (a *Apn) ApnSend(args []ApnSendArg) error {
+	if a.isClosed {
+		a.apn.Reconnect()
+		a.isClosed = true
+	}
+
+	defer func() { a.retimer <- 1 }()
+
 	payload := goapns.Payload{}
 	for _, arg := range args {
 		payload.Aps.Alert = arg.Alert
@@ -74,4 +97,12 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 		}
 	}
 	return nil
+}
+
+func (a *Apn) Close() error {
+	if a.isClosed {
+		return nil
+	}
+	a.isClosed = true
+	return a.apn.Close()
 }
