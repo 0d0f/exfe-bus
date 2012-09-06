@@ -44,6 +44,23 @@ func TestTokenManager(t *testing.T) {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
+		tks, expires, err := mgr.GetTokens(r)
+		if err != nil {
+			t.Errorf("get tokens failed: %s", err)
+		}
+		if got, expect := len(tks), 1; got != expect {
+			t.Errorf("got: %d, expect: %d", got, expect)
+		}
+		if got, expect := tks[0], tk; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
+		if got, expect := len(expires), 1; got != expect {
+			t.Errorf("got: %d, expect: %d", got, expect)
+		}
+		if got, expect := expires[0], false; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
+
 		ok, d, err := mgr.VerifyToken(tk, resource)
 		if err != nil {
 			t.Errorf("tk(%s) verify with resource(%s) failed: %s", tk, resource, err)

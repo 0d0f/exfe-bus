@@ -13,38 +13,41 @@ import (
 const TOKEN_RANDOM_LENGTH = 16
 
 const (
-	CREATE        = "CREATE TABLE `%s` (`id` SERIAL NOT NULL, `token` CHAR(64) NOT NULL, `created_at` DATETIME NOT NULL, `expire_at` DATETIME NOT NULL, `resource` TEXT NOT NULL, `data` TEXT NOT NULL)"
-	INSERT        = "INSERT INTO `%s` VALUES (null, '%%s', '%%s', '%%s', '%%s', '%%s')"
-	SELECT        = "SELECT expire_at, resource, data FROM `%s` WHERE token='%%s'"
-	UPDATE_EXPIRE = "UPDATE `%s` SET expire_at='%%s' WHERE token='%%s'"
-	UPDATE_DATA   = "UPDATE `%s` SET data='%%s' WHERE token='%%s'"
-	DELETE        = "DELETE FROM `%s` WHERE token='%%s'"
+	CREATE          = "CREATE TABLE `%s` (`id` SERIAL NOT NULL, `token` CHAR(64) NOT NULL, `created_at` DATETIME NOT NULL, `expire_at` DATETIME NOT NULL, `resource` TEXT NOT NULL, `data` TEXT NOT NULL)"
+	INSERT          = "INSERT INTO `%s` VALUES (null, '%%s', '%%s', '%%s', '%%s', '%%s')"
+	SELECT_TOKEN    = "SELECT expire_at, resource, data FROM `%s` WHERE token='%%s'"
+	SELECT_RESOURCE = "SELECT token, expire_at FROM `%s` WHERE resource='%%s'"
+	UPDATE_EXPIRE   = "UPDATE `%s` SET expire_at='%%s' WHERE token='%%s'"
+	UPDATE_DATA     = "UPDATE `%s` SET data='%%s' WHERE token='%%s'"
+	DELETE          = "DELETE FROM `%s` WHERE token='%%s'"
 )
 
 var ExpiredError = fmt.Errorf("token expired")
 var NeverExpire = time.Duration(-1)
 
 type TokenManager struct {
-	db            *mysql.Client
-	r             *rand.Rand
-	create        string
-	insert        string
-	select_       string
-	update_expire string
-	update_data   string
-	delete        string
+	db              *mysql.Client
+	r               *rand.Rand
+	create          string
+	insert          string
+	select_token    string
+	select_resource string
+	update_expire   string
+	update_data     string
+	delete          string
 }
 
 func New(db *mysql.Client, tableName string) *TokenManager {
 	return &TokenManager{
-		db:            db,
-		r:             rand.New(rand.NewSource(time.Now().UnixNano())),
-		create:        fmt.Sprintf(CREATE, tableName),
-		insert:        fmt.Sprintf(INSERT, tableName),
-		select_:       fmt.Sprintf(SELECT, tableName),
-		update_expire: fmt.Sprintf(UPDATE_EXPIRE, tableName),
-		update_data:   fmt.Sprintf(UPDATE_DATA, tableName),
-		delete:        fmt.Sprintf(DELETE, tableName),
+		db:              db,
+		r:               rand.New(rand.NewSource(time.Now().UnixNano())),
+		create:          fmt.Sprintf(CREATE, tableName),
+		insert:          fmt.Sprintf(INSERT, tableName),
+		select_token:    fmt.Sprintf(SELECT_TOKEN, tableName),
+		select_resource: fmt.Sprintf(SELECT_RESOURCE, tableName),
+		update_expire:   fmt.Sprintf(UPDATE_EXPIRE, tableName),
+		update_data:     fmt.Sprintf(UPDATE_DATA, tableName),
+		delete:          fmt.Sprintf(DELETE, tableName),
 	}
 }
 
@@ -63,7 +66,7 @@ func (m *TokenManager) GenerateToken(resource, data string, expireAfterSecond ti
 }
 
 func (m *TokenManager) GetResource(token string) (resource, data string, err error) {
-	err = m.query(m.select_, token)
+	err = m.query(m.select_token, token)
 	if err != nil {
 		return
 	}
@@ -81,24 +84,58 @@ func (m *TokenManager) GetResource(token string) (resource, data string, err err
 		return
 	}
 
-	expire_at_str := string(row[0].([]byte))
+	expireAtStr := string(row[0].([]byte))
 	if row[1] != nil {
 		resource = string(row[1].([]byte))
 	}
 	if row[2] != nil {
 		data = string(row[2].([]byte))
 	}
-	if expire_at_str == "0000-00-00 00:00:00" {
+	if expireAtStr == "0000-00-00 00:00:00" {
 		return
 	}
 
-	expire_at, err := time.Parse("2006-01-02 15:04:05", expire_at_str)
+	expire_at, err := time.Parse("2006-01-02 15:04:05", expireAtStr)
 	if err != nil {
 		return
 	}
 
 	if expire_at.Sub(time.Now()) <= 0 {
 		err = ExpiredError
+	}
+	return
+}
+
+func (m *TokenManager) GetTokens(resource string) (tokens []string, isExpire []bool, err error) {
+	err = m.query(m.select_resource, resource)
+	if err != nil {
+		return
+	}
+
+	var res *mysql.Result
+	res, err = m.db.StoreResult()
+	if err != nil {
+		return
+	}
+	defer res.Free()
+
+	if res.RowCount() == 0 {
+		return
+	}
+
+	tokens = make([]string, res.RowCount())
+	isExpire = make([]bool, res.RowCount())
+	for i, _ := range tokens {
+		row := res.FetchRow()
+		tokens[i] = row[0].(string)
+		expireAtStr := string(row[1].([]byte))
+		isExpire[i] = false
+		if expireAtStr != "0000-00-00 00:00:00" {
+			expire_at, err := time.Parse("2006-01-02 15:04:05", expireAtStr)
+			if err == nil && expire_at.Sub(time.Now()) <= 0 {
+				isExpire[i] = true
+			}
+		}
 	}
 	return
 }
