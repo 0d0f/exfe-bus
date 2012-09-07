@@ -30,14 +30,17 @@ func NewApn(cert, key, server, rootca string) (*Apn, error) {
 		retimer: make(chan int),
 	}
 	go errorListen(ret)
+	go closeTimer(ret)
 	return ret, nil
 }
 
 func errorListen(apn *Apn) {
 	for {
 		apnerr := <-apn.apn.ErrorChan
-		log.Printf("Apn error: cmd %d, status %d, id %d", apnerr.Command, apnerr.Status, apnerr.Identifier)
-		panic("apn error")
+		if apnerr.Command != 0 && apnerr.Status != 0 {
+			log.Printf("Apn error: cmd %d, status %d, id %d", apnerr.Command, apnerr.Status, apnerr.Identifier)
+			panic("apn error")
+		}
 	}
 }
 
@@ -49,6 +52,7 @@ func closeTimer(apn *Apn) {
 			log.Printf("Apn connection timeout")
 			apn.isClosed = true
 			apn.apn.Close()
+			return
 		case <-apn.retimer:
 		}
 	}
@@ -73,7 +77,8 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 	if a.isClosed {
 		log.Printf("apn connection reconnect")
 		a.apn.Reconnect()
-		a.isClosed = true
+		a.isClosed = false
+		go closeTimer(a)
 	}
 
 	defer func() { a.retimer <- 1 }()
