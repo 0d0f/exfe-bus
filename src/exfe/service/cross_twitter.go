@@ -111,6 +111,9 @@ func (s *CrossTwitter) sendInvitation(arg *ProviderArg) {
 		}
 		s.sendDM(arg, msg, arg.Cross.LinkTo(s.config.Site_url, arg.Token()))
 	} else {
+		if arg.IsHost() {
+			return
+		}
 		msg, err := arg.TextPublicInvitation()
 		if err != nil {
 			s.log.Printf("template error: %s", err)
@@ -198,6 +201,7 @@ func (s *CrossTwitter) send(arg *ProviderArg, msg string) {
 	if isFriend {
 		s.sendDM(arg, msg, arg.Cross.Link(s.config.Site_url))
 	} else {
-		s.sendTweet(arg, msg, arg.Cross.Link(s.config.Site_url))
+		// no public update information now.
+		// s.sendTweet(arg, msg, arg.Cross.Link(s.config.Site_url))
 	}
 }
