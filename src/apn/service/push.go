@@ -37,7 +37,7 @@ func NewApn(cert, key, server, rootca string) (*Apn, error) {
 func errorListen(apn *Apn) {
 	for {
 		apnerr := <-apn.apn.ErrorChan
-		if apnerr.Command == 0 && apnerr.Status == 0 {
+		if apnerr.Command != 0 && apnerr.Status != 0 {
 			log.Printf("Apn error: cmd %d, status %d, id %d", apnerr.Command, apnerr.Status, apnerr.Identifier)
 			panic("apn error")
 		}
