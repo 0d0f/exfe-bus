@@ -4,11 +4,27 @@
   "site_img": "",
   "app_url": "",
   "iom_url": "http://127.0.0.1:1234/iom",
+  "email_name": "EXFE ·X·",
+  "email_domain": "0d0f.com",
 
+  "db": {
+    "addr": "127.0.0.1",
+    "port": 3306,
+    "username": "root",
+    "password": "",
+    "db_name": "exfe_dev"
+  },
   "redis": {
     "netaddr": "",
     "db": 0,
     "password": ""
+  },
+  "exfe_service": {
+    "addr": "127.0.0.1",
+    "port": 23333
+  },
+  "token_manager": {
+    "table_name": "tokens"
   },
   "iom": {
     "port": 1234
