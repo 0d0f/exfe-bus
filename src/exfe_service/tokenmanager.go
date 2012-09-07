@@ -2,23 +2,28 @@ package main
 
 import (
 	"github.com/googollee/go-logger"
-	"github.com/googollee/go-mysql"
 	"gobus"
 	"time"
 	"tokenmanager"
 )
 
 type TokenManager struct {
-	manager *tokenmanager.TokenManager
-	log     *logger.SubLogger
-	config  *Config
+	tokenRepo *TokenRepository
+	manager   *tokenmanager.TokenManager
+	log       *logger.SubLogger
+	config    *Config
 }
 
-func NewTokenManager(config *Config, db *mysql.Client) (*TokenManager, error) {
+func NewTokenManager(config *Config) (*TokenManager, error) {
+	repo, err := NewTokenRepository(config)
+	if err != nil {
+		return nil, err
+	}
 	return &TokenManager{
-		manager: tokenmanager.New(db, config.TokenManager.TableName),
-		log:     config.Log.SubPrefix("token manager"),
-		config:  config,
+		tokenRepo: repo,
+		manager:   tokenmanager.New(repo),
+		log:       config.Log.SubPrefix("token manager"),
+		config:    config,
 	}, nil
 }
 
@@ -33,93 +38,76 @@ type TokenGenerateArgs struct {
 // 例子：
 //
 //     > curl http://127.0.0.1:23333/TokenManager?method=Generate -d '{"resource":"abcde","data":"","expire_after_seconds":12}'
-//     "deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220"
-func (mng *TokenManager) Generate(meta *gobus.HTTPMeta, arg *TokenGenerateArgs, reply *string) (err error) {
+//     "ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a"
+func (mng *TokenManager) Generate(meta *gobus.HTTPMeta, arg *TokenGenerateArgs, reply *string) error {
 	log := mng.log.SubCode()
 	log.Debug("generate with %+v", arg)
 	expire := time.Duration(arg.ExpireAfterSeconds) * time.Second
 	if arg.ExpireAfterSeconds < 0 {
 		expire = tokenmanager.NeverExpire
 	}
-	*reply, err = mng.manager.GenerateToken(arg.Resource, arg.Data, expire)
+	token, err := mng.manager.GenerateToken(arg.Resource, arg.Data, expire)
 	if err != nil {
 		log.Info("generate token with resource(%s), expire(%ds) fail: %s", arg.Resource, arg.ExpireAfterSeconds, err)
-	} else {
-		log.Debug("return token: %s", *reply)
+		return err
 	}
-	return err
+	*reply = token.String()
+	log.Debug("return token: %s", *reply)
+	return nil
 }
 
-type TokenGetReply struct {
-	Resource  string `json:"resource"`
-	Data      string `json:"data"`
-	IsExpired bool   `json:"is_expired"`
-}
-
-// 根据token返回资源resource，数据data和是否过期is_expired
+// 根据token返回Token对象
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=Get -d '"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220"'
-//     {"resource":"abcde","data":"","is_expired":true}
-func (mng *TokenManager) Get(meta *gobus.HTTPMeta, token *string, reply *TokenGetReply) (err error) {
+//     > curl http://127.0.0.1:23333/TokenManager?method=Get -d '"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a"'
+//     {"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","data":"","is_expire":true}
+func (mng *TokenManager) Get(meta *gobus.HTTPMeta, token *string, reply *tokenmanager.Token) error {
 	log := mng.log.SubCode()
 	log.Debug("get with token: %s", *token)
-	reply.Resource, reply.Data, err = mng.manager.GetResource(*token)
-	reply.IsExpired = err == tokenmanager.ExpiredError
-	if err == tokenmanager.ExpiredError {
-		err = nil
-	}
+	tk, err := mng.manager.GetToken(*token)
+
 	if err != nil {
 		log.Info("get resource with token(%s) fail: %s", *token, err)
+		return err
 	} else {
-		log.Debug("return resource: %s, is expired: %v", reply.Resource, reply.IsExpired)
+		log.Debug("return token: %+v", tk)
 	}
-	return err
+	*reply = *tk
+	return nil
 }
 
-type TokenFindReply struct {
-	Token     string `json:"token"`
-	IsExpired bool   `json:"is_expired"`
-}
-
-// 根据resource，查找对应的所有token，并返回token是否过期is_expired
+// 根据resource，查找对应的所有Token对象
 //
 // 例子：
 //
 //     > curl http://127.0.0.1:23333/TokenManager?method=Find -d '"abcde"'
-//     [{"token":"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220","is_expired":true}]
-func (mng *TokenManager) Find(meta *gobus.HTTPMeta, resource *string, reply *[]TokenFindReply) error {
+//     [{"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","data":"","is_expire":true},{"token":"ab56b4d92b40713acc5af89985d4b786aa354d0a4f80c96c85c728e67a73b795","data":"","is_expire":true}]
+func (mng *TokenManager) Find(meta *gobus.HTTPMeta, resource *string, reply *[]*tokenmanager.Token) error {
 	log := mng.log.SubCode()
 	log.Debug("find with resource: %s", *resource)
-	tokens, isExpires, err := mng.manager.FindTokens(*resource)
+	tks, err := mng.manager.FindTokens(*resource)
 	if err != nil {
 		log.Info("find tokens with resource(%s) fail: %s", *resource, err)
 		return err
 	}
 
-	*reply = make([]TokenFindReply, len(tokens))
-	for i, _ := range tokens {
-		(*reply)[i].Token = tokens[i]
-		(*reply)[i].IsExpired = isExpires[i]
-	}
-
-	log.Debug("return tokens: %+v", reply)
+	log.Debug("return tokens: %+v", tks)
+	*reply = tks
 	return err
 }
-
-// 更新token对应的数据data
-//
-// 例子：
-//
-// > curl http://127.0.0.1:23333/TokenManager?method=Update -d '{"token":"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220","data":"123"}'
-// 0
 
 type TokenUpdateArg struct {
 	Token string `json:"token"`
 	Data  string `json:"data"`
 }
 
+// 更新token对应的数据data
+//
+// 例子：
+//
+// > curl http://127.0.0.1:23333/TokenManager?method=Update -d '{"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","data":"123"}'
+// 0
 func (mng *TokenManager) Update(meta *gobus.HTTPMeta, arg *TokenUpdateArg, reply *int) (err error) {
 	log := mng.log.SubCode()
 	log.Debug("update token: %s with data: %s", arg.Token, arg.Data)
@@ -138,29 +126,27 @@ type TokenVerifyArg struct {
 }
 
 type TokenVerifyReply struct {
-	Matched   bool   `json:"matched"`
-	IsExpired bool   `json:"is_expired"`
-	Data      string `json:"data"`
+	Matched bool                `json:"matched"`
+	Token   *tokenmanager.Token `json:"token,omitempty"`
 }
 
-// 根据token和资源resource来验证两者是否一致matched，并返回token是否过期is_expired和token对应的数据data
+// 根据token和资源resource来验证两者是否一致matched，并返回Token对象
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=Verify -d '{"token":"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220","resource":"abcde"}'
-//     {"matched":true,"is_expired":false,"data":""}
+//     > curl http://127.0.0.1:23333/TokenManager?method=Verify -d '{"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","resource":"abcde"}'
+//     {"matched":true,{"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","data":"","is_expire":true}}
 func (mng *TokenManager) Verify(meta *gobus.HTTPMeta, args *TokenVerifyArg, reply *TokenVerifyReply) (err error) {
 	log := mng.log.SubCode()
 	log.Debug("verify with token: %s, resource: %s", args.Token, args.Resource)
-	reply.Matched, reply.Data, err = mng.manager.VerifyToken(args.Token, args.Resource)
-	reply.IsExpired = err == tokenmanager.ExpiredError
-	if err == tokenmanager.ExpiredError {
-		err = nil
-	}
+	reply.Matched, reply.Token, err = mng.manager.VerifyToken(args.Token, args.Resource)
 	if err != nil {
 		log.Info("verify with token(%s)&resource(%s) fail: %s", args.Token, args.Resource, err)
 	} else {
-		log.Debug("return verify matched: %v, is expired: %v", reply.Matched, reply.IsExpired)
+		log.Debug("return: %v", reply)
+	}
+	if !reply.Matched {
+		reply.Token = nil
 	}
 	return err
 }
@@ -169,7 +155,7 @@ func (mng *TokenManager) Verify(meta *gobus.HTTPMeta, args *TokenVerifyArg, repl
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=Delete -d '"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220"'
+//     > curl http://127.0.0.1:23333/TokenManager?method=Delete -d '"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a"'
 //     0
 func (mng *TokenManager) Delete(meta *gobus.HTTPMeta, token *string, reply *int) (err error) {
 	log := mng.log.SubCode()
@@ -192,7 +178,7 @@ type TokenRefreshArg struct {
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=Refresh -d '{"token":"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220","expire_after_seconds":-1}'
+//     > curl http://127.0.0.1:23333/TokenManager?method=Refresh -d '{"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","expire_after_seconds":-1}'
 //     0
 func (mng *TokenManager) Refresh(meta *gobus.HTTPMeta, args *TokenRefreshArg, reply *int) (err error) {
 	log := mng.log.SubCode()
@@ -214,7 +200,7 @@ func (mng *TokenManager) Refresh(meta *gobus.HTTPMeta, args *TokenRefreshArg, re
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=Expire -d '"deae3cee0be68e2ae2c590f0a1b5bb032168477d2d2c2a515b652042331b0220"'
+//     > curl http://127.0.0.1:23333/TokenManager?method=Expire -d '"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a"'
 //     0
 func (mng *TokenManager) Expire(meta *gobus.HTTPMeta, token *string, reply *int) (err error) {
 	log := mng.log.SubCode()

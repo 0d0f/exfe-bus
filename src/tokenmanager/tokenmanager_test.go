@@ -1,22 +1,55 @@
 package tokenmanager
 
 import (
-	"github.com/googollee/go-mysql"
+	"fmt"
 	"testing"
 	"time"
 )
 
-func TestTokenManager(t *testing.T) {
-	client, err := mysql.DialTCP("127.0.0.1:3306", "root", "", "exfe_dev")
-	if err != nil {
-		panic(err)
+type TestTokenRepo struct {
+	store map[string]Token
+}
+
+func (r *TestTokenRepo) Store(token *Token) error {
+	r.store[token.String()] = *token
+	return nil
+}
+
+func (r *TestTokenRepo) FindByKey(key string) ([]*Token, error) {
+	ret := make([]*Token, 0, 0)
+	for _, token := range r.store {
+		if token.Key != key {
+			continue
+		}
+		ret = append(ret, &token)
 	}
-	mgr := New(client, "tokens")
+	return ret, nil
+}
+
+func (r *TestTokenRepo) FindByToken(key, rand string) (*Token, error) {
+	k := fmt.Sprintf("%s%s", key, rand)
+	token, ok := r.store[k]
+	if !ok {
+		return nil, nil
+	}
+	return &token, nil
+}
+
+func (r *TestTokenRepo) Delete(token *Token) error {
+	delete(r.store, token.String())
+	return nil
+}
+
+func TestTokenManager(t *testing.T) {
+	repo := &TestTokenRepo{
+		store: make(map[string]Token),
+	}
+	mgr := New(repo)
 	resource := "resource"
 	tk := "fjadsklfjkldasfdasiffjuoru21urjew"
 
 	{
-		_, _, err := mgr.GetResource(tk)
+		_, err := mgr.GetToken(tk)
 		if err == nil {
 			t.Fatalf("get resource should failed")
 		}
@@ -27,48 +60,43 @@ func TestTokenManager(t *testing.T) {
 		}
 	}
 
-	tk, err = mgr.GenerateToken(resource, "", time.Second)
+	token, err := mgr.GenerateToken(resource, "", time.Second)
 	if err != nil {
 		t.Fatalf("generate token failed: %s", err)
 	}
+	tk = token.String()
 
 	{
-		r, d, err := mgr.GetResource(tk)
+		token, err := mgr.GetToken(tk)
 		if err != nil {
 			t.Fatalf("get resource failed: %s", err)
 		}
-		if got, expect := r, resource; got != expect {
-			t.Errorf("got: %s, expect: %s", got, expect)
-		}
-		if got, expect := d, ""; got != expect {
+		if got, expect := token.Data, ""; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
-		tks, expires, err := mgr.FindTokens(r)
+		tks, err := mgr.FindTokens(resource)
 		if err != nil {
 			t.Errorf("get tokens failed: %s", err)
 		}
 		if got, expect := len(tks), 1; got != expect {
 			t.Errorf("got: %d, expect: %d", got, expect)
 		}
-		if got, expect := tks[0], tk; got != expect {
+		if got, expect := tks[0].String(), tk; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
-		if got, expect := len(expires), 1; got != expect {
-			t.Errorf("got: %d, expect: %d", got, expect)
-		}
-		if got, expect := expires[0], false; got != expect {
+		if got, expect := tks[0].IsExpired(), false; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
-		ok, d, err := mgr.VerifyToken(tk, resource)
+		ok, token, err := mgr.VerifyToken(tk, resource)
 		if err != nil {
 			t.Errorf("tk(%s) verify with resource(%s) failed: %s", tk, resource, err)
 		}
 		if !ok {
 			t.Errorf("tk(%s) should verify with resource(%s), but not", tk, resource)
 		}
-		if got, expect := d, ""; got != expect {
+		if got, expect := token.Data, ""; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
@@ -77,14 +105,14 @@ func TestTokenManager(t *testing.T) {
 			t.Errorf("tk(%s) update data failed: %s", tk, err)
 		}
 
-		ok, d, err = mgr.VerifyToken(tk, resource)
+		ok, token, err = mgr.VerifyToken(tk, resource)
 		if err != nil {
 			t.Errorf("tk(%s) verify with resource(%s) failed: %s", tk, resource, err)
 		}
 		if !ok {
 			t.Errorf("tk(%s) should verify with resource(%s), but not", tk, resource)
 		}
-		if got, expect := d, "abc"; got != expect {
+		if got, expect := token.Data, "abc"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
@@ -93,14 +121,14 @@ func TestTokenManager(t *testing.T) {
 			t.Errorf("tk(%s) update data failed: %s", tk, err)
 		}
 
-		ok, d, err = mgr.VerifyToken(tk, resource)
+		ok, token, err = mgr.VerifyToken(tk, resource)
 		if err != nil {
 			t.Errorf("tk(%s) verify with resource(%s) failed: %s", tk, resource, err)
 		}
 		if !ok {
 			t.Errorf("tk(%s) should verify with resource(%s), but not", tk, resource)
 		}
-		if got, expect := d, "123"; got != expect {
+		if got, expect := token.Data, "123"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 	}
@@ -108,16 +136,13 @@ func TestTokenManager(t *testing.T) {
 	time.Sleep(time.Second * 2)
 
 	{
-		r, _, err := mgr.GetResource(tk)
-		if err != ExpiredError {
+		token, _ := mgr.GetToken(tk)
+		if !token.IsExpired() {
 			t.Fatalf("get resource should expired")
 		}
-		if got, expect := r, resource; got != expect {
-			t.Errorf("got: %s, expect: %s", got, expect)
-		}
 
-		ok, _, err := mgr.VerifyToken(tk, resource)
-		if err == nil {
+		ok, token, _ := mgr.VerifyToken(tk, resource)
+		if !token.IsExpired() {
 			t.Errorf("tk(%s) verify with resource(%s) should expired", tk, resource)
 		}
 		if !ok {
@@ -128,12 +153,9 @@ func TestTokenManager(t *testing.T) {
 	mgr.RefreshToken(tk, time.Second)
 
 	{
-		r, _, err := mgr.GetResource(tk)
+		_, err := mgr.GetToken(tk)
 		if err != nil {
 			t.Fatalf("get resource failed: %s", err)
-		}
-		if got, expect := r, resource; got != expect {
-			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
 		ok, _, err := mgr.VerifyToken(tk, resource)
@@ -148,16 +170,13 @@ func TestTokenManager(t *testing.T) {
 	mgr.ExpireToken(tk)
 
 	{
-		r, _, err := mgr.GetResource(tk)
-		if err != ExpiredError {
+		token, _ := mgr.GetToken(tk)
+		if !token.IsExpired() {
 			t.Fatalf("get resource should expired")
 		}
-		if got, expect := r, resource; got != expect {
-			t.Errorf("got: %s, expect: %s", got, expect)
-		}
 
-		ok, _, err := mgr.VerifyToken(tk, resource)
-		if err == nil {
+		ok, token, _ := mgr.VerifyToken(tk, resource)
+		if !token.IsExpired() {
 			t.Errorf("tk(%s) verify with resource(%s) should expired", tk, resource)
 		}
 		if !ok {
@@ -168,12 +187,9 @@ func TestTokenManager(t *testing.T) {
 	mgr.RefreshToken(tk, NeverExpire)
 
 	{
-		r, _, err := mgr.GetResource(tk)
+		_, err := mgr.GetToken(tk)
 		if err != nil {
 			t.Fatalf("get resource failed: %s", err)
-		}
-		if got, expect := r, resource; got != expect {
-			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
 		ok, _, err := mgr.VerifyToken(tk, resource)
@@ -188,12 +204,9 @@ func TestTokenManager(t *testing.T) {
 	time.Sleep(time.Second * 2)
 
 	{
-		r, _, err := mgr.GetResource(tk)
+		_, err := mgr.GetToken(tk)
 		if err != nil {
 			t.Fatalf("get resource failed: %s", err)
-		}
-		if got, expect := r, resource; got != expect {
-			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
 		ok, _, err := mgr.VerifyToken(tk, resource)

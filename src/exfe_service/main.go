@@ -4,7 +4,6 @@ import (
 	"daemon"
 	"fmt"
 	"github.com/googollee/go-logger"
-	"github.com/googollee/go-mysql"
 	"github.com/googollee/godis"
 	"gobus"
 	"os"
@@ -44,16 +43,9 @@ func main() {
 	}
 	config.Log = log
 
-	dbAddr := fmt.Sprintf("%s:%d", config.DB.Addr, config.DB.Port)
-	db, err := mysql.DialTCP(dbAddr, config.DB.Username, config.DB.Password, config.DB.DbName)
-	if err != nil {
-		log.Crit("db connect failed: %s", err)
-		os.Exit(-1)
-	}
-
 	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
 
-	tkMng, err := NewTokenManager(&config, db)
+	tkMng, err := NewTokenManager(&config)
 	if err != nil {
 		log.Crit("create token manager failed: %s", err)
 		os.Exit(-1)

@@ -1,16 +1,19 @@
 package tokenmanager
 
 import (
-	"crypto/md5"
 	"fmt"
-	"github.com/googollee/go-mysql"
-	"io"
-	"math"
-	"math/rand"
 	"time"
 )
 
-const TOKEN_RANDOM_LENGTH = 16
+type TokenRepository interface {
+	Create(token *Token) error
+	Store(token *Token) error
+	FindByKey(key string) ([]*Token, error)
+	FindByToken(key, rand string) (*Token, error)
+	Delete(token *Token) error
+}
+
+const TOKEN_KEY_LENGTH = 32
 
 const (
 	CREATE          = "CREATE TABLE `%s` (`id` SERIAL NOT NULL, `token` CHAR(64) NOT NULL, `created_at` DATETIME NOT NULL, `expire_at` DATETIME NOT NULL, `resource` TEXT NOT NULL, `data` TEXT NOT NULL)"
@@ -22,169 +25,90 @@ const (
 	DELETE          = "DELETE FROM `%s` WHERE token='%%s'"
 )
 
-var ExpiredError = fmt.Errorf("token expired")
 var NeverExpire = time.Duration(-1)
 
 type TokenManager struct {
-	db              *mysql.Client
-	r               *rand.Rand
-	create          string
-	insert          string
-	select_token    string
-	select_resource string
-	update_expire   string
-	update_data     string
-	delete          string
+	repo TokenRepository
 }
 
-func New(db *mysql.Client, tableName string) *TokenManager {
+func New(repo TokenRepository) *TokenManager {
 	return &TokenManager{
-		db:              db,
-		r:               rand.New(rand.NewSource(time.Now().UnixNano())),
-		create:          fmt.Sprintf(CREATE, tableName),
-		insert:          fmt.Sprintf(INSERT, tableName),
-		select_token:    fmt.Sprintf(SELECT_TOKEN, tableName),
-		select_resource: fmt.Sprintf(SELECT_RESOURCE, tableName),
-		update_expire:   fmt.Sprintf(UPDATE_EXPIRE, tableName),
-		update_data:     fmt.Sprintf(UPDATE_DATA, tableName),
-		delete:          fmt.Sprintf(DELETE, tableName),
+		repo: repo,
 	}
 }
 
-func (m *TokenManager) GenerateToken(resource, data string, expireAfterSecond time.Duration) (string, error) {
-	now := time.Now().UTC()
-	stamp := fmt.Sprintf("%s-%d", resource, now.Unix())
-	hash := md5.New()
-	io.WriteString(hash, stamp)
-	token := fmt.Sprintf("%x%x", hash.Sum(nil), m.randBytes(TOKEN_RANDOM_LENGTH))
+func (m *TokenManager) GenerateToken(resource, data string, expireAfterSecond time.Duration) (*Token, error) {
+	expireAt := time.Now().Add(expireAfterSecond)
+	token := NewToken(resource, data, &expireAt)
+	if expireAfterSecond < 0 {
+		token.ExpireAt = nil
+	}
 
-	err := m.query(m.insert, token, now.Format(time.RFC3339), m.getExpireStr(expireAfterSecond), resource, data)
+	err := m.repo.Create(token)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	return token, nil
 }
 
-func (m *TokenManager) GetResource(token string) (resource, data string, err error) {
-	err = m.query(m.select_token, token)
+func (m *TokenManager) GetToken(token string) (*Token, error) {
+	tk, err := m.repo.FindByToken(token[:TOKEN_KEY_LENGTH], token[TOKEN_KEY_LENGTH:])
 	if err != nil {
-		return
+		return nil, err
+	}
+	if tk == nil {
+		return nil, fmt.Errorf("no token found")
 	}
 
-	var res *mysql.Result
-	res, err = m.db.StoreResult()
-	if err != nil {
-		return
-	}
-	defer res.Free()
-
-	row := res.FetchRow()
-	if row == nil {
-		err = fmt.Errorf("no token")
-		return
-	}
-
-	expireAtStr := string(row[0].([]byte))
-	if row[1] != nil {
-		resource = string(row[1].([]byte))
-	}
-	if row[2] != nil {
-		data = string(row[2].([]byte))
-	}
-	if expireAtStr == "0000-00-00 00:00:00" {
-		return
-	}
-
-	expire_at, err := time.Parse("2006-01-02 15:04:05", expireAtStr)
-	if err != nil {
-		return
-	}
-
-	if expire_at.Sub(time.Now()) <= 0 {
-		err = ExpiredError
-	}
-	return
+	return tk, nil
 }
 
-func (m *TokenManager) FindTokens(resource string) (tokens []string, isExpire []bool, err error) {
-	err = m.query(m.select_resource, resource)
-	if err != nil {
-		return
-	}
-
-	var res *mysql.Result
-	res, err = m.db.StoreResult()
-	if err != nil {
-		return
-	}
-	defer res.Free()
-
-	tokens = make([]string, res.RowCount())
-	isExpire = make([]bool, res.RowCount())
-	for i := uint64(0); i < res.RowCount(); i++ {
-		row := res.FetchRow()
-		tokens[i] = row[0].(string)
-		expireAtStr := string(row[1].([]byte))
-		isExpire[i] = false
-		if expireAtStr != "0000-00-00 00:00:00" {
-			expire_at, err := time.Parse("2006-01-02 15:04:05", expireAtStr)
-			if err == nil && expire_at.Sub(time.Now()) <= 0 {
-				isExpire[i] = true
-			}
-		}
-	}
+func (m *TokenManager) FindTokens(resource string) (tokens []*Token, err error) {
+	md5 := md5Resource(resource)
+	tokens, err = m.repo.FindByKey(md5[:])
 	return
 }
 
 func (m *TokenManager) UpdateData(token, data string) error {
-	return m.query(m.update_data, data, token)
+	t, err := m.GetToken(token)
+	if err != nil {
+		return err
+	}
+	t.Data = data
+	return m.repo.Store(t)
 }
 
-func (m *TokenManager) VerifyToken(token, resource string) (bool, string, error) {
-	r, data, err := m.GetResource(token)
-	if err != nil && err != ExpiredError {
-		return false, "", err
+func (m *TokenManager) VerifyToken(token, resource string) (bool, *Token, error) {
+	t, err := m.GetToken(token)
+	if err != nil {
+		return false, nil, err
 	}
-	if r != resource {
-		return false, "", err
-	}
-	return true, data, err
+	key := md5Resource(resource)
+	return t.Key == key, t, nil
 }
 
 func (m *TokenManager) DeleteToken(token string) error {
-	return m.query(m.delete, token)
+	t, err := m.GetToken(token)
+	if err != nil {
+		return err
+	}
+	return m.repo.Delete(t)
 }
 
 func (m *TokenManager) RefreshToken(token string, duration time.Duration) error {
-	return m.query(m.update_expire, m.getExpireStr(duration), token)
+	t, err := m.GetToken(token)
+	if err != nil {
+		return err
+	}
+	if duration < 0 {
+		t.ExpireAt = nil
+	} else {
+		expireAt := time.Now().Add(duration)
+		t.ExpireAt = &expireAt
+	}
+	return m.repo.Store(t)
 }
 
 func (m *TokenManager) ExpireToken(token string) error {
 	return m.RefreshToken(token, 0)
-}
-
-func (m *TokenManager) getExpireStr(duration time.Duration) string {
-	if duration == NeverExpire {
-		return "0000-00-00 00:00:00"
-	}
-	expire := time.Now().Add(duration)
-	return expire.UTC().Format(time.RFC3339)
-}
-
-func (m *TokenManager) randBytes(length int) []byte {
-	ret := make([]byte, length, length)
-	for i := range ret {
-		ret[i] = byte(m.r.Int31n(math.MaxInt8))
-	}
-	return ret
-}
-
-func (m *TokenManager) query(sql string, v ...interface{}) error {
-	for i, vi := range v {
-		if s, ok := vi.(string); ok {
-			v[i] = m.db.Escape(s)
-		}
-	}
-	cmd := fmt.Sprintf(sql, v...)
-	return m.db.Query(cmd)
 }
