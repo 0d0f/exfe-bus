@@ -51,7 +51,7 @@ func (r *TestTokenRepo) UpdateDataByToken(key, rand, data string) error {
 	return nil
 }
 
-func (r *TestTokenRepo) UpdateExpireAtByToken(key, rand string, expire_at *time.Time) error {
+func (r *TestTokenRepo) UpdateExpireAtByToken(key, rand string, expireAt *time.Time) error {
 	token := fmt.Sprintf("%s%s", key, rand)
 	v, ok := r.store[token]
 	if !ok {
@@ -62,7 +62,7 @@ func (r *TestTokenRepo) UpdateExpireAtByToken(key, rand string, expire_at *time.
 	return nil
 }
 
-func (r *TestTokenRepo) UpdateExpireAtByKey(key string, expire_at *time.Time) error {
+func (r *TestTokenRepo) UpdateExpireAtByKey(key string, expireAt *time.Time) error {
 	for k, v := range r.store {
 		if v.Key == key {
 			v.ExpireAt = expire_at

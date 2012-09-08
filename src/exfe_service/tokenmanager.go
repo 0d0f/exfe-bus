@@ -213,3 +213,21 @@ func (mng *TokenManager) Expire(meta *gobus.HTTPMeta, token *string, reply *int)
 	}
 	return err
 }
+
+// 立刻使key对应的所有token过期。
+//
+// 例子：
+//
+//     > curl http://127.0.0.1:23333/TokenManager?method=ExpireAll -d '"ab56b4d92b40713acc5af89985d4b786"'
+//     0
+func (mng *TokenManager) ExpireAll(meta *gobus.HTTPMeta, key *string, reply *int) (err error) {
+	log := mng.log.SubCode()
+	log.Debug("expire all tokens: %s", *key)
+	err = mng.manager.ExpireTokensByKey(*key)
+	if err != nil {
+		log.Info("expire all tokens(%s) fail: %s", *key, err)
+	} else {
+		log.Debug("ok")
+	}
+	return err
+}

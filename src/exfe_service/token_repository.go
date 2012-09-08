@@ -44,22 +44,14 @@ func (r *TokenRepository) Connect() error {
 func (r *TokenRepository) Create(token *tokenmanager.Token) error {
 	const INSERT = "INSERT INTO `%s` VALUES (null, ?, ?, ?, ?, ?)"
 	sql := fmt.Sprintf(INSERT, r.config.TokenManager.TableName)
-	expire := "0000-00-00 00:00:00"
-	if token.ExpireAt != nil {
-		expire = token.ExpireAt.UTC().Format(time.RFC3339)
-	}
-	_, err := r.db.Exec(sql, token.Key, token.Rand, token.CreatedAt.UTC().Format(time.RFC3339), expire, token.Data)
+	_, err := r.db.Exec(sql, token.Key, token.Rand, r.timeToString(&token.CreatedAt), r.timeToString(token.ExpireAt), token.Data)
 	return err
 }
 
 func (r *TokenRepository) Store(token *tokenmanager.Token) error {
 	const UPDATE = "UPDATE `%s` SET expire_at=?, data=? WHERE %s.key=? AND %s.rand=?"
 	sql := fmt.Sprintf(UPDATE, r.config.TokenManager.TableName, r.config.TokenManager.TableName, r.config.TokenManager.TableName)
-	expire := "0000-00-00 00:00:00"
-	if token.ExpireAt != nil {
-		expire = token.ExpireAt.UTC().Format(time.RFC3339)
-	}
-	_, err := r.db.Exec(sql, expire, token.Data, token.Key, token.Rand)
+	_, err := r.db.Exec(sql, r.timeToString(token.ExpireAt), token.Data, token.Key, token.Rand)
 	return err
 }
 
@@ -133,9 +125,37 @@ func (r *TokenRepository) FindByToken(key, rand string) (*tokenmanager.Token, er
 	return &token, nil
 }
 
-func (r *TokenRepository) Delete(token *tokenmanager.Token) error {
+func (r *TokenRepository) UpdateDataByToken(key, rand, data string) error {
+	const UPDATE = "UPDATE `%s` SET %s.data=? WHERE %s.key=? AND %s.rand=?"
+	sql := fmt.Sprintf(UPDATE, r.config.TokenManager.TableName, r.config.TokenManager.TableName, r.config.TokenManager.TableName, r.config.TokenManager.TableName)
+	_, err := r.db.Exec(sql, data, key, rand)
+	return err
+}
+
+func (r *TokenRepository) UpdateExpireAtByToken(key, rand string, expireAt *time.Time) error {
+	const UPDATE = "UPDATE `%s` SET %s.expire_at=? WHERE %s.key=? AND %s.rand=?"
+	sql := fmt.Sprintf(UPDATE, r.config.TokenManager.TableName, r.config.TokenManager.TableName, r.config.TokenManager.TableName, r.config.TokenManager.TableName)
+	_, err := r.db.Exec(sql, r.timeToString(expireAt), key, rand)
+	return err
+}
+
+func (r *TokenRepository) UpdateExpireAtByKey(key string, expireAt *time.Time) error {
+	const UPDATE = "UPDATE `%s` SET %s.expire_at=? WHERE %s.key=?"
+	sql := fmt.Sprintf(UPDATE, r.config.TokenManager.TableName, r.config.TokenManager.TableName, r.config.TokenManager.TableName)
+	_, err := r.db.Exec(sql, r.timeToString(expireAt), key)
+	return err
+}
+
+func (r *TokenRepository) timeToString(t *time.Time) string {
+	if t == nil {
+		return "0000-00-00 00:00:00"
+	}
+	return t.UTC().Format(time.RFC3339)
+}
+
+func (r *TokenRepository) DeleteByToken(key, rand string) error {
 	const DELETE = "DELETE FROM `%s` WHERE %s.key=? AND %s.rand=?"
 	sql := fmt.Sprintf(DELETE, r.config.TokenManager.TableName, r.config.TokenManager.TableName, r.config.TokenManager.TableName)
-	_, err := r.db.Exec(sql, token.Key, token.Rand)
+	_, err := r.db.Exec(sql, key, rand)
 	return err
 }
