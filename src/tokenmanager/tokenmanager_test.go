@@ -40,8 +40,40 @@ func (r *TestTokenRepo) FindByToken(key, rand string) (*Token, error) {
 	return &token, nil
 }
 
-func (r *TestTokenRepo) Delete(token *Token) error {
-	delete(r.store, token.String())
+func (r *TestTokenRepo) UpdateDataByToken(key, rand, data string) error {
+	token := fmt.Sprintf("%s%s", key, rand)
+	v, ok := r.store[token]
+	if !ok {
+		fmt.Errorf("no token")
+	}
+	v.Data = data
+	r.store[token] = v
+	return nil
+}
+
+func (r *TestTokenRepo) UpdateExpireAtByToken(key, rand string, expire_at *time.Time) error {
+	token := fmt.Sprintf("%s%s", key, rand)
+	v, ok := r.store[token]
+	if !ok {
+		fmt.Errorf("no token")
+	}
+	v.Key = key
+	r.store[token] = v
+	return nil
+}
+
+func (r *TestTokenRepo) UpdateExpireAtByKey(key string, expire_at *time.Time) error {
+	for k, v := range r.store {
+		if v.Key == key {
+			v.ExpireAt = expire_at
+			r.store[k] = v
+		}
+	}
+	return nil
+}
+
+func (r *TestTokenRepo) DeleteByToken(key, rand string) error {
+	delete(r.store, fmt.Sprintf("%s%s", key, rand))
 	return nil
 }
 
@@ -173,6 +205,40 @@ func TestTokenManager(t *testing.T) {
 	}
 
 	mgr.ExpireToken(tk)
+
+	{
+		token, _ := mgr.GetToken(tk)
+		if !token.IsExpired() {
+			t.Fatalf("get resource should expired")
+		}
+
+		ok, token, _ := mgr.VerifyToken(tk, resource)
+		if !token.IsExpired() {
+			t.Errorf("tk(%s) verify with resource(%s) should expired", tk, resource)
+		}
+		if !ok {
+			t.Errorf("tk(%s) should verify with resource(%s), but not", tk, resource)
+		}
+	}
+
+	mgr.RefreshToken(tk, NeverExpire)
+
+	{
+		_, err := mgr.GetToken(tk)
+		if err != nil {
+			t.Fatalf("get resource failed: %s", err)
+		}
+
+		ok, _, err := mgr.VerifyToken(tk, resource)
+		if err != nil {
+			t.Errorf("tk(%s) verify with resource(%s) failed: %s", tk, resource, err)
+		}
+		if !ok {
+			t.Errorf("tk(%s) should verify with resource(%s), but not", tk, resource)
+		}
+	}
+
+	mgr.ExpireTokensByKey(tk[:32])
 
 	{
 		token, _ := mgr.GetToken(tk)

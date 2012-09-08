@@ -10,20 +10,13 @@ type TokenRepository interface {
 	Store(token *Token) error
 	FindByKey(key string) ([]*Token, error)
 	FindByToken(key, rand string) (*Token, error)
-	Delete(token *Token) error
+	UpdateDataByToken(key, rand, data string) error
+	UpdateExpireAtByToken(key, rand string, expireAt *time.Time) error
+	UpdateExpireAtByKey(key string, expireAt *time.Time) error
+	DeleteByToken(key, rand string) error
 }
 
 const TOKEN_KEY_LENGTH = 32
-
-const (
-	CREATE          = "CREATE TABLE `%s` (`id` SERIAL NOT NULL, `token` CHAR(64) NOT NULL, `created_at` DATETIME NOT NULL, `expire_at` DATETIME NOT NULL, `resource` TEXT NOT NULL, `data` TEXT NOT NULL)"
-	INSERT          = "INSERT INTO `%s` VALUES (null, '%%s', '%%s', '%%s', '%%s', '%%s')"
-	SELECT_TOKEN    = "SELECT expire_at, resource, data FROM `%s` WHERE token='%%s'"
-	SELECT_RESOURCE = "SELECT token, expire_at FROM `%s` WHERE resource='%%s'"
-	UPDATE_EXPIRE   = "UPDATE `%s` SET expire_at='%%s' WHERE token='%%s'"
-	UPDATE_DATA     = "UPDATE `%s` SET data='%%s' WHERE token='%%s'"
-	DELETE          = "DELETE FROM `%s` WHERE token='%%s'"
-)
 
 var NeverExpire = time.Duration(-1)
 
@@ -52,7 +45,7 @@ func (m *TokenManager) GenerateToken(resource, data string, expireAfterSecond ti
 }
 
 func (m *TokenManager) GetToken(token string) (*Token, error) {
-	tk, err := m.repo.FindByToken(token[:TOKEN_KEY_LENGTH], token[TOKEN_KEY_LENGTH:])
+	tk, err := m.repo.FindByToken(m.splitToken(token))
 	if err != nil {
 		return nil, err
 	}
@@ -70,12 +63,8 @@ func (m *TokenManager) FindTokens(resource string) (tokens []*Token, err error) 
 }
 
 func (m *TokenManager) UpdateData(token, data string) error {
-	t, err := m.GetToken(token)
-	if err != nil {
-		return err
-	}
-	t.Data = data
-	return m.repo.Store(t)
+	key, rand := m.splitToken(token)
+	return m.repo.UpdateDataByToken(key, rand, data)
 }
 
 func (m *TokenManager) VerifyToken(token, resource string) (bool, *Token, error) {
@@ -88,27 +77,30 @@ func (m *TokenManager) VerifyToken(token, resource string) (bool, *Token, error)
 }
 
 func (m *TokenManager) DeleteToken(token string) error {
-	t, err := m.GetToken(token)
-	if err != nil {
-		return err
-	}
-	return m.repo.Delete(t)
+	return m.repo.DeleteByToken(m.splitToken(token))
 }
 
 func (m *TokenManager) RefreshToken(token string, duration time.Duration) error {
-	t, err := m.GetToken(token)
-	if err != nil {
-		return err
-	}
+	var expireAt *time.Time
 	if duration < 0 {
-		t.ExpireAt = nil
+		expireAt = nil
 	} else {
-		expireAt := time.Now().Add(duration)
-		t.ExpireAt = &expireAt
+		t := time.Now().Add(duration)
+		expireAt = &t
 	}
-	return m.repo.Store(t)
+	key, rand := m.splitToken(token)
+	return m.repo.UpdateExpireAtByToken(key, rand, expireAt)
 }
 
 func (m *TokenManager) ExpireToken(token string) error {
 	return m.RefreshToken(token, 0)
+}
+
+func (m *TokenManager) ExpireTokensByKey(key string) error {
+	t := time.Now()
+	return m.repo.UpdateExpireAtByKey(key, &t)
+}
+
+func (m *TokenManager) splitToken(token string) (key, rand string) {
+	return token[:TOKEN_KEY_LENGTH], token[TOKEN_KEY_LENGTH:]
 }
