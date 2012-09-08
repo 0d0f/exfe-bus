@@ -41,6 +41,7 @@ func TestToken(t *testing.T) {
 		}
 	}
 
+	token.Data = `"abc"`
 	j, err := json.Marshal(token)
 	if err != nil {
 		t.Errorf("marshal json fail: %s", err)

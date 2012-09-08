@@ -10,6 +10,11 @@ type TestTokenRepo struct {
 	store map[string]Token
 }
 
+func (r *TestTokenRepo) Create(token *Token) error {
+	r.store[token.String()] = *token
+	return nil
+}
+
 func (r *TestTokenRepo) Store(token *Token) error {
 	r.store[token.String()] = *token
 	return nil

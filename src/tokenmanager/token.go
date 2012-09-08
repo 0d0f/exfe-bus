@@ -2,6 +2,7 @@ package tokenmanager
 
 import (
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -15,6 +16,12 @@ type Token struct {
 	Data      string
 	ExpireAt  *time.Time
 	CreatedAt time.Time
+}
+
+type tokenJson struct {
+	Token    string `json:"token"`
+	Data     string `json:"data"`
+	IsExpire bool   `json:"is_expire"`
 }
 
 // expireAt == nil for never expire.
@@ -42,9 +49,12 @@ func (t *Token) String() string {
 }
 
 func (t Token) MarshalJSON() ([]byte, error) {
-	token := &t
-	json := fmt.Sprintf("{\"token\":\"%s\",\"data\":\"%s\",\"is_expire\":%v}", token.String(), token.Data, token.IsExpired())
-	return []byte(json), nil
+	j := tokenJson{
+		Token:    (&t).String(),
+		Data:     t.Data,
+		IsExpire: (&t).IsExpired(),
+	}
+	return json.Marshal(j)
 }
 
 var rander = rand.New(rand.NewSource(time.Now().UnixNano()))
