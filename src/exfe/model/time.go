@@ -44,21 +44,27 @@ func (t EFTime) timeInZone(targetZone string) (time.Time, error) {
 
 	switch {
 	case t.Time != "" && t.Date != "":
-		t_, err = time.Parse("2006-01-02 15:04:05 -07:00", fmt.Sprintf("%s %s %s", t.Date, t.Time, t.Timezone[0:6]))
+		t_, err = time.Parse("2006-01-02 15:04:05", fmt.Sprintf("%s %s", t.Date, t.Time))
 	case t.Time != "" && t.Date == "":
-		t_, err = time.Parse("15:04:05 -07:00", fmt.Sprintf("%s %s", t.Time, t.Timezone[0:6]))
+		t_, err = time.Parse("15:04:05", fmt.Sprintf("%s", t.Time))
 	case t.Time == "" && t.Date != "":
-		t_, err = time.Parse("2006-01-02 -07:00", fmt.Sprintf("%s %s", t.Date, t.Timezone[0:6]))
+		t_, err = time.Parse("2006-01-02", fmt.Sprintf("%s", t.Date))
 	}
 
 	if err != nil {
 		return t_, fmt.Errorf("Parse time error: %s", err)
 	}
 
+	loc, err := LoadLocation(t.Timezone)
+	if err != nil {
+		return t_, fmt.Errorf("Parse timezone(%s) error: %s", t.Timezone, err)
+	}
+	t_ = t_.In(loc)
+
 	if t.differentZone(targetZone) && t.Time != "" {
 		targetLocation, err := LoadLocation(targetZone)
 		if err != nil {
-			return t_, fmt.Errorf("Parse target zone error: %s", err)
+			return t_, fmt.Errorf("Parse target zone(%s) error: %s", targetZone, err)
 		}
 		t_ = t_.In(targetLocation)
 	}
