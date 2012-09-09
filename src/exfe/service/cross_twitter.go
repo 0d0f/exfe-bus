@@ -118,7 +118,7 @@ func (s *CrossTwitter) sendInvitation(arg *ProviderArg) {
 		if err != nil {
 			s.log.Printf("template error: %s", err)
 		}
-		s.sendTweet(arg, msg, fmt.Sprintf("%s/%s", arg.Cross.Link(s.config.Site_url), arg.Token()[1:4]))
+		s.sendTweet(arg, msg, "")
 	}
 }
 

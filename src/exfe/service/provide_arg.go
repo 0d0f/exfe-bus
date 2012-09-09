@@ -69,6 +69,14 @@ func (a *ProviderArg) IsHost() bool {
 	return a.Cross.By_identity.DiffId() == a.To_identity.DiffId()
 }
 
+func (a *ProviderArg) PublicLink() string {
+	token := a.Token()
+	if len(token) < 4 {
+		return a.Cross.Link(a.Config.Site_url)
+	}
+	return fmt.Sprintf("%s/%s", a.Cross.Link(a.Config.Site_url), a.Token()[1:4])
+}
+
 func (a *ProviderArg) Token() string {
 	inv := a.Cross.Exfee.FindInvitation(a.To_identity)
 	if inv == nil {
