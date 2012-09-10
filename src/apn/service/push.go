@@ -4,6 +4,7 @@ import (
 	"github.com/virushuo/Go-Apns"
 	"log"
 	"time"
+	"unicode/utf8"
 )
 
 type Apn struct {
@@ -83,15 +84,15 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 
 	defer func() { a.retimer <- 1 }()
 
-	alert := []byte(arg.Alert)
-	if len(alert) > 140 {
-		alert = alert[:140]
-		for !utf8.Valid(alert) {
-			alert = alert[:len(alert)-1]
-		}
-	}
 	payload := goapns.Payload{}
 	for _, arg := range args {
+		alert := []byte(arg.Alert)
+		if len(alert) > 140 {
+			alert = alert[:140]
+			for !utf8.Valid(alert) {
+				alert = alert[:len(alert)-1]
+			}
+		}
 		payload.Aps.Alert = string(alert)
 		payload.Aps.Badge = int(arg.Badge)
 		payload.Aps.Sound = arg.Sound
