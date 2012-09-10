@@ -1,1 +1,1 @@
-You got new invitation.
+New invitation: {{ .PublicLink }} (Please follow @EXFE to receive further notifications PRIVATELY through Direct Message.)

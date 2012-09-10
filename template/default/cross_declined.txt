@@ -1,1 +1,1 @@
-Cross {{ .Arg.Cross.Title }} Decliend: {{ $a := .Identities }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.
+·X· {{ .Arg.Cross.Title }} Decliend: {{ $a := .Identities }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.

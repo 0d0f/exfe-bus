@@ -1,23 +1,23 @@
 package exfe_model
 
 import (
-	"time"
 	"fmt"
+	"time"
 )
 
 type Post struct {
-	Id uint64
-	By_identity Identity
-	Content string
-	Postable_id uint64
+	Id            uint64
+	By_identity   Identity
+	Content       string
+	Postable_id   uint64
 	Postable_type string
-	Via string
-	Created_at string
+	Via           string
+	Created_at    string
 	/*Relative map[string]string*/
 }
 
 func (p *Post) CreatedAt(timezone string) (string, error) {
-	t, err := time.Parse("2006-01-02 15:04:05", p.Created_at)
+	t, err := time.Parse("2006-01-02 15:04:05", p.Created_at[:19])
 	if err != nil {
 		return "", err
 	}

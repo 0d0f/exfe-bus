@@ -4,6 +4,7 @@ import (
 	"github.com/virushuo/Go-Apns"
 	"log"
 	"time"
+	"unicode/utf8"
 )
 
 type Apn struct {
@@ -73,7 +74,6 @@ type ApnSendArg struct {
 }
 
 func (a *Apn) ApnSend(args []ApnSendArg) error {
-	log.Printf("apn send")
 	if a.isClosed {
 		log.Printf("apn connection reconnect")
 		a.apn.Reconnect()
@@ -85,7 +85,14 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 
 	payload := goapns.Payload{}
 	for _, arg := range args {
-		payload.Aps.Alert = arg.Alert
+		alert := []byte(arg.Alert)
+		if len(alert) > 140 {
+			alert = alert[:140]
+			for !utf8.Valid(alert) {
+				alert = alert[:len(alert)-1]
+			}
+		}
+		payload.Aps.Alert = string(alert)
 		payload.Aps.Badge = int(arg.Badge)
 		payload.Aps.Sound = arg.Sound
 		payload.SetCustom("args", ExfePush{
@@ -98,6 +105,7 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 			Payload:     &payload,
 		}
 		a.id++
+		log.Printf("apn send %s to %s, id %d", notification.Payload.Aps.Alert, notification.DeviceToken, notification.Identifier)
 		err := a.apn.SendNotification(&notification)
 		if err != nil {
 			log.Printf("Send notification(%s) to device(%s) error: %s", arg.Alert, arg.DeviceToken, err)

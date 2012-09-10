@@ -125,6 +125,7 @@ func (b *EmailBot) getCrossId(addrs []*mail.Address) string {
 
 func (b *EmailBot) isReplys(line string) bool {
 	for _, r := range b.replyLine {
+		line = strings.Trim(line, " \t\n\r")
 		if r.MatchString(line) {
 			return true
 		}
