@@ -2,8 +2,8 @@ package apn_service
 
 import (
 	"github.com/virushuo/Go-Apns"
-	"gobus"
 	"log"
+	"old_gobus"
 	"time"
 	"unicode/utf8"
 )

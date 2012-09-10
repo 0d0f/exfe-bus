@@ -56,7 +56,7 @@ func main() {
 	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
 
-	bus, err := gobus.NewGobusServer(url, log)
+	bus, err := gobus.NewServer(url, log)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
