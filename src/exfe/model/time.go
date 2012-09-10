@@ -44,9 +44,9 @@ func (t EFTime) timeInZone(targetZone string) (time.Time, error) {
 
 	switch {
 	case t.Time != "" && t.Date != "":
-		t_, err = time.Parse("2006-01-02 15:04:05", fmt.Sprintf("%s %s", t.Date, t.Time))
+		t_, err = time.Parse("2006-01-02 15:04:05", fmt.Sprintf("%s %s", t.Date, t.Time[:8]))
 	case t.Time != "" && t.Date == "":
-		t_, err = time.Parse("15:04:05", fmt.Sprintf("%s", t.Time))
+		t_, err = time.Parse("15:04:05", fmt.Sprintf("%s", t.Time[:8]))
 	case t.Time == "" && t.Date != "":
 		t_, err = time.Parse("2006-01-02", fmt.Sprintf("%s", t.Date))
 	}
