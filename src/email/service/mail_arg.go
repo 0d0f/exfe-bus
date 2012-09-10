@@ -17,13 +17,14 @@ type FilePart struct {
 }
 
 type MailArg struct {
-	To        []*mail.Address
-	From      *mail.Address
-	Subject   string
-	Header    textproto.MIMEHeader
-	Text      string
-	Html      string
-	FileParts []FilePart
+	To         []*mail.Address
+	From       *mail.Address
+	Subject    string
+	Header     textproto.MIMEHeader
+	Text       string
+	Html       string
+	FileParts  []FilePart
+	References []string
 }
 
 func (m *MailArg) String() string {
@@ -99,6 +100,16 @@ func (m *MailArg) makeHeader() ([]byte, error) {
 		buf.WriteString(": ")
 		buf.Write([]byte(strings.Join(v, ", ")))
 		buf.WriteString("\r\n")
+	}
+	if m.References != nil && len(m.References) > 0 {
+		buf.WriteString("References: ")
+		buf.WriteString(m.References[0])
+		buf.WriteString("\n")
+		for _, r := range m.References[1:] {
+			buf.WriteString("\t")
+			buf.WriteString(r)
+			buf.WriteString("\n")
+		}
 	}
 	buf.WriteString("To: ")
 	for i, t := range m.To {
