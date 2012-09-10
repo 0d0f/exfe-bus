@@ -74,7 +74,6 @@ type ApnSendArg struct {
 }
 
 func (a *Apn) ApnSend(args []ApnSendArg) error {
-	log.Printf("apn send")
 	if a.isClosed {
 		log.Printf("apn connection reconnect")
 		a.apn.Reconnect()
@@ -106,6 +105,7 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 			Payload:     &payload,
 		}
 		a.id++
+		log.Printf("apn send %s to %s, id %d", notification.Payload.Aps.Alert, notification.DeviceToken, notification.Identifier)
 		err := a.apn.SendNotification(&notification)
 		if err != nil {
 			log.Printf("Send notification(%s) to device(%s) error: %s", arg.Alert, arg.DeviceToken, err)
