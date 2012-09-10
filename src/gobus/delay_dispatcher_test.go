@@ -3,7 +3,7 @@ package gobus
 import (
 	"bytes"
 	"fmt"
-	"github.com/googollee/go-log"
+	"github.com/googollee/go-logger"
 	"net/http"
 	"testing"
 	"time"
@@ -35,7 +35,7 @@ func (d *Delay) Delay(args []MyInt) error {
 }
 
 func TestDelayDispatcher(t *testing.T) {
-	l, err := log.New(log.Stderr, "gobus test", log.LstdFlags)
+	l, err := logger.New(logger.Stderr, "gobus test", logger.LstdFlags)
 	if err != nil {
 		panic(err)
 	}
@@ -98,7 +98,7 @@ func (d *RetryDelay) Delay(args []MyInt) error {
 }
 
 func TestRetryDelayDispatcher(t *testing.T) {
-	l, err := log.New(log.Stderr, "gobus test", log.LstdFlags)
+	l, err := logger.New(logger.Stderr, "gobus test", logger.LstdFlags)
 	d := NewDelayDispatcher(l)
 	s := newRetryDelay()
 	err = d.Register(s)

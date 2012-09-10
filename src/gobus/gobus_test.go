@@ -2,7 +2,7 @@ package gobus
 
 import (
 	"fmt"
-	"github.com/googollee/go-log"
+	"github.com/googollee/go-logger"
 	"testing"
 	"time"
 )
@@ -33,11 +33,11 @@ func (t *gobusTest) IntDelay(args []MyInt) error {
 const gobusUrl = "http://127.0.0.1:12345"
 
 func TestGobus(t *testing.T) {
-	l, err := log.New(log.Stderr, "test gobus", log.LstdFlags)
+	l, err := logger.New(logger.Stderr, "test gobus", logger.LstdFlags)
 	if err != nil {
 		panic(err)
 	}
-	s, err := NewGobusServer(gobusUrl, l)
+	s, err := NewServer(gobusUrl, l)
 	if err != nil {
 		t.Fatalf("create gobus server fail: %s", err)
 	}
@@ -47,7 +47,7 @@ func TestGobus(t *testing.T) {
 	s.RegisterDelayService(test)
 	go s.ListenAndServe()
 
-	c, err := NewGobusClient(fmt.Sprintf("%s/%s", gobusUrl, "gobusTest"))
+	c, err := NewClient(fmt.Sprintf("%s/%s", gobusUrl, "gobusTest"))
 	if err != nil {
 		t.Fatalf("create gobus client fail: %s", err)
 	}

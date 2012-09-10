@@ -190,12 +190,13 @@ func (d *DelayDispatcher) Serve() error {
 							data := v.Index(i).Interface().(QueueData)
 							err := s.queue.Push(data)
 							if err != nil {
-								d.logger.Crit("push arg to queue error: %s", err)
+								d.logger.Crit("push arg to queue error when retry: %s", err)
 							}
 						}
 						s.locker.Unlock()
+					} else {
+						d.logger.Crit("Call fail: %s", e)
 					}
-					d.logger.Crit("Call fail: %s", e)
 					continue
 				}
 			}

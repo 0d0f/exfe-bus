@@ -43,7 +43,10 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var ret interface{}
 	defer func() {
 		e := json.NewEncoder(w)
-		e.Encode(ret)
+		err := e.Encode(ret)
+		if err != nil {
+			panic(err)
+		}
 	}()
 
 	if len(paths) < 1 {

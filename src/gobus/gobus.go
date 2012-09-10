@@ -14,13 +14,13 @@ type DelayService interface {
 	DeclareQueue() Queue
 }
 
-type GobusServer struct {
+type Server struct {
 	jsonServer      *JSONServer
 	url             string
 	delayDispatcher *DelayDispatcher
 }
 
-func NewGobusServer(u string, l *logger.Logger) (*GobusServer, error) {
+func NewServer(u string, l *logger.Logger) (*Server, error) {
 	u_, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -28,22 +28,22 @@ func NewGobusServer(u string, l *logger.Logger) (*GobusServer, error) {
 	s := NewJSONServer()
 	dispatcher := NewDelayDispatcher(l)
 	s.SetDispatcher(dispatcher)
-	return &GobusServer{
+	return &Server{
 		jsonServer:      s,
 		url:             u_.Host,
 		delayDispatcher: dispatcher,
 	}, nil
 }
 
-func (s *GobusServer) Register(service interface{}) error {
+func (s *Server) Register(service interface{}) error {
 	return s.jsonServer.Register(service)
 }
 
-func (s *GobusServer) RegisterDelayService(service DelayService) error {
+func (s *Server) RegisterDelayService(service DelayService) error {
 	return s.delayDispatcher.Register(service)
 }
 
-func (s *GobusServer) ListenAndServe() error {
+func (s *Server) ListenAndServe() error {
 	h := &http.Server{
 		Addr:    s.url,
 		Handler: s.jsonServer,
@@ -52,24 +52,24 @@ func (s *GobusServer) ListenAndServe() error {
 	return h.ListenAndServe()
 }
 
-type GobusClient struct {
+type Client struct {
 	httpClient *http.Client
 	url        *url.URL
 }
 
-func NewGobusClient(u string) (*GobusClient, error) {
+func NewClient(u string) (*Client, error) {
 	u_, err := url.Parse(u)
 	if err != nil {
 		return nil, err
 	}
 	c := new(http.Client)
-	return &GobusClient{
+	return &Client{
 		httpClient: c,
 		url:        u_,
 	}, nil
 }
 
-func (c *GobusClient) Do(method string, arg interface{}, reply interface{}) error {
+func (c *Client) Do(method string, arg interface{}, reply interface{}) error {
 	respBody, err := c.send(method, arg)
 	if err != nil {
 		return err
@@ -82,12 +82,12 @@ func (c *GobusClient) Do(method string, arg interface{}, reply interface{}) erro
 	return nil
 }
 
-func (c *GobusClient) Send(method string, arg interface{}) error {
+func (c *Client) Send(method string, arg interface{}) error {
 	_, err := c.send(method, arg)
 	return err
 }
 
-func (c *GobusClient) send(method string, arg interface{}) ([]byte, error) {
+func (c *Client) send(method string, arg interface{}) ([]byte, error) {
 	b, err := json.Marshal(arg)
 	if err != nil {
 		return nil, fmt.Errorf("can't marshal arg to json: %s", err)

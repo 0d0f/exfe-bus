@@ -8,32 +8,32 @@ import (
 	"testing"
 )
 
-type Server struct {
+type TestServer struct {
 	lastInstance string
 	lastMethod   string
 }
 
-func (s *Server) Double(meta *HTTPMeta, args int, reply *int) error {
+func (s *TestServer) Double(meta *HTTPMeta, args int, reply *int) error {
 	*reply = args * 2
 	return nil
 }
 
-func (s *Server) Triple(meta *HTTPMeta, args *int, reply *int) error {
+func (s *TestServer) Triple(meta *HTTPMeta, args *int, reply *int) error {
 	*reply = *args * 3
 	return nil
 }
 
-func (s *Server) Error(meta *HTTPMeta, arg int, reply *int) error {
+func (s *TestServer) Error(meta *HTTPMeta, arg int, reply *int) error {
 	return fmt.Errorf("inner error")
 }
 
-func (s *Server) POST(meta *HTTPMeta, arg int, reply *int) error {
+func (s *TestServer) POST(meta *HTTPMeta, arg int, reply *int) error {
 	*reply = arg * 4
 	meta.Response.WriteHeader(http.StatusCreated)
 	return nil
 }
 
-func (s *Server) Dispatch(req *http.Request, instance, method string) error {
+func (s *TestServer) Dispatch(req *http.Request, instance, method string) error {
 	s.lastInstance = instance
 	s.lastMethod = method
 	return nil
@@ -41,7 +41,7 @@ func (s *Server) Dispatch(req *http.Request, instance, method string) error {
 
 func TestJSONServer(t *testing.T) {
 	s := NewJSONServer()
-	server := new(Server)
+	server := new(TestServer)
 	s.Register(server)
 	s.SetDispatcher(server)
 	h := &http.Server{
@@ -52,7 +52,7 @@ func TestJSONServer(t *testing.T) {
 
 	{
 		buf := bytes.NewBufferString("1")
-		resp, err := http.Post("http://127.0.0.1:1234/Server?method=Double", "application/json", buf)
+		resp, err := http.Post("http://127.0.0.1:1234/TestServer?method=Double", "application/json", buf)
 		if err != nil {
 			t.Fatalf("http post error: %s", err)
 		}
@@ -70,7 +70,7 @@ func TestJSONServer(t *testing.T) {
 
 	{
 		buf := bytes.NewBufferString("2")
-		resp, err := http.Post("http://127.0.0.1:1234/Server?method=Triple", "application/json", buf)
+		resp, err := http.Post("http://127.0.0.1:1234/TestServer?method=Triple", "application/json", buf)
 		if err != nil {
 			t.Fatalf("http post error: %s", err)
 		}
@@ -88,7 +88,7 @@ func TestJSONServer(t *testing.T) {
 
 	{
 		buf := bytes.NewBufferString("2")
-		resp, err := http.Post("http://127.0.0.1:1234/Server?method=Error", "application/json", buf)
+		resp, err := http.Post("http://127.0.0.1:1234/TestServer?method=Error", "application/json", buf)
 		if err != nil {
 			t.Fatalf("http post error: %s", err)
 		}
@@ -106,7 +106,7 @@ func TestJSONServer(t *testing.T) {
 
 	{
 		buf := bytes.NewBufferString("3")
-		resp, err := http.Post("http://127.0.0.1:1234/Server", "application/json", buf)
+		resp, err := http.Post("http://127.0.0.1:1234/TestServer", "application/json", buf)
 		if err != nil {
 			t.Fatalf("http post error: %s", err)
 		}
@@ -124,7 +124,7 @@ func TestJSONServer(t *testing.T) {
 
 	{
 		buf := bytes.NewBufferString("3")
-		resp, err := http.Post("http://127.0.0.1:1234/Server?method=NoInstance", "application/json", buf)
+		resp, err := http.Post("http://127.0.0.1:1234/TestServer?method=NoInstance", "application/json", buf)
 		if err != nil {
 			t.Fatalf("http post error: %s", err)
 		}
@@ -138,7 +138,7 @@ func TestJSONServer(t *testing.T) {
 		if got, expect := string(body), "true\n"; got != expect {
 			t.Errorf("expect: (%s), got: (%s)", expect, got)
 		}
-		if got, expect := server.lastInstance, "Server"; got != expect {
+		if got, expect := server.lastInstance, "TestServer"; got != expect {
 			t.Errorf("expect: %s, got: %s", expect, got)
 		}
 		if got, expect := server.lastMethod, "NoInstance"; got != expect {
