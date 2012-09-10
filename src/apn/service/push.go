@@ -2,6 +2,7 @@ package apn_service
 
 import (
 	"github.com/virushuo/Go-Apns"
+	"gobus"
 	"log"
 	"time"
 	"unicode/utf8"
@@ -15,20 +16,28 @@ type Apn struct {
 	id       uint32
 	isClosed bool
 	retimer  chan int
+
+	netaddr    string
+	db         int
+	password   string
+	pushBuffer []ApnSendArg
 }
 
-func NewApn(cert, key, server, rootca string) (*Apn, error) {
+func NewApn(cert, key, server, rootca, netaddr string, db int, password string) (*Apn, error) {
 	apn, err := goapns.Connect(cert, key, server)
 	if err != nil {
 		return nil, err
 	}
 	ret := &Apn{
-		cert:    cert,
-		key:     key,
-		server:  server,
-		apn:     apn,
-		id:      0,
-		retimer: make(chan int),
+		cert:     cert,
+		key:      key,
+		server:   server,
+		apn:      apn,
+		id:       0,
+		retimer:  make(chan int),
+		netaddr:  netaddr,
+		db:       db,
+		password: password,
 	}
 	go errorListen(ret)
 	go closeTimer(ret)
@@ -40,7 +49,19 @@ func errorListen(apn *Apn) {
 		apnerr := <-apn.apn.ErrorChan
 		if apnerr.Command != 0 && apnerr.Status != 0 {
 			log.Printf("Apn error: cmd %d, status %d, id %d", apnerr.Command, apnerr.Status, apnerr.Identifier)
-			panic("apn error")
+			needSend := false
+			for _, push := range apn.pushBuffer {
+				if push.id == apnerr.Identifier {
+					needSend = true
+					continue
+				}
+				if !needSend {
+					continue
+				}
+				client := gobus.CreateClient(apn.netaddr, apn.db, apn.password, "iOS")
+				client.Send("ApnSend", &push, 5)
+			}
+			panic(apnerr)
 		}
 	}
 }
@@ -71,6 +92,8 @@ type ApnSendArg struct {
 	Sound       string
 	Cid         uint64
 	T           string
+
+	id uint32
 }
 
 func (a *Apn) ApnSend(args []ApnSendArg) error {
@@ -84,7 +107,9 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 	defer func() { a.retimer <- 1 }()
 
 	payload := goapns.Payload{}
-	for _, arg := range args {
+	a.pushBuffer = args
+
+	for i, arg := range args {
 		alert := []byte(arg.Alert)
 		if len(alert) > 140 {
 			alert = alert[:140]
@@ -104,12 +129,13 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 			Identifier:  a.id,
 			Payload:     &payload,
 		}
-		a.id++
+		a.pushBuffer[i].id = a.id
+
 		log.Printf("apn send %s to %s, id %d", notification.Payload.Aps.Alert, notification.DeviceToken, notification.Identifier)
 		err := a.apn.SendNotification(&notification)
+		a.id++
 		if err != nil {
 			log.Printf("Send notification(%s) to device(%s) error: %s", arg.Alert, arg.DeviceToken, err)
-			return err
 		}
 	}
 	return nil
