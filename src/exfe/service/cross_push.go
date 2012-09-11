@@ -42,12 +42,14 @@ func (s *CrossPush) sendCrossChange(arg *ProviderArg) {
 		return
 	}
 
-	if arg.Old_cross.Title != arg.Cross.Title {
+	if arg.IsTitleChanged() {
 		msg, _ := arg.TextTitleChange()
 		s.push(arg, msg, "default", "u", 1)
 	}
-	msg, _ := arg.TextCrossChange()
-	s.push(arg, msg, "default", "u", 1)
+	if arg.IsTimeChanged() || arg.IsPlaceChanged() {
+		msg, _ := arg.TextCrossChange()
+		s.push(arg, msg, "default", "u", 1)
+	}
 }
 
 func (s *CrossPush) sendExfeeChange(arg *ProviderArg) {

@@ -34,7 +34,7 @@ type ProviderArg struct {
 }
 
 func (a *ProviderArg) IsCrossChanged() bool {
-	return a.IsTimeChanged() || a.IsTimeChanged() || a.IsPlaceChanged() ||
+	return a.IsTitleChanged() || a.IsTimeChanged() || a.IsPlaceChanged() ||
 		((len(a.Accepted) + len(a.Declined) + len(a.NewlyInvited) + len(a.Removed)) > 0)
 }
 
