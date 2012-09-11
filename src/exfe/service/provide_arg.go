@@ -142,7 +142,7 @@ func (a *ProviderArg) TextAccepted() (string, error) {
 
 	data := make(map[string]interface{})
 	data["Arg"] = a
-	data["Identities"] = a.Accepted
+	data["Invitations"] = a.Accepted
 	data["TotalAccepted"] = accepted
 	data["OtherCount"] = otherCount
 	data["HasOther"] = otherCount > 0
