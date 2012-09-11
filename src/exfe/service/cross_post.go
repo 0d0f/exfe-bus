@@ -33,9 +33,9 @@ func (s *CrossPost) SendPost(arg *OneIdentityUpdateArg) {
 	by := arg.By_identity.Name
 	switch arg.To_identity.Provider {
 	case "iOS":
-		s.SendApn(arg, fmt.Sprintf("·X· %s new post by %s: %s", arg.Cross.Title, by, arg.Post.Content))
+		s.SendApn(arg, fmt.Sprintf("%s: %s (\"%s\")", by, arg.Post.Content, arg.Cross.Title))
 	case "Android":
-		s.SendAndroid(arg, fmt.Sprintf("·X· %s new post by %s: %s", arg.Cross.Title, by, arg.Post.Content))
+		s.SendAndroid(arg, fmt.Sprintf("%s: %s (\"%s\")", by, arg.Post.Content, arg.Cross.Title))
 	}
 }
 
