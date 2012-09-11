@@ -1,1 +1,1 @@
-"{{ .Old_cross.Title }}" is now "*{{ .Cross.Title }}*".
+"{{ .Old_cross.Title }}" is now "{{ .Cross.Title }}".
