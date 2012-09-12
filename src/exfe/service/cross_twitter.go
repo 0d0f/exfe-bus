@@ -19,6 +19,7 @@ func NewCrossTwitter(config *Config) (ret *CrossTwitter) {
 }
 
 func (s *CrossTwitter) Handle(arg *ProviderArg) {
+	arg.Config = s.config
 	s.sendNewCross(arg)
 	s.sendCrossChange(arg)
 	s.sendExfeeChange(arg)
