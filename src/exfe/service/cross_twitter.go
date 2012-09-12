@@ -102,7 +102,7 @@ func (s *CrossTwitter) sendInvitation(arg *ProviderArg) {
 		if err != nil {
 			s.log.Printf("template error: %s", err)
 		}
-		s.sendDM(arg, msg, []string{arg.Cross.LinkTo(s.config.Site_url, arg.Token()), "(Please follow @EXFE to receive details through Direct Message.)"})
+		s.sendDM(arg, msg, []string{arg.Cross.LinkTo(s.config.Site_url, arg.Token())})
 	} else {
 		if arg.IsHost() {
 			return
@@ -111,7 +111,7 @@ func (s *CrossTwitter) sendInvitation(arg *ProviderArg) {
 		if err != nil {
 			s.log.Printf("template error: %s", err)
 		}
-		s.sendTweet(arg, msg, nil)
+		s.sendTweet(arg, msg, []string{arg.PublicLink(), "(Please follow @EXFE to receive details through Direct Message.)"})
 	}
 }
 
