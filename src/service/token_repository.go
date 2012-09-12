@@ -91,7 +91,6 @@ func (r *TokenRepository) FindByKey(key string) ([]*tokenmanager.Token, error) {
 }
 
 func (r *TokenRepository) FindByToken(key, rand string) (*tokenmanager.Token, error) {
-	fmt.Println(key, rand)
 	const FIND = "SELECT created_at, expire_at, data FROM `%s` WHERE %s.key=? AND %s.rand=?"
 	sql := fmt.Sprintf(FIND, r.config.TokenManager.TableName, r.config.TokenManager.TableName, r.config.TokenManager.TableName)
 	rows, err := r.db.Query(sql, key, rand)
