@@ -57,7 +57,7 @@ func (s *UpdateInfoService) UpdateUserInfo(id int64, i *UserInfo, _ int) error {
 func makeText(message string, attachments []string) (string, error) {
 	length := 0
 	for _, a := range attachments {
-		if a[:7] == "http://" {
+		if a[:7] == "http://" || a[:8] == "https://" {
 			length += UrlLength
 		} else {
 			length += len(a)
