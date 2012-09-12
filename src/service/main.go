@@ -1,6 +1,7 @@
 package main
 
 import (
+	"configure"
 	"daemon"
 	"fmt"
 	"github.com/googollee/go-logger"
@@ -9,32 +10,8 @@ import (
 	"os"
 )
 
-type Config struct {
-	DB struct {
-		Addr     string `json:"addr"`
-		Port     int    `json:"port"`
-		Username string `json:"username"`
-		Password string `json:"password"`
-		DbName   string `json:"db_name"`
-	} `json:"db"`
-	Redis struct {
-		Netaddr  string `json:"netaddr"`
-		Db       int    `json:"db"`
-		Password string `json:"password"`
-	} `json:"redis"`
-	ExfeService struct {
-		Addr string `json:"addr"`
-		Port int    `json:"port"`
-	} `json:"exfe_service"`
-	TokenManager struct {
-		TableName string `json:"table_name"`
-	} `json:"token_manager"`
-
-	Log *logger.Logger
-}
-
 func main() {
-	var config Config
+	var config configure.Config
 	output, quit := daemon.Init("exfe.json", &config)
 
 	log, err := logger.New(output, "service bus", logger.Lshortfile)

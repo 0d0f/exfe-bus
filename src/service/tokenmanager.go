@@ -1,6 +1,7 @@
 package main
 
 import (
+	"configure"
 	"github.com/googollee/go-logger"
 	"gobus"
 	"time"
@@ -11,10 +12,10 @@ type TokenManager struct {
 	tokenRepo *TokenRepository
 	manager   *tokenmanager.TokenManager
 	log       *logger.SubLogger
-	config    *Config
+	config    *configure.Config
 }
 
-func NewTokenManager(config *Config) (*TokenManager, error) {
+func NewTokenManager(config *configure.Config) (*TokenManager, error) {
 	repo, err := NewTokenRepository(config)
 	if err != nil {
 		return nil, err

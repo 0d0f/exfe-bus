@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "code.google.com/p/go-mysql-driver/mysql"
+	"configure"
 	"database/sql"
 	"fmt"
 	"time"
@@ -10,10 +11,10 @@ import (
 
 type TokenRepository struct {
 	db     *sql.DB
-	config *Config
+	config *configure.Config
 }
 
-func NewTokenRepository(config *Config) (*TokenRepository, error) {
+func NewTokenRepository(config *configure.Config) (*TokenRepository, error) {
 	ret := &TokenRepository{
 		config: config,
 	}

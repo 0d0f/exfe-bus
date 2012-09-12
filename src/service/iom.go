@@ -1,6 +1,7 @@
 package main
 
 import (
+	"configure"
 	"github.com/googollee/go-logger"
 	"github.com/googollee/godis"
 	"gobus"
@@ -12,7 +13,7 @@ type Iom struct {
 	log     *logger.SubLogger
 }
 
-func NewIom(config *Config, redis *godis.Client) *Iom {
+func NewIom(config *configure.Config, redis *godis.Client) *Iom {
 	return &Iom{
 		handler: iom.NewIom(redis),
 		log:     config.Log.SubPrefix("iom"),
