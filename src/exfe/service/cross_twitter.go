@@ -194,6 +194,7 @@ func (s *CrossTwitter) send(arg *ProviderArg, msg string) {
 	if isFriend {
 		s.sendDM(arg, msg, []string{arg.Cross.Link(s.config.Site_url)})
 	} else {
+		s.log.Print("avoid public update tweet")
 		// no public update information now.
 		// s.sendTweet(arg, msg, arg.Cross.Link(s.config.Site_url))
 	}
