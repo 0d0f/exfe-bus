@@ -19,6 +19,7 @@ func NewCrossTwitter(config *Config) (ret *CrossTwitter) {
 }
 
 func (s *CrossTwitter) Handle(arg *ProviderArg) {
+	arg.Config = s.config
 	s.sendNewCross(arg)
 	s.sendCrossChange(arg)
 	s.sendExfeeChange(arg)
@@ -58,34 +59,26 @@ func (s *CrossTwitter) checkFriend(to *exfe_model.Identity) (isFriend bool) {
 	return
 }
 
-func (s *CrossTwitter) sendTweet(arg *ProviderArg, message, url string) {
-	urls := []string{}
-	if url != "" {
-		urls = append(urls, url)
-	}
+func (s *CrossTwitter) sendTweet(arg *ProviderArg, message string, attachments []string) {
 	tweet := &twitter_service.StatusesUpdateArg{
 		ClientToken:  s.config.Twitter.Client_token,
 		ClientSecret: s.config.Twitter.Client_secret,
 		AccessToken:  s.config.Twitter.Access_token,
 		AccessSecret: s.config.Twitter.Access_secret,
 		Tweet:        fmt.Sprintf("@%s %s", arg.To_identity.External_username, message),
-		Urls:         urls,
+		Attachments:  attachments,
 	}
 	s.client.Send("SendTweet", tweet, 5)
 }
 
-func (s *CrossTwitter) sendDM(arg *ProviderArg, t, url string) {
-	urls := []string{}
-	if url != "" {
-		urls = append(urls, url)
-	}
+func (s *CrossTwitter) sendDM(arg *ProviderArg, t string, attachments []string) {
 	dm := &twitter_service.DirectMessagesNewArg{
 		ClientToken:  s.config.Twitter.Client_token,
 		ClientSecret: s.config.Twitter.Client_secret,
 		AccessToken:  s.config.Twitter.Access_token,
 		AccessSecret: s.config.Twitter.Access_secret,
 		Message:      t,
-		Urls:         urls,
+		Attachments:  attachments,
 		ToUserName:   &arg.To_identity.External_username,
 		IdentityId:   &arg.To_identity.Id,
 	}
@@ -109,7 +102,7 @@ func (s *CrossTwitter) sendInvitation(arg *ProviderArg) {
 		if err != nil {
 			s.log.Printf("template error: %s", err)
 		}
-		s.sendDM(arg, msg, arg.Cross.LinkTo(s.config.Site_url, arg.Token()))
+		s.sendDM(arg, msg, []string{arg.Cross.LinkTo(s.config.Site_url, arg.Token())})
 	} else {
 		if arg.IsHost() {
 			return
@@ -118,7 +111,7 @@ func (s *CrossTwitter) sendInvitation(arg *ProviderArg) {
 		if err != nil {
 			s.log.Printf("template error: %s", err)
 		}
-		s.sendTweet(arg, msg, "")
+		s.sendTweet(arg, msg, []string{arg.PublicLink(), "(Please follow @EXFE to receive details through Direct Message.)"})
 	}
 }
 
@@ -199,8 +192,9 @@ func (s *CrossTwitter) send(arg *ProviderArg, msg string) {
 	isFriend := s.checkFriend(arg.To_identity)
 
 	if isFriend {
-		s.sendDM(arg, msg, arg.Cross.Link(s.config.Site_url))
+		s.sendDM(arg, msg, []string{arg.Cross.Link(s.config.Site_url)})
 	} else {
+		s.log.Print("avoid public update tweet")
 		// no public update information now.
 		// s.sendTweet(arg, msg, arg.Cross.Link(s.config.Site_url))
 	}

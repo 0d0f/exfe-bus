@@ -8,6 +8,7 @@ import (
 
 const UrlLength = 20
 const MaxTweetLength = 140
+const MaxTwitterIDLength = 16
 
 type UserInfo struct {
 	Id                uint64
@@ -53,15 +54,27 @@ func (s *UpdateInfoService) UpdateUserInfo(id int64, i *UserInfo, _ int) error {
 	return nil
 }
 
-func makeText(message string, urls []string) string {
-	maxMessageLength := MaxTweetLength - (len(urls)+1 /* space */)*UrlLength
+func makeText(message string, attachments []string) (string, error) {
+	length := 0
+	for _, a := range attachments {
+		if a[:7] == "http://" || a[:8] == "https://" {
+			length += UrlLength
+		} else {
+			length += len(a)
+		}
+		length += 1
+	}
+	if length > MaxTweetLength-MaxTwitterIDLength {
+		return "", fmt.Errorf("too much attachments")
+	}
+	maxMessageLength := MaxTweetLength - length
 
 	if len(message) > maxMessageLength {
-		message = fmt.Sprintf("%s…", message[0:(maxMessageLength-1)])
+		message = message[0:maxMessageLength]
 	}
-	for _, url := range urls {
-		message = fmt.Sprintf("%s %s", message, url)
+	for _, a := range attachments {
+		message = fmt.Sprintf("%s %s", message, a)
 	}
 
-	return message
+	return message, nil
 }

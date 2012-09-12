@@ -74,7 +74,11 @@ func (a *ProviderArg) PublicLink() string {
 	if len(token) < 4 {
 		return a.Cross.Link(a.Config.Site_url)
 	}
-	return fmt.Sprintf("%s/%s", a.Cross.Link(a.Config.Site_url), a.Token()[1:4])
+	tk := ""
+	if t := a.Token(); t != "" {
+		tk = fmt.Sprintf("/%s", t[1:4])
+	}
+	return fmt.Sprintf("%s%s", a.Cross.Link(a.Config.Site_url), tk)
 }
 
 func (a *ProviderArg) Token() string {

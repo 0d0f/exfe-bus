@@ -1,12 +1,12 @@
 package twitter_service
 
 import (
-	"fmt"
-	"net/url"
-	"log"
-	"os"
-	"oauth"
 	"encoding/json"
+	"fmt"
+	"log"
+	"net/url"
+	"oauth"
+	"os"
 )
 
 type StatusesUpdateArg struct {
@@ -15,8 +15,8 @@ type StatusesUpdateArg struct {
 	AccessToken  string
 	AccessSecret string
 
-	Tweet        string
-	Urls         []string
+	Tweet       string
+	Attachments []string
 }
 
 func (t *StatusesUpdateArg) String() string {
@@ -43,8 +43,13 @@ func (t *Statuses) SendTweet(arg *StatusesUpdateArg, reply *StatusesUpdateReply)
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 
+	text, err := makeText(arg.Tweet, arg.Attachments)
+	if err != nil {
+		t.log.Printf("make tweet fail: %s", err)
+		return err
+	}
 	params := make(url.Values)
-	params.Add("status", makeText(arg.Tweet, arg.Urls))
+	params.Add("status", text)
 
 	retReader, err := client.Do("POST", "/statuses/update.json", params)
 	if err != nil {

@@ -16,10 +16,10 @@ type DirectMessagesNewArg struct {
 	AccessToken  string
 	AccessSecret string
 
-	Message    string
-	Urls       []string
-	ToUserName *string
-	ToUserId   *string
+	Message     string
+	Attachments []string
+	ToUserName  *string
+	ToUserId    *string
 
 	IdentityId *int64
 }
@@ -80,7 +80,12 @@ func (m *DirectMessages) SendDM(arg *DirectMessagesNewArg, reply *DirectMessages
 
 	client := oauth.CreateClient(arg.ClientToken, arg.ClientSecret, arg.AccessToken, arg.AccessSecret, "https://api.twitter.com/1/")
 
-	arg.Message = makeText(arg.Message, arg.Urls)
+	text, err := makeText(arg.Message, arg.Attachments)
+	if err != nil {
+		m.log.Printf("make text failed: %s", err)
+		return err
+	}
+	arg.Message = text
 
 	params, err := arg.getValues()
 	if err != nil {
