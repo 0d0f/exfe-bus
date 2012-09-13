@@ -157,10 +157,11 @@ func (e *CrossEmail) sendMail(arg *ProviderArg) {
 			for _, p := range arg.Posts {
 				if p.By_identity.DiffId() != arg.To_identity.DiffId() {
 					selfPost = false
+					break
 				}
-				if selfPost {
-					return
-				}
+			}
+			if selfPost {
+				return
 			}
 		}
 	}
