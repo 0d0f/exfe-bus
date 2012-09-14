@@ -177,9 +177,9 @@ func (e *CrossEmail) sendMail(arg *ProviderArg) {
 	mailarg := &email_service.MailArg{
 		To:         []*mail.Address{&mail.Address{arg.To_identity.Name, arg.To_identity.External_id}},
 		From:       &mail.Address{e.config.EmailName, mail_addr},
-		Subject:    htmls[0],
-		Text:       htmls[1],
-		Html:       htmls[2],
+		Subject:    strings.Trim(htmls[0], " \n\r\t"),
+		Text:       strings.Trim(htmls[1], " \n\r\t"),
+		Html:       strings.Trim(htmls[2], " \n\r\t"),
 		References: []string{fmt.Sprintf("<%s>", mail_addr)},
 		FileParts: []email_service.FilePart{
 			email_service.FilePart{fmt.Sprintf("%s.ics", arg.Cross.Title), []byte(ics)},
