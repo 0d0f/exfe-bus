@@ -1,17 +1,17 @@
 package main
 
 import (
-	"configure"
 	"daemon"
 	"fmt"
 	"github.com/googollee/go-logger"
 	"github.com/googollee/godis"
 	"gobus"
+	"model"
 	"os"
 )
 
 func main() {
-	var config configure.Config
+	var config model.Config
 	output, quit := daemon.Init("exfe.json", &config)
 
 	log, err := logger.New(output, "service bus", logger.Lshortfile)
