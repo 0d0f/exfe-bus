@@ -173,7 +173,7 @@ Description
                                     {{ range .Cross.Exfee.Invitations }}
                                     <tr>
                                         <td width="25" height="25" align="left" valign="top">
-                                            <img width="20" height="20" title="{{ .Identity.Name }}" alt="{{ .Identity.Name }}" src="{{ $api }}/v2/avatar/render?url={{ .Identity.Avatar_filename | base64 | urlquery }}&width=25&height=25">
+                                            <img width="20" height="20" title="{{ .Identity.Name }}" alt="{{ .Identity.Name }}" src="{{ .Identity.Avatar_filename }}">
                                         </td>
                                         <td>
                                           <span>{{ .Identity.Name }}</span>{{ if .Mates }} <span class="exfe_mail_mates">+ {{ .Mates }}</span>{{ end }}{{ if .Host }} <span class="exfe_mail_label">host</span>{{ end }}{{ if not .Identity.Connected_user_id }} <span class="exfe_mail_identity">{{ .Identity.External_id }}</span>{{ end }}
