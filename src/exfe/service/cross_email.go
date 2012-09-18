@@ -7,13 +7,13 @@ import (
 	"exfe/model"
 	"fmt"
 	"github.com/googollee/godis"
+	"html/template"
 	"log"
 	"net/mail"
 	"old_gobus"
 	"os"
 	"reflect"
 	"strings"
-	"text/template"
 	"time"
 )
 
@@ -25,7 +25,7 @@ type CrossEmail struct {
 	tmpl   *template.Template
 }
 
-var helper = template.FuncMap{
+var helper = map[string]interface{}{
 	"last": func(x int, a interface{}) bool {
 		return x == reflect.ValueOf(a).Len()-1
 	},
