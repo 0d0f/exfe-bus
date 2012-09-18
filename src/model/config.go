@@ -18,6 +18,21 @@ type Config struct {
 		Db       int    `json:"db"`
 		Password string `json:"password"`
 	} `json:"redis"`
+	ThirdPart struct {
+		Twitter struct {
+			ClientToken  string `json:"client_token"`
+			ClientSecret string `json:"client_secret"`
+			AccessToken  string `json:"access_token"`
+			AccessSecret string `json:"access_secret"`
+			ScreenName   string `json:"screen_name"`
+		} `json:"twitter"`
+		Email struct {
+			Host     string `json:"host"`
+			Port     int    `json:"port"`
+			Username string `json:"username"`
+			Password string `json:"password"`
+		} `json:"thirdpart"`
+	}
 	ExfeService struct {
 		Addr string `json:"addr"`
 		Port int    `json:"port"`
