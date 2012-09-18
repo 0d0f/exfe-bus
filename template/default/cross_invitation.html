@@ -64,7 +64,7 @@ Description
             <tr>
                 <td colspan="3" valign="top" style="font-size: 32px; line-height: 38px; padding-bottom: 18px;">
                     <a href="{{ .Cross.LinkTo .Config.Site_url .Token }}" style="color: #3a6ea5; text-decoration: none; font-weight: lighter;">
-                        {{ .Cross.Title }}
+                        {{ .Cross.Title | html }}
                     </a>
                 </td>
             </tr>
@@ -73,7 +73,7 @@ Description
                     <table border="0" cellpadding="0" cellspacing="0">
                         <tr>
                             <td height="19" valign="top" style="padding-bottom: 10px;">
-                                To: <span style="font-weight: bold;">{{ .To_identity.Name }}</span>
+                                To: <span style="font-weight: bold;">{{ .To_identity.Name | html }}</span>
                             </td>
                         </tr>
                         <tr>
@@ -81,7 +81,7 @@ Description
                                 {{ if .IsHost }}
                                 You're gathering this <span style="color: #3a6ea5; text-decoration: none;">·X·</span>.
                                 {{ else }}
-                                Invitation from <span>{{ $a := index .By_identities 0 }}{{ $a.Name }}</span>.
+                                Invitation from <span>{{ $a := index .By_identities 0 }}{{ $a.Name | html }}</span>.
                                 {{ end }}
                             </td>
                         </tr>
@@ -93,7 +93,7 @@ Description
                                             <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="text-decoration: none;">
                                                 {{ if $time }}
                                                 <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
-                                                    {{ $time }}
+                                                    {{ $time | html }}
                                                 </p>
                                                 {{ else }}
                                                 <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
@@ -109,10 +109,11 @@ Description
                                             <a href="{{ .Cross.LinkTo .Config.Site_url .Token}}" style="text-decoration: none;">
                                                 {{ if .Cross.Place.Title }}
                                                 <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
-                                                    {{ .Cross.Place.Title }}
+                                                    {{ .Cross.Place.Title | html }}
                                                 </p>
                                                 <p style="color: #191919; margin: 0;">
-                                                    {{ replace .Cross.Place.Description "\n" "<br />"}}
+                                                    {{ $desc := .Cross.Place.Description | html }}
+                                                    {{ replace $desc "\n" "<br />" }}
                                                 </p>
                                                 {{ else }}
                                                 <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
@@ -150,7 +151,7 @@ Description
                         {{ end }}
                         <tr>
                             <td valign="top">
-                                {{ $s := .Cross.Description }}{{ replace $s "\n" "<br />" }}
+                                {{ $s := .Cross.Description | html }}{{ replace $s "\n" "<br />" }}
                                 {{ if .LongDescription }}
                                 <a style="font-style: italic; color: #666666; text-decoration: none;" href="{{ .Cross.LinkTo .Config.Site_url .Token }}">...more</a>
                                 {{ end }}
@@ -176,7 +177,7 @@ Description
                                             <img width="20" height="20" title="{{ .Identity.Name }}" alt="{{ .Identity.Name }}" src="{{ .Identity.Avatar_filename }}">
                                         </td>
                                         <td>
-                                          <span>{{ .Identity.Name }}</span>{{ if .Mates }} <span class="exfe_mail_mates">+ {{ .Mates }}</span>{{ end }}{{ if .Host }} <span class="exfe_mail_label">host</span>{{ end }}{{ if not .Identity.Connected_user_id }} <span class="exfe_mail_identity">{{ .Identity.External_id }}</span>{{ end }}
+                                          <span>{{ .Identity.Name | html }}</span>{{ if .Mates }} <span class="exfe_mail_mates">+ {{ .Mates | html }}</span>{{ end }}{{ if .Host }} <span class="exfe_mail_label">host</span>{{ end }}{{ if not .Identity.Connected_user_id }} <span class="exfe_mail_identity">{{ .Identity.External_id | html }}</span>{{ end }}
                                         </td>
                                     </tr>
                                     {{ end }}
@@ -190,7 +191,7 @@ Description
                 <td colspan="3" style="font-size: 11px; line-height: 15px; color: #7F7F7F; padding-top: 40px;">
                     Reply this email directly as conversation.<!-- , or Try <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a> app.-->
                     <br />
-                    This <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Cross.Link .Config.Site_url }}">·X·</a> invitation is sent by <span class="exfe_mail_identity_name">{{ .Cross.By_identity.Name }}</span> from <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
+                    This <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Cross.Link .Config.Site_url }}">·X·</a> invitation is sent by <span class="exfe_mail_identity_name">{{ .Cross.By_identity.Name | html }}</span> from <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
                 </td>
             </tr>
         </table>

@@ -7,13 +7,13 @@ import (
 	"exfe/model"
 	"fmt"
 	"github.com/googollee/godis"
-	"html/template"
 	"log"
 	"net/mail"
 	"old_gobus"
 	"os"
 	"reflect"
 	"strings"
+	"text/template"
 	"time"
 )
 

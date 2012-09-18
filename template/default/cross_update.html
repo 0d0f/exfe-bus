@@ -60,14 +60,14 @@
             {{ if .IsCrossChanged }}
             <tr>
                 <td colspan="5" style="color: #333333;">
-                    <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #333333; text-decoration: none;">Updates of <span style="color: #3a6ea5;">·X·</span>{{ if .Old_cross }} “<span style="color: #191919;">{{ .Old_cross.Title }}</span>”{{ end }} has been updated{{ with index .By_identities 0 }}{{ if .Name }} by {{ .Name }}{{ end }}{{ end }}.</a>
+                    <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #333333; text-decoration: none;">Updates of <span style="color: #3a6ea5;">·X·</span>{{ if .Old_cross }} “<span style="color: #191919;">{{ .Old_cross.Title | html }}</span>”{{ end }} has been updated{{ with index .By_identities 0 }}{{ if .Name }} by {{ .Name | html }}{{ end }}{{ end }}.</a>
                 </td>
             </tr>
             <tr><td colspan="5" height="10"></td></tr>
             <tr>
                 <td colspan="5" style="font-size: 20px; line-height: 26px;">
                     <a href="{{ .Cross.Link .Config.Site_url }}" style="color:{{ if .IsTitleChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none; font-weight: lighter;">
-                        {{ .Cross.Title }}
+                        {{ .Cross.Title | html }}
                     </a>
                 </td>
             </tr>
@@ -76,7 +76,7 @@
                 <td valign="top" width="180">
                     {{ if $time }}
                     <p style="font-size: 20px; line-height: 26px; margin: 0;">
-                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsTimeChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">{{ $time }}</a>
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsTimeChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">{{ $time | html }}</a>
                     </p>
                     {{ else }}
                     <p style="font-size: 20px; line-height: 26px; margin: 0;">
@@ -91,10 +91,10 @@
                 <td valign="top" width="180" style="word-break: break-all;">
                     {{ if .Cross.Place.Title }}
                     <p style="font-size: 20px; line-height: 26px; margin: 0;">
-                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">{{ .Cross.Place.Title }}</a>
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">{{ .Cross.Place.Title | html }}</a>
                     </p>
-                    <p style="margin: 0;">
-                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">{{ replace .Cross.Place.Description "\n" "<br />"}}</a>
+                    <p style="margin: 0;">{{ $desc := .Cross.Place.Description | html }}
+                        <a href="{{ .Cross.Link .Config.Site_url }}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#191919{{ end }}; text-decoration: none;">{{ replace $desc "\n" "<br />"}}</a>
                     </p>
                     {{ else }}
                     <p style="font-size: 20px; line-height: 26px; margin: 0;">
@@ -120,7 +120,7 @@
                             <td>
                                 <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
-                                        <span class="exfe_mail_identity_name">{{ .Cross.TotalAccepted }}</span> Accepted: {{ $a := .Accepted }}{{ range $i, $e := $a }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ if last $i $a | not }}, {{ end }}{{ end }} and {{ .OldAccepted }} others.
+                                        <span class="exfe_mail_identity_name">{{ .Cross.TotalAccepted | html }}</span> Accepted: {{ $a := .Accepted }}{{ range $i, $e := $a }}<span class="exfe_mail_identity_name">{{ .Identity.Name | html }}</span>{{ if last $i $a | not }}, {{ end }}{{ end }} and {{ .OldAccepted | html }} others.
                                     </p>
                                 </a>
                             </td>
@@ -132,7 +132,7 @@
                             <td>
                                 <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
-                                        Unavailable: {{ $a := .Declined }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.
+                                        Unavailable: {{ $a := .Declined }}{{ range $i, $e := $a }}{{ .Name | html }}{{ if last $i $a | not }}, {{ end }}{{ end }}.
                                     </p>
                                 </a>
                             </td>
@@ -144,7 +144,7 @@
                             <td>
                                 <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
-                                        Newly invited: {{ $a := .NewlyInvited }}{{ range $i, $e := $a }}{{ if .IsAccepted }}<span class="exfe_mail_identity_name">{{ .Identity.Name }}</span>{{ else }}{{ .Identity.Name }}{{ end }}{{ if last $i $a | not }}, {{ end }}{{ end }}.
+                                        Newly invited: {{ $a := .NewlyInvited }}{{ range $i, $e := $a }}{{ if .IsAccepted }}<span class="exfe_mail_identity_name">{{ .Identity.Name | html }}</span>{{ else }}{{ .Identity.Name | html }}{{ end }}{{ if last $i $a | not }}, {{ end }}{{ end }}.
                                     </p>
                                 </a>
                             </td>
@@ -156,7 +156,7 @@
                             <td>
                                 <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
-                                        Removed: {{ $a := .Removed }}{{ range $i, $e := $a }}{{ .Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.
+                                        Removed: {{ $a := .Removed }}{{ range $i, $e := $a }}{{ .Name | html }}{{ if last $i $a | not }}, {{ end }}{{ end }}.
                                     </p>
                                 </a>
                             </td>
@@ -177,7 +177,7 @@
             {{ else }}
             <tr>
                 <td colspan="5" style="color: #333333;">
-                    <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #333333; text-decoration: none;">Updates of <span style="color: #3a6ea5;">·X·</span> “<span style="color: #191919;">{{ .Cross.Title }}</span>”.</a>
+                    <a href="{{ .Cross.Link .Config.Site_url }}" style="color: #333333; text-decoration: none;">Updates of <span style="color: #3a6ea5;">·X·</span> “<span style="color: #191919;">{{ .Cross.Title | html }}</span>”.</a>
                 </td>
             </tr>                
             <tr><td colspan="5" height="10"></td></tr>
@@ -199,9 +199,9 @@
                             </td>
                             <td valign="top">
                                 <a href="{{ $url }}" style="text-decoration: none;">
-                                    <span style="color:#212121; text-decoration: none;">{{ .Content }}</span>
+                                    <span style="color:#212121; text-decoration: none;">{{ .Content | html }}</span>
                                     <br />
-                                    <span style="font-size: 12px; color:#797979; text-decoration: none;">{{ .By_identity.Name }}</span> <span style="font-size: 12px; color:#A9A9A9; text-decoration: none;">at</span> <span  style="font-size: 12px; color:#797979; text-decoration: none;">{{ .CreatedAt $timezone }}</span>
+                                    <span style="font-size: 12px; color:#797979; text-decoration: none;">{{ .By_identity.Name | html }}</span> <span style="font-size: 12px; color:#A9A9A9; text-decoration: none;">at</span> <span  style="font-size: 12px; color:#797979; text-decoration: none;">{{ .CreatedAt $timezone | html }}</span>
                                 </a>
                             </td>
                         </tr>
