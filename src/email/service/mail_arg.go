@@ -80,7 +80,11 @@ func (m *MailArg) makeMessageWithAttachments() ([]byte, error) {
 	messagePart.Write(message)
 
 	for _, f := range m.FileParts {
-		w1, err := w.CreateFormFile(f.Name, f.Name)
+		name := fmt.Sprintf("=?UTF-8?B?%s?=", base64.StdEncoding.EncodeToString([]byte(f.Name)))
+		header := make(textproto.MIMEHeader)
+		header.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", name))
+		header.Set("Content-Type", fmt.Sprintf("text/calendar; name=\"%s\"", name))
+		w1, err := w.CreatePart(header)
 		if err != nil {
 			return nil, fmt.Errorf("Create multipart file(%s) fail: %s", f.Name, err)
 		}
