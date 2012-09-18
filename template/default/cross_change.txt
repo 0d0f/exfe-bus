@@ -1,1 +1,1 @@
-"{{ .Cross.Title }}" Update: {{ $time := .Cross.Time.StringInZone .Timezone }}{{ if $time }} {{ $time }}{{ end }}{{ $place := .Cross.Place.String }}{{ if $place }} at {{ $place }}{{ end }}
+"{{ .Cross.Title }}" Update:{{ $time := .Cross.Time.StringInZone .Timezone }}{{ if $time }} {{ $time }}{{ end }}{{ $place := .Cross.Place.String }}{{ if $place }} at {{ $place }}{{ end }}
