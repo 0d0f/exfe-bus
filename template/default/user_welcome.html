@@ -28,7 +28,7 @@ This email is sent to {{ .To_identity.External_id }} per identity registration r
             <tr>
                 <td valign="top">
                     <p style="font-size: 18px; line-height: 24px;">
-                    Hi, {{ .To_identity.Name }}
+                    Hi, {{ .To_identity.Name | html }}
                     </p>
                     <p>
                         <span style="font-size: 18px; line-height: 24px;">Welcome to <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>!</span>
@@ -69,7 +69,7 @@ This email is sent to {{ .To_identity.External_id }} per identity registration r
             </tr>
             <tr>
                 <td style="color: #666666; font-size: 11px;">
-                    This email is sent to <a style="font-style: italic; color: #666666; text-decoration: none;" href="mailto:{{ .To_identity.External_id }}">{{ .To_identity.External_id }}</a> per identity registration request on <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
+                    This email is sent to <a style="font-style: italic; color: #666666; text-decoration: none;" href="mailto:{{ .To_identity.External_id }}">{{ .To_identity.External_id | html }}</a> per identity registration request on <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
                 </td>
             </tr>
         </table>
