@@ -54,9 +54,9 @@ func main() {
 		Avatar:   "avatar",
 
 		Provider:         "twitter",
-		ExternalID:       "56591660",
-		ExternalUsername: "googollee",
-		OAuthToken:       `{"oauth_token":"56591660-EXgdQxYxUiWocQ5krbreCYIVixDt21NDBgjPR7kKr","oauth_token_secret":"V0YRtAozGBJdPnghMRVRzzV65dtpWeLwmK00DVQC5X0"}`,
+		ExternalID:       "487243623",
+		ExternalUsername: "0d0fdev",
+		OAuthToken:       `{"oauth_token":"487243623-zKimf9HFP0FrqgOAJQqsGK2H2loIr6O4ZnOzHxc","oauth_token_secret":"qRjWsASZNCBYpibxSX4REiQ9DBqbiWSxcDvO8M0dE"}`,
 	}
 
 	// fmt.Println()
@@ -73,8 +73,8 @@ func main() {
 
 	// fmt.Println()
 	// to.ExternalID = "247228987"
-	to.ExternalUsername = "exfe"
-	err = twitter.Send(to, "private", "@googollee public")
+	// to.ExternalUsername = "exfe"
+	err = twitter.Send(to, "private", "@0d0fdev public")
 	if err != nil {
 		fmt.Println(err)
 	}
