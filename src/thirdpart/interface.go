@@ -29,6 +29,7 @@ const (
 	ShortMessage MessageType = iota
 	LongTextMessage
 	HTMLMessage
+	EmailMessage
 )
 
 type Thirdpart interface {
@@ -44,12 +45,20 @@ type Helper interface {
 	UpdateFriends(to *model.Identity, externalUsers []ExternalUser) error
 }
 
+type updateFriendsArg struct {
+	UserID     uint64            `json:"user_id"`
+	Identities []*model.Identity `json:"identities"`
+}
+
 type HelperImp struct {
 	config *model.Config
 }
 
 func (h *HelperImp) UpdateFriends(to *model.Identity, externalUsers []ExternalUser) error {
-	users := make([]*model.Identity, len(externalUsers))
+	arg := updateFriendsArg{
+		UserID:     to.UserID,
+		Identities: make([]*model.Identity, len(externalUsers)),
+	}
 	for i, u := range externalUsers {
 		user := &model.Identity{
 			Name:             u.Name(),
@@ -59,11 +68,11 @@ func (h *HelperImp) UpdateFriends(to *model.Identity, externalUsers []ExternalUs
 			Bio:              u.Bio(),
 			Avatar:           u.Avatar(),
 		}
-		users[i] = user
+		arg.Identities[i] = user
 	}
 	buf := bytes.NewBuffer(nil)
 	e := json.NewEncoder(buf)
-	err := e.Encode(users)
+	err := e.Encode(arg)
 	if err != nil {
 		return fmt.Errorf("encoding user error: %s", err)
 	}
@@ -103,7 +112,10 @@ type HelperFake struct {
 }
 
 func (h *HelperFake) UpdateFriends(to *model.Identity, externalUsers []ExternalUser) error {
-	users := make([]*model.Identity, len(externalUsers))
+	arg := updateFriendsArg{
+		UserID:     to.UserID,
+		Identities: make([]*model.Identity, len(externalUsers)),
+	}
 	for i, u := range externalUsers {
 		user := &model.Identity{
 			Name:             u.Name(),
@@ -113,11 +125,11 @@ func (h *HelperFake) UpdateFriends(to *model.Identity, externalUsers []ExternalU
 			Bio:              u.Bio(),
 			Avatar:           u.Avatar(),
 		}
-		users[i] = user
+		arg.Identities[i] = user
 	}
 	buf := bytes.NewBuffer(nil)
 	e := json.NewEncoder(buf)
-	err := e.Encode(users)
+	err := e.Encode(arg)
 	if err != nil {
 		return fmt.Errorf("encoding user error: %s", err)
 	}
