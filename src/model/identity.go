@@ -1,19 +1,18 @@
 package model
 
 type Identity struct {
-	ID       int64  `json:"id"`
-	Type     string `json:"type"`
-	Name     string `json:"name"`
-	Nickname string `json:"nickname"`
-	Bio      string `json:"bio"`
-	Timezone string `json:"timezone"`
-	UserID   uint64 `json:"connected_user_id"`
-	Avatar   string `json:"avatar_filename"`
+	ID       int64  `json:"id,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Nickname string `json:"nickname,omitempty"`
+	Bio      string `json:"bio,omitempty"`
+	Timezone string `json:"timezone,omitempty"`
+	UserID   uint64 `json:"connected_user_id,omitempty"`
+	Avatar   string `json:"avatar_filename,omitempty"`
 
-	Provider         string `json:"provider"`
-	ExternalID       string `json:"external_id"`
-	ExternalUsername string `json:"external_username"`
-	OAuthToken       string `json:"oauth_token"`
+	Provider         string `json:"provider,omitempty"`
+	ExternalID       string `json:"external_id,omitempty"`
+	ExternalUsername string `json:"external_username,omitempty"`
+	OAuthToken       string `json:"oauth_token,omitempty"`
 }
 
 func (i Identity) IsSame(other *Identity) bool {
