@@ -32,11 +32,15 @@ const (
 	EmailMessage
 )
 
-type Thirdpart interface {
+type Sender interface {
 	Provider() string
 	MessageType() MessageType
+	Send(to *model.Identity, privateMessage string, publicMessage string) (id string, err error)
+}
+
+type Updater interface {
+	Provider() string
 	UpdateFriends(to *model.Identity) error
-	Send(to *model.Identity, privateMessage string, publicMessage string) error
 	UpdateIdentity(to *model.Identity) error
 }
 
