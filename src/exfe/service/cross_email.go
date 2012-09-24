@@ -143,26 +143,51 @@ func (e *CrossEmail) GetBody(arg *ProviderArg, filename string) (string, string,
 }
 
 func (e *CrossEmail) sendMail(arg *ProviderArg) {
-	filename := "cross_invitation.html"
-	if arg.Old_cross != nil || len(arg.Posts) > 0 {
-		_, _, newlyInvited, _ := arg.Diff(e.log)
-		if _, ok := newlyInvited[arg.To_identity.DiffId()]; !ok {
-			filename = "cross_update.html"
+	_, _, newlyInvited, _ := arg.Diff(e.log)
+	_, ok := newlyInvited[arg.To_identity.DiffId()]
+
+	if arg.Old_cross == nil || ok {
+		filename := "cross_invitation.html"
+		html, ics, err := e.GetBody(arg, filename)
+		if err != nil {
+			e.log.Printf("template exec error: %s", err)
+			return
 		}
-		if !arg.IsCrossChanged() {
-			if len(arg.Posts) == 0 {
-				return
+		htmls := strings.SplitN(html, "//////////////////////////////////\n\n", 3)
+
+		mail_addr := fmt.Sprintf("x+%d@%s", arg.Cross.Id, e.config.EmailDomain)
+		mailarg := &email_service.MailArg{
+			To:         []*mail.Address{&mail.Address{arg.To_identity.Name, arg.To_identity.External_id}},
+			From:       &mail.Address{e.config.EmailName, mail_addr},
+			Subject:    strings.Trim(htmls[0], " \n\r\t"),
+			Text:       strings.Trim(htmls[1], " \n\r\t"),
+			Html:       strings.Trim(htmls[2], " \n\r\t"),
+			References: []string{fmt.Sprintf("<%s>", mail_addr)},
+			FileParts: []email_service.FilePart{
+				email_service.FilePart{fmt.Sprintf("%s.ics", arg.Cross.Title), []byte(ics)},
+			},
+		}
+
+		e.client.Send("EmailSend", &mailarg, 5)
+	}
+	if ok {
+		return
+	}
+
+	filename := "cross_update.html"
+	if !arg.IsCrossChanged() && len(arg.Posts) == 0 {
+		return
+	}
+	if len(arg.Posts) > 0 && !arg.IsCrossChanged() {
+		selfPost := true
+		for _, p := range arg.Posts {
+			if p.By_identity.DiffId() != arg.To_identity.DiffId() {
+				selfPost = false
+				break
 			}
-			selfPost := true
-			for _, p := range arg.Posts {
-				if p.By_identity.DiffId() != arg.To_identity.DiffId() {
-					selfPost = false
-					break
-				}
-			}
-			if selfPost {
-				return
-			}
+		}
+		if selfPost {
+			return
 		}
 	}
 
