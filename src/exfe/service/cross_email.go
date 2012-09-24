@@ -107,7 +107,7 @@ func (e *CrossEmail) Serve() {
 				Config:        e.config,
 			}
 
-			e.sendMail(arg)
+			e.sendMail(arg, firstUpdate == false)
 		}
 	}
 }
@@ -145,11 +145,11 @@ func (e *CrossEmail) GetBody(arg *ProviderArg, filename string) (string, string,
 	return html.String(), string(output), nil
 }
 
-func (e *CrossEmail) sendMail(arg *ProviderArg) {
+func (e *CrossEmail) sendMail(arg *ProviderArg, hasUpdate bool) {
 	_, _, newlyInvited, _ := arg.Diff(e.log)
 	_, ok := newlyInvited[arg.To_identity.DiffId()]
 
-	if arg.Old_cross == nil || ok {
+	if hasUpdate && (arg.Old_cross == nil || ok) {
 		filename := "cross_invitation.html"
 		html, ics, err := e.GetBody(arg, filename)
 		if err != nil {
