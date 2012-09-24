@@ -84,13 +84,16 @@ func (e *CrossEmail) Serve() {
 			by_identities := make([]*exfe_model.Identity, 0, 0)
 			posts := make([]*exfe_model.Post, 0, 0)
 			var old_cross *exfe_model.Cross
+			firstUpdate := true
 			for _, update := range updates {
 				by_identities = append(by_identities, &update.By_identity)
-				if old_cross == nil && update.Old_cross != nil {
-					old_cross = update.Old_cross
-				}
 				if update.Post != nil {
 					posts = append(posts, update.Post)
+					continue
+				}
+				if firstUpdate {
+					old_cross = update.Old_cross
+					firstUpdate = false
 				}
 			}
 
