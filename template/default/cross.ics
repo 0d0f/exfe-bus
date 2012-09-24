@@ -9,9 +9,9 @@ UID:{{ .Cross.Id }}{{ .To_identity.Id }}@exfe
 DTSTAMP:{{ $time := .Cross.Time.Begin_at.UTCTime "20060102T150405" }}{{ if $time }}{{ $time }}{{ else }}Time to be decided{{ end }}
 DESCRIPTION:{{ $s := limit .Cross.Description 233 }}{{ replace $s "\n" "\\n" }}
 DTSTART:{{ .Cross.Time.Begin_at.UTCTime "20060102T150405" }}
-LOCATION: {{ replace .Cross.Title "\n" "\\n" }} - {{ replace .Cross.Description "\n" "\\n" }}
+LOCATION: {{ replace .Cross.Place.Title "\n" "\\n" }} - {{ replace .Cross.Place.Description "\n" "\\n" }}
 SUMMARY:{{ .Cross.Title}}
-URL:https:{{ .Cross.Link .Config.Site_url }}
+URL:{{ .Cross.Link .Config.Site_url }}
 BEGIN:VALARM
 ACTION:DISPLAY
 DESCRIPTION:exfe:{{ .Cross.Title }}

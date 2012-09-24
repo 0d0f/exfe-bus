@@ -9,13 +9,8 @@ import (
 )
 
 type Apn struct {
-	cert     string
-	key      string
-	server   string
-	apn      *goapns.Apn
-	id       uint32
-	isClosed bool
-	retimer  chan int
+	apn *apns.Apn
+	id  uint32
 
 	netaddr    string
 	db         int
@@ -24,23 +19,18 @@ type Apn struct {
 }
 
 func NewApn(cert, key, server, rootca, netaddr string, db int, password string) (*Apn, error) {
-	apn, err := goapns.Connect(cert, key, server)
+	apn, err := apns.New(cert, key, server, 30*time.Minute)
 	if err != nil {
 		return nil, err
 	}
 	ret := &Apn{
-		cert:     cert,
-		key:      key,
-		server:   server,
 		apn:      apn,
 		id:       0,
-		retimer:  make(chan int),
 		netaddr:  netaddr,
 		db:       db,
 		password: password,
 	}
 	go errorListen(ret)
-	go closeTimer(ret)
 	return ret, nil
 }
 
@@ -66,20 +56,6 @@ func errorListen(apn *Apn) {
 	}
 }
 
-func closeTimer(apn *Apn) {
-	for {
-		timer := time.After(30 * time.Minute)
-		select {
-		case <-timer:
-			log.Printf("Apn connection timeout")
-			apn.isClosed = true
-			apn.apn.Close()
-			return
-		case <-apn.retimer:
-		}
-	}
-}
-
 type ExfePush struct {
 	Cid uint64 `json:"cid"`
 	T   string `json:"t"`
@@ -97,16 +73,7 @@ type ApnSendArg struct {
 }
 
 func (a *Apn) ApnSend(args []ApnSendArg) error {
-	if a.isClosed {
-		log.Printf("apn connection reconnect")
-		a.apn.Reconnect()
-		a.isClosed = false
-		go closeTimer(a)
-	}
-
-	defer func() { a.retimer <- 1 }()
-
-	payload := goapns.Payload{}
+	payload := apns.Payload{}
 	a.pushBuffer = args
 
 	for i, arg := range args {
@@ -124,7 +91,7 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 			Cid: arg.Cid,
 			T:   arg.T,
 		})
-		notification := goapns.Notification{
+		notification := apns.Notification{
 			DeviceToken: arg.DeviceToken,
 			Identifier:  a.id,
 			Payload:     &payload,
@@ -132,19 +99,11 @@ func (a *Apn) ApnSend(args []ApnSendArg) error {
 		a.pushBuffer[i].id = a.id
 
 		log.Printf("apn send %s to %s, id %d", notification.Payload.Aps.Alert, notification.DeviceToken, notification.Identifier)
-		err := a.apn.SendNotification(&notification)
+		err := a.apn.Send(&notification)
 		a.id++
 		if err != nil {
 			log.Printf("Send notification(%s) to device(%s) error: %s", arg.Alert, arg.DeviceToken, err)
 		}
 	}
 	return nil
-}
-
-func (a *Apn) Close() error {
-	if a.isClosed {
-		return nil
-	}
-	a.isClosed = true
-	return a.apn.Close()
 }
