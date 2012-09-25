@@ -44,19 +44,13 @@ func main() {
 	accessToken := &thirdpart.Token{client.AccessToken.Token, client.AccessToken.Secret}
 	twitter := twitter.New(clientToken, accessToken, helper)
 
-	to := &model.Identity{
-		ID:       123,
-		Name:     "tester",
-		Nickname: "tester nick",
-		Bio:      "bio",
-		Timezone: "+0800",
-		UserID:   789,
-		Avatar:   "avatar",
-
+	to := &model.Recipient{
 		Provider:         "twitter",
 		ExternalID:       "487243623",
 		ExternalUsername: "0d0fdev",
-		OAuthToken:       `{"oauth_token":"487243623-zKimf9HFP0FrqgOAJQqsGK2H2loIr6O4ZnOzHxc","oauth_token_secret":"qRjWsASZNCBYpibxSX4REiQ9DBqbiWSxcDvO8M0dE"}`,
+		AuthData:         `{"oauth_token":"487243623-zKimf9HFP0FrqgOAJQqsGK2H2loIr6O4ZnOzHxc","oauth_token_secret":"qRjWsASZNCBYpibxSX4REiQ9DBqbiWSxcDvO8M0dE"}`,
+		IdentityID:       123,
+		UserID:           789,
 	}
 
 	// fmt.Println()
@@ -74,8 +68,9 @@ func main() {
 	// fmt.Println()
 	// to.ExternalID = "247228987"
 	// to.ExternalUsername = "exfe"
-	err = twitter.Send(to, "private", "@0d0fdev public")
+	id, err := twitter.Send(to, "private", "@0d0fdev public", nil)
 	if err != nil {
 		fmt.Println(err)
 	}
+	fmt.Println(id)
 }
