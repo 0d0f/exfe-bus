@@ -1,5 +1,9 @@
 package model
 
+import (
+	"fmt"
+)
+
 type Identity struct {
 	ID       int64  `json:"id,omitempty"`
 	Name     string `json:"name,omitempty"`
@@ -17,4 +21,8 @@ type Identity struct {
 
 func (i Identity) IsSame(other *Identity) bool {
 	return i.ID == other.ID || (i.Provider == other.Provider && i.ExternalID == other.ExternalID)
+}
+
+func (i Identity) String() string {
+	return fmt.Sprintf("Identity:%d", i.ID)
 }

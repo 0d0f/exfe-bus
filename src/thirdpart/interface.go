@@ -32,8 +32,22 @@ const (
 	EmailMessage
 )
 
+type DataType string
+
+func (t DataType) String() string {
+	return string(t)
+}
+
+const (
+	CrossInvitation DataType = "i"
+	CrossUpdate              = "u"
+	CrossRemove              = "r"
+	Conversation             = "c"
+)
+
 type InfoData struct {
-	CrossID string
+	CrossID uint64
+	Type    DataType
 }
 
 type Sender interface {
@@ -86,10 +100,10 @@ func (h *HelperImp) UpdateFriends(to *model.Recipient, externalUsers []ExternalU
 	url := fmt.Sprintf("%s/v2/Gobus/AddFriends", h.config.SiteApi)
 	resp, err := http.Post(url, "application/json", buf)
 	if err != nil {
-		return fmt.Errorf("update identity(%d) friends fail: %s", to.IdentityID, err)
+		return fmt.Errorf("update %s friends fail: %s", to, err)
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("update identity(%d) friends fail: %s", to.IdentityID, resp.Status)
+		return fmt.Errorf("update %s friends fail: %s", to, resp.Status)
 	}
 	return nil
 }
@@ -107,10 +121,10 @@ func (h *HelperImp) UpdateIdentity(to *model.Recipient, externalUser ExternalUse
 	url := fmt.Sprintf("%s/v2/gobus/UpdateIdentity", h.config.SiteApi)
 	resp, err := http.PostForm(url, params)
 	if err != nil {
-		return fmt.Errorf("update identity(%v) failed: %s", params, err)
+		return fmt.Errorf("update with %v failed: %s", params, err)
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("update identity(%v) failed: %s", params, resp.Status)
+		return fmt.Errorf("update with %v failed: %s", params, resp.Status)
 	}
 	return nil
 }
