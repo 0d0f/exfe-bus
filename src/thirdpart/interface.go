@@ -32,21 +32,24 @@ const (
 	EmailMessage
 )
 
+type InfoData struct {
+	CrossID string
+}
+
 type Sender interface {
 	Provider() string
 	MessageType() MessageType
-	Send(to *model.Identity, privateMessage string, publicMessage string) (id string, err error)
+	Send(to *model.Recipient, privateMessage string, publicMessage string, data *InfoData) (id string, err error)
 }
 
 type Updater interface {
-	Provider() string
-	UpdateFriends(to *model.Identity) error
-	UpdateIdentity(to *model.Identity) error
+	UpdateFriends(to *model.Recipient) error
+	UpdateIdentity(to *model.Recipient) error
 }
 
 type Helper interface {
-	UpdateIdentity(to *model.Identity, externalUser ExternalUser) error
-	UpdateFriends(to *model.Identity, externalUsers []ExternalUser) error
+	UpdateIdentity(to *model.Recipient, externalUser ExternalUser) error
+	UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error
 }
 
 type updateFriendsArg struct {
@@ -58,7 +61,7 @@ type HelperImp struct {
 	config *model.Config
 }
 
-func (h *HelperImp) UpdateFriends(to *model.Identity, externalUsers []ExternalUser) error {
+func (h *HelperImp) UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error {
 	arg := updateFriendsArg{
 		UserID:     to.UserID,
 		Identities: make([]*model.Identity, len(externalUsers)),
@@ -83,17 +86,17 @@ func (h *HelperImp) UpdateFriends(to *model.Identity, externalUsers []ExternalUs
 	url := fmt.Sprintf("%s/v2/Gobus/AddFriends", h.config.SiteApi)
 	resp, err := http.Post(url, "application/json", buf)
 	if err != nil {
-		return fmt.Errorf("update identity(%d) friends fail: %s", to.ID, err)
+		return fmt.Errorf("update identity(%d) friends fail: %s", to.IdentityID, err)
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("update identity(%d) friends fail: %s", to.ID, resp.Status)
+		return fmt.Errorf("update identity(%d) friends fail: %s", to.IdentityID, resp.Status)
 	}
 	return nil
 }
 
-func (h *HelperImp) UpdateIdentity(to *model.Identity, externalUser ExternalUser) error {
+func (h *HelperImp) UpdateIdentity(to *model.Recipient, externalUser ExternalUser) error {
 	params := make(url.Values)
-	params.Set("id", fmt.Sprintf("%d", to.ID))
+	params.Set("id", fmt.Sprintf("%d", to.IdentityID))
 	params.Set("provider", externalUser.Provider())
 	params.Set("external_id", externalUser.ExternalID())
 	params.Set("name", externalUser.Name())
@@ -115,7 +118,7 @@ func (h *HelperImp) UpdateIdentity(to *model.Identity, externalUser ExternalUser
 type HelperFake struct {
 }
 
-func (h *HelperFake) UpdateFriends(to *model.Identity, externalUsers []ExternalUser) error {
+func (h *HelperFake) UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error {
 	arg := updateFriendsArg{
 		UserID:     to.UserID,
 		Identities: make([]*model.Identity, len(externalUsers)),
@@ -143,9 +146,9 @@ func (h *HelperFake) UpdateFriends(to *model.Identity, externalUsers []ExternalU
 	return nil
 }
 
-func (h *HelperFake) UpdateIdentity(to *model.Identity, externalUser ExternalUser) error {
+func (h *HelperFake) UpdateIdentity(to *model.Recipient, externalUser ExternalUser) error {
 	params := make(url.Values)
-	params.Set("id", fmt.Sprintf("%d", to.ID))
+	params.Set("id", fmt.Sprintf("%d", to.IdentityID))
 	params.Set("provider", externalUser.Provider())
 	params.Set("external_id", externalUser.ExternalID())
 	params.Set("name", externalUser.Name())

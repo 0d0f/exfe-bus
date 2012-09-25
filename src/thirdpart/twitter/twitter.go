@@ -37,7 +37,20 @@ func (t *Twitter) MessageType() thirdpart.MessageType {
 	return thirdpart.ShortMessage
 }
 
-func (t *Twitter) UpdateIdentity(to *model.Identity) error {
+func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) error {
+	params := make(url.Values)
+	params.Set(t.identity(to))
+	params.Set("text", privateMessage)
+	_, err := t.client.Do("POST", "direct_messages/new.json", params)
+	if err != nil && strings.Index(err.Error(), `"code":150`) > 0 {
+		params := make(url.Values)
+		params.Set("status", publicMessage)
+		_, err = t.client.Do("POST", "statuses/update.json", params)
+	}
+	return err
+}
+
+func (t *Twitter) UpdateIdentity(to *model.Recipient) error {
 	params := make(url.Values)
 	params.Set(t.identity(to))
 	resp, err := t.client.Do("GET", "users/show.json", params)
@@ -52,29 +65,16 @@ func (t *Twitter) UpdateIdentity(to *model.Identity) error {
 	}
 	err = t.helper.UpdateIdentity(to, info)
 	if err != nil {
-		return fmt.Errorf("update identity(%d) error: %s", to.ID, err)
+		return fmt.Errorf("update identity(%d) error: %s", to.IdentityID, err)
 	}
 	return nil
 }
 
-func (t *Twitter) Send(to *model.Identity, privateMessage string, publicMessage string) error {
-	params := make(url.Values)
-	params.Set(t.identity(to))
-	params.Set("text", privateMessage)
-	_, err := t.client.Do("POST", "direct_messages/new.json", params)
-	if err != nil && strings.Index(err.Error(), `"code":150`) > 0 {
-		params := make(url.Values)
-		params.Set("status", publicMessage)
-		_, err = t.client.Do("POST", "statuses/update.json", params)
-	}
-	return err
-}
-
-func (t *Twitter) UpdateFriends(to *model.Identity) error {
+func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 	var idToken twitterIdentityToken
-	err := json.Unmarshal([]byte(to.OAuthToken), &idToken)
+	err := json.Unmarshal([]byte(to.AuthData), &idToken)
 	if err != nil {
-		return fmt.Errorf("can't convert identity(%d)'s oauth_token: %s", to.ID, err)
+		return fmt.Errorf("can't convert identity(%d)'s oauth_token: %s", to.IdentityID, err)
 	}
 	access := idToken.ToToken()
 	client := oauth.CreateClient(t.clientToken.Token, t.clientToken.Secret, access.Token, access.Secret, twitterApiBase)
@@ -83,13 +83,13 @@ func (t *Twitter) UpdateFriends(to *model.Identity) error {
 	params.Set(t.identity(to))
 	resp, err := client.Do("GET", "friends/ids.json", params)
 	if err != nil {
-		return fmt.Errorf("get identity(%d)'s twitter friends/ids(%v) failed: %s", to.ID, params, err)
+		return fmt.Errorf("get identity(%d)'s twitter friends/ids(%v) failed: %s", to.IdentityID, params, err)
 	}
 	var twitterIDs_ twitterIDs
 	decoder := json.NewDecoder(resp)
 	err = decoder.Decode(&twitterIDs_)
 	if err != nil {
-		return fmt.Errorf("parse identity(%d)'s twitter friends/ids(%s) reply failed: %s", to.ID, params, err)
+		return fmt.Errorf("parse identity(%d)'s twitter friends/ids(%s) reply failed: %s", to.IdentityID, params, err)
 	}
 
 	friendIDs := twitterIDs_.IDs
@@ -104,13 +104,13 @@ func (t *Twitter) UpdateFriends(to *model.Identity) error {
 		params.Set("user_id", join(ids, ","))
 		resp, err := client.Do("GET", "users/lookup.json", params)
 		if err != nil {
-			return fmt.Errorf("lookup identity(%d)'s users/lookup.json(%v) fail: %s", to.ID, params, err)
+			return fmt.Errorf("lookup identity(%d)'s users/lookup.json(%v) fail: %s", to.IdentityID, params, err)
 		}
 		var users []twitterInfo
 		decoder := json.NewDecoder(resp)
 		err = decoder.Decode(&users)
 		if err != nil {
-			return fmt.Errorf("parse identity(%d)'s twitter users/lookup(%v) reply failed: %s", to.ID, params, err)
+			return fmt.Errorf("parse identity(%d)'s twitter users/lookup(%v) reply failed: %s", to.IdentityID, params, err)
 		}
 
 		users_ := make([]thirdpart.ExternalUser, len(users))
@@ -119,13 +119,13 @@ func (t *Twitter) UpdateFriends(to *model.Identity) error {
 		}
 		err = t.helper.UpdateFriends(to, users_)
 		if err != nil {
-			return fmt.Errorf("update identity(%d)'s friends fail: %s", to.ID, err)
+			return fmt.Errorf("update identity(%d)'s friends fail: %s", to.IdentityID, err)
 		}
 	}
 	return nil
 }
 
-func (t *Twitter) identity(id *model.Identity) (key, value string) {
+func (t *Twitter) identity(id *model.Recipient) (key, value string) {
 	if id.ExternalID != "" {
 		return "user_id", id.ExternalID
 	}
