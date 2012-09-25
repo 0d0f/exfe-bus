@@ -84,13 +84,16 @@ func (e *CrossEmail) Serve() {
 			by_identities := make([]*exfe_model.Identity, 0, 0)
 			posts := make([]*exfe_model.Post, 0, 0)
 			var old_cross *exfe_model.Cross
+			firstUpdate := true
 			for _, update := range updates {
 				by_identities = append(by_identities, &update.By_identity)
-				if old_cross == nil && update.Old_cross != nil {
-					old_cross = update.Old_cross
-				}
 				if update.Post != nil {
 					posts = append(posts, update.Post)
+					continue
+				}
+				if firstUpdate {
+					old_cross = update.Old_cross
+					firstUpdate = false
 				}
 			}
 
@@ -104,7 +107,7 @@ func (e *CrossEmail) Serve() {
 				Config:        e.config,
 			}
 
-			e.sendMail(arg)
+			e.sendMail(arg, firstUpdate == false)
 		}
 	}
 }
@@ -142,11 +145,11 @@ func (e *CrossEmail) GetBody(arg *ProviderArg, filename string) (string, string,
 	return html.String(), string(output), nil
 }
 
-func (e *CrossEmail) sendMail(arg *ProviderArg) {
+func (e *CrossEmail) sendMail(arg *ProviderArg, hasUpdate bool) {
 	_, _, newlyInvited, _ := arg.Diff(e.log)
 	_, ok := newlyInvited[arg.To_identity.DiffId()]
 
-	if arg.Old_cross == nil || ok {
+	if hasUpdate && (arg.Old_cross == nil || ok) {
 		filename := "cross_invitation.html"
 		html, ics, err := e.GetBody(arg, filename)
 		if err != nil {
