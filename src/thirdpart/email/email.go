@@ -34,11 +34,12 @@ func (e *Email) MessageType() thirdpart.MessageType {
 }
 
 func (e *Email) Send(to *model.Recipient, privateMessage string, publicMessage string, info *thirdpart.InfoData) (string, error) {
-	err := e.check(to.ExternalID)
+	mail := to.ExternalID
+	err := e.check(mail)
 	if err != nil {
 		return "", err
 	}
-	return "", smtp.SendMail(e.Server, e.Auth, e.From, []string{to.ExternalID}, []byte(privateMessage))
+	return "", smtp.SendMail(e.Server, e.Auth, e.From, []string{mail}, []byte(privateMessage))
 }
 
 func (e *Email) check(mail string) error {

@@ -64,6 +64,7 @@ type Updater interface {
 type Helper interface {
 	UpdateIdentity(to *model.Recipient, externalUser ExternalUser) error
 	UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error
+	SendEmail(to string, content string) (id string, err error)
 }
 
 type updateFriendsArg struct {
@@ -129,6 +130,10 @@ func (h *HelperImp) UpdateIdentity(to *model.Recipient, externalUser ExternalUse
 	return nil
 }
 
+func (h *HelperImp) SendEmail(to string, content string) (id string, err error) {
+	return "", fmt.Errorf("not implemented")
+}
+
 type HelperFake struct {
 }
 
@@ -174,4 +179,9 @@ func (h *HelperFake) UpdateIdentity(to *model.Recipient, externalUser ExternalUs
 	fmt.Println("url:", url)
 	fmt.Println("post:", params.Encode())
 	return nil
+}
+
+func (h *HelperFake) SendEmail(to string, content string) (id string, err error) {
+	fmt.Printf("send mail to %s, content: %s\n", to, content)
+	return "", nil
 }
