@@ -33,20 +33,12 @@ func (e *Email) MessageType() thirdpart.MessageType {
 	return thirdpart.EmailMessage
 }
 
-func (e *Email) UpdateFriends(to *model.Identity) error {
-	return fmt.Errorf("email can't update friends")
-}
-
-func (e *Email) UpdateIdentity(to *model.Identity) error {
-	return fmt.Errorf("email can't update identity")
-}
-
-func (e *Email) Send(to *model.Identity, privateMessage string, publicMessage string) error {
+func (e *Email) Send(to *model.Recipient, privateMessage string, publicMessage string, info *thirdpart.InfoData) (string, error) {
 	err := e.check(to.ExternalID)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return smtp.SendMail(e.Server, e.Auth, e.From, []string{to.ExternalID}, []byte(privateMessage))
+	return "", smtp.SendMail(e.Server, e.Auth, e.From, []string{to.ExternalID}, []byte(privateMessage))
 }
 
 func (e *Email) check(mail string) error {
