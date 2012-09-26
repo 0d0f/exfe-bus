@@ -49,7 +49,7 @@ func (mng *TokenManager) Generate(meta *gobus.HTTPMeta, arg *TokenGenerateArgs, 
 	}
 	token, err := mng.manager.GenerateToken(arg.Resource, arg.Data, expire)
 	if err != nil {
-		log.Info("generate token with resource(%s), expire(%ds) fail: %s", arg.Resource, arg.ExpireAfterSeconds, err)
+		log.Err("generate token with resource(%s), expire(%ds) fail: %s", arg.Resource, arg.ExpireAfterSeconds, err)
 		return err
 	}
 	*reply = token.String()
@@ -69,7 +69,7 @@ func (mng *TokenManager) Get(meta *gobus.HTTPMeta, token *string, reply *tokenma
 	tk, err := mng.manager.GetToken(*token)
 
 	if err != nil {
-		log.Info("get resource with token(%s) fail: %s", *token, err)
+		log.Err("get resource with token(%s) fail: %s", *token, err)
 		return err
 	} else {
 		log.Debug("return token: %+v", tk)
@@ -89,7 +89,7 @@ func (mng *TokenManager) Find(meta *gobus.HTTPMeta, resource *string, reply *[]*
 	log.Debug("find with resource: %s", *resource)
 	tks, err := mng.manager.FindTokens(*resource)
 	if err != nil {
-		log.Info("find tokens with resource(%s) fail: %s", *resource, err)
+		log.Err("find tokens with resource(%s) fail: %s", *resource, err)
 		return err
 	}
 
@@ -114,7 +114,7 @@ func (mng *TokenManager) Update(meta *gobus.HTTPMeta, arg *TokenUpdateArg, reply
 	log.Debug("update token: %s with data: %s", arg.Token, arg.Data)
 	err = mng.manager.UpdateData(arg.Token, arg.Data)
 	if err != nil {
-		log.Info("update token(%s) with data(%s) fail: %s", arg.Token, arg.Data, err)
+		log.Err("update token(%s) with data(%s) fail: %s", arg.Token, arg.Data, err)
 	} else {
 		log.Debug("success")
 	}
@@ -142,7 +142,7 @@ func (mng *TokenManager) Verify(meta *gobus.HTTPMeta, args *TokenVerifyArg, repl
 	log.Debug("verify with token: %s, resource: %s", args.Token, args.Resource)
 	reply.Matched, reply.Token, err = mng.manager.VerifyToken(args.Token, args.Resource)
 	if err != nil {
-		log.Info("verify with token(%s)&resource(%s) fail: %s", args.Token, args.Resource, err)
+		log.Err("verify with token(%s)&resource(%s) fail: %s", args.Token, args.Resource, err)
 	} else {
 		log.Debug("return: %v", reply)
 	}
@@ -163,7 +163,7 @@ func (mng *TokenManager) Delete(meta *gobus.HTTPMeta, token *string, reply *int)
 	log.Debug("delete token: %s", *token)
 	err = mng.manager.DeleteToken(*token)
 	if err != nil {
-		log.Info("delete token(%s) fail: %s", *token, err)
+		log.Err("delete token(%s) fail: %s", *token, err)
 	} else {
 		log.Debug("ok")
 	}
@@ -190,7 +190,7 @@ func (mng *TokenManager) Refresh(meta *gobus.HTTPMeta, args *TokenRefreshArg, re
 	}
 	err = mng.manager.RefreshToken(args.Token, expire)
 	if err != nil {
-		log.Info("refresh token(%s) with expire(%ds) fail: %s", args.Token, args.ExpireAfterSeconds, err)
+		log.Err("refresh token(%s) with expire(%ds) fail: %s", args.Token, args.ExpireAfterSeconds, err)
 	} else {
 		log.Debug("ok")
 	}
@@ -208,7 +208,7 @@ func (mng *TokenManager) Expire(meta *gobus.HTTPMeta, token *string, reply *int)
 	log.Debug("expire token: %s", *token)
 	err = mng.manager.ExpireToken(*token)
 	if err != nil {
-		log.Info("expire token(%s) fail: %s", *token, err)
+		log.Err("expire token(%s) fail: %s", *token, err)
 	} else {
 		log.Debug("ok")
 	}
@@ -226,7 +226,7 @@ func (mng *TokenManager) ExpireAll(meta *gobus.HTTPMeta, key *string, reply *int
 	log.Debug("expire all tokens: %s", *key)
 	err = mng.manager.ExpireTokensByKey(*key)
 	if err != nil {
-		log.Info("expire all tokens(%s) fail: %s", *key, err)
+		log.Err("expire all tokens(%s) fail: %s", *key, err)
 	} else {
 		log.Debug("ok")
 	}
