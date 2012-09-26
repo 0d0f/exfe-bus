@@ -37,17 +37,30 @@ func (t *Twitter) MessageType() thirdpart.MessageType {
 	return thirdpart.ShortMessage
 }
 
+type twitterReply struct {
+	IDstr string `json:"id_str"`
+}
+
 func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (string, error) {
 	params := make(url.Values)
 	params.Set(t.identity(to))
 	params.Set("text", privateMessage)
-	_, err := t.client.Do("POST", "direct_messages/new.json", params)
+	resp, err := t.client.Do("POST", "direct_messages/new.json", params)
 	if err != nil && strings.Index(err.Error(), `"code":150`) > 0 {
 		params := make(url.Values)
 		params.Set("status", publicMessage)
-		_, err = t.client.Do("POST", "statuses/update.json", params)
+		resp, err = t.client.Do("POST", "statuses/update.json", params)
 	}
-	return "", err
+	if err != nil {
+		return "", fmt.Errorf("send to twitter fail: %s", err)
+	}
+	decoder := json.NewDecoder(resp)
+	var reply twitterReply
+	err = decoder.Decode(&reply)
+	if err != nil {
+		return "", fmt.Errorf("parse twitter reply error: %s", err)
+	}
+	return reply.IDstr, nil
 }
 
 func (t *Twitter) UpdateIdentity(to *model.Recipient) error {
