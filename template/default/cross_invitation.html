@@ -6,7 +6,7 @@
 
 {{ .Cross.Title }}
 =======
-{{ .Cross.Link .Config.Site_url }}
+{{ .Cross.LinkTo .Config.Site_url .Token }}
 {{ $time := .Cross.Time.StringInZone .Timezone }}{{ if $time }}
 {{ $time }}
 ======={{ else }}
@@ -191,7 +191,7 @@ Description
                 <td colspan="3" style="font-size: 11px; line-height: 15px; color: #7F7F7F; padding-top: 40px;">
                     Reply this email directly as conversation.<!-- , or Try <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.App_url }}">EXFE</a> app.-->
                     <br />
-                    This <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Cross.Link .Config.Site_url }}">·X·</a> invitation is sent by <span class="exfe_mail_identity_name">{{ .Cross.By_identity.Name | html }}</span> from <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
+                    This <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Cross.LinkTo .Config.Site_url .Token }}">·X·</a> invitation is sent by <span class="exfe_mail_identity_name">{{ .Cross.By_identity.Name | html }}</span> from <a style="color: #3a6ea5; text-decoration: none;" href="{{ .Config.Site_url }}">EXFE</a>.
                 </td>
             </tr>
         </table>
