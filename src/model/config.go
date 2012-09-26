@@ -26,13 +26,24 @@ type Config struct {
 			AccessSecret string `json:"access_secret"`
 			ScreenName   string `json:"screen_name"`
 		} `json:"twitter"`
-		Email struct {
-			Host     string `json:"host"`
-			Port     int    `json:"port"`
-			Username string `json:"username"`
-			Password string `json:"password"`
-		} `json:"thirdpart"`
-	}
+		Apn struct {
+			Cert   string `json:"cert"`
+			Key    string `json:"key"`
+			Server string `json:"server"`
+			RootCA string `json:"root.ca"`
+		} `json:"apn"`
+		Gcm struct {
+			Key string `json:"key"`
+		} `json:"gcm"`
+	} `json:"thirdpart"`
+	Email struct {
+		Host     string `json:"host"`
+		Port     int    `json:"port"`
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Account  string `json:"account"`
+		Domain   string `json:"domain"`
+	} `json:"email"`
 	ExfeService struct {
 		Addr string `json:"addr"`
 		Port int    `json:"port"`

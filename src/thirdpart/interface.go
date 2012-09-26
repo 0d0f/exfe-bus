@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"model"
+	"net"
 	"net/http"
+	"net/smtp"
 	"net/url"
+	"strings"
 )
 
 type Token struct {
@@ -73,7 +76,19 @@ type updateFriendsArg struct {
 }
 
 type HelperImp struct {
-	config *model.Config
+	config      *model.Config
+	emailServer string
+	emailAuth   smtp.Auth
+	emailFrom   string
+}
+
+func NewHelper(config *model.Config) *HelperImp {
+	return &HelperImp{
+		config:      config,
+		emailServer: fmt.Sprintf("%s:%d", config.Email.Host, config.Email.Port),
+		emailAuth:   smtp.PlainAuth("", config.Email.Username, config.Email.Password, config.Email.Host),
+		emailFrom:   fmt.Sprintf("exfe@%s", config.Email.Domain),
+	}
 }
 
 func (h *HelperImp) UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error {
@@ -131,7 +146,33 @@ func (h *HelperImp) UpdateIdentity(to *model.Recipient, externalUser ExternalUse
 }
 
 func (h *HelperImp) SendEmail(to string, content string) (id string, err error) {
-	return "", fmt.Errorf("not implemented")
+	mail_split := strings.Split(to, "@")
+	if len(mail_split) != 2 {
+		return "", fmt.Errorf("mail(%s) not valid.", to)
+	}
+	host := mail_split[1]
+	mx, err := net.LookupMX(host)
+	if err != nil {
+		return "", fmt.Errorf("lookup mail exchange fail: %s", err)
+	}
+	if len(mx) == 0 {
+		return "", fmt.Errorf("can't find mail exchange for %s", to)
+	}
+	s, err := smtp.Dial(fmt.Sprintf("%s:25", mx[0].Host))
+	if err != nil {
+		return "", fmt.Errorf("dial to mail exchange %s fail: %s", mx[0].Host, err)
+	}
+	err = s.Mail(h.emailFrom)
+	if err != nil {
+		return "", fmt.Errorf("set smtp mail fail: %s", err)
+	}
+	err = s.Rcpt(to)
+	if err != nil {
+		return "", fmt.Errorf("set smtp rcpt fail: %s", err)
+	}
+	s.Quit()
+	err = smtp.SendMail(h.emailServer, h.emailAuth, h.emailFrom, []string{to}, []byte(content))
+	return "", err
 }
 
 type HelperFake struct {
