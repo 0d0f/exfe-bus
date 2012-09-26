@@ -9,8 +9,6 @@ type Email struct {
 	helper thirdpart.Helper
 }
 
-const provider = "email"
-
 func New(helper thirdpart.Helper) *Email {
 	return &Email{
 		helper: helper,
@@ -18,7 +16,7 @@ func New(helper thirdpart.Helper) *Email {
 }
 
 func (e *Email) Provider() string {
-	return provider
+	return "email"
 }
 
 func (e *Email) MessageType() thirdpart.MessageType {

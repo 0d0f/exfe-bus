@@ -1,0 +1,2 @@
+https://www.facebook.com/dialog/oauth?client_id=171826996271051&redirect_uri=http://localhost:4567/
+https://graph.facebook.com/oauth/access_token?client_id=171826996271051&redirect_uri=http://localhost:4567/&client_secret=af032de5f890ae8c08f78aadf1744ccb&code=CODE_GENERATED_BY_FACEBOOK
