@@ -161,19 +161,10 @@ func (r *TokenRepository) timeToString(t *time.Time) string {
 	return t.UTC().Format(time.RFC3339)
 }
 
-func (r *TokenRepository) checkBadConnection(err error) error {
-	const retry = 5
-	for i := 0; i < retry && err == driver.ErrBadConn; i++ {
-		err = r.Connect()
-
-	}
-	return err
-}
-
 func (r *TokenRepository) exec(sql string, v ...interface{}) (sql.Result, error) {
 	result, err := r.db.Exec(sql, v...)
 	if err == driver.ErrBadConn {
-		err = r.checkBadConnection(err)
+		err = r.Connect()
 		if err == nil {
 			result, err = r.exec(sql, v...)
 		}
