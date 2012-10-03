@@ -7,12 +7,18 @@ import (
 	"model"
 	"net/url"
 	"oauth"
+	"regexp"
 	"strings"
+	"textcutter"
 	"thirdpart"
 )
 
+type TwitterBroker interface {
+	Do(cmd, path string, params url.Values) (io.ReadCloser, error)
+}
+
 type Twitter struct {
-	client      *oauth.OAuthClient
+	broker      TwitterBroker
 	clientToken *thirdpart.Token
 	accessToken *thirdpart.Token
 	helper      thirdpart.Helper
@@ -21,9 +27,9 @@ type Twitter struct {
 const twitterApiBase = "https://api.twitter.com/1.1/"
 const provider = "twitter"
 
-func New(client, access *thirdpart.Token, helper thirdpart.Helper) *Twitter {
+func New(client, access *thirdpart.Token, broker TwitterBroker, helper thirdpart.Helper) *Twitter {
 	return &Twitter{
-		client:      oauth.CreateClient(client.Token, client.Secret, access.Token, access.Secret, twitterApiBase),
+		broker:      broker,
 		clientToken: client,
 		accessToken: access,
 		helper:      helper,
@@ -47,12 +53,27 @@ func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage
 	params.Set(t.identity(to))
 	var err error
 	var resp io.ReadCloser
-	params.Set("text", privateMessage)
-	resp, err = t.client.Do("POST", "direct_messages/new.json", params)
+	cutter, err := textcutter.Parse(privateMessage, twitterLen)
+	if err != nil {
+		return "", fmt.Errorf("parse %s private message failed: %s", to, err)
+	}
+	for _, content := range cutter.Limit(140) {
+		params.Set("text", content)
+		resp, err = t.broker.Do("POST", "direct_messages/new.json", params)
+		if err != nil {
+			break
+		}
+	}
 	if err != nil && strings.Index(err.Error(), `"code":150`) > 0 {
 		params := make(url.Values)
-		params.Set("status", publicMessage)
-		resp, err = t.client.Do("POST", "statuses/update.json", params)
+		cutter, err := textcutter.Parse(publicMessage, twitterLen)
+		if err != nil {
+			return "", fmt.Errorf("parse %s public message failed: %s", to, err)
+		}
+		for _, content := range cutter.Limit(140) {
+			params.Set("status", content)
+			resp, err = t.broker.Do("POST", "statuses/update.json", params)
+		}
 	}
 	if err != nil {
 		return "", fmt.Errorf("send to %s fail: %s", to, err)
@@ -69,7 +90,7 @@ func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage
 func (t *Twitter) UpdateIdentity(to *model.Recipient) error {
 	params := make(url.Values)
 	params.Set(t.identity(to))
-	resp, err := t.client.Do("GET", "users/show.json", params)
+	resp, err := t.broker.Do("GET", "users/show.json", params)
 	if err != nil {
 		return fmt.Errorf("get %s users/show(%v) failed: %s", to, params, err)
 	}
@@ -93,11 +114,11 @@ func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 		return fmt.Errorf("can't convert %s's AuthData: %s", to, err)
 	}
 	access := idToken.ToToken()
-	client := oauth.CreateClient(t.clientToken.Token, t.clientToken.Secret, access.Token, access.Secret, twitterApiBase)
+	broker := oauth.CreateClient(t.clientToken.Token, t.clientToken.Secret, access.Token, access.Secret, twitterApiBase)
 
 	params := make(url.Values)
 	params.Set(t.identity(to))
-	resp, err := client.Do("GET", "friends/ids.json", params)
+	resp, err := broker.Do("GET", "friends/ids.json", params)
 	if err != nil {
 		return fmt.Errorf("get %s friends/ids(%v) failed: %s", to, params, err)
 	}
@@ -118,7 +139,7 @@ func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 
 		params := make(url.Values)
 		params.Set("user_id", join(ids, ","))
-		resp, err := client.Do("GET", "users/lookup.json", params)
+		resp, err := broker.Do("GET", "users/lookup.json", params)
 		if err != nil {
 			return fmt.Errorf("get %s users/lookup.json(%v) fail: %s", to, params, err)
 		}
@@ -207,4 +228,13 @@ func join(a []uint64, spliter string) string {
 		ret = fmt.Sprintf("%s,%d", ret, i)
 	}
 	return ret
+}
+
+var urlRegex = regexp.MustCompile(`(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?`)
+
+const twitterUrl = "http://t.co/12345678"
+
+func twitterLen(content string) int {
+	content = urlRegex.ReplaceAllString(content, twitterUrl)
+	return len(content)
 }

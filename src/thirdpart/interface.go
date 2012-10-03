@@ -175,10 +175,10 @@ func (h *HelperImp) SendEmail(to string, content string) (id string, err error) 
 	return "", err
 }
 
-type HelperFake struct {
+type FakeHelper struct {
 }
 
-func (h *HelperFake) UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error {
+func (h *FakeHelper) UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error {
 	arg := updateFriendsArg{
 		UserID:     to.UserID,
 		Identities: make([]*model.Identity, len(externalUsers)),
@@ -206,7 +206,7 @@ func (h *HelperFake) UpdateFriends(to *model.Recipient, externalUsers []External
 	return nil
 }
 
-func (h *HelperFake) UpdateIdentity(to *model.Recipient, externalUser ExternalUser) error {
+func (h *FakeHelper) UpdateIdentity(to *model.Recipient, externalUser ExternalUser) error {
 	params := make(url.Values)
 	params.Set("id", fmt.Sprintf("%d", to.IdentityID))
 	params.Set("provider", externalUser.Provider())
@@ -222,7 +222,7 @@ func (h *HelperFake) UpdateIdentity(to *model.Recipient, externalUser ExternalUs
 	return nil
 }
 
-func (h *HelperFake) SendEmail(to string, content string) (id string, err error) {
+func (h *FakeHelper) SendEmail(to string, content string) (id string, err error) {
 	fmt.Printf("send mail to %s, content: %s\n", to, content)
 	return "", nil
 }
