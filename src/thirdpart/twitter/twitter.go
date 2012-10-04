@@ -11,6 +11,7 @@ import (
 	"strings"
 	"textcutter"
 	"thirdpart"
+	"unicode/utf8"
 )
 
 type TwitterBroker interface {
@@ -236,5 +237,5 @@ const twitterUrl = "http://t.co/12345678"
 
 func twitterLen(content string) int {
 	content = urlRegex.ReplaceAllString(content, twitterUrl)
-	return len(content)
+	return utf8.RuneCountInString(content)
 }

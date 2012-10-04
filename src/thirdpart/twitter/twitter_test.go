@@ -92,7 +92,7 @@ func TestSend(t *testing.T) {
 
 	{
 		broker.Reset()
-		id, err := twitter.Send(toPublic, `\(accepted name1\), \(accepted name2\) and \(accepted name3\) are accepted on \(“some cross”\), \(inter name1\), \(inter name2\) and \(inter name3\) interested, \(un name1\), \(un name2\) and \(un name3\) are unavailable, \(pending name1\), \(pending name2\) and \(pending name3\) are pending. \(3 of 10 accepted\). https://exfe.com/#!token=932ce5324321433253`, "public message", nil)
+		id, err := twitter.Send(toPublic, `\(AAAAAAAA name1\), \(AAAAAAAA name2\) and \(AAAAAAAA name3\) are accepted on \(“some cross”\), \(IIIII name1\), \(IIIII name2\) and \(IIIII name3\) interested, \(UUUU name1\), \(UUUU name2\) and \(UUUU name3\) are unavailable, \(PPPPPPP name1\), \(PPPPPPP name2\) and \(PPPPPPP name3\) are pending. \(3 of 10 accepted\). https://exfe.com/#!token=932ce5324321433253`, "public message", nil)
 		if err != nil {
 			t.Fatalf("send fail: %s", err)
 		}
@@ -109,9 +109,9 @@ func TestSend(t *testing.T) {
 			}
 		}
 		results := []string{
-			"accepted name1, accepted name2 and accepted name3 are accepted on “some cross”, inter name1, inter name2 and inter name3…(1/3)",
-			"interested, un name1, un name2 and un name3 are unavailable, pending name1, pending name2 and pending name3 are pending.…(2/3)",
-			"3 of 10 accepted. https://exfe.com/#!token=932ce5324321433253 (3/3)",
+			`AAAAAAAA name1, AAAAAAAA name2 and AAAAAAAA name3 are accepted on “some cross”, IIIII name1, IIIII name2 and IIIII name3 interested,…(1/3)`,
+			`UUUU name1, UUUU name2 and UUUU name3 are unavailable, PPPPPPP name1, PPPPPPP name2 and PPPPPPP name3 are pending. 3 of 10 accepted.…(2/3)`,
+			`https://exfe.com/#!token=932ce5324321433253 (3/3)`,
 		}
 		for i := 0; i < 3; i++ {
 			if got, expect := broker.params[i].Get("user_id"), "12345"; got != expect {
