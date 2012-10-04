@@ -2,6 +2,7 @@ package textcutter
 
 import (
 	"testing"
+	"unicode/utf8"
 )
 
 func equalArray(a, b []string) (bool, int) {
@@ -35,7 +36,7 @@ func TestParseLex(t *testing.T) {
 }
 
 func normalStringLen(s string) int {
-	return len(s)
+	return utf8.RuneCountInString(s)
 }
 
 func TestCutter(t *testing.T) {
@@ -68,7 +69,7 @@ func TestCutter(t *testing.T) {
 	}
 
 	{
-		got, expect := cutter.Limit(71), []string{`(1/2)googol:\ 12345678901234567890\`, `(2/2)("1234567890123" http://exfe.com/abcdefg)`}
+		got, expect := cutter.Limit(71), []string{`googol:\ 12345678901234567890\…(1/2)`, `("1234567890123" http://exfe.com/abcdefg) (2/2)`}
 		if ok, i := equalArray(got, expect); !ok {
 			if i < 0 {
 				t.Fatalf("length not same: %v", got)
@@ -79,7 +80,7 @@ func TestCutter(t *testing.T) {
 	}
 
 	{
-		got, expect := cutter.Limit(70), []string{`(1/2)googol:\ 12345678901234567890\`, `(2/2)("1234567890123" http://exfe.com/abcdefg)`}
+		got, expect := cutter.Limit(70), []string{`googol:\ 12345678901234567890\…(1/2)`, `("1234567890123" http://exfe.com/abcdefg) (2/2)`}
 		if ok, i := equalArray(got, expect); !ok {
 			if i < 0 {
 				t.Fatalf("length not same: %v", got)
@@ -90,7 +91,7 @@ func TestCutter(t *testing.T) {
 	}
 
 	{
-		got, expect := cutter.Limit(35), []string{`(1/2)googol:\ 12345678901234567890\`, `(2/2)("1234567890123" http://exfe.com/abcdefg)`}
+		got, expect := cutter.Limit(36), []string{`googol:\ 12345678901234567890\…(1/2)`, `("1234567890123" http://exfe.com/abcdefg) (2/2)`}
 		if ok, i := equalArray(got, expect); !ok {
 			if i < 0 {
 				t.Fatalf("length not same: %v", got)
@@ -101,7 +102,7 @@ func TestCutter(t *testing.T) {
 	}
 
 	{
-		got, expect := cutter.Limit(34), []string{`(1/3)googol:\ 12345678901234567890`, `(2/3)\`, `(3/3)("1234567890123" http://exfe.com/abcdefg)`}
+		got, expect := cutter.Limit(35), []string{`googol:\ 12345678901234567890…(1/3)`, `\…(2/3)`, `("1234567890123" http://exfe.com/abcdefg) (3/3)`}
 		if ok, i := equalArray(got, expect); !ok {
 			if i < 0 {
 				t.Fatalf("length not same: %v", got)
@@ -112,7 +113,7 @@ func TestCutter(t *testing.T) {
 	}
 
 	{
-		got, expect := cutter.Limit(33), []string{`(1/3)googol:\`, `(2/3)12345678901234567890\`, `(3/3)("1234567890123" http://exfe.com/abcdefg)`}
+		got, expect := cutter.Limit(34), []string{`googol:\…(1/3)`, `12345678901234567890\…(2/3)`, `("1234567890123" http://exfe.com/abcdefg) (3/3)`}
 		if ok, i := equalArray(got, expect); !ok {
 			if i < 0 {
 				t.Fatalf("length not same: %v", got)

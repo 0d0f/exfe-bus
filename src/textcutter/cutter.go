@@ -89,7 +89,8 @@ func (c *Cutter) Limit(max int) []string {
 
 	ret := make([]string, 0)
 	buf := bytes.NewBuffer(nil)
-	max = max - 5
+	max = max - 6
+	length = 0
 	insert := func() {
 		str := strings.Trim(buf.String(), emptyRunes)
 		if str == "" {
@@ -112,7 +113,11 @@ func (c *Cutter) Limit(max int) []string {
 	insert()
 
 	for i, _ := range ret {
-		ret[i] = fmt.Sprintf("(%d/%d)%s", i+1, len(ret), ret[i])
+		if i != len(ret)-1 {
+			ret[i] = fmt.Sprintf("%s…(%d/%d)", ret[i], i+1, len(ret))
+		} else {
+			ret[i] = fmt.Sprintf("%s (%d/%d)", ret[i], i+1, len(ret))
+		}
 	}
 	return ret
 }
