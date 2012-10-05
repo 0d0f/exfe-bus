@@ -28,11 +28,11 @@ func (c *GCM) Send(args []SendArg) error {
 	for _, arg := range args {
 		log.Printf("Sending message(%s) to device(%s)", arg.Text, arg.DeviceID)
 		message := gcm.NewMessage(arg.DeviceID)
-		message.AddPayload("text", arg.Text)
-		message.AddPayload("badge", arg.Badge)
-		message.AddPayload("sound", arg.Sound)
-		message.AddPayload("cid", arg.Cid)
-		message.AddPayload("t", arg.T)
+		message.SetPayload("text", arg.Text)
+		message.SetPayload("badge", arg.Badge)
+		message.SetPayload("sound", arg.Sound)
+		message.SetPayload("cid", arg.Cid)
+		message.SetPayload("t", arg.T)
 		message.DelayWhileIdle = true
 		message.CollapseKey = "exfe"
 
