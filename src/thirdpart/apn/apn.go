@@ -4,10 +4,15 @@ import (
 	"fmt"
 	"github.com/virushuo/Go-Apns"
 	"model"
+	"regexp"
+	"textcutter"
 	"thirdpart"
-	"time"
-	"unicode/utf8"
 )
+
+type ApnBroker interface {
+	Send(n *apns.Notification) error
+	GetErrorChan() <-chan apns.NotificationError
+}
 
 type sendArg struct {
 	id      uint
@@ -15,21 +20,17 @@ type sendArg struct {
 }
 
 type Apn struct {
-	conn *apns.Apn
-	id   uint32
+	broker ApnBroker
+	id     uint32
 }
 
 type ErrorHandler func(apns.NotificationError)
 
-func New(cert, key, server string, timeout time.Duration, errorHandler ErrorHandler) (*Apn, error) {
-	apn, err := apns.New(cert, key, server, timeout)
-	if err != nil {
-		return nil, err
-	}
-	go listenError(apn, errorHandler)
+func New(broker ApnBroker, errorHandler ErrorHandler) (*Apn, error) {
+	go listenError(broker.GetErrorChan(), errorHandler)
 	return &Apn{
-		conn: apn,
-		id:   0,
+		broker: broker,
+		id:     0,
 	}, nil
 }
 
@@ -42,33 +43,37 @@ func (a *Apn) MessageType() thirdpart.MessageType {
 }
 
 func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (string, error) {
-	id := a.id
-	a.id++
+	privateMessage = urlRegex.ReplaceAllString(privateMessage, "")
+	cutter, err := textcutter.Parse(privateMessage, apnLen)
+	if err != nil {
+		return "", fmt.Errorf("parse cutter error: %s", err)
+	}
 
-	alert := []byte(privateMessage)
-	if len(alert) > 140 {
-		alert = alert[:140]
-		for !utf8.Valid(alert) {
-			alert = alert[:len(alert)-1]
+	var id uint32
+	for _, content := range cutter.Limit(140) {
+		id = a.id
+		a.id++
+
+		payload := apns.Payload{}
+		payload.Aps.Alert = content
+		payload.Aps.Badge = 1
+		payload.Aps.Sound = ""
+		payload.SetCustom("args", ExfePush{
+			Cid: data.CrossID,
+			T:   data.Type.String(),
+		})
+		notification := apns.Notification{
+			DeviceToken: to.ExternalID,
+			Identifier:  id,
+			Payload:     &payload,
+		}
+
+		err := a.broker.Send(&notification)
+		if err != nil {
+			return fmt.Sprintf("%d", id), fmt.Errorf("send error: %s", err)
 		}
 	}
-
-	payload := apns.Payload{}
-	payload.Aps.Alert = string(alert)
-	payload.Aps.Badge = 1
-	payload.Aps.Sound = ""
-	payload.SetCustom("args", ExfePush{
-		Cid: data.CrossID,
-		T:   data.Type.String(),
-	})
-	notification := apns.Notification{
-		DeviceToken: to.ExternalID,
-		Identifier:  id,
-		Payload:     &payload,
-	}
-
-	err := a.conn.Send(&notification)
-	return fmt.Sprintf("%d", id), err
+	return fmt.Sprintf("%d", id), nil
 }
 
 type ExfePush struct {
@@ -76,8 +81,14 @@ type ExfePush struct {
 	T   string `json:"t"`
 }
 
-func listenError(conn *apns.Apn, h ErrorHandler) {
+func listenError(errChan <-chan apns.NotificationError, h ErrorHandler) {
 	for {
-		h(<-conn.ErrorChan)
+		h(<-errChan)
 	}
 }
+
+func apnLen(content string) int {
+	return len([]byte(content))
+}
+
+var urlRegex = regexp.MustCompile(` *(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?`)
