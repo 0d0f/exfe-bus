@@ -14,12 +14,12 @@ import (
 	"unicode/utf8"
 )
 
-type TwitterBroker interface {
+type Broker interface {
 	Do(cmd, path string, params url.Values) (io.ReadCloser, error)
 }
 
 type Twitter struct {
-	broker      TwitterBroker
+	broker      Broker
 	clientToken *thirdpart.Token
 	accessToken *thirdpart.Token
 	helper      thirdpart.Helper
@@ -28,7 +28,7 @@ type Twitter struct {
 const twitterApiBase = "https://api.twitter.com/1.1/"
 const provider = "twitter"
 
-func New(client, access *thirdpart.Token, broker TwitterBroker, helper thirdpart.Helper) *Twitter {
+func New(client, access *thirdpart.Token, broker Broker, helper thirdpart.Helper) *Twitter {
 	return &Twitter{
 		broker:      broker,
 		clientToken: client,
@@ -58,14 +58,23 @@ func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage
 	if err != nil {
 		return "", fmt.Errorf("parse %s private message failed: %s", to, err)
 	}
+	ids := ""
 	for _, content := range cutter.Limit(140) {
 		params.Set("text", content)
 		resp, err = t.broker.Do("POST", "direct_messages/new.json", params)
 		if err != nil {
 			break
 		}
+		decoder := json.NewDecoder(resp)
+		var reply twitterReply
+		err = decoder.Decode(&reply)
+		if err != nil {
+			return "", fmt.Errorf("parse %s reply error: %s", to, err)
+		}
+		ids = fmt.Sprintf("%s,%s", ids, reply.IDstr)
 	}
 	if err != nil && strings.Index(err.Error(), `"code":150`) > 0 {
+		ids = ""
 		params := make(url.Values)
 		cutter, err := textcutter.Parse(publicMessage, twitterLen)
 		if err != nil {
@@ -74,18 +83,20 @@ func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage
 		for _, content := range cutter.Limit(140) {
 			params.Set("status", content)
 			resp, err = t.broker.Do("POST", "statuses/update.json", params)
+			if err != nil {
+				return "", fmt.Errorf("send to %s fail: %s", to, err)
+			}
+			decoder := json.NewDecoder(resp)
+			var reply twitterReply
+			err = decoder.Decode(&reply)
+			if err != nil {
+				return "", fmt.Errorf("parse %s reply error: %s", to, err)
+			}
+			ids = fmt.Sprintf("%s,%s", ids, reply.IDstr)
 		}
 	}
-	if err != nil {
-		return "", fmt.Errorf("send to %s fail: %s", to, err)
-	}
-	decoder := json.NewDecoder(resp)
-	var reply twitterReply
-	err = decoder.Decode(&reply)
-	if err != nil {
-		return "", fmt.Errorf("parse %s reply error: %s", to, err)
-	}
-	return reply.IDstr, nil
+
+	return ids[1:], nil
 }
 
 func (t *Twitter) UpdateIdentity(to *model.Recipient) error {

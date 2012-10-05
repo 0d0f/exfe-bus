@@ -9,7 +9,7 @@ import (
 	"thirdpart"
 )
 
-type ApnBroker interface {
+type Broker interface {
 	Send(n *apns.Notification) error
 	GetErrorChan() <-chan apns.NotificationError
 }
@@ -20,13 +20,13 @@ type sendArg struct {
 }
 
 type Apn struct {
-	broker ApnBroker
+	broker Broker
 	id     uint32
 }
 
 type ErrorHandler func(apns.NotificationError)
 
-func New(broker ApnBroker, errorHandler ErrorHandler) (*Apn, error) {
+func New(broker Broker, errorHandler ErrorHandler) (*Apn, error) {
 	go listenError(broker.GetErrorChan(), errorHandler)
 	return &Apn{
 		broker: broker,
@@ -49,10 +49,11 @@ func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage str
 		return "", fmt.Errorf("parse cutter error: %s", err)
 	}
 
-	var id uint32
+	ids := ""
 	for _, content := range cutter.Limit(140) {
-		id = a.id
+		id := a.id
 		a.id++
+		ids = fmt.Sprintf("%s,%d", ids, id)
 
 		payload := apns.Payload{}
 		payload.Aps.Alert = content
@@ -70,10 +71,10 @@ func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage str
 
 		err := a.broker.Send(&notification)
 		if err != nil {
-			return fmt.Sprintf("%d", id), fmt.Errorf("send error: %s", err)
+			return ids, fmt.Errorf("send %d error: %s", id, err)
 		}
 	}
-	return fmt.Sprintf("%d", id), nil
+	return ids[1:], nil
 }
 
 type ExfePush struct {

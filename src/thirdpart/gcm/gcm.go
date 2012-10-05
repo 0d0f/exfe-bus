@@ -7,13 +7,17 @@ import (
 	"thirdpart"
 )
 
-type GCM struct {
-	client *gcm.Client
+type Broker interface {
+	Send(message *gcm.Message) (*gcm.Response, error)
 }
 
-func NewGCM(key string) *GCM {
+type GCM struct {
+	broker Broker
+}
+
+func NewGCM(broker Broker) *GCM {
 	return &GCM{
-		client: gcm.New(key),
+		broker: broker,
 	}
 }
 
@@ -35,7 +39,7 @@ func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage str
 	message.DelayWhileIdle = true
 	message.CollapseKey = "exfe"
 
-	resp, err := g.client.Send(message)
+	resp, err := g.broker.Send(message)
 	if err != nil {
 		return "", err
 	}

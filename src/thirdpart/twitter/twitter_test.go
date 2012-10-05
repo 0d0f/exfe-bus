@@ -99,7 +99,7 @@ func TestSend(t *testing.T) {
 			t.Fatalf("send fail: %s", err)
 		}
 
-		if got, expect := id, "3"; got != expect {
+		if got, expect := id, "1,2,3"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 		for i := 0; i < 3; i++ {
