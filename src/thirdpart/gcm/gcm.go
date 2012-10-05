@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/googollee/go-gcm"
 	"model"
+	"textcutter"
 	"thirdpart"
+	"unicode/utf8"
 )
 
 type Broker interface {
@@ -15,7 +17,7 @@ type GCM struct {
 	broker Broker
 }
 
-func NewGCM(broker Broker) *GCM {
+func New(broker Broker) *GCM {
 	return &GCM{
 		broker: broker,
 	}
@@ -30,28 +32,40 @@ func (g *GCM) MessageType() thirdpart.MessageType {
 }
 
 func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (id string, err error) {
+	cutter, err := textcutter.Parse(privateMessage, gcmLen)
+	if err != nil {
+		return "", fmt.Errorf("parse cutter error: %s", err)
+	}
 	message := gcm.NewMessage(to.ExternalID)
-	message.AddPayload("text", privateMessage)
-	message.AddPayload("badge", 1)
-	message.AddPayload("sound", "")
-	message.AddPayload("cid", data.CrossID)
-	message.AddPayload("t", data.Type)
+	message.SetPayload("badge", 1)
+	message.SetPayload("sound", "")
+	message.SetPayload("cid", data.CrossID)
+	message.SetPayload("t", data.Type)
 	message.DelayWhileIdle = true
 	message.CollapseKey = "exfe"
 
-	resp, err := g.broker.Send(message)
-	if err != nil {
-		return "", err
-	}
+	ids := ""
+	for _, content := range cutter.Limit(140) {
+		message.SetPayload("text", content)
+		resp, err := g.broker.Send(message)
+		if err != nil {
+			return "", fmt.Errorf("send to %s error: %s", to, err)
+		}
 
-	for i := range resp.Results {
-		if resp.Results[i].RegistrationID != to.ExternalID {
-			continue
+		fmt.Println(resp.Results)
+		for i := range resp.Results {
+			if resp.Results[i].RegistrationID != to.ExternalID {
+				continue
+			}
+			if err := resp.Results[i].Error; err != "" {
+				return resp.Results[i].MessageID, fmt.Errorf("send to %s error: %s", to, err)
+			}
+			ids = fmt.Sprintf("%s,%d", ids, resp.Results[i].MessageID)
 		}
-		if err := resp.Results[i].Error; err != "" {
-			return resp.Results[i].MessageID, fmt.Errorf(err)
-		}
-		return resp.Results[i].MessageID, nil
 	}
-	return "", fmt.Errorf("can't find result in response")
+	return ids[1:], nil
+}
+
+func gcmLen(content string) int {
+	return utf8.RuneCountInString(content)
 }
