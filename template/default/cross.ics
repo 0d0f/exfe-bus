@@ -5,7 +5,7 @@ X-WR-CALNAME:{{ .Cross.Title }}
 X-WR-CALDESC:exfe cal
 X-WR-TIMEZONE:{{ .Timezone }}
 BEGIN:VEVENT
-UID:\!{{ .Cross.Id }}@exfe
+UID:!{{ .Cross.Id }}@exfe
 DTSTAMP:{{ $time := .Cross.Time.Begin_at.UTCTime "20060102T150405Z" }}{{ $time }}
 DESCRIPTION:{{ $s := limit .Cross.Description 233 }}{{ replace $s "\n" "\\n" }}
 DTSTART:{{ if .Cross.Time.Begin_at.Time }}{{ $time }}{{ else }}VALUE=DATE:{{ $time }}{{ end }}
