@@ -120,9 +120,11 @@ func (e *CrossEmail) GetBody(arg *ProviderArg, filename string) (string, string,
 	}
 
 	ics := bytes.NewBuffer(nil)
-	err = e.tmpl.ExecuteTemplate(ics, "cross.ics", arg)
-	if err != nil {
-		return "", "", err
+	if arg.Cross.Time.Begin_at.Date != "" {
+		err = e.tmpl.ExecuteTemplate(ics, "cross.ics", arg)
+		if err != nil {
+			return "", "", err
+		}
 	}
 
 	return html.String(), ics.String(), nil
@@ -149,9 +151,11 @@ func (e *CrossEmail) sendMail(arg *ProviderArg, hasUpdate bool) {
 			Text:       strings.Trim(htmls[1], " \n\r\t"),
 			Html:       strings.Trim(htmls[2], " \n\r\t"),
 			References: []string{fmt.Sprintf("<%s>", mail_addr)},
-			FileParts: []email_service.FilePart{
+		}
+		if ics != "" {
+			mailarg.FileParts = []email_service.FilePart{
 				email_service.FilePart{fmt.Sprintf("%s.ics", arg.Cross.Title), []byte(ics)},
-			},
+			}
 		}
 
 		e.client.Send("EmailSend", &mailarg, 5)
