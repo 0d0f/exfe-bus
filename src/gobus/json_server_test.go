@@ -9,8 +9,6 @@ import (
 )
 
 type TestServer struct {
-	lastInstance string
-	lastMethod   string
 }
 
 func (s *TestServer) Double(meta *HTTPMeta, args int, reply *int) error {
@@ -33,17 +31,10 @@ func (s *TestServer) POST(meta *HTTPMeta, arg int, reply *int) error {
 	return nil
 }
 
-func (s *TestServer) Dispatch(req *http.Request, instance, method string) error {
-	s.lastInstance = instance
-	s.lastMethod = method
-	return nil
-}
-
 func TestJSONServer(t *testing.T) {
 	s := NewJSONServer()
 	server := new(TestServer)
 	s.Register(server)
-	s.SetDispatcher(server)
 	h := &http.Server{
 		Addr:    "127.0.0.1:1234",
 		Handler: s,
@@ -119,30 +110,6 @@ func TestJSONServer(t *testing.T) {
 		}
 		if got, expect := string(body), "12\n"; got != expect {
 			t.Errorf("expect: (%s), got: (%s)", expect, got)
-		}
-	}
-
-	{
-		buf := bytes.NewBufferString("3")
-		resp, err := http.Post("http://127.0.0.1:1234/TestServer?method=NoInstance", "application/json", buf)
-		if err != nil {
-			t.Fatalf("http post error: %s", err)
-		}
-		if resp.StatusCode != 200 {
-			t.Errorf("http should respond 200, got: %s", resp.Status)
-		}
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatal("read body error: %s", err)
-		}
-		if got, expect := string(body), "true\n"; got != expect {
-			t.Errorf("expect: (%s), got: (%s)", expect, got)
-		}
-		if got, expect := server.lastInstance, "TestServer"; got != expect {
-			t.Errorf("expect: %s, got: %s", expect, got)
-		}
-		if got, expect := server.lastMethod, "NoInstance"; got != expect {
-			t.Errorf("expect: %s, got: %s", expect, got)
 		}
 	}
 }

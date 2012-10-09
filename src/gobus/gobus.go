@@ -10,14 +10,9 @@ import (
 	"net/url"
 )
 
-type DelayService interface {
-	DeclareQueue() Queue
-}
-
 type Server struct {
-	jsonServer      *JSONServer
-	url             string
-	delayDispatcher *DelayDispatcher
+	jsonServer *JSONServer
+	url        string
 }
 
 func NewServer(u string, l *logger.Logger) (*Server, error) {
@@ -26,12 +21,9 @@ func NewServer(u string, l *logger.Logger) (*Server, error) {
 		return nil, err
 	}
 	s := NewJSONServer()
-	dispatcher := NewDelayDispatcher(l)
-	s.SetDispatcher(dispatcher)
 	return &Server{
-		jsonServer:      s,
-		url:             u_.Host,
-		delayDispatcher: dispatcher,
+		jsonServer: s,
+		url:        u_.Host,
 	}, nil
 }
 
@@ -39,16 +31,11 @@ func (s *Server) Register(service interface{}) error {
 	return s.jsonServer.Register(service)
 }
 
-func (s *Server) RegisterDelayService(service DelayService) error {
-	return s.delayDispatcher.Register(service)
-}
-
 func (s *Server) ListenAndServe() error {
 	h := &http.Server{
 		Addr:    s.url,
 		Handler: s.jsonServer,
 	}
-	go s.delayDispatcher.Serve()
 	return h.ListenAndServe()
 }
 

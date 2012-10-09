@@ -8,19 +8,13 @@ import (
 	"strings"
 )
 
-type JSONServerDispatcher interface {
-	Dispatch(req *http.Request, instance, method string) error
-}
-
 type JSONServer struct {
-	services   map[string]*serviceType
-	dispatcher JSONServerDispatcher
+	services map[string]*serviceType
 }
 
 func NewJSONServer() *JSONServer {
 	return &JSONServer{
-		services:   make(map[string]*serviceType),
-		dispatcher: nil,
+		services: make(map[string]*serviceType),
 	}
 }
 
@@ -33,13 +27,7 @@ func (s *JSONServer) Register(arg interface{}) error {
 	return nil
 }
 
-func (s *JSONServer) SetDispatcher(dispatcher JSONServerDispatcher) {
-	s.dispatcher = dispatcher
-}
-
 func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	paths := strings.Split(r.URL.Path, "/")
-
 	var ret interface{}
 	defer func() {
 		e := json.NewEncoder(w)
@@ -49,45 +37,21 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	if len(paths) < 1 {
+	methodName := s.methodName(r)
+	service, method, err := s.findMethod(r, methodName)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		ret = fmt.Sprintf("can't find service to handle %s", r.URL.Path)
+		ret = err
 		return
 	}
 
-	serviceName := paths[len(paths)-1]
-	service, ok := s.services[serviceName]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		ret = fmt.Sprintf("can't find service %s", serviceName)
-		return
-	}
-	methodName := r.URL.Query().Get("method")
-	if methodName == "" {
-		methodName = r.Method
-	}
-	method, ok := service.methods[methodName]
-	if !ok {
-		if s.dispatcher != nil {
-			err := s.dispatcher.Dispatch(r, serviceName, methodName)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				ret = fmt.Sprintf("dispatch method %s in service %s error: %s", methodName, serviceName, err)
-				return
-			}
-			ret = true
-			return
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		ret = fmt.Sprintf("can't find method %s in service %s", methodName, serviceName)
-		return
-	}
 	input, err := method.getInput(r)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		ret = fmt.Sprintf("post data can't call method %s: %s", methodName, err)
+		ret = fmt.Sprintf("data can't call method %s: %s", methodName, err)
 		return
 	}
+
 	output, err := method.call(service.service, &HTTPMeta{r, w}, input)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -95,6 +59,35 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ret = output.Interface()
+}
+
+func (s *JSONServer) methodName(r *http.Request) string {
+	methodName := r.URL.Query().Get("method")
+	if methodName == "" {
+		methodName = r.Method
+	}
+	return methodName
+}
+
+func (s *JSONServer) findMethod(r *http.Request, methodName string) (*serviceType, *methodType, error) {
+	paths := strings.Split(r.URL.Path, "/")
+
+	if len(paths) < 1 {
+		return nil, nil, fmt.Errorf("can't find service to handle %s", r.URL.Path)
+	}
+
+	serviceName := paths[len(paths)-1]
+	service, ok := s.services[serviceName]
+	if !ok {
+		return nil, nil, fmt.Errorf("can't find service %s", serviceName)
+	}
+
+	method, ok := service.methods[methodName]
+	if !ok {
+		return nil, nil, fmt.Errorf("can't find method %s in service %s", methodName, serviceName)
+	}
+
+	return service, method, nil
 }
 
 type Response interface {

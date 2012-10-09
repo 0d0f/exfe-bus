@@ -1,4 +1,4 @@
-package gobus
+package queue
 
 import (
 	"bytes"

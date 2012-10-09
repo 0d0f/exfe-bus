@@ -1,4 +1,4 @@
-package gobus
+package queue
 
 import (
 	"encoding/json"
@@ -76,7 +76,7 @@ type DelayDispatcher struct {
 	logger   *logger.Logger
 }
 
-func NewDelayDispatcher(l *logger.Logger) *DelayDispatcher {
+func New(l *logger.Logger) *DelayDispatcher {
 	return &DelayDispatcher{
 		services: make(map[string]*serviceMethod),
 		logger:   l,
@@ -207,4 +207,23 @@ func (d *DelayDispatcher) Serve() error {
 		time.Sleep(sleepTime)
 	}
 	return nil
+}
+
+func isExportedOrBuiltinType(t reflect.Type) bool {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	// PkgPath will be non-empty even for an exported type,
+	// so we need to check the type name as well.
+	return isExported(t.Name()) || t.PkgPath() == ""
+}
+
+func methodOutIsError(mtype *reflect.Type) bool {
+	if (*mtype).NumOut() != 1 {
+		return false
+	}
+	if e := (*mtype).Out(0); e != typeOfError {
+		return false
+	}
+	return true
 }
