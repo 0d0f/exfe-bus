@@ -125,24 +125,7 @@ func (e *CrossEmail) GetBody(arg *ProviderArg, filename string) (string, string,
 		return "", "", err
 	}
 
-	var output []byte
-	line_count := 0
-	for _, c := range ics.Bytes() {
-		line_count++
-		output = append(output, c)
-		if line_count == 70 {
-			output = append(output, 0xd, 0xa, 0x20)
-			line_count = 1
-			continue
-		}
-		if c == 0xa {
-			output = append(output, 0xd, 0xa)
-			line_count = 0
-			continue
-		}
-	}
-
-	return html.String(), string(output), nil
+	return html.String(), ics.String(), nil
 }
 
 func (e *CrossEmail) sendMail(arg *ProviderArg, hasUpdate bool) {
