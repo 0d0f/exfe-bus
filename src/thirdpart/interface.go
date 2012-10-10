@@ -60,6 +60,7 @@ type Sender interface {
 }
 
 type Updater interface {
+	Provider() string
 	UpdateFriends(to *model.Recipient) error
 	UpdateIdentity(to *model.Recipient) error
 }
