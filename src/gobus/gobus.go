@@ -69,11 +69,6 @@ func (c *Client) Do(method string, arg interface{}, reply interface{}) error {
 	return nil
 }
 
-func (c *Client) Send(method string, arg interface{}) error {
-	_, err := c.send(method, arg)
-	return err
-}
-
 func (c *Client) send(method string, arg interface{}) ([]byte, error) {
 	b, err := json.Marshal(arg)
 	if err != nil {
