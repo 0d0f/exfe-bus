@@ -49,8 +49,8 @@ const (
 )
 
 type InfoData struct {
-	CrossID uint64
-	Type    DataType
+	CrossID uint64   `json:"cross_id"`
+	Type    DataType `json:"type"`
 }
 
 type Sender interface {

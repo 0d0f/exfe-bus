@@ -64,7 +64,7 @@ func TestSend(t *testing.T) {
 	helper := new(thirdpart.FakeHelper)
 	broker := new(FakeBroker)
 	broker.Reset()
-	twitter := New(nil, nil, broker, helper)
+	twitter := New("", "", "", "", broker, helper)
 	var tester thirdpart.Sender
 	tester = twitter
 

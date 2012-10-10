@@ -10,7 +10,7 @@ type Recipient struct {
 	AuthData         string `json:"auth_data"`
 	Provider         string `json:"provider"`
 	IdentityID       int64  `json:"identity_id"`
-	UserID           uint64 `json:"connected_user_id"`
+	UserID           uint64 `json:"user_id"`
 }
 
 func (r Recipient) String() string {
