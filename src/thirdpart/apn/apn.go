@@ -26,12 +26,12 @@ type Apn struct {
 
 type ErrorHandler func(apns.NotificationError)
 
-func New(broker Broker, errorHandler ErrorHandler) (*Apn, error) {
+func New(broker Broker, errorHandler ErrorHandler) *Apn {
 	go listenError(broker.GetErrorChan(), errorHandler)
 	return &Apn{
 		broker: broker,
 		id:     0,
-	}, nil
+	}
 }
 
 func (a *Apn) Provider() string {

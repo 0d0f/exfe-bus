@@ -18,7 +18,7 @@ type Config struct {
 		Db       int    `json:"db"`
 		Password string `json:"password"`
 	} `json:"redis"`
-	ThirdPart struct {
+	Thirdpart struct {
 		Twitter struct {
 			ClientToken  string `json:"client_token"`
 			ClientSecret string `json:"client_secret"`
@@ -27,10 +27,11 @@ type Config struct {
 			ScreenName   string `json:"screen_name"`
 		} `json:"twitter"`
 		Apn struct {
-			Cert   string `json:"cert"`
-			Key    string `json:"key"`
-			Server string `json:"server"`
-			RootCA string `json:"root.ca"`
+			Cert             string `json:"cert"`
+			Key              string `json:"key"`
+			Server           string `json:"server"`
+			RootCA           string `json:"root.ca"`
+			TimeoutInMinutes uint   `json:"timeout_in_minutes"`
 		} `json:"apn"`
 		Gcm struct {
 			Key string `json:"key"`

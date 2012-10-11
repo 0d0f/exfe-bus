@@ -21,23 +21,18 @@ type Broker interface {
 type Twitter struct {
 	broker      Broker
 	clientToken *thirdpart.Token
-	accessToken *thirdpart.Token
 	helper      thirdpart.Helper
 }
 
 const twitterApiBase = "https://api.twitter.com/1.1/"
 const provider = "twitter"
 
-func New(clientToken, clientSecret, accessToken, accessSecret string, broker Broker, helper thirdpart.Helper) *Twitter {
+func New(clientToken, clientSecret string, broker Broker, helper thirdpart.Helper) *Twitter {
 	return &Twitter{
 		broker: broker,
 		clientToken: &thirdpart.Token{
 			Token:  clientToken,
 			Secret: clientSecret,
-		},
-		accessToken: &thirdpart.Token{
-			Token:  accessToken,
-			Secret: accessSecret,
 		},
 		helper: helper,
 	}

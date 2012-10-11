@@ -15,11 +15,17 @@ type Twitter struct {
 
 const twitterApiBase = "https://api.twitter.com/1.1/"
 
-func NewTwitter(client, access *thirdpart.Token) *Twitter {
+func NewTwitter(clientToken, clientSecret, accessToken, accessSecret string) *Twitter {
 	return &Twitter{
-		client:      oauth.CreateClient(client.Token, client.Secret, access.Token, access.Secret, twitterApiBase),
-		clientToken: client,
-		accessToken: access,
+		client: oauth.CreateClient(clientToken, clientSecret, accessToken, accessSecret, twitterApiBase),
+		clientToken: &thirdpart.Token{
+			Token:  clientToken,
+			Secret: clientSecret,
+		},
+		accessToken: &thirdpart.Token{
+			Token:  accessToken,
+			Secret: accessSecret,
+		},
 	}
 }
 

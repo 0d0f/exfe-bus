@@ -47,10 +47,7 @@ var data = &thirdpart.InfoData{
 
 func TestSend(t *testing.T) {
 	broker := new(FakeBroker)
-	apn, err := New(broker, errHandler)
-	if err != nil {
-		t.Fatalf("can't create apn: %s", err)
-	}
+	apn := New(broker, errHandler)
 	var tester thirdpart.Sender
 	tester = apn
 
