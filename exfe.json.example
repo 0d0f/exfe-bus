@@ -19,6 +19,17 @@
     "db": 0,
     "password": ""
   },
+  "email": {
+    "host": "smtp.gmail.com",
+    "port": 465,
+    "user": "contact@0d0f.com",
+    "password": "[S9rQ+vNjJloR*Vs",
+    "account": "[DEV]EXFE ·X·",
+    "domain": "0d0f.com",
+
+    "time_out": 5
+  }
+
   "exfe_service": {
     "addr": "127.0.0.1",
     "port": 23333
@@ -26,6 +37,26 @@
   "token_manager": {
     "table_name": "tokens"
   },
+  "thirdpart": {
+    "twitter": {
+      "client_token": "",
+      "client_secret": "",
+      "access_token": "",
+      "access_secret": "",
+      "screen_name": ""
+    },
+    "apn": {
+      "cert": "apns_dev_cert.pem",
+      "key": "apns_dev_key.pem",
+      "server": "gateway.sandbox.push.apple.com:2195",
+      "rootca": "root.ca",
+      "timeout_in_minutes": 20
+    },
+    "gcm": {
+      "key": "",
+    }
+  }
+
   "iom": {
     "port": 1234
   },

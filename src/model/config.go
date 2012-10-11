@@ -18,6 +18,22 @@ type Config struct {
 		Db       int    `json:"db"`
 		Password string `json:"password"`
 	} `json:"redis"`
+	Email struct {
+		Host     string `json:"host"`
+		Port     int    `json:"port"`
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Account  string `json:"account"`
+		Domain   string `json:"domain"`
+	} `json:"email"`
+
+	ExfeService struct {
+		Addr string `json:"addr"`
+		Port int    `json:"port"`
+	} `json:"exfe_service"`
+	TokenManager struct {
+		TableName string `json:"table_name"`
+	} `json:"token_manager"`
 	Thirdpart struct {
 		Twitter struct {
 			ClientToken  string `json:"client_token"`
@@ -30,28 +46,13 @@ type Config struct {
 			Cert             string `json:"cert"`
 			Key              string `json:"key"`
 			Server           string `json:"server"`
-			RootCA           string `json:"root.ca"`
+			RootCA           string `json:"rootca"`
 			TimeoutInMinutes uint   `json:"timeout_in_minutes"`
 		} `json:"apn"`
 		Gcm struct {
 			Key string `json:"key"`
 		} `json:"gcm"`
 	} `json:"thirdpart"`
-	Email struct {
-		Host     string `json:"host"`
-		Port     int    `json:"port"`
-		Username string `json:"username"`
-		Password string `json:"password"`
-		Account  string `json:"account"`
-		Domain   string `json:"domain"`
-	} `json:"email"`
-	ExfeService struct {
-		Addr string `json:"addr"`
-		Port int    `json:"port"`
-	} `json:"exfe_service"`
-	TokenManager struct {
-		TableName string `json:"table_name"`
-	} `json:"token_manager"`
 
 	Log *logger.Logger
 }
