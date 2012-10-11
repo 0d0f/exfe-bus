@@ -6,7 +6,6 @@ import (
 	"io"
 	"model"
 	"net/url"
-	"oauth"
 	"regexp"
 	"strings"
 	"textcutter"
@@ -15,24 +14,24 @@ import (
 )
 
 type Broker interface {
-	Do(cmd, path string, params url.Values) (io.ReadCloser, error)
+	Do(accessToken *thirdpart.Token, cmd, path string, params url.Values) (io.ReadCloser, error)
 }
 
 type Twitter struct {
 	broker      Broker
-	clientToken *thirdpart.Token
+	accessToken *thirdpart.Token
 	helper      thirdpart.Helper
 }
 
 const twitterApiBase = "https://api.twitter.com/1.1/"
 const provider = "twitter"
 
-func New(clientToken, clientSecret string, broker Broker, helper thirdpart.Helper) *Twitter {
+func New(accessToken, accessSecret string, broker Broker, helper thirdpart.Helper) *Twitter {
 	return &Twitter{
 		broker: broker,
-		clientToken: &thirdpart.Token{
-			Token:  clientToken,
-			Secret: clientSecret,
+		accessToken: &thirdpart.Token{
+			Token:  accessToken,
+			Secret: accessSecret,
 		},
 		helper: helper,
 	}
@@ -62,7 +61,7 @@ func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage
 	ids := ""
 	for _, content := range cutter.Limit(140) {
 		params.Set("text", content)
-		resp, err = t.broker.Do("POST", "direct_messages/new.json", params)
+		resp, err = t.broker.Do(t.accessToken, "POST", "direct_messages/new.json", params)
 		if err != nil {
 			break
 		}
@@ -83,7 +82,7 @@ func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage
 		}
 		for _, content := range cutter.Limit(140) {
 			params.Set("status", content)
-			resp, err = t.broker.Do("POST", "statuses/update.json", params)
+			resp, err = t.broker.Do(t.accessToken, "POST", "statuses/update.json", params)
 			if err != nil {
 				return "", fmt.Errorf("send to %s fail: %s", to, err)
 			}
@@ -103,7 +102,7 @@ func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage
 func (t *Twitter) UpdateIdentity(to *model.Recipient) error {
 	params := make(url.Values)
 	params.Set(t.identity(to))
-	resp, err := t.broker.Do("GET", "users/show.json", params)
+	resp, err := t.broker.Do(t.accessToken, "GET", "users/show.json", params)
 	if err != nil {
 		return fmt.Errorf("get %s users/show(%v) failed: %s", to, params, err)
 	}
@@ -127,11 +126,10 @@ func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 		return fmt.Errorf("can't convert %s's AuthData: %s", to, err)
 	}
 	access := idToken.ToToken()
-	broker := oauth.CreateClient(t.clientToken.Token, t.clientToken.Secret, access.Token, access.Secret, twitterApiBase)
 
 	params := make(url.Values)
 	params.Set(t.identity(to))
-	resp, err := broker.Do("GET", "friends/ids.json", params)
+	resp, err := t.broker.Do(access, "GET", "friends/ids.json", params)
 	if err != nil {
 		return fmt.Errorf("get %s friends/ids(%v) failed: %s", to, params, err)
 	}
@@ -152,7 +150,7 @@ func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 
 		params := make(url.Values)
 		params.Set("user_id", join(ids, ","))
-		resp, err := broker.Do("GET", "users/lookup.json", params)
+		resp, err := t.broker.Do(access, "GET", "users/lookup.json", params)
 		if err != nil {
 			return fmt.Errorf("get %s users/lookup.json(%v) fail: %s", to, params, err)
 		}

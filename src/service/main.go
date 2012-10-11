@@ -30,6 +30,12 @@ func main() {
 
 	iom := NewIom(&config, redis)
 
+	thirdpart, err := NewThirdpart(&config)
+	if err != nil {
+		log.Crit("create thirdpart failed: %s", err)
+		os.Exit(-1)
+	}
+
 	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
 
@@ -40,6 +46,7 @@ func main() {
 	}
 	bus.Register(tkMng)
 	bus.Register(iom)
+	bus.Register(thirdpart)
 
 	go func() {
 		<-quit

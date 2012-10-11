@@ -33,7 +33,7 @@ func copyValues(value url.Values) url.Values {
 	return ret
 }
 
-func (b *FakeBroker) Do(cmd, path string, params url.Values) (io.ReadCloser, error) {
+func (b *FakeBroker) Do(accessToken *thirdpart.Token, cmd, path string, params url.Values) (io.ReadCloser, error) {
 	b.cmds = append(b.cmds, cmd)
 	b.paths = append(b.paths, path)
 	b.params = append(b.params, copyValues(params))

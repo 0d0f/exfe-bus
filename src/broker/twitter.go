@@ -8,27 +8,21 @@ import (
 )
 
 type Twitter struct {
-	client      *oauth.OAuthClient
-	clientToken *thirdpart.Token
-	accessToken *thirdpart.Token
+	token *thirdpart.Token
 }
 
 const twitterApiBase = "https://api.twitter.com/1.1/"
 
-func NewTwitter(clientToken, clientSecret, accessToken, accessSecret string) *Twitter {
+func NewTwitter(clientToken, clientSecret string) *Twitter {
 	return &Twitter{
-		client: oauth.CreateClient(clientToken, clientSecret, accessToken, accessSecret, twitterApiBase),
-		clientToken: &thirdpart.Token{
+		token: &thirdpart.Token{
 			Token:  clientToken,
 			Secret: clientSecret,
-		},
-		accessToken: &thirdpart.Token{
-			Token:  accessToken,
-			Secret: accessSecret,
 		},
 	}
 }
 
-func (t *Twitter) Do(cmd, url string, params url.Values) (io.ReadCloser, error) {
-	return t.client.Do(cmd, url, params)
+func (t *Twitter) Do(accessToken *thirdpart.Token, cmd, url string, params url.Values) (io.ReadCloser, error) {
+	client := oauth.CreateClient(t.token.Token, t.token.Secret, accessToken.Token, accessToken.Secret, twitterApiBase)
+	return client.Do(cmd, url, params)
 }
