@@ -37,10 +37,10 @@ func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage str
 		return "", fmt.Errorf("parse cutter error: %s", err)
 	}
 	message := gcm.NewMessage(to.ExternalID)
-	message.SetPayload("badge", 1)
+	message.SetPayload("badge", "1")
 	message.SetPayload("sound", "")
-	message.SetPayload("cid", data.CrossID)
-	message.SetPayload("t", data.Type)
+	message.SetPayload("cid", fmt.Sprintf("%d", data.CrossID))
+	message.SetPayload("t", data.Type.String())
 	message.DelayWhileIdle = true
 	message.CollapseKey = "exfe"
 
