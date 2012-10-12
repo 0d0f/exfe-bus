@@ -1,6 +1,7 @@
 package gcm_service
 
 import (
+	"fmt"
 	"github.com/googollee/go-gcm"
 	"log"
 )
@@ -29,9 +30,9 @@ func (c *GCM) Send(args []SendArg) error {
 		log.Printf("Sending message(%s) to device(%s)", arg.Text, arg.DeviceID)
 		message := gcm.NewMessage(arg.DeviceID)
 		message.SetPayload("text", arg.Text)
-		message.SetPayload("badge", arg.Badge)
+		message.SetPayload("badge", fmt.Sprintf("%d", arg.Badge))
 		message.SetPayload("sound", arg.Sound)
-		message.SetPayload("cid", arg.Cid)
+		message.SetPayload("cid", fmt.Sprintf("%d", arg.Cid))
 		message.SetPayload("t", arg.T)
 		message.DelayWhileIdle = true
 		message.CollapseKey = "exfe"
