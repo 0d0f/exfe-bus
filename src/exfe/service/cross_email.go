@@ -120,29 +120,14 @@ func (e *CrossEmail) GetBody(arg *ProviderArg, filename string) (string, string,
 	}
 
 	ics := bytes.NewBuffer(nil)
-	err = e.tmpl.ExecuteTemplate(ics, "cross.ics", arg)
-	if err != nil {
-		return "", "", err
-	}
-
-	var output []byte
-	line_count := 0
-	for _, c := range ics.Bytes() {
-		line_count++
-		output = append(output, c)
-		if line_count == 70 {
-			output = append(output, 0xd, 0xa, 0x20)
-			line_count = 1
-			continue
-		}
-		if c == 0xa {
-			output = append(output, 0xd, 0xa)
-			line_count = 0
-			continue
+	if arg.Cross.Time.Begin_at.Date != "" {
+		err = e.tmpl.ExecuteTemplate(ics, "cross.ics", arg)
+		if err != nil {
+			return "", "", err
 		}
 	}
 
-	return html.String(), string(output), nil
+	return html.String(), ics.String(), nil
 }
 
 func (e *CrossEmail) sendMail(arg *ProviderArg, hasUpdate bool) {
@@ -166,9 +151,11 @@ func (e *CrossEmail) sendMail(arg *ProviderArg, hasUpdate bool) {
 			Text:       strings.Trim(htmls[1], " \n\r\t"),
 			Html:       strings.Trim(htmls[2], " \n\r\t"),
 			References: []string{fmt.Sprintf("<%s>", mail_addr)},
-			FileParts: []email_service.FilePart{
+		}
+		if ics != "" {
+			mailarg.FileParts = []email_service.FilePart{
 				email_service.FilePart{fmt.Sprintf("%s.ics", arg.Cross.Title), []byte(ics)},
-			},
+			}
 		}
 
 		e.client.Send("EmailSend", &mailarg, 5)
@@ -209,9 +196,11 @@ func (e *CrossEmail) sendMail(arg *ProviderArg, hasUpdate bool) {
 		Text:       strings.Trim(htmls[1], " \n\r\t"),
 		Html:       strings.Trim(htmls[2], " \n\r\t"),
 		References: []string{fmt.Sprintf("<%s>", mail_addr)},
-		FileParts: []email_service.FilePart{
+	}
+	if ics != "" {
+		mailarg.FileParts = []email_service.FilePart{
 			email_service.FilePart{fmt.Sprintf("%s.ics", arg.Cross.Title), []byte(ics)},
-		},
+		}
 	}
 
 	e.client.Send("EmailSend", &mailarg, 5)

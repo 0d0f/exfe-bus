@@ -1,7 +1,7 @@
 {{ $time := .Cross.Time.StringInZone .Timezone }}{{ if .IsTitleChanged }}{{ .Old_cross.Title }}{{ else }}{{ .Cross.Title }}{{ end }}
 //////////////////////////////////
 
-{{ if .IsCrossChanged }}Updates of ·X·{{ if .IsTitleChanged }} “{{ .Old_cross.Title }}”{{ end }} has been updated{{ if index .By_identities 0 }}{{ with index .By_identities 0 }} by {{ .Name }}{{ end }}{{ end }}.
+{{ if .IsCrossChanged }}Updates of ·X·{{ if .IsTitleChanged }} “{{ .Old_cross.Title }}”{{ end }}{{ if index .By_identities 0 }}{{ with index .By_identities 0 }} by {{ .Name }}{{ end }}{{ end }}.
 
 {{ if .IsTitleChanged }}*{{ end }}{{ .Cross.Title }}{{ if .IsTitleChanged }}*{{ end }}
 =======
@@ -60,7 +60,7 @@
             {{ if .IsCrossChanged }}
             <tr>
                 <td colspan="5" style="color: #333333;">
-                    <a href="{{ .Cross.LinkTo .Config.Site_url .Token }}" style="color: #333333; text-decoration: none;">Updates of <span style="color: #3a6ea5;">·X·</span>{{ if .Old_cross }} “<span style="color: #191919;">{{ .Old_cross.Title | html }}</span>”{{ end }} has been updated{{ with index .By_identities 0 }}{{ if .Name }} by {{ .Name | html }}{{ end }}{{ end }}.</a>
+                    <a href="{{ .Cross.LinkTo .Config.Site_url .Token }}" style="color: #333333; text-decoration: none;">Updates of <span style="color: #3a6ea5;">·X·</span>{{ if .Old_cross }} “<span style="color: #191919;">{{ .Old_cross.Title | html }}</span>”{{ end }}{{ with index .By_identities 0 }}{{ if .Name }} by {{ .Name | html }}{{ end }}{{ end }}.</a>
                 </td>
             </tr>
             <tr><td colspan="5" height="10"></td></tr>

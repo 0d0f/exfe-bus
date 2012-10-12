@@ -84,11 +84,14 @@ func (m *MailArg) makeMessageWithAttachments() ([]byte, error) {
 		header := make(textproto.MIMEHeader)
 		header.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", name))
 		header.Set("Content-Type", fmt.Sprintf("text/calendar; charset=utf-8; name=\"%s\"", name))
+		header.Set("Content-Transfer-Encoding", "base64")
 		w1, err := w.CreatePart(header)
 		if err != nil {
 			return nil, fmt.Errorf("Create multipart file(%s) fail: %s", f.Name, err)
 		}
-		w1.Write([]byte(f.Content))
+		b64 := base64.NewEncoder(base64.StdEncoding, w1)
+		b64.Write([]byte(f.Content))
+		b64.Close()
 	}
 	w.Close()
 
