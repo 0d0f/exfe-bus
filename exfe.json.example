@@ -28,7 +28,7 @@
     "domain": "0d0f.com",
 
     "time_out": 5
-  }
+  },
 
   "exfe_service": {
     "addr": "127.0.0.1",
@@ -53,9 +53,9 @@
       "timeout_in_minutes": 20
     },
     "gcm": {
-      "key": "",
+      "key": ""
     }
-  }
+  },
 
   "iom": {
     "port": 1234
