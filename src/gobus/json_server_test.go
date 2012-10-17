@@ -3,6 +3,7 @@ package gobus
 import (
 	"bytes"
 	"fmt"
+	"github.com/googollee/go-logger"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -32,7 +33,11 @@ func (s *TestServer) POST(meta *HTTPMeta, arg int, reply *int) error {
 }
 
 func TestJSONServer(t *testing.T) {
-	s := NewJSONServer()
+	l, err := logger.New(logger.Stderr, "test gobus", logger.LstdFlags)
+	if err != nil {
+		panic(err)
+	}
+	s := NewJSONServer(l)
 	server := new(TestServer)
 	s.Register(server)
 	h := &http.Server{

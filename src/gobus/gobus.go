@@ -13,6 +13,7 @@ import (
 type Server struct {
 	jsonServer *JSONServer
 	url        string
+	log        *logger.Logger
 }
 
 func NewServer(u string, l *logger.Logger) (*Server, error) {
@@ -20,10 +21,11 @@ func NewServer(u string, l *logger.Logger) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := NewJSONServer()
+	s := NewJSONServer(l)
 	return &Server{
 		jsonServer: s,
 		url:        u_.Host,
+		log:        l,
 	}, nil
 }
 

@@ -68,16 +68,9 @@ type SendArg struct {
 //   > curl http://127.0.0.1:23333/Thirdpart?method=Send -d '{"to":{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1},"public":"public","private":"private","info":{"cross_id":234,"type":"u"}}'
 //
 func (t *Thirdpart) Send(meta *gobus.HTTPMeta, arg *SendArg, id *string) error {
-	log := t.log.SubCode()
-	log.Debug("send with %+v", arg)
 	var err error
 	*id, err = t.thirdpart.Send(arg.To, arg.PrivateMessage, arg.PublicMessage, arg.Info)
-	if err != nil {
-		log.Err("send with arg(%+v) fail: %s", arg, err)
-		return err
-	}
-	log.Debug("success: %s", *id)
-	return nil
+	return err
 }
 
 // 同步更新to在第三方网站的个人信息（头像，bio之类）
@@ -87,15 +80,7 @@ func (t *Thirdpart) Send(meta *gobus.HTTPMeta, arg *SendArg, id *string) error {
 //   > curl http://127.0.0.1:23333/Thirdpart?method=UpdateIdentity -d '{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1}'
 //
 func (t *Thirdpart) UpdateIdentity(meta *gobus.HTTPMeta, to *model.Recipient, i *int) error {
-	log := t.log.SubCode()
-	log.Debug("update identity with %+v", to)
-	err := t.thirdpart.UpdateIdentity(to)
-	if err != nil {
-		log.Err("update identity(%+v) fail: %s", to, err)
-		return err
-	}
-	log.Debug("success")
-	return nil
+	return t.thirdpart.UpdateIdentity(to)
 }
 
 // 同步更新to在第三方网站的好友信息
@@ -105,15 +90,7 @@ func (t *Thirdpart) UpdateIdentity(meta *gobus.HTTPMeta, to *model.Recipient, i 
 //   > curl http://127.0.0.1:23333/Thirdpart?method=UpdateFriends -d '{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1}'
 //
 func (t *Thirdpart) UpdateFriends(meta *gobus.HTTPMeta, to *model.Recipient, i *int) error {
-	log := t.log.SubCode()
-	log.Debug("update friends with %+v", to)
-	err := t.thirdpart.UpdateFriends(to)
-	if err != nil {
-		log.Err("update friends(%+v) fail: %s", to, err)
-		return err
-	}
-	log.Debug("success")
-	return nil
+	return t.thirdpart.UpdateFriends(to)
 }
 
 func getApnErrorHandler(log *logger.SubLogger) apn.ErrorHandler {

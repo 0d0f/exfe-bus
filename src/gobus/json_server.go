@@ -3,6 +3,7 @@ package gobus
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/googollee/go-logger"
 	"net/http"
 	"reflect"
 	"strings"
@@ -10,11 +11,13 @@ import (
 
 type JSONServer struct {
 	services map[string]*serviceType
+	log      *logger.Logger
 }
 
-func NewJSONServer() *JSONServer {
+func NewJSONServer(l *logger.Logger) *JSONServer {
 	return &JSONServer{
 		services: make(map[string]*serviceType),
+		log:      l,
 	}
 }
 
@@ -29,15 +32,24 @@ func (s *JSONServer) Register(arg interface{}) error {
 
 func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var ret interface{}
+	methodName := s.methodName(r)
+	subLogger := s.log.Sub(fmt.Sprintf("[%s]", methodName))
 	defer func() {
 		e := json.NewEncoder(w)
 		err := e.Encode(ret)
 		if err != nil {
-			panic(err)
+			subLogger.Crit("%s can't encode return(%s) to json: %s", methodName, ret, err)
 		}
 	}()
+	defer func() {
+		r := recover()
+		if r == nil {
+			return
+		}
+		subLogger.Crit("%s panic: %s", methodName, r)
+		ret = fmt.Sprintf("panic: %s", r)
+	}()
 
-	methodName := s.methodName(r)
 	service, method, err := s.findMethod(r, methodName)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -52,13 +64,16 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output, err := method.call(service.service, &HTTPMeta{r, w}, input)
+	subLogger.Debug("call with %s", input.Interface())
+	output, err := method.call(service.service, &HTTPMeta{r, w, subLogger}, input)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		subLogger.Err("failed with input %s: %s", input.Interface(), err)
 		ret = fmt.Sprintf("%s", err)
 		return
 	}
 	ret = output.Interface()
+	subLogger.Debug("return %s", ret)
 }
 
 func (s *JSONServer) methodName(r *http.Request) string {
@@ -98,4 +113,5 @@ type Response interface {
 type HTTPMeta struct {
 	Request  *http.Request
 	Response Response
+	Log      *logger.SubLogger
 }
