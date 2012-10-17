@@ -11,8 +11,10 @@ type EFTime struct {
 	Time_word string
 	Time      string
 	Timezone  string
+}
 
-	now *time.Time // mock now for testing
+var nowFunc = func() time.Time {
+	return time.Now()
 }
 
 func (t EFTime) StringInZone(targetZone string) (string, error) {
@@ -54,12 +56,7 @@ func (t EFTime) StringInZone(targetZone string) (string, error) {
 		if ret != "" {
 			ret += " on "
 		}
-		var now time.Time
-		if t.now == nil {
-			now = time.Now()
-		} else {
-			now = *t.now
-		}
+		now := nowFunc()
 		if now.Year() == t_.Year() {
 			ret += t_.Format("Mon, Jan 2")
 		} else {
