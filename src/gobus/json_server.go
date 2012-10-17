@@ -33,7 +33,7 @@ func (s *JSONServer) Register(arg interface{}) error {
 func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var ret interface{}
 	methodName := s.methodName(r)
-	subLogger := s.log.Sub(fmt.Sprintf("[%s]", methodName))
+	subLogger := s.log.Sub(fmt.Sprintf("[%s %s]", r.URL.Path, methodName))
 	defer func() {
 		e := json.NewEncoder(w)
 		err := e.Encode(ret)
@@ -64,7 +64,11 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subLogger.Debug("call with %s", input.Interface())
+	if input.Kind() == reflect.Ptr {
+		subLogger.Debug("call with %s", input.Elem().Interface())
+	} else {
+		subLogger.Debug("call with %s", input.Interface())
+	}
 	output, err := method.call(service.service, &HTTPMeta{r, w, subLogger}, input)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
