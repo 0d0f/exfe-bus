@@ -19,10 +19,38 @@ type Identity struct {
 	OAuthToken       string `json:"oauth_token,omitempty"`
 }
 
-func (i Identity) IsSame(other *Identity) bool {
-	return i.ID == other.ID || (i.Provider == other.Provider && i.ExternalID == other.ExternalID)
+func (i Identity) Equal(other *Identity) bool {
+	if i.ID == other.ID {
+		return true
+	}
+	if i.Provider == other.Provider {
+		if i.ExternalID == other.ExternalID {
+			return true
+		}
+		if i.ExternalUsername == other.ExternalUsername {
+			return true
+		}
+	}
+	return false
+}
+
+func (i Identity) SameUser(other *Identity) bool {
+	if i.Equal(other) {
+		return true
+	}
+	return i.UserID == other.UserID
 }
 
 func (i Identity) String() string {
 	return fmt.Sprintf("Identity:%d", i.ID)
+}
+
+type Invitation struct {
+	ID         uint64   `json:"id"`
+	Host       bool     `json:"host"`
+	Mates      uint64   `json:"mates"`
+	Identity   Identity `json:"identity"`
+	RsvpStatus string   `json:"rsvp_status"`
+	By         Identity `json:"by_identity"`
+	Via        string   `json:"via"`
 }

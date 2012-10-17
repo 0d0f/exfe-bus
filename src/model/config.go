@@ -5,6 +5,7 @@ import (
 )
 
 type Config struct {
+	SiteUrl string `json:"site_url"`
 	SiteApi string `json:"site_api"`
 	DB      struct {
 		Addr     string `json:"addr"`
