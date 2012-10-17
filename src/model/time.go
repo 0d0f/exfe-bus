@@ -6,11 +6,11 @@ import (
 )
 
 type EFTime struct {
-	Date_word string
-	Date      string
-	Time_word string
-	Time      string
-	Timezone  string
+	DateWord string `json:"date_word"`
+	Date     string `json:"date"`
+	TimeWord string `json:"time_word"`
+	Time     string `json:"time"`
+	Timezone string `json:"timezone"`
 }
 
 var nowFunc = func() time.Time {
@@ -25,8 +25,8 @@ func (t EFTime) StringInZone(targetZone string) (string, error) {
 
 	ret := ""
 
-	if t.Time_word != "" {
-		ret += t.Time_word
+	if t.TimeWord != "" {
+		ret += t.TimeWord
 	}
 
 	if t.Time != "" {
@@ -45,11 +45,11 @@ func (t EFTime) StringInZone(targetZone string) (string, error) {
 		}
 	}
 
-	if t.Date_word != "" {
+	if t.DateWord != "" {
 		if ret != "" {
 			ret += " "
 		}
-		ret += t.Date_word
+		ret += t.DateWord
 	}
 
 	if t.Date != "" {
@@ -132,20 +132,20 @@ const (
 )
 
 type CrossTime struct {
-	Begin_at     EFTime
-	Origin       string
-	OutputFormat OutputFormat
+	BeginAt      EFTime       `json:"begin_at"`
+	Origin       string       `json:"origin"`
+	OutputFormat OutputFormat `json:"output_format"`
 }
 
 func (t CrossTime) StringInZone(targetZone string) (string, error) {
 	switch t.OutputFormat {
 	case Format:
-		ret, err := t.Begin_at.StringInZone(targetZone)
+		ret, err := t.BeginAt.StringInZone(targetZone)
 		return ret, err
 	}
 
-	if targetZone[0:6] == t.Begin_at.Timezone[0:6] {
+	if targetZone[0:6] == t.BeginAt.Timezone[0:6] {
 		return t.Origin, nil
 	}
-	return fmt.Sprintf("%s %s", t.Origin, t.Begin_at.Timezone), nil
+	return fmt.Sprintf("%s %s", t.Origin, t.BeginAt.Timezone), nil
 }
