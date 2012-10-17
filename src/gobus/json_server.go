@@ -64,15 +64,15 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	inputElem := input.Interface()
 	if input.Kind() == reflect.Ptr {
-		subLogger.Debug("call with %s", input.Elem().Interface())
-	} else {
-		subLogger.Debug("call with %s", input.Interface())
+		inputElem = input.Elem().Interface()
 	}
+	subLogger.Debug("call with %s", inputElem)
 	output, err := method.call(service.service, &HTTPMeta{r, w, subLogger}, input)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		subLogger.Err("failed with input %s: %s", input.Interface(), err)
+		subLogger.Err("failed with input %s: %s", inputElem, err)
 		ret = fmt.Sprintf("%s", err)
 		return
 	}
