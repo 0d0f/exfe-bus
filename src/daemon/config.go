@@ -49,6 +49,7 @@ func Init(defaultConfig string, config interface{}) (loggerOutput *os.File, quit
 	sigChan := make(chan os.Signal)
 	quit = sigChan
 	signal.Notify(sigChan, syscall.SIGTERM)
+	signal.Notify(sigChan, syscall.SIGQUIT)
 
 	return
 }
