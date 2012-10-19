@@ -1,0 +1,1 @@
+{{ if .IsHost }}You're successfully gathering this X{{ else }}Invitation{{ end }}: {{ .Cross.Title }}.{{ $time := .Cross.Time.StringInZone .Timezone }}{{ if $time }} {{ $time }}{{ end }}{{ $place := .Cross.Place.String }}{{ if $place }} at {{ $place }}{{ end }}

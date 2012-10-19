@@ -1,0 +1,16 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//exfe//exfe.com //
+X-WR-CALNAME:{{ .Cross.Title }}
+X-WR-CALDESC:exfe cal
+X-WR-TIMEZONE:{{ .Timezone }}
+BEGIN:VEVENT
+UID:!{{ .Cross.Id }}@exfe
+DTSTAMP:{{ $time := .Cross.Time.Begin_at.UTCTime "20060102T150405Z" }}{{ $time }}
+DESCRIPTION:{{ $s := limit .Cross.Description 233 }}{{ replace $s "\n" "\\n" }}
+DTSTART:{{ if .Cross.Time.Begin_at.Time }}{{ $time }}{{ else }}VALUE=DATE:{{ .Cross.Time.Begin_at.UTCTime "20060102" }}{{ end }}
+LOCATION:{{ replace .Cross.Place.Title "\n" "\\n" }}{{ if .Cross.Place.Description }}\n{{ replace .Cross.Place.Description "\n" "\\n" }}{{ end }}
+SUMMARY:{{ .Cross.Title}}
+URL:{{ .Cross.Link .Config.Site_url }}
+END:VEVENT
+END:VCALENDAR

@@ -1,0 +1,33 @@
+{{if .IsCrossChanged}}Updates of ·X·{{if .IsTitleChanged}} “{{.OldCross.Title}}”{{end}} by {{.ListBy 3 ", " }}.
+
+{{if .IsTitleChanged}}*{{ end }}{{.Cross.Title}}{{if .IsTitleChanged}}*{{end}}
+=======
+{{.Link}}
+
+{{$time := .Cross.Time.StringInZone .To.Timezone}}{{if $time}}{{if .IsTimeChanged}}*{{end}}{{$time}}{{if .IsTimeChanged}}*{{end}}
+======={{else}}{{if .IsTimeChanged}}*{{end}}Time{{if .IsTimeChanged}}*{{end}}
+=======
+  To be decided.{{end}}
+
+{{if .Cross.Place.Title}}{{if .IsPlaceChanged}}*{{end}}{{.Cross.Place.Title}}{{if .IsPlaceChanged}}*{{end}}
+======={{if .Cross.Place.Description}}
+  {{.Cross.Place.Description}}{{end}}{{else}}
+{{if .IsPlaceChanged}}*{{end}}Place{{if .IsPlaceChanged}}*{{end}}
+=======
+  To be decided.{{end}}
+
+
+{{if .NewAccepted}}· {{len .Cross.Exfee.Accepted}} Accepted: {{list .NewAccepted ", "}}{{if .OldAccepted}} and {{len .OldAccepted}} others{{end}}.
+{{end}}{{if .NewDeclined}}· Unavailable: {{list .NewDeclined ", "}}.
+{{end}}{{if .NewInvited}}· Newly invited: {{list .NewInvited ", "}}.
+{{end}}{{if .Removed}}· Removed: {{list .Removed ", "}}.
+{{end}}
+
+{{if .Posts}}{{$timezone := .Timezone}}{{range .Posts}}· {{.By.Name}} at {{.CreatedAtInZone $timezone}} said:
+    {{.Content}}
+{{end}}
+ 
+{{end}}{{if .ManyPosts}}
+{{.Cross.Link}}
+
+{{end}}# Reply this email directly as conversation. #

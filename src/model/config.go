@@ -7,6 +7,7 @@ import (
 type Config struct {
 	SiteUrl string `json:"site_url"`
 	SiteApi string `json:"site_api"`
+	SiteImg string `json:"site_img"`
 	DB      struct {
 		Addr     string `json:"addr"`
 		Port     int    `json:"port"`
@@ -24,7 +25,7 @@ type Config struct {
 		Port     int    `json:"port"`
 		Username string `json:"username"`
 		Password string `json:"password"`
-		Account  string `json:"account"`
+		Name     string `json:"name"`
 		Domain   string `json:"domain"`
 	} `json:"email"`
 

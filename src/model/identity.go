@@ -45,12 +45,27 @@ func (i Identity) String() string {
 	return fmt.Sprintf("Identity:%d", i.ID)
 }
 
+type RsvpType string
+
+const (
+	RsvpNoresponse   RsvpType = "NORESPONSE"
+	RspvAccepted              = "ACCEPTED"
+	RsvpInterested            = "INTERESTED"
+	RsvpDecliend              = "DECLINED"
+	RsvpRemoved               = "REMOVED"
+	RsvpNotification          = "NOTIFICATION"
+)
+
 type Invitation struct {
 	ID         uint64   `json:"id"`
 	Host       bool     `json:"host"`
 	Mates      uint64   `json:"mates"`
 	Identity   Identity `json:"identity"`
-	RsvpStatus string   `json:"rsvp_status"`
+	RsvpStatus RsvpType `json:"rsvp_status"`
 	By         Identity `json:"by_identity"`
 	Via        string   `json:"via"`
+}
+
+func (i *Invitation) String() string {
+	return i.Identity.Name
 }

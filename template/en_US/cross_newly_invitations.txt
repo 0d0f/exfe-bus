@@ -1,0 +1,1 @@
+·X· {{ .Arg.Cross.Title }} Newly invited: {{ $a := .Invitations }}{{ range $i, $e := $a }}{{ .Identity.Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}.
