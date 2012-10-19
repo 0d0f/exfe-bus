@@ -85,7 +85,7 @@
                             <td>
                                 <a href="{{.Link}}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
-                                        <span class="exfe_mail_identity_name">{{len .Cross.Exfee.Accepted | html }}</span> Accepted: <span class='exfe_mail_identity_name'>{{list .NewAccepted ", " | html}}</span>{{if .OldAccepted}}, and {{len .OldAccepted | html}} others{{end}}.
+                                        <span class="exfe_mail_identity_name">{{len .Cross.Exfee.Accepted | html }}</span> Accepted: {{range for .NewAccepted}}<span class='exfe_mail_identity_name'>{{.data.Identity.Name | html}}</span>{{if not .last}}, {{end}}{{end}}{{if .OldAccepted}}, and {{len .OldAccepted | html}} others{{end}}.
                                     </p>
                                 </a>
                             </td>
@@ -97,7 +97,7 @@
                             <td>
                                 <a href="{{.Link}}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
-                                        Unavailable: {{list .NewDeclined ", " | html}}
+                                        Unavailable: {{range for .NewDeclined}}{{.data.Identity.Name | html}}{{if not .last}}, {{end}}{{end}}
                                     </p>
                                 </a>
                             </td>
@@ -109,7 +109,7 @@
                             <td>
                                 <a href="{{.Link}}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
-                                        Newly invited: {{$arr := .NewlyInvited}}{{range $i, $e := $arr}}{{if .IsAccepted}}<span class="exfe_mail_identity_name">{{.Name | html}}</span>{{else}}{{.Name | html}}{{end}}{{if not last $i $arr}}, {{end}}{{end}}.
+                                        Newly invited: {{range for .NewInvited}}{{if .data.IsAccepted}}<span class="exfe_mail_identity_name">{{.data.Identity.Name | html}}</span>{{else}}{{.data.Identity.Name | html}}{{end}}{{if not .last}}, {{end}}{{end}}.
                                     </p>
                                 </a>
                             </td>
@@ -121,7 +121,7 @@
                             <td>
                                 <a href="{{.Link}}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
-                                        Removed: {{list .Removed ", " | html}}.
+                                        Removed: {{range for .Removed}}{{.data.Identity.Name | html}}{{if not .last}}, {{end}}{{end}}.
                                     </p>
                                 </a>
                             </td>

@@ -1,15 +1,17 @@
 package business
 
 import (
+	"bytes"
 	"fmt"
 	"model"
 )
 
 type SummaryArg struct {
-	To       *model.Recipient `json:"to"`
-	OldCross *model.Cross     `json:"old_cross"`
-	Cross    *model.Cross     `json:"cross"`
-	Posts    []*model.Post    `json:"posts"`
+	To       *model.Recipient  `json:"to"`
+	OldCross *model.Cross      `json:"old_cross"`
+	Cross    *model.Cross      `json:"cross"`
+	Posts    []*model.Post     `json:"posts"`
+	Bys      []*model.Identity `json:"bys"`
 
 	Config        *model.Config      `json:"-"`
 	NewInvited    []model.Invitation `json:"-"`
@@ -22,6 +24,18 @@ type SummaryArg struct {
 }
 
 func (a *SummaryArg) Parse() {
+	bys := make([]*model.Identity, 0)
+Bys:
+	for _, b := range a.Bys {
+		for _, i := range bys {
+			if b.SameUser(i) {
+				continue Bys
+			}
+		}
+		bys = append(bys, b)
+	}
+	a.Bys = bys
+
 	a.NewInvited = make([]model.Invitation, 0)
 	a.Removed = make([]model.Invitation, 0)
 	a.NewAccepted = make([]model.Invitation, 0)
@@ -83,6 +97,20 @@ func (a *SummaryArg) IsPlaceChanged() bool {
 		return false
 	}
 	return a.Cross.Place.Same(&a.OldCross.Place)
+}
+
+func (a *SummaryArg) ListBy(limit int, join string) string {
+	buf := bytes.NewBuffer(nil)
+	for i, by := range a.Bys {
+		if buf.Len() > 0 {
+			buf.WriteString(join)
+		}
+		if i > limit {
+			buf.WriteString("etc")
+		}
+		buf.WriteString(by.Name)
+	}
+	return buf.String()
 }
 
 func (a *SummaryArg) Link() string {
