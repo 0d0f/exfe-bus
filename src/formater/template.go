@@ -16,7 +16,7 @@ type ForElement struct {
 }
 
 func NewTemplate(name string) *template.Template {
-	ret := template.New("test")
+	ret := template.New(name)
 
 	funcs := template.FuncMap{
 		"replace": func(str, from, to string) string {
