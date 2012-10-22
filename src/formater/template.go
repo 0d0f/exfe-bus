@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"io"
+	"os"
 	"reflect"
 	"strings"
 	"text/template"
@@ -49,4 +51,44 @@ func NewTemplate(name string) *template.Template {
 	}
 	ret.Funcs(funcs)
 	return ret
+}
+
+type LocalTemplate struct {
+	defaultLang string
+	templates   map[string]*template.Template
+}
+
+func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
+	dir, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("can't open dir %s: %s", path, err)
+	}
+	infos, err := dir.Readdir(-1)
+	if err != nil {
+		return fmt.Errorf("can't read dir %s: %s", path, err)
+	}
+	ret := &LocalTemplate{
+		defaultLang: defaultLang,
+		templates:   make(map[string]*template.Template),
+	}
+	for _, i := range infos {
+		template := NewTemplate(i.Name())
+		err := template.ParseGlob(fmt.Sprintf("path/%s/*"))
+		if err != nil {
+			return nil, fmt.Errorf("can't parse %s/%s: %s", path, i.Name(), err)
+		}
+		ret.templates[i.Name()] = template
+	}
+	return ret, nil
+}
+
+func (l *LocalTemplate) Execute(lang string, wr io.Writer, data interface{}) error {
+	t, ok := l.templates[lang]
+	if !ok {
+		t, ok := l.templates[l.defaultLang]
+	}
+	if !ok {
+		return fmt.Errorf("can't find lang %s or default %s", lang, l.defaultLang)
+	}
+	return t.Execute(wr, data)
 }

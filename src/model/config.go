@@ -5,10 +5,11 @@ import (
 )
 
 type Config struct {
-	SiteUrl string `json:"site_url"`
-	SiteApi string `json:"site_api"`
-	SiteImg string `json:"site_img"`
-	DB      struct {
+	SiteUrl      string `json:"site_url"`
+	SiteApi      string `json:"site_api"`
+	SiteImg      string `json:"site_img"`
+	TemplatePath string `json:"template_path"`
+	DB           struct {
 		Addr     string `json:"addr"`
 		Port     int    `json:"port"`
 		Username string `json:"username"`
