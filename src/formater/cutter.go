@@ -1,4 +1,4 @@
-package textcutter
+package formater
 
 import (
 	"bytes"
@@ -63,7 +63,7 @@ type Cutter struct {
 	len   LengthFunc
 }
 
-func Parse(text string, f LengthFunc) (*Cutter, error) {
+func CutterParse(text string, f LengthFunc) (*Cutter, error) {
 	nodes, err := parseLexical(text)
 	if err != nil {
 		return nil, err

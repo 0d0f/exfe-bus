@@ -1,4 +1,4 @@
-package textcutter
+package formater
 
 import (
 	"testing"
@@ -41,7 +41,7 @@ func normalStringLen(s string) int {
 
 func TestCutter(t *testing.T) {
 	str := `\(googol:\)\\ 12345678901234567890\\ \(("1234567890123" http://exfe.com/abcdefg)\)`
-	cutter, err := Parse(str, normalStringLen)
+	cutter, err := CutterParse(str, normalStringLen)
 	if err != nil {
 		t.Fatalf("parse string error: %s", err)
 	}

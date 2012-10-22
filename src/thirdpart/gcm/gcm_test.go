@@ -18,7 +18,7 @@ func (b *FakeBroker) Reset() {
 }
 
 func (b *FakeBroker) Send(n *gcm.Message) (*gcm.Response, error) {
-	b.messages = append(b.messages, n.Data["text"].(string))
+	b.messages = append(b.messages, n.Data["text"])
 
 	result := `{"results":[{"message_id":"1:08","registration_id":"%s"}]}`
 	result = fmt.Sprintf(result, n.RegistrationIDs[0])
