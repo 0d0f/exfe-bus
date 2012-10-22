@@ -61,11 +61,11 @@ type LocalTemplate struct {
 func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 	dir, err := os.Open(path)
 	if err != nil {
-		return fmt.Errorf("can't open dir %s: %s", path, err)
+		return nil, fmt.Errorf("can't open dir %s: %s", path, err)
 	}
 	infos, err := dir.Readdir(-1)
 	if err != nil {
-		return fmt.Errorf("can't read dir %s: %s", path, err)
+		return nil, fmt.Errorf("can't read dir %s: %s", path, err)
 	}
 	ret := &LocalTemplate{
 		defaultLang: defaultLang,
@@ -73,7 +73,7 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 	}
 	for _, i := range infos {
 		template := NewTemplate(i.Name())
-		err := template.ParseGlob(fmt.Sprintf("path/%s/*"))
+		_, err := template.ParseGlob(fmt.Sprintf("path/%s/*"))
 		if err != nil {
 			return nil, fmt.Errorf("can't parse %s/%s: %s", path, i.Name(), err)
 		}
@@ -85,7 +85,7 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 func (l *LocalTemplate) Execute(lang string, wr io.Writer, data interface{}) error {
 	t, ok := l.templates[lang]
 	if !ok {
-		t, ok := l.templates[l.defaultLang]
+		t, ok = l.templates[l.defaultLang]
 	}
 	if !ok {
 		return fmt.Errorf("can't find lang %s or default %s", lang, l.defaultLang)
