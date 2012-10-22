@@ -82,7 +82,7 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 	return ret, nil
 }
 
-func (l *LocalTemplate) Execute(lang string, wr io.Writer, data interface{}) error {
+func (l *LocalTemplate) Execute(wr io.Writer, lang, name string, data interface{}) error {
 	t, ok := l.templates[lang]
 	if !ok {
 		t, ok = l.templates[l.defaultLang]
@@ -90,5 +90,9 @@ func (l *LocalTemplate) Execute(lang string, wr io.Writer, data interface{}) err
 	if !ok {
 		return fmt.Errorf("can't find lang %s or default %s", lang, l.defaultLang)
 	}
-	return t.Execute(wr, data)
+	err := t.ExecuteTemplate(wr, name, data)
+	if err != nil {
+		return fmt.Errorf("execute %s error: %s", lang)
+	}
+	return nil
 }

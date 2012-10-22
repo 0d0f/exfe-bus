@@ -3,15 +3,16 @@ package business
 import (
 	"bytes"
 	"fmt"
+	"formater"
 	"model"
+	"thirdpart"
 )
 
 type SummaryArg struct {
-	To       *model.Recipient  `json:"to"`
-	OldCross *model.Cross      `json:"old_cross"`
-	Cross    *model.Cross      `json:"cross"`
-	Posts    []*model.Post     `json:"posts"`
-	Bys      []*model.Identity `json:"bys"`
+	To       *model.Recipient  `json:"-"`
+	OldCross *model.Cross      `json:"-"`
+	Cross    *model.Cross      `json:"-"`
+	Bys      []*model.Identity `json:"-"`
 
 	Config        *model.Config      `json:"-"`
 	NewInvited    []model.Invitation `json:"-"`
@@ -23,79 +24,85 @@ type SummaryArg struct {
 	NewPending    []model.Invitation `json:"-"`
 }
 
-func (a *SummaryArg) Parse() {
+func SummaryFromUpdates(updates []model.Update) (*SummaryArg, error) {
+	if updates == nil && len(updates) == 0 {
+		return nil, fmt.Errorf("no update info")
+	}
+
+	to := &updates[0].To
 	bys := make([]*model.Identity, 0)
+
 Bys:
-	for _, b := range a.Bys {
+	for _, update := range updates {
+		if !to.Equal(&update.To) {
+			return nil, fmt.Errorf("updates not send to same recipient: %s, %s", to, update.To)
+		}
 		for _, i := range bys {
-			if b.SameUser(i) {
+			if update.By.SameUser(i) {
 				continue Bys
 			}
 		}
-		bys = append(bys, b)
-	}
-	a.Bys = bys
-
-	a.NewInvited = make([]model.Invitation, 0)
-	a.Removed = make([]model.Invitation, 0)
-	a.NewAccepted = make([]model.Invitation, 0)
-	a.OldAccepted = make([]model.Invitation, 0)
-	a.NewDeclined = make([]model.Invitation, 0)
-	a.NewInterested = make([]model.Invitation, 0)
-	a.NewPending = make([]model.Invitation, 0)
-
-	a.Cross.Exfee.Parse()
-	if !a.IsCrossChange() {
-		return
+		bys = append(bys, &update.By)
 	}
 
-	a.OldCross.Exfee.Parse()
-	for _, i := range a.Cross.Exfee.Accepted {
-		if !in(&i, a.OldCross.Exfee.Accepted) {
-			a.NewAccepted = append(a.NewAccepted, i)
+	ret := &SummaryArg{
+		To:       to,
+		Bys:      bys,
+		OldCross: &updates[0].OldCross,
+		Cross:    &updates[len(updates)-1].Cross,
+
+		NewInvited:    make([]model.Invitation, 0),
+		Removed:       make([]model.Invitation, 0),
+		NewAccepted:   make([]model.Invitation, 0),
+		OldAccepted:   make([]model.Invitation, 0),
+		NewDeclined:   make([]model.Invitation, 0),
+		NewInterested: make([]model.Invitation, 0),
+		NewPending:    make([]model.Invitation, 0),
+	}
+
+	ret.Cross.Exfee.Parse()
+	ret.OldCross.Exfee.Parse()
+
+	for _, i := range ret.Cross.Exfee.Accepted {
+		if !in(&i, ret.OldCross.Exfee.Accepted) {
+			ret.NewAccepted = append(ret.NewAccepted, i)
 		} else {
-			a.OldAccepted = append(a.OldAccepted, i)
+			ret.OldAccepted = append(ret.OldAccepted, i)
 		}
 	}
-	for _, i := range a.Cross.Exfee.Declined {
-		if !in(&i, a.OldCross.Exfee.Declined) {
-			a.NewDeclined = append(a.NewDeclined, i)
+	for _, i := range ret.Cross.Exfee.Declined {
+		if !in(&i, ret.OldCross.Exfee.Declined) {
+			ret.NewDeclined = append(ret.NewDeclined, i)
 		}
 	}
-	for _, i := range a.Cross.Exfee.Interested {
-		if !in(&i, a.OldCross.Exfee.Interested) {
-			a.NewInterested = append(a.NewInterested, i)
+	for _, i := range ret.Cross.Exfee.Interested {
+		if !in(&i, ret.OldCross.Exfee.Interested) {
+			ret.NewInterested = append(ret.NewInterested, i)
 		}
 	}
-	for _, i := range a.Cross.Exfee.Pending {
-		if !in(&i, a.OldCross.Exfee.Pending) {
-			a.NewPending = append(a.NewPending, i)
+	for _, i := range ret.Cross.Exfee.Pending {
+		if !in(&i, ret.OldCross.Exfee.Pending) {
+			ret.NewPending = append(ret.NewPending, i)
 		}
 	}
-	for _, i := range a.Cross.Exfee.Invitations {
-		if !in(&i, a.OldCross.Exfee.Invitations) {
-			a.NewInvited = append(a.NewInvited, i)
+	for _, i := range ret.Cross.Exfee.Invitations {
+		if !in(&i, ret.OldCross.Exfee.Invitations) {
+			ret.NewInvited = append(ret.NewInvited, i)
 		}
 	}
-	for _, i := range a.OldCross.Exfee.Invitations {
-		if !in(&i, a.Cross.Exfee.Invitations) {
-			a.Removed = append(a.Removed, i)
+	for _, i := range ret.OldCross.Exfee.Invitations {
+		if !in(&i, ret.Cross.Exfee.Invitations) {
+			ret.Removed = append(ret.Removed, i)
 		}
 	}
-}
-
-func (a *SummaryArg) IsCrossChange() bool {
-	return a.OldCross != nil
+	return ret, nil
 }
 
 func (a *SummaryArg) IsTitleChange() bool {
-	return a.IsCrossChange() && a.OldCross.Title != a.Cross.Title
+	return a.OldCross.Title != a.Cross.Title
 }
 
 func (a *SummaryArg) IsPlaceChanged() bool {
-	if !a.IsCrossChange() {
-		return false
-	}
 	return a.Cross.Place.Same(&a.OldCross.Place)
 }
 
@@ -118,10 +125,21 @@ func (a *SummaryArg) Link() string {
 }
 
 type Cross struct {
+	localTemplate *formater.LocalTemplate
 }
 
-func (c *Cross) Summary(arg *SummaryArg) error {
-	return nil
+func (c *Cross) Summary(updates []model.Update) error {
+	arg, err := SummaryFromUpdates(updates)
+	if err != nil {
+		return fmt.Errorf("can't parse update: %s", err)
+	}
+	messageType, err := thirdpart.MessageTypeFromProvider(arg.To.Provider)
+	if err != nil {
+		return err
+	}
+	templateName := fmt.Sprintf("cross_update.%s", messageType)
+	buf := bytes.NewBuffer(nil)
+	return c.localTemplate.Execute(buf, arg.To.Language, templateName, arg)
 }
 
 func in(id *model.Invitation, ids []model.Invitation) bool {

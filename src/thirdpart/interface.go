@@ -26,14 +26,30 @@ type ExternalUser interface {
 	Avatar() string
 }
 
-type MessageType int
+type MessageType string
 
 const (
-	ShortMessage MessageType = iota
-	LongTextMessage
-	HTMLMessage
-	EmailMessage
+	ShortMessage    MessageType = "short_message.txt"
+	LongTextMessage             = "long_message.txt"
+	HTMLMessage                 = "html"
+	EmailMessage                = "email"
 )
+
+func MessageTypeFromProvider(provider string) (MessageType, error) {
+	switch provider {
+	case "email":
+		return EmailMessage, nil
+	case "facebook":
+		return EmailMessage, nil
+	case "iOS":
+		return ShortMessage, nil
+	case "android":
+		return ShortMessage, nil
+	case "twitter":
+		return ShortMessage, nil
+	}
+	return "", fmt.Errorf("unknow provider: %s", provider)
+}
 
 type DataType string
 

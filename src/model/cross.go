@@ -9,3 +9,10 @@ type Cross struct {
 	Place       Place     `json:"place"`
 	Exfee       Exfee     `json:"exfee"`
 }
+
+type Update struct {
+	To       Recipient `json:"to"`
+	OldCross Cross     `json:"old_cross"`
+	Cross    Cross     `json:"cross"`
+	By       Identity  `json:"by"`
+}

@@ -17,6 +17,10 @@ type Recipient struct {
 	ExternalUsername string `json:"external_username"`
 }
 
+func (r Recipient) Equal(other *Recipient) bool {
+	return r.IdentityID == other.IdentityID && r.UserID == other.UserID
+}
+
 func (r Recipient) String() string {
 	return fmt.Sprintf("Recipient:%s(%s)@%s(i%d/u%d/t%s)", r.ExternalUsername, r.ExternalID, r.Provider, r.IdentityID, r.UserID, r.Token)
 }
