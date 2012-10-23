@@ -18,9 +18,9 @@ func (e Exfee) Parse() {
 
 	for _, i := range e.Invitations {
 		switch i.RsvpStatus {
-		case RspvAccepted:
+		case RsvpAccepted:
 			e.Accepted = append(e.Accepted, i)
-		case RsvpDecliend:
+		case RsvpDeclined:
 			e.Declined = append(e.Declined, i)
 		case RsvpInterested:
 			e.Interested = append(e.Interested, i)

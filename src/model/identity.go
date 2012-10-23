@@ -49,9 +49,9 @@ type RsvpType string
 
 const (
 	RsvpNoresponse   RsvpType = "NORESPONSE"
-	RspvAccepted              = "ACCEPTED"
+	RsvpAccepted              = "ACCEPTED"
 	RsvpInterested            = "INTERESTED"
-	RsvpDecliend              = "DECLINED"
+	RsvpDeclined              = "DECLINED"
 	RsvpRemoved               = "REMOVED"
 	RsvpNotification          = "NOTIFICATION"
 )

@@ -127,8 +127,8 @@ func (t EFTime) timeInZone(targetZone string) (time.Time, error) {
 type OutputFormat uint
 
 const (
-	Format OutputFormat = 0
-	Origin              = 1
+	TimeFormat OutputFormat = 0
+	TimeOrigin              = 1
 )
 
 type CrossTime struct {
@@ -139,7 +139,7 @@ type CrossTime struct {
 
 func (t CrossTime) StringInZone(targetZone string) (string, error) {
 	switch t.OutputFormat {
-	case Format:
+	case TimeFormat:
 		ret, err := t.BeginAt.StringInZone(targetZone)
 		return ret, err
 	}
