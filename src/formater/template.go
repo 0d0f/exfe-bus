@@ -21,6 +21,16 @@ func NewTemplate(name string) *template.Template {
 	ret := template.New(name)
 
 	funcs := template.FuncMap{
+		"column": func(max int, joiner string, content string) string {
+			buf := bytes.NewBuffer(nil)
+			for len(content) > max {
+				buf.WriteString(content[:max])
+				buf.WriteString(joiner)
+				content = content[max:]
+			}
+			buf.WriteString(content)
+			return buf.String()
+		},
 		"equal": func(a, b interface{}) bool {
 			va := reflect.ValueOf(a)
 			vb := reflect.ValueOf(b)

@@ -7,6 +7,19 @@ import (
 	"testing"
 )
 
+func TestTemplateColumn(t *testing.T) {
+	templ, err := NewTemplate("test").Parse(`{{"1234567890" | column 5 "\n"}}`)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	buf := bytes.NewBuffer(nil)
+	err = templ.Execute(buf, nil)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	assert.Equal(t, buf.String(), "12345\n67890", "should equal")
+}
+
 func TestTemplateEqual(t *testing.T) {
 	templ, err := NewTemplate("test").Parse(`{{equal 1 1}}{{equal "a" "1"}}`)
 	if err != nil {
