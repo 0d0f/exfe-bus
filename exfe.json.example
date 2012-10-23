@@ -2,7 +2,9 @@
   "site_url": "",
   "site_api": "",
   "site_img": "",
+  "app_url": "",
   "template_path": "",
+  "default_lang": "en_US",
 
   "db": {
     "addr": "127.0.0.1",
@@ -54,7 +56,6 @@
     }
   },
 
-  "app_url": "",
   "iom_url": "http://127.0.0.1:1234/iom",
   "email_name": "EXFE ·X·",
   "email_domain": "0d0f.com",

@@ -10,7 +10,9 @@ type Config struct {
 	SiteImg      string `json:"site_img"`
 	AppUrl       string `json:"app_url"`
 	TemplatePath string `json:"template_path"`
-	DB           struct {
+	DefaultLang  string `json:"default_lang"`
+
+	DB struct {
 		Addr     string `json:"addr"`
 		Port     int    `json:"port"`
 		Username string `json:"username"`
