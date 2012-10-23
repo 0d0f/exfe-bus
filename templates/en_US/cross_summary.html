@@ -58,7 +58,7 @@
                         <a href="{{.Link}}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">{{ .Cross.Place.Title | html }}</a>
                     </p>
                     <p style="margin: 0;">{{$desc := .Cross.Place.Description}}
-                        <a href="{{.Link}}" style="color: {{if .IsPlaceChanged}}#3a6ea5{{else}}#191919{{end}}; text-decoration: none;">{{replace $desc "\n" "<br />" | html}}</a>
+                        <a href="{{.Link}}" style="color: {{if .IsPlaceChanged}}#3a6ea5{{else}}#191919{{end}}; text-decoration: none;">{{replace "\n" "<br />" $desc | html}}</a>
                     </p>
                     {{else}}
                     <p style="font-size: 20px; line-height: 26px; margin: 0;">
@@ -134,7 +134,7 @@
                 <td colspan="5">
                     {{$api := .Config.SiteApi}}
                     {{range .Cross.Exfee.Invitations}}
-                    <img style="padding-right: 5px;" width="40" height="40" alt="{{replace .Identity.Name `"` `\"`}}" title="{{replace .Identity.Name `"` `\"`}}" src="{{$api}}/v2/avatar/render?resolution=2x&url={{.Identity.Avatar | base64 | urlquery}}&width=40&height=40{{if not .IsAccepted}}&alpha=0.33{{end}}{{if .Host}}&ishost=true{{end}}{{if .Mates}}&mates={{.Mates}}{{end}}">
+                    <img style="padding-right: 5px;" width="40" height="40" alt="{{replace `"` `\"` .Identity.Name}}" title="{{replace `"` `\"` .Identity.Name}}" src="{{$api}}/v2/avatar/render?resolution=2x&url={{.Identity.Avatar | base64 | urlquery}}&width=40&height=40{{if not .IsAccepted}}&alpha=0.33{{end}}{{if .Host}}&ishost=true{{end}}{{if .Mates}}&mates={{.Mates}}{{end}}">
                     {{end}}
                 </td>
             </tr>

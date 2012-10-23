@@ -36,7 +36,7 @@ func NewTemplate(name string) *template.Template {
 			vb := reflect.ValueOf(b)
 			return va.String() == vb.String()
 		},
-		"replace": func(str, from, to string) string {
+		"replace": func(from, to, str string) string {
 			return strings.Replace(str, from, to, -1)
 		},
 		"base64": func(str string) string {
@@ -50,7 +50,7 @@ func NewTemplate(name string) *template.Template {
 			err := ret.ExecuteTemplate(buf, name, data)
 			return buf.String(), err
 		},
-		"limit": func(str string, max int) string {
+		"limit": func(max int, str string) string {
 			if max < 2 {
 				max = 2
 			}

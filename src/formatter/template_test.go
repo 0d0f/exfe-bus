@@ -21,7 +21,7 @@ func TestTemplateColumn(t *testing.T) {
 }
 
 func TestTemplateEqual(t *testing.T) {
-	templ, err := NewTemplate("test").Parse(`{{equal 1 1}}{{equal "a" "1"}}`)
+	templ, err := NewTemplate("test").Parse(`{{equal 1 1}}{{"a" | equal "1"}}`)
 	if err != nil {
 		t.Fatalf("unexpect error: %s", err)
 	}
@@ -34,7 +34,7 @@ func TestTemplateEqual(t *testing.T) {
 }
 
 func TestTemplateReplace(t *testing.T) {
-	templ, err := NewTemplate("test").Parse(`{{replace "12345" "12" "ab"}}`)
+	templ, err := NewTemplate("test").Parse(`{{"12345" | replace "12" "ab"}}`)
 	if err != nil {
 		t.Fatalf("unexpect error: %s", err)
 	}
@@ -103,7 +103,7 @@ func TestTemplateFor(t *testing.T) {
 }
 
 func TestTemplateLimit(t *testing.T) {
-	templ, err := NewTemplate("test").Parse(`{{limit "12345678" 3}}`)
+	templ, err := NewTemplate("test").Parse(`{{"12345678" | limit 3}}`)
 	if err != nil {
 		t.Fatalf("unexpect error: %s", err)
 	}
