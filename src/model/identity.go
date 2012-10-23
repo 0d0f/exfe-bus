@@ -69,3 +69,7 @@ type Invitation struct {
 func (i *Invitation) String() string {
 	return i.Identity.Name
 }
+
+func (i *Invitation) IsAccepted() bool {
+	return i.RsvpStatus == RsvpAccepted
+}

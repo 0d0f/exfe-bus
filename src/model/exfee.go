@@ -10,7 +10,7 @@ type Exfee struct {
 	Pending    []Invitation `json:"-"`
 }
 
-func (e Exfee) Parse() {
+func (e *Exfee) Parse() {
 	e.Accepted = make([]Invitation, 0)
 	e.Declined = make([]Invitation, 0)
 	e.Interested = make([]Invitation, 0)

@@ -8,6 +8,7 @@ type Config struct {
 	SiteUrl      string `json:"site_url"`
 	SiteApi      string `json:"site_api"`
 	SiteImg      string `json:"site_img"`
+	AppUrl       string `json:"app_url"`
 	TemplatePath string `json:"template_path"`
 	DB           struct {
 		Addr     string `json:"addr"`
