@@ -2,7 +2,7 @@ package gcm
 
 import (
 	"fmt"
-	"formater"
+	"formatter"
 	"github.com/googollee/go-gcm"
 	"model"
 	"thirdpart"
@@ -32,7 +32,7 @@ func (g *GCM) MessageType() thirdpart.MessageType {
 }
 
 func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (id string, err error) {
-	cutter, err := formater.CutterParse(privateMessage, gcmLen)
+	cutter, err := formatter.CutterParse(privateMessage, gcmLen)
 	if err != nil {
 		return "", fmt.Errorf("parse cutter error: %s", err)
 	}

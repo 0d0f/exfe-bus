@@ -3,7 +3,7 @@ package twitter
 import (
 	"encoding/json"
 	"fmt"
-	"formater"
+	"formatter"
 	"io"
 	"model"
 	"net/url"
@@ -54,7 +54,7 @@ func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage
 	params.Set(t.identity(to))
 	var err error
 	var resp io.ReadCloser
-	cutter, err := formater.CutterParse(privateMessage, twitterLen)
+	cutter, err := formatter.CutterParse(privateMessage, twitterLen)
 	if err != nil {
 		return "", fmt.Errorf("parse %s private message failed: %s", to, err)
 	}
@@ -76,7 +76,7 @@ func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage
 	if err != nil && strings.Index(err.Error(), `"code":150`) > 0 {
 		ids = ""
 		params := make(url.Values)
-		cutter, err := formater.CutterParse(publicMessage, twitterLen)
+		cutter, err := formatter.CutterParse(publicMessage, twitterLen)
 		if err != nil {
 			return "", fmt.Errorf("parse %s public message failed: %s", to, err)
 		}

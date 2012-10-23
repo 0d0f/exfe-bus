@@ -1,14 +1,14 @@
 package business
 
 import (
-	"formater"
+	"formatter"
 	"model"
 	"testing"
 )
 
 func init() {
 	var err error
-	localTemplate, err = formater.NewLocalTemplate("../../templates", "en_US")
+	localTemplate, err = formatter.NewLocalTemplate("../../templates", "en_US")
 	if err != nil {
 		panic(err)
 	}
@@ -16,7 +16,7 @@ func init() {
 	config.Email.Domain = "test.com"
 }
 
-var localTemplate *formater.LocalTemplate
+var localTemplate *formatter.LocalTemplate
 
 var config = model.Config{
 	SiteUrl: "http://site/url",

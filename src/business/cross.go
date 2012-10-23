@@ -3,7 +3,7 @@ package business
 import (
 	"bytes"
 	"fmt"
-	"formater"
+	"formatter"
 	"model"
 	"thirdpart"
 )
@@ -142,11 +142,11 @@ func (a *SummaryArg) Link() string {
 }
 
 type Cross struct {
-	localTemplate *formater.LocalTemplate
+	localTemplate *formatter.LocalTemplate
 	config        *model.Config
 }
 
-func NewCross(localTemplate *formater.LocalTemplate, config *model.Config) *Cross {
+func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config) *Cross {
 	return &Cross{
 		localTemplate: localTemplate,
 		config:        config,

@@ -2,7 +2,7 @@ package apn
 
 import (
 	"fmt"
-	"formater"
+	"formatter"
 	"github.com/virushuo/Go-Apns"
 	"model"
 	"regexp"
@@ -44,7 +44,7 @@ func (a *Apn) MessageType() thirdpart.MessageType {
 
 func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (string, error) {
 	privateMessage = urlRegex.ReplaceAllString(privateMessage, "")
-	cutter, err := formater.CutterParse(privateMessage, apnLen)
+	cutter, err := formatter.CutterParse(privateMessage, apnLen)
 	if err != nil {
 		return "", fmt.Errorf("parse cutter error: %s", err)
 	}
