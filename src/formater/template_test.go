@@ -76,12 +76,27 @@ func TestTemplateFor(t *testing.T) {
 	assert.Equal(t, buf.String(), "1 - a, 2 - b, 3 - c, 4 - d")
 }
 
+func TestTemplateLimit(t *testing.T) {
+	templ, err := NewTemplate("test").Parse(`{{limit "12345678" 3}}`)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	buf := bytes.NewBuffer(nil)
+	err = templ.Execute(buf, nil)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, buf.String(), "12…")
+}
+
 func TestLocalTemplate(t *testing.T) {
 	l, err := NewLocalTemplate("./template_test", "en_US")
 	assert.Equal(t, err, nil)
 	assert.Equal(t, l.defaultLang, "en_US")
+
 	_, ok := l.templates["en_US"]
 	assert.Equal(t, ok, true)
+
+	_, ok = l.templates[".should_ignore"]
+	assert.Equal(t, ok, false)
 
 	buf := bytes.NewBuffer(nil)
 	l.Execute(buf, "en_US", "test.template", nil)

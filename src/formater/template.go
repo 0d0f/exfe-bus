@@ -35,6 +35,15 @@ func NewTemplate(name string) *template.Template {
 			err := ret.ExecuteTemplate(buf, name, data)
 			return buf.String(), err
 		},
+		"limit": func(str string, max int) string {
+			if max < 2 {
+				max = 2
+			}
+			if len(str) <= max {
+				return str
+			}
+			return str[:max-1] + "…"
+		},
 		"for": func(array interface{}) (interface{}, error) {
 			v := reflect.ValueOf(array)
 			if k := v.Kind(); k != reflect.Array && k != reflect.Slice {
@@ -72,6 +81,9 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 		templates:   make(map[string]*template.Template),
 	}
 	for _, i := range infos {
+		if i.Name()[0] == '.' {
+			continue
+		}
 		template := NewTemplate(i.Name())
 		_, err := template.ParseGlob(fmt.Sprintf("%s/%s/*", path, i.Name()))
 		if err != nil {
@@ -92,7 +104,7 @@ func (l *LocalTemplate) Execute(wr io.Writer, lang, name string, data interface{
 	}
 	err := t.ExecuteTemplate(wr, name, data)
 	if err != nil {
-		return fmt.Errorf("execute %s error: %s", lang)
+		return fmt.Errorf("execute %s error: %s", lang, err)
 	}
 	return nil
 }

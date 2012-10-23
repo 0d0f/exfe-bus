@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"regexp"
 	"time"
 )
 
@@ -12,16 +11,23 @@ const (
 )
 
 func LoadLocation(zone string) (*time.Location, error) {
-	isOK, err := regexp.MatchString("^[+-]\\d\\d:\\d\\d( [A-Z]{3})?$", zone)
+	var hour, minute int
+	_, err := fmt.Sscanf(zone, "+%02d%02d", &hour, &minute)
 	if err != nil {
-		return nil, err
+		_, err = fmt.Sscanf(zone, "-%02d%02d", &hour, &minute)
+		hour = -hour
 	}
-	if !isOK {
-		return nil, fmt.Errorf("Zone format not fit /^[+-]\\d\\d:\\d\\d( [A-Z]{3})?$/")
+	if err != nil {
+		_, err = fmt.Sscanf(zone, "+%02d:%02d", &hour, &minute)
+	}
+	if err != nil {
+		_, err = fmt.Sscanf(zone, "-%02d:%02d", &hour, &minute)
+		hour = -hour
+	}
+	if err != nil {
+		return nil, fmt.Errorf("Zone format invalid")
 	}
 
-	var hour, minute int
-	fmt.Sscanf(zone, "%d:%d", &hour, &minute)
 	offset := hour*HourInSeconds + minute*MinuteInSeconds
 	return time.FixedZone(fmt.Sprintf("%+03d:%02d", hour, minute), offset), nil
 }

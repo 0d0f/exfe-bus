@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+var nowFunc = func() time.Time {
+	return time.Now()
+}
+
 type EFTime struct {
 	DateWord string `json:"date_word"`
 	Date     string `json:"date"`
@@ -13,12 +17,27 @@ type EFTime struct {
 	Timezone string `json:"timezone"`
 }
 
-var nowFunc = func() time.Time {
-	return time.Now()
+func (t EFTime) UTCTime(layout string) (string, error) {
+	if t.Time == "" && t.Date == "" {
+		return "", nil
+	}
+
+	var time_ time.Time
+	var err error
+	if t.Time == "" {
+		time_, err = time.Parse("2006-01-02", t.Date)
+	} else if t.Date != "" {
+		str := fmt.Sprintf("%s %s", t.Date, t.Time)
+		time_, err = time.Parse("2006-01-02 15:04:05", str)
+	}
+	if err != nil {
+		return "", err
+	}
+	return time_.Format(layout), nil
 }
 
-func (t EFTime) StringInZone(targetZone string) (string, error) {
-	t_, err := t.timeInZone(targetZone)
+func (t EFTime) StringInZone(targetZone string, targetLoc *time.Location) (string, error) {
+	t_, err := t.timeInZone(targetLoc)
 	if err != nil {
 		return "", err
 	}
@@ -36,7 +55,7 @@ func (t EFTime) StringInZone(targetZone string) (string, error) {
 		ret += t_.Format("3:04PM")
 	}
 
-	if t.differentZone(targetZone) && ret != "" {
+	if loc, _ := LoadLocation(t.Timezone); loc.String() != targetLoc.String() && ret != "" {
 		ret += " "
 		if t.Time != "" {
 			ret += targetZone
@@ -67,30 +86,7 @@ func (t EFTime) StringInZone(targetZone string) (string, error) {
 	return ret, nil
 }
 
-func (t EFTime) UTCTime(layout string) (string, error) {
-	if t.Time == "" && t.Date == "" {
-		return "", nil
-	}
-
-	var time_ time.Time
-	var err error
-	if t.Time == "" {
-		time_, err = time.Parse("2006-01-02", t.Date)
-	} else if t.Date != "" {
-		str := fmt.Sprintf("%s %s", t.Date, t.Time)
-		time_, err = time.Parse("2006-01-02 15:04:05", str)
-	}
-	if err != nil {
-		return "", err
-	}
-	return time_.Format(layout), nil
-}
-
-func (t EFTime) differentZone(targetZone string) bool {
-	return targetZone != "" && t.Timezone[0:6] != targetZone[0:6]
-}
-
-func (t EFTime) timeInZone(targetZone string) (time.Time, error) {
+func (t EFTime) timeInZone(targetLoc *time.Location) (time.Time, error) {
 	var t_ time.Time
 	var err error
 
@@ -107,18 +103,11 @@ func (t EFTime) timeInZone(targetZone string) (time.Time, error) {
 		return t_, fmt.Errorf("Parse time error: %s", err)
 	}
 
-	loc, err := LoadLocation(t.Timezone)
-	if err != nil {
-		return t_, fmt.Errorf("Parse timezone(%s) error: %s", t.Timezone, err)
-	}
+	loc, _ := LoadLocation(t.Timezone)
 	t_ = t_.In(loc)
 
-	if t.differentZone(targetZone) && t.Time != "" {
-		targetLocation, err := LoadLocation(targetZone)
-		if err != nil {
-			return t_, fmt.Errorf("Parse target zone(%s) error: %s", targetZone, err)
-		}
-		t_ = t_.In(targetLocation)
+	if loc.String() != targetLoc.String() && t.Time != "" {
+		t_ = t_.In(targetLoc)
 	}
 
 	return t_, nil
@@ -138,13 +127,25 @@ type CrossTime struct {
 }
 
 func (t CrossTime) StringInZone(targetZone string) (string, error) {
+	loc, err := LoadLocation(t.BeginAt.Timezone)
+	if err != nil {
+		return "", fmt.Errorf("timezone(%s) invalid: %s", t.BeginAt.Timezone, err)
+	}
+	targetLoc := loc
+	if targetZone != "" {
+		targetLoc, err = LoadLocation(targetZone)
+		if err != nil {
+			return "", fmt.Errorf("targetZone(%s) invalid: %s", targetZone, err)
+		}
+	}
+
 	switch t.OutputFormat {
 	case TimeFormat:
-		ret, err := t.BeginAt.StringInZone(targetZone)
+		ret, err := t.BeginAt.StringInZone(targetZone, targetLoc)
 		return ret, err
 	}
 
-	if targetZone[0:6] == t.BeginAt.Timezone[0:6] {
+	if loc.String() == targetLoc.String() {
 		return t.Origin, nil
 	}
 	return fmt.Sprintf("%s %s", t.Origin, t.BeginAt.Timezone), nil

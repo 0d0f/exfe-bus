@@ -27,15 +27,17 @@ var zoneTestData = []ZoneTest{
 	{"-08:00 PST", true, "-08:00"},
 	{"-08:00", true, "-08:00"},
 
-	{"+08:00 ", false, ""},
-	{"+8:00 CST", false, ""},
-	{"-8:00 PST", false, ""},
+	{"+0800 CST", true, "+08:00"},
+	{"+0800", true, "+08:00"},
+	{"-0800 PST", true, "-08:00"},
+	{"-0800", true, "-08:00"},
+
 	{"+8 CST", false, ""},
 	{"+8", false, ""},
 }
 
 func TestZoneToLocation(t *testing.T) {
-	for _, data := range zoneTestData {
+	for i, data := range zoneTestData {
 		got, err := LoadLocation(data.input)
 		if data.shouldSuccess {
 			if err != nil {
@@ -46,7 +48,7 @@ func TestZoneToLocation(t *testing.T) {
 			}
 		} else {
 			if err == nil {
-				t.Fatalf("Test %v should failed, but got: %s", got.String())
+				t.Fatalf("Test %v should failed, but got: %s", i, got.String())
 			}
 		}
 	}
@@ -126,13 +128,13 @@ func TestCrossTimeInZoneString(t *testing.T) {
 	nowFunc = func() time.Time {
 		return time.Date(2012, 4, 4, 0, 0, 0, 0, time.FixedZone("utc", 0))
 	}
-	for _, data := range crossTimeTestData {
+	for i, data := range crossTimeTestData {
 		got, err := data.time.StringInZone(data.targetZone)
 		if err != nil {
-			t.Fatalf("Test %v should success, but got error: %s", data, err)
+			t.Fatalf("Test %+v(%d) should success, but got error: %s", data, i, err)
 		}
 		if got != data.expect {
-			t.Errorf("Test %+v expect: %s, but got: %s", data, data.expect, got)
+			t.Errorf("Test %+v(%d) expect: %s, but got: %s", data, i, data.expect, got)
 		}
 	}
 }
