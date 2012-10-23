@@ -9,10 +9,10 @@ import (
 )
 
 type SummaryArg struct {
-	To       *model.Recipient  `json:"-"`
-	OldCross *model.Cross      `json:"-"`
-	Cross    *model.Cross      `json:"-"`
-	Bys      []*model.Identity `json:"-"`
+	To       *model.Recipient `json:"-"`
+	OldCross *model.Cross     `json:"-"`
+	Cross    *model.Cross     `json:"-"`
+	Bys      []model.Identity `json:"-"`
 
 	Config        *model.Config      `json:"-"`
 	NewInvited    []model.Invitation `json:"-"`
@@ -24,13 +24,13 @@ type SummaryArg struct {
 	NewPending    []model.Invitation `json:"-"`
 }
 
-func SummaryFromUpdates(updates []model.Update) (*SummaryArg, error) {
+func SummaryFromUpdates(updates []model.Update, config *model.Config) (*SummaryArg, error) {
 	if updates == nil && len(updates) == 0 {
 		return nil, fmt.Errorf("no update info")
 	}
 
 	to := &updates[0].To
-	bys := make([]*model.Identity, 0)
+	bys := make([]model.Identity, 0)
 
 Bys:
 	for _, update := range updates {
@@ -42,7 +42,7 @@ Bys:
 				continue Bys
 			}
 		}
-		bys = append(bys, &update.By)
+		bys = append(bys, update.By)
 	}
 
 	ret := &SummaryArg{
@@ -51,6 +51,7 @@ Bys:
 		OldCross: &updates[0].OldCross,
 		Cross:    &updates[len(updates)-1].Cross,
 
+		Config:        config,
 		NewInvited:    make([]model.Invitation, 0),
 		Removed:       make([]model.Invitation, 0),
 		NewAccepted:   make([]model.Invitation, 0),
@@ -95,15 +96,30 @@ Bys:
 			ret.Removed = append(ret.Removed, i)
 		}
 	}
+	fmt.Printf("%+v\n", ret)
 	return ret, nil
 }
 
-func (a *SummaryArg) IsTitleChange() bool {
+func (a *SummaryArg) TotalOldAccepted() int {
+	ret := 0
+	for _, e := range a.OldAccepted {
+		ret += 1 + int(e.Mates)
+	}
+	return ret
+}
+
+func (a *SummaryArg) IsTimeChanged() bool {
+	oldtime, _ := a.OldCross.Time.StringInZone(a.To.Timezone)
+	time, _ := a.Cross.Time.StringInZone(a.To.Timezone)
+	return oldtime != time
+}
+
+func (a *SummaryArg) IsTitleChanged() bool {
 	return a.OldCross.Title != a.Cross.Title
 }
 
 func (a *SummaryArg) IsPlaceChanged() bool {
-	return a.Cross.Place.Same(&a.OldCross.Place)
+	return !a.Cross.Place.Same(&a.OldCross.Place)
 }
 
 func (a *SummaryArg) ListBy(limit int, join string) string {
@@ -112,8 +128,9 @@ func (a *SummaryArg) ListBy(limit int, join string) string {
 		if buf.Len() > 0 {
 			buf.WriteString(join)
 		}
-		if i > limit {
+		if i >= limit {
 			buf.WriteString("etc")
+			break
 		}
 		buf.WriteString(by.Name)
 	}
@@ -126,25 +143,45 @@ func (a *SummaryArg) Link() string {
 
 type Cross struct {
 	localTemplate *formater.LocalTemplate
+	config        *model.Config
+}
+
+func NewCross(localTemplate *formater.LocalTemplate, config *model.Config) *Cross {
+	return &Cross{
+		localTemplate: localTemplate,
+		config:        config,
+	}
 }
 
 func (c *Cross) Summary(updates []model.Update) error {
-	arg, err := SummaryFromUpdates(updates)
-	if err != nil {
-		return fmt.Errorf("can't parse update: %s", err)
-	}
-	messageType, err := thirdpart.MessageTypeFromProvider(arg.To.Provider)
+	_, err := c.getContent(updates)
 	if err != nil {
 		return err
 	}
-	templateName := fmt.Sprintf("cross_update.%s", messageType)
+	return nil
+}
+
+func (c *Cross) getContent(updates []model.Update) (string, error) {
+	arg, err := SummaryFromUpdates(updates, c.config)
+	if err != nil {
+		return "", fmt.Errorf("can't parse update: %s", err)
+	}
+	messageType, err := thirdpart.MessageTypeFromProvider(arg.To.Provider)
+	if err != nil {
+		return "", err
+	}
+	templateName := fmt.Sprintf("cross_summary.%s", messageType)
 	buf := bytes.NewBuffer(nil)
-	return c.localTemplate.Execute(buf, arg.To.Language, templateName, arg)
+	err = c.localTemplate.Execute(buf, arg.To.Language, templateName, arg)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 func in(id *model.Invitation, ids []model.Invitation) bool {
 	for _, i := range ids {
-		if id.Identity.SameUser(&i.Identity) {
+		if id.Identity.SameUser(i.Identity) {
 			return true
 		}
 	}

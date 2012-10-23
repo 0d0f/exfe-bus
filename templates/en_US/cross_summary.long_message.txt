@@ -1,0 +1,25 @@
+Updates of ·X·{{if .IsTitleChanged}} “{{.OldCross.Title}}”{{end}} by {{.ListBy 3 ", " }}.
+
+{{if .IsTitleChanged}}*{{ end }}{{.Cross.Title}}{{if .IsTitleChanged}}*{{end}}
+=======
+{{.Link}}
+
+{{$time := .Cross.Time.StringInZone .To.Timezone}}{{if $time}}{{if .IsTimeChanged}}*{{end}}{{$time}}{{if .IsTimeChanged}}*{{end}}
+======={{else}}{{if .IsTimeChanged}}*{{end}}Time{{if .IsTimeChanged}}*{{end}}
+=======
+  To be decided.{{end}}
+
+{{if .Cross.Place.Title}}{{if .IsPlaceChanged}}*{{end}}{{.Cross.Place.Title}}{{if .IsPlaceChanged}}*{{end}}
+======={{if .Cross.Place.Description}}
+  {{if .IsPlaceChanged}}*{{end}}{{.Cross.Place.Description}}{{if .IsPlaceChanged}}*{{end}}{{end}}{{else}}
+{{if .IsPlaceChanged}}*{{end}}Place{{if .IsPlaceChanged}}*{{end}}
+=======
+  {{if .IsPlaceChanged}}*{{end}}To be decided.{{if .IsPlaceChanged}}*{{end}}{{end}}
+
+{{if .NewAccepted}}
+· {{.Cross.Exfee.TotalAccepted}} Accepted: {{range for .NewAccepted}}{{.V.Identity.Name}}{{if not .Last}}, {{end}}{{end}}{{if .OldAccepted}} and {{.TotalOldAccepted}} others{{end}}.{{end}}{{if .NewDeclined}}
+· Unavailable: {{range for .NewDeclined}}{{.V.Identity.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}{{if .NewInvited}}
+· Newly invited: {{range for .NewInvited}}{{.V.Identity.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}{{if .Removed}}
+· Removed: {{range for .Removed}}{{.V.Identity.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}
+
+# Reply this email directly as conversation. #

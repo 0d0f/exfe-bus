@@ -1,0 +1,28 @@
+Content-Type: multipart/mixed; boundary="56040bc4f71301a3dc363b960b1796dafbb8b190894fd231dda878b5be75"
+References: <x+100189@exfe.com>
+To: =?utf-8?B?{{.To.Name | base64}}?= <{{.To.ExternalID}}>
+From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <x+{{.Cross.ID}}@{{.Config.Email.Domain}}>
+Subject: =?utf-8?B?{{if .IsTitleChanged}}{{.OldCross.Title | base64}}{{else}}{{.Cross.Title | base64}}{{end}}?=
+
+--56040bc4f71301a3dc363b960b1796dafbb8b190894fd231dda878b5be75
+Content-Type: multipart/alternative; boundary="bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60"
+
+--bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+
+{{sub "cross_summary.long_message.txt" . | base64}}
+--bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: base64
+
+{{sub "cross_summary.html" . | base64}}
+--bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60--
+
+--56040bc4f71301a3dc363b960b1796dafbb8b190894fd231dda878b5be75
+Content-Disposition: attachment; filename="=?UTF-8?B?{{.Cross.Title | base64}}?="
+Content-Type: text/calendar; charset=utf-8; name="=?UTF-8?B?{{.Cross.Title | base64}}?="
+Content-Transfer-Encoding: base64
+
+{{sub "cross.ics" . | base64}}
+--56040bc4f71301a3dc363b960b1796dafbb8b190894fd231dda878b5be75--
