@@ -29,3 +29,11 @@ func (e *Exfee) Parse() {
 		}
 	}
 }
+
+func (e *Exfee) TotalAccepted() int {
+	ret := 0
+	for _, i := range e.Accepted {
+		ret += 1 + int(i.Mates)
+	}
+	return ret
+}
