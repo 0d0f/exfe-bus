@@ -1,8 +1,10 @@
 package main
 
 import (
+	"business"
 	"daemon"
 	"fmt"
+	"formatter"
 	"github.com/googollee/go-logger"
 	"github.com/googollee/godis"
 	"gobus"
@@ -17,6 +19,7 @@ func main() {
 	log, err := logger.New(output, "service bus", logger.Lshortfile)
 	if err != nil {
 		panic(err)
+		return
 	}
 	config.Log = log
 
@@ -26,6 +29,7 @@ func main() {
 	if err != nil {
 		log.Crit("create token manager failed: %s", err)
 		os.Exit(-1)
+		return
 	}
 
 	iom := NewIom(&config, redis)
@@ -34,7 +38,16 @@ func main() {
 	if err != nil {
 		log.Crit("create thirdpart failed: %s", err)
 		os.Exit(-1)
+		return
 	}
+
+	localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
+	if err != nil {
+		log.Crit("load local template failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	cross := business.NewCross(localTemplate, &config)
 
 	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
@@ -43,15 +56,18 @@ func main() {
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
+		return
 	}
 	bus.Register(tkMng)
 	bus.Register(iom)
 	bus.Register(thirdpart)
+	bus.Register(cross)
 
 	go func() {
 		<-quit
 		log.Info("quit")
 		os.Exit(-1)
+		return
 	}()
 	bus.ListenAndServe()
 }

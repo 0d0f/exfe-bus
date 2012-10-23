@@ -161,7 +161,7 @@ func (c *Cross) Summary(updates []model.Update) error {
 		return fmt.Errorf("can't get content: %s", err)
 	}
 
-	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
+	url := fmt.Sprintf("http://%s:%d", c.config.ExfeService.Addr, c.config.ExfeService.Port)
 	client, err := gobus.NewClient(fmt.Sprintf("%s/%s", url, "Thirdpart"))
 	if err != nil {
 		return fmt.Errorf("can't create gobus client: %s", err)
