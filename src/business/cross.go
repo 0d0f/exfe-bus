@@ -193,13 +193,22 @@ func (c *Cross) getContent(updates []model.Update) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
+
 	templateName := fmt.Sprintf("cross_summary.%s", messageType)
-	buf := bytes.NewBuffer(nil)
-	err = c.localTemplate.Execute(buf, arg.To.Language, templateName, arg)
+	private := bytes.NewBuffer(nil)
+	err = c.localTemplate.Execute(private, arg.To.Language, templateName, arg)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("private template(%s) failed: %s", templateName, err)
 	}
-	return buf.String(), "public", nil
+
+	templateName = "cross_summary_public.txt"
+	public := bytes.NewBuffer(nil)
+	err = c.localTemplate.Execute(public, arg.To.Language, templateName, arg)
+	if err != nil {
+		return "", "", fmt.Errorf("public template(%s) failed: %s", templateName, err)
+	}
+
+	return private.String(), public.String(), nil
 }
 
 func in(id *model.Invitation, ids []model.Invitation) bool {
