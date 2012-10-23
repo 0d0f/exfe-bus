@@ -19,7 +19,7 @@ type Identity struct {
 	OAuthToken       string `json:"oauth_token,omitempty"`
 }
 
-func (i Identity) Equal(other *Identity) bool {
+func (i Identity) Equal(other Identity) bool {
 	if i.ID == other.ID {
 		return true
 	}
@@ -34,7 +34,7 @@ func (i Identity) Equal(other *Identity) bool {
 	return false
 }
 
-func (i Identity) SameUser(other *Identity) bool {
+func (i Identity) SameUser(other Identity) bool {
 	if i.Equal(other) {
 		return true
 	}
