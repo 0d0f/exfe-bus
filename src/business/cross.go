@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"formatter"
+	"gobus"
 	"model"
+	"service/args"
 	"thirdpart"
 )
 
@@ -154,29 +156,50 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config) *Cro
 }
 
 func (c *Cross) Summary(updates []model.Update) error {
-	_, err := c.getContent(updates)
+	private, public, err := c.getContent(updates)
 	if err != nil {
-		return err
+		return fmt.Errorf("can't get content: %s", err)
+	}
+
+	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
+	client, err := gobus.NewClient(fmt.Sprintf("%s/%s", url, "Thirdpart"))
+	if err != nil {
+		return fmt.Errorf("can't create gobus client: %s", err)
+	}
+
+	arg := args.SendArg{
+		To:             &updates[0].To,
+		PrivateMessage: private,
+		PublicMessage:  public,
+		Info: &thirdpart.InfoData{
+			CrossID: updates[0].Cross.ID,
+			Type:    thirdpart.CrossUpdate,
+		},
+	}
+	var i int
+	err = client.Do("Send", &arg, &i)
+	if err != nil {
+		return fmt.Errorf("send error: %s", err)
 	}
 	return nil
 }
 
-func (c *Cross) getContent(updates []model.Update) (string, error) {
+func (c *Cross) getContent(updates []model.Update) (string, string, error) {
 	arg, err := SummaryFromUpdates(updates, c.config)
 	if err != nil {
-		return "", fmt.Errorf("can't parse update: %s", err)
+		return "", "", fmt.Errorf("can't parse update: %s", err)
 	}
 	messageType, err := thirdpart.MessageTypeFromProvider(arg.To.Provider)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	templateName := fmt.Sprintf("cross_summary.%s", messageType)
 	buf := bytes.NewBuffer(nil)
 	err = c.localTemplate.Execute(buf, arg.To.Language, templateName, arg)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return buf.String(), nil
+	return buf.String(), "public", nil
 }
 
 func in(id *model.Invitation, ids []model.Invitation) bool {

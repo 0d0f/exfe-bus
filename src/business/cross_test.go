@@ -373,7 +373,8 @@ func TestCrossSummary(t *testing.T) {
 	t.Errorf("%+v\n", updates)
 
 	c := NewCross(localTemplate, &config)
-	content, err := c.getContent(updates)
+	private, public, err := c.getContent(updates)
 	t.Logf("err: %s", err)
-	t.Errorf("content:-----start------\n%s\n-------end-------", content)
+	t.Errorf("private:-----start------\n%s\n-------end-------", private)
+	t.Errorf("public:-----start------\n%s\n-------end-------", public)
 }
