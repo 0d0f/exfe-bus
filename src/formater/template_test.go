@@ -7,6 +7,19 @@ import (
 	"testing"
 )
 
+func TestTemplateEqual(t *testing.T) {
+	templ, err := NewTemplate("test").Parse(`{{equal 1 1}}{{equal "a" "1"}}`)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	buf := bytes.NewBuffer(nil)
+	err = templ.Execute(buf, nil)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	assert.Equal(t, buf.String(), "truefalse", "should equal")
+}
+
 func TestTemplateReplace(t *testing.T) {
 	templ, err := NewTemplate("test").Parse(`{{replace "12345" "12" "ab"}}`)
 	if err != nil {

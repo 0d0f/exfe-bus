@@ -21,6 +21,11 @@ func NewTemplate(name string) *template.Template {
 	ret := template.New(name)
 
 	funcs := template.FuncMap{
+		"equal": func(a, b interface{}) bool {
+			va := reflect.ValueOf(a)
+			vb := reflect.ValueOf(b)
+			return va.String() == vb.String()
+		},
 		"replace": func(str, from, to string) string {
 			return strings.Replace(str, from, to, -1)
 		},
@@ -51,7 +56,7 @@ func NewTemplate(name string) *template.Template {
 			}
 			ret := make([]ForElement, v.Len())
 			for i, n := 0, v.Len(); i < n; i++ {
-				ret[i].V = v.Index(i)
+				ret[i].V = v.Index(i).Interface()
 				ret[i].Index = i + 1
 				ret[i].Last = i == (n - 1)
 			}
