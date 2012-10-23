@@ -75,3 +75,23 @@ func TestTemplateFor(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, buf.String(), "1 - a, 2 - b, 3 - c, 4 - d")
 }
+
+func TestLocalTemplate(t *testing.T) {
+	l, err := NewLocalTemplate("./template_test", "en_US")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, l.defaultLang, "en_US")
+	_, ok := l.templates["en_US"]
+	assert.Equal(t, ok, true)
+
+	buf := bytes.NewBuffer(nil)
+	l.Execute(buf, "en_US", "test.template", nil)
+	assert.Equal(t, buf.String(), "1234\n")
+
+	buf.Reset()
+	l.Execute(buf, "zh_CN", "test.template", nil)
+	assert.Equal(t, buf.String(), "abcd\n")
+
+	buf.Reset()
+	l.Execute(buf, "en_CN", "test.template", nil)
+	assert.Equal(t, buf.String(), "1234\n")
+}

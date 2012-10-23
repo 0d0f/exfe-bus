@@ -73,7 +73,7 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 	}
 	for _, i := range infos {
 		template := NewTemplate(i.Name())
-		_, err := template.ParseGlob(fmt.Sprintf("path/%s/*"))
+		_, err := template.ParseGlob(fmt.Sprintf("%s/%s/*", path, i.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("can't parse %s/%s: %s", path, i.Name(), err)
 		}
