@@ -1,7 +1,6 @@
 package main
 
 import (
-	"business"
 	"daemon"
 	"fmt"
 	"formatter"
@@ -47,8 +46,7 @@ func main() {
 		os.Exit(-1)
 		return
 	}
-	cross := business.NewCross(localTemplate, &config)
-	conversation := business.NewConversation(localTemplate, &config)
+	conversation := NewConversation(localTemplate, &config)
 
 	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
@@ -62,7 +60,6 @@ func main() {
 	bus.Register(tkMng)
 	bus.Register(iom)
 	bus.Register(thirdpart)
-	bus.Register(cross)
 	bus.Register(conversation)
 
 	go func() {
