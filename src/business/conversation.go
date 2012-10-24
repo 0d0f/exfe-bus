@@ -27,7 +27,11 @@ func ArgFromUpdates(updates []model.ConversationUpdate, config *model.Config) (*
 	cross := updates[0].Cross
 	posts := make([]*model.Post, len(updates))
 
+	needSend := false
 	for i, update := range updates {
+		if !to.SameUser(&update.Post.By) {
+			needSend = true
+		}
 		if !to.Equal(&update.To) {
 			return nil, fmt.Errorf("updates not send to same recipient: %s, %s", to, update.To)
 		}
@@ -35,6 +39,9 @@ func ArgFromUpdates(updates []model.ConversationUpdate, config *model.Config) (*
 			return nil, fmt.Errorf("updates not send to same exfee: %d, %d", cross.ID, update.Cross.ID)
 		}
 		posts[i] = &updates[i].Post
+	}
+	if !needSend {
+		return nil, fmt.Errorf("no need send self")
 	}
 
 	ret := &UpdateArg{

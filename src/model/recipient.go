@@ -21,6 +21,24 @@ func (r Recipient) Equal(other *Recipient) bool {
 	return r.IdentityID == other.IdentityID && r.UserID == other.UserID
 }
 
+func (r Recipient) SameUser(other *Identity) bool {
+	if r.UserID == other.UserID {
+		return true
+	}
+	if r.IdentityID == other.ID {
+		return true
+	}
+	if r.Provider == other.Provider {
+		if r.ExternalID == other.ExternalID {
+			return true
+		}
+		if r.ExternalUsername == other.ExternalUsername {
+			return true
+		}
+	}
+	return false
+}
+
 func (r Recipient) String() string {
 	return fmt.Sprintf("Recipient:%s(%s)@%s(i%d/u%d/t%s)", r.ExternalUsername, r.ExternalID, r.Provider, r.IdentityID, r.UserID, r.Token)
 }
