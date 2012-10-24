@@ -10,7 +10,11 @@ type Cross struct {
 	Exfee       Exfee     `json:"exfee"`
 }
 
-type Update struct {
+func (c Cross) Equal(other *Cross) bool {
+	return c.ID == other.ID
+}
+
+type CrossUpdate struct {
 	To       Recipient `json:"to"`
 	OldCross Cross     `json:"old_cross"`
 	Cross    Cross     `json:"cross"`

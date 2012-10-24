@@ -2,6 +2,7 @@ package model
 
 type Exfee struct {
 	ID          uint64       `json:"id"`
+	Name        string       `json:"name"`
 	Invitations []Invitation `json:"invitations"`
 
 	Accepted   []Invitation `json:"-"`
@@ -30,10 +31,14 @@ func (e *Exfee) Parse() {
 	}
 }
 
-func (e *Exfee) TotalAccepted() int {
+func (e Exfee) TotalAccepted() int {
 	ret := 0
 	for _, i := range e.Accepted {
 		ret += 1 + int(i.Mates)
 	}
 	return ret
+}
+
+func (e Exfee) Equal(other *Exfee) bool {
+	return e.ID == other.ID
 }

@@ -6,13 +6,11 @@ import (
 )
 
 type Post struct {
-	ID           uint64   `json:"id"`
-	By           Identity `json:"by_identity"`
-	Content      string   `json:"content"`
-	PostableID   uint64   `json:"postable_id"`
-	PostableType string   `json:"postable_type"`
-	Via          string   `json:"via"`
-	CreatedAt    string   `json:"created_at"`
+	ID        uint64   `json:"id"`
+	By        Identity `json:"by_identity"`
+	Content   string   `json:"content"`
+	Via       string   `json:"via"`
+	CreatedAt string   `json:"created_at"`
 	/*Relative map[string]string*/
 }
 
@@ -31,4 +29,10 @@ func (p *Post) CreatedAtInZone(timezone string) (string, error) {
 	}
 	t = t.In(loc)
 	return t.Format("03:04PM Mon, Jan 2"), nil
+}
+
+type PostUpdate struct {
+	To    Recipient `json:"recipient"`
+	Cross Cross     `json:"cross"`
+	Post  Post      `json:"post"`
 }

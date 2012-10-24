@@ -26,7 +26,7 @@ type SummaryArg struct {
 	NewPending    []model.Invitation `json:"-"`
 }
 
-func SummaryFromUpdates(updates []model.Update, config *model.Config) (*SummaryArg, error) {
+func SummaryFromUpdates(updates []model.CrossUpdate, config *model.Config) (*SummaryArg, error) {
 	if updates == nil && len(updates) == 0 {
 		return nil, fmt.Errorf("no update info")
 	}
@@ -98,7 +98,6 @@ Bys:
 			ret.Removed = append(ret.Removed, i)
 		}
 	}
-	fmt.Printf("%+v\n", ret)
 	return ret, nil
 }
 
@@ -155,7 +154,7 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config) *Cro
 	}
 }
 
-func (c *Cross) Summary(updates []model.Update) error {
+func (c *Cross) Summary(updates []model.CrossUpdate) error {
 	private, public, err := c.getContent(updates)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
@@ -184,7 +183,7 @@ func (c *Cross) Summary(updates []model.Update) error {
 	return nil
 }
 
-func (c *Cross) getContent(updates []model.Update) (string, string, error) {
+func (c *Cross) getContent(updates []model.CrossUpdate) (string, string, error) {
 	arg, err := SummaryFromUpdates(updates, c.config)
 	if err != nil {
 		return "", "", fmt.Errorf("can't parse update: %s", err)
@@ -201,7 +200,7 @@ func (c *Cross) getContent(updates []model.Update) (string, string, error) {
 		return "", "", fmt.Errorf("private template(%s) failed: %s", templateName, err)
 	}
 
-	templateName = "cross_summary_public.txt"
+	templateName = fmt.Sprintf("cross_summary_public.%s", messageType)
 	public := bytes.NewBuffer(nil)
 	err = c.localTemplate.Execute(public, arg.To.Language, templateName, arg)
 	if err != nil {
