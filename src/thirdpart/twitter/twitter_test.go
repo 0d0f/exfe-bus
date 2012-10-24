@@ -34,6 +34,9 @@ func copyValues(value url.Values) url.Values {
 }
 
 func (b *FakeBroker) Do(accessToken *thirdpart.Token, cmd, path string, params url.Values) (io.ReadCloser, error) {
+	if path == "direct_messages/new.json" && params.Get("user_id") == "12345" {
+		return nil, fmt.Errorf(`{"code":150}`)
+	}
 	b.cmds = append(b.cmds, cmd)
 	b.paths = append(b.paths, path)
 	b.params = append(b.params, copyValues(params))
@@ -81,20 +84,40 @@ func TestSend(t *testing.T) {
 		if got, expect := broker.cmds[0], "POST"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
+		if got, expect := broker.paths[0], "statuses/update.json"; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
+		if got, expect := broker.params[0].Get("status"), "@publicer public message"; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
+	}
+	{
+		broker.Reset()
+		id, err := tester.Send(toPrivate, "private message", "public message", nil)
+		if err != nil {
+			t.Fatalf("send fail: %s", err)
+		}
+
+		if got, expect := id, "1"; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
+		if got, expect := broker.cmds[0], "POST"; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
 		if got, expect := broker.paths[0], "direct_messages/new.json"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 		if got, expect := broker.params[0].Get("text"), "private message"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
-		if got, expect := broker.params[0].Get("user_id"), "12345"; got != expect {
+		if got, expect := broker.params[0].Get("user_id"), "54321"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 	}
 
 	{
 		broker.Reset()
-		id, err := tester.Send(toPublic, `\(AAAAAAAA name1\), \(AAAAAAAA name2\) and \(AAAAAAAA name3\) are accepted on \(“some cross”\), \(IIIII name1\), \(IIIII name2\) and \(IIIII name3\) interested, \(UUUU name1\), \(UUUU name2\) and \(UUUU name3\) are unavailable, \(PPPPPPP name1\), \(PPPPPPP name2\) and \(PPPPPPP name3\) are pending. \(3 of 10 accepted\). https://exfe.com/#!token=932ce5324321433253`, "public message", nil)
+		id, err := tester.Send(toPrivate, `\(AAAAAAAA name1\), \(AAAAAAAA name2\) and \(AAAAAAAA name3\) are accepted on \(“some cross”\), \(IIIII name1\), \(IIIII name2\) and \(IIIII name3\) interested, \(UUUU name1\), \(UUUU name2\) and \(UUUU name3\) are unavailable, \(PPPPPPP name1\), \(PPPPPPP name2\) and \(PPPPPPP name3\) are pending. \(3 of 10 accepted\). https://exfe.com/#!token=932ce5324321433253`, "public message", nil)
 		if err != nil {
 			t.Fatalf("send fail: %s", err)
 		}
@@ -116,10 +139,101 @@ func TestSend(t *testing.T) {
 			`https://exfe.com/#!token=932ce5324321433253 (3/3)`,
 		}
 		for i := 0; i < 3; i++ {
-			if got, expect := broker.params[i].Get("user_id"), "12345"; got != expect {
+			if got, expect := broker.params[i].Get("user_id"), "54321"; got != expect {
 				t.Errorf("got: %s, expect: %s", got, expect)
 			}
 			if got, expect := broker.params[i].Get("text"), results[i]; got != expect {
+				t.Errorf("got: %s, expect: %s", got, expect)
+			}
+		}
+	}
+
+	{
+		broker.Reset()
+		id, err := tester.Send(toPublic, "private", `\(AAAAAAAA name1\), \(AAAAAAAA name2\) and \(AAAAAAAA name3\) are accepted on \(“some cross”\), \(IIIII name1\), \(IIIII name2\) and \(IIIII name3\) interested, \(UUUU name1\), \(UUUU name2\) and \(UUUU name3\) are unavailable, \(PPPPPPP name1\), \(PPPPPPP name2\) and \(PPPPPPP name3\) are pending. \(3 of 10 accepted\). https://exfe.com/#!token=932ce5324321433253`, nil)
+		if err != nil {
+			t.Fatalf("send fail: %s", err)
+		}
+
+		if got, expect := id, "1,2,3"; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
+		for i := 0; i < 3; i++ {
+			if got, expect := broker.cmds[i], "POST"; got != expect {
+				t.Errorf("got: %s, expect: %s", got, expect)
+			}
+			if got, expect := broker.paths[i], "statuses/update.json"; got != expect {
+				t.Errorf("got: %s, expect: %s", got, expect)
+			}
+		}
+		results := []string{
+			`@publicer AAAAAAAA name1, AAAAAAAA name2 and AAAAAAAA name3 are accepted on “some cross”, IIIII name1, IIIII name2 and IIIII name3…(1/3)`,
+			`@publicer interested, UUUU name1, UUUU name2 and UUUU name3 are unavailable, PPPPPPP name1, PPPPPPP name2 and PPPPPPP name3 are…(2/3)`,
+			`@publicer pending. 3 of 10 accepted. https://exfe.com/#!token=932ce5324321433253 (3/3)`,
+		}
+		for i := 0; i < 3; i++ {
+			if got, expect := broker.params[i].Get("status"), results[i]; got != expect {
+				t.Errorf("got: %s, expect: %s", got, expect)
+			}
+		}
+	}
+
+	{
+		broker.Reset()
+		id, err := tester.Send(toPrivate, "post line1\npost line2\n\n\n", "public message", nil)
+		if err != nil {
+			t.Fatalf("send fail: %s", err)
+		}
+
+		if got, expect := id, "1,2"; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
+		for i := 0; i < 2; i++ {
+			if got, expect := broker.cmds[i], "POST"; got != expect {
+				t.Errorf("got: %s, expect: %s", got, expect)
+			}
+			if got, expect := broker.paths[i], "direct_messages/new.json"; got != expect {
+				t.Errorf("got: %s, expect: %s", got, expect)
+			}
+		}
+		results := []string{
+			`post line1`,
+			`post line2`,
+		}
+		for i := 0; i < 2; i++ {
+			if got, expect := broker.params[i].Get("user_id"), "54321"; got != expect {
+				t.Errorf("got: %s, expect: %s", got, expect)
+			}
+			if got, expect := broker.params[i].Get("text"), results[i]; got != expect {
+				t.Errorf("got: %s, expect: %s", got, expect)
+			}
+		}
+	}
+
+	{
+		broker.Reset()
+		id, err := tester.Send(toPublic, "private", "post line1\npost line2\n\n\n", nil)
+		if err != nil {
+			t.Fatalf("send fail: %s", err)
+		}
+
+		if got, expect := id, "1,2"; got != expect {
+			t.Errorf("got: %s, expect: %s", got, expect)
+		}
+		for i := 0; i < 2; i++ {
+			if got, expect := broker.cmds[i], "POST"; got != expect {
+				t.Errorf("got: %s, expect: %s", got, expect)
+			}
+			if got, expect := broker.paths[i], "statuses/update.json"; got != expect {
+				t.Errorf("got: %s, expect: %s", got, expect)
+			}
+		}
+		results := []string{
+			`@publicer post line1`,
+			`@publicer post line2`,
+		}
+		for i := 0; i < 2; i++ {
+			if got, expect := broker.params[i].Get("status"), results[i]; got != expect {
 				t.Errorf("got: %s, expect: %s", got, expect)
 			}
 		}

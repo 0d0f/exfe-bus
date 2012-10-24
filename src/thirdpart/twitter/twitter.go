@@ -50,38 +50,64 @@ type twitterReply struct {
 }
 
 func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (string, error) {
+	ids, err := t.sendPrivate(to, privateMessage)
+	if err != nil && strings.Index(err.Error(), `"code":150`) > 0 {
+		ids, err = t.sendPublic(to, publicMessage)
+	}
+
+	if ids != "" {
+		ids = ids[1:]
+	}
+	return ids, nil
+}
+
+func (t *Twitter) sendPrivate(to *model.Recipient, message string) (string, error) {
 	params := make(url.Values)
 	params.Set(t.identity(to))
-	var err error
 	var resp io.ReadCloser
-	cutter, err := formatter.CutterParse(privateMessage, twitterLen)
-	if err != nil {
-		return "", fmt.Errorf("parse %s private message failed: %s", to, err)
-	}
 	ids := ""
-	for _, content := range cutter.Limit(140) {
-		params.Set("text", content)
-		resp, err = t.broker.Do(t.accessToken, "POST", "direct_messages/new.json", params)
-		if err != nil {
-			break
+	for _, line := range strings.Split(message, "\n") {
+		line = strings.Trim(line, " \r\n\t")
+		if line == "" {
+			continue
 		}
-		decoder := json.NewDecoder(resp)
-		var reply twitterReply
-		err = decoder.Decode(&reply)
+		cutter, err := formatter.CutterParse(line, twitterLen)
 		if err != nil {
-			return "", fmt.Errorf("parse %s reply error: %s", to, err)
+			return "", fmt.Errorf("parse %s private message failed: %s", to, err)
 		}
-		ids = fmt.Sprintf("%s,%s", ids, reply.IDstr)
+		for _, content := range cutter.Limit(140) {
+			params.Set("text", content)
+			resp, err = t.broker.Do(t.accessToken, "POST", "direct_messages/new.json", params)
+			if err != nil {
+				return "", err
+			}
+			decoder := json.NewDecoder(resp)
+			var reply twitterReply
+			err = decoder.Decode(&reply)
+			if err != nil {
+				return "", fmt.Errorf("parse %s reply error: %s", to, err)
+			}
+			ids = fmt.Sprintf("%s,%s", ids, reply.IDstr)
+		}
 	}
-	if err != nil && strings.Index(err.Error(), `"code":150`) > 0 {
-		ids = ""
-		params := make(url.Values)
-		cutter, err := formatter.CutterParse(publicMessage, twitterLen)
+	return ids, nil
+}
+
+func (t *Twitter) sendPublic(to *model.Recipient, message string) (string, error) {
+	ids := ""
+	params := make(url.Values)
+	var resp io.ReadCloser
+	for _, line := range strings.Split(message, "\n") {
+		line = strings.Trim(line, " \r\n\t")
+		if line == "" {
+			continue
+		}
+		cutter, err := formatter.CutterParse(line, twitterLen)
 		if err != nil {
 			return "", fmt.Errorf("parse %s public message failed: %s", to, err)
 		}
-		for _, content := range cutter.Limit(140) {
-			params.Set("status", content)
+		for _, content := range cutter.Limit(140 - len(to.ExternalUsername) - 2) {
+			params.Set("status", fmt.Sprintf("@%s %s", to.ExternalUsername, content))
 			resp, err = t.broker.Do(t.accessToken, "POST", "statuses/update.json", params)
 			if err != nil {
 				return "", fmt.Errorf("send to %s fail: %s", to, err)
@@ -95,8 +121,7 @@ func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage
 			ids = fmt.Sprintf("%s,%s", ids, reply.IDstr)
 		}
 	}
-
-	return ids[1:], nil
+	return ids, nil
 }
 
 func (t *Twitter) UpdateIdentity(to *model.Recipient) error {
