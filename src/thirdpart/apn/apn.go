@@ -6,6 +6,7 @@ import (
 	"github.com/virushuo/Go-Apns"
 	"model"
 	"regexp"
+	"strings"
 	"thirdpart"
 )
 
@@ -43,38 +44,48 @@ func (a *Apn) MessageType() thirdpart.MessageType {
 }
 
 func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (string, error) {
-	privateMessage = urlRegex.ReplaceAllString(privateMessage, "")
-	cutter, err := formatter.CutterParse(privateMessage, apnLen)
-	if err != nil {
-		return "", fmt.Errorf("parse cutter error: %s", err)
-	}
-
 	ids := ""
-	for _, content := range cutter.Limit(140) {
-		id := a.id
-		a.id++
-		ids = fmt.Sprintf("%s,%d", ids, id)
-
-		payload := apns.Payload{}
-		payload.Aps.Alert = content
-		payload.Aps.Badge = 1
-		payload.Aps.Sound = ""
-		payload.SetCustom("args", ExfePush{
-			Cid: data.CrossID,
-			T:   data.Type.String(),
-		})
-		notification := apns.Notification{
-			DeviceToken: to.ExternalID,
-			Identifier:  id,
-			Payload:     &payload,
+	privateMessage = urlRegex.ReplaceAllString(privateMessage, "")
+	for _, line := range strings.Split(privateMessage, "\n") {
+		line = strings.Trim(line, " \n\r\t")
+		if line == "" {
+			continue
 		}
 
-		err := a.broker.Send(&notification)
+		cutter, err := formatter.CutterParse(line, apnLen)
 		if err != nil {
-			return ids, fmt.Errorf("send %d error: %s", id, err)
+			return "", fmt.Errorf("parse cutter error: %s", err)
+		}
+
+		for _, content := range cutter.Limit(140) {
+			id := a.id
+			a.id++
+			ids = fmt.Sprintf("%s,%d", ids, id)
+
+			payload := apns.Payload{}
+			payload.Aps.Alert = content
+			payload.Aps.Badge = 1
+			payload.Aps.Sound = ""
+			payload.SetCustom("args", ExfePush{
+				Cid: data.CrossID,
+				T:   data.Type.String(),
+			})
+			notification := apns.Notification{
+				DeviceToken: to.ExternalID,
+				Identifier:  id,
+				Payload:     &payload,
+			}
+
+			err := a.broker.Send(&notification)
+			if err != nil {
+				return ids, fmt.Errorf("send %d error: %s", id, err)
+			}
 		}
 	}
-	return ids[1:], nil
+	if ids != "" {
+		ids = ids[1:]
+	}
+	return ids, nil
 }
 
 type ExfePush struct {

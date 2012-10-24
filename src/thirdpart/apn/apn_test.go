@@ -71,4 +71,24 @@ func TestSend(t *testing.T) {
 			}
 		}
 	}
+
+	{
+		broker.Reset()
+		_, err := tester.Send(to, "post line1\npost line2", "public message", data)
+		if err != nil {
+			t.Fatalf("send error: %s", err)
+		}
+		results := []string{
+			`post line1`,
+			`post line2`,
+		}
+		if got, expect := len(broker.notifications), len(results); got != expect {
+			t.Errorf("got: %d, expect: %d", got, expect)
+		}
+		for i, r := range results {
+			if got, expect := broker.notifications[i].Payload.Aps.Alert, r; got != expect {
+				t.Errorf("%d got: %s, expect %s", i, got, expect)
+			}
+		}
+	}
 }
