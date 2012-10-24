@@ -8,7 +8,7 @@ BEGIN:VEVENT
 UID:!{{.Cross.ID}}@exfe
 DTSTAMP:{{$time := .Cross.Time.BeginAt.UTCTime "20060102T150405Z"}}{{$time}}
 DESCRIPTION:{{.Cross.Description | limit 233 | replace "\n" "\\n"}}
-DTSTART:{{if .Cross.Time.BeginAt.Time}}{{$time}}{{else}}VALUE=DATE:{{.Cross.Time.Begin_at.UTCTime "20060102"}}{{end}}
+DTSTART:{{if .Cross.Time.BeginAt.Time}}{{$time}}{{else}}VALUE=DATE:{{.Cross.Time.BeginAt.UTCTime "20060102"}}{{end}}
 LOCATION:{{replace "\n" "\\n" .Cross.Place.Title}}{{if .Cross.Place.Description}}\n{{replace "\n" "\\n" .Cross.Place.Description}}{{end}}
 SUMMARY:{{.Cross.Title}}
 URL:{{.Link}}

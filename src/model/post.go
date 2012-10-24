@@ -31,7 +31,7 @@ func (p *Post) CreatedAtInZone(timezone string) (string, error) {
 	return t.Format("03:04PM Mon, Jan 2"), nil
 }
 
-type PostUpdate struct {
+type ConversationUpdate struct {
 	To    Recipient `json:"recipient"`
 	Cross Cross     `json:"cross"`
 	Post  Post      `json:"post"`

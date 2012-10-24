@@ -334,8 +334,8 @@ func TestCrossSummary(t *testing.T) {
 	})
 	cross2.Exfee.Invitations[3].RsvpStatus = model.RsvpAccepted
 
-	updates := []model.Update{
-		model.Update{
+	updates := []model.CrossUpdate{
+		model.CrossUpdate{
 			To:       remail1,
 			OldCross: cross2,
 			Cross:    cross1,
@@ -345,7 +345,7 @@ func TestCrossSummary(t *testing.T) {
 
 	cross2 = cross1
 	cross1.Time = time1
-	updates = append(updates, model.Update{
+	updates = append(updates, model.CrossUpdate{
 		To:       remail1,
 		OldCross: cross2,
 		Cross:    cross1,
@@ -354,7 +354,7 @@ func TestCrossSummary(t *testing.T) {
 
 	cross2 = cross1
 	cross1.Place = place1
-	updates = append(updates, model.Update{
+	updates = append(updates, model.CrossUpdate{
 		To:       remail1,
 		OldCross: cross2,
 		Cross:    cross1,
@@ -363,14 +363,12 @@ func TestCrossSummary(t *testing.T) {
 
 	cross2 = cross1
 	cross1.Title = "New Title"
-	updates = append(updates, model.Update{
+	updates = append(updates, model.CrossUpdate{
 		To:       remail1,
 		OldCross: cross2,
 		Cross:    cross1,
 		By:       twitter3,
 	})
-
-	t.Errorf("%+v\n", updates)
 
 	c := NewCross(localTemplate, &config)
 	private, public, err := c.getContent(updates)

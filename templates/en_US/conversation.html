@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+            .exfe_mail_identity_name {
+                color: #3a6ea5;
+            }
+            .exfe_mail_msg_identity_name {
+                color: #666666;
+            }
+            .exfe_mail_msg_at {
+                font-size: 12px;
+                color: #999999;
+            }
+            .exfe_mail_msg_time {
+                font-size: 12px;
+                color: #666666;
+            }
+        </style>
+    </head>
+    <body>
+        <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 20px; color: #191919; font-weight: normal; width: 640px; padding: 20px; background-color: #fbfbfb;">
+            <tr>
+                <td colspan="5">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                        {{$timezone := .To.Timezone}}{{$url := .Link}}
+                        {{range .Posts}}
+                        <tr>
+                            <td valign="top" width="50" align="left">
+                                <img width="40" height="40" title="{{.By.Name | replace `"` `\"`}}" alt="{{.By.Name | replace `"` `\"`}}" src="{{.By.Avatar}}">
+                            </td>
+                            <td valign="top">
+                                <a href="{{$url}}" style="text-decoration: none;">
+                                    <span style="color:#212121; text-decoration: none;">{{.Content | html}}</span>
+                                    <br />
+                                    <span style="font-size: 12px; color:#797979; text-decoration: none;">{{.By.Name | html}}</span> <span style="font-size: 12px; color:#A9A9A9; text-decoration: none;">at</span> <span  style="font-size: 12px; color:#797979; text-decoration: none;">{{.CreatedAtInZone $timezone | html}}</span>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr><td colspan="2" height="20"></td></tr>
+                        {{ end }}
+                    </table>
+                </td>
+            </tr>
+            <tr><td colspan="5" height="20"></td></tr>
+            <tr>
+                <td colspan="5" style="font-size: 11px; line-height: 15px; color: #7F7F7F;">
+                    Reply this email directly as conversation.<!--, or try <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.AppUrl}}">EXFE</a> app.-->
+                    <br />
+                    <span style="color: #B2B2B2">This update is sent from <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a> automatically. <a style="color: #E6E6E6; text-decoration: none;" href="{{.Config.SiteUrl}}/s/reportSpam?token={{.To.Token}}">Unsubscribe?</a>
+                    <!--
+                    You can change
+                    <a style="color: #B2B2B2; text-decoration: undeline;" href="">notification preference</a>.
+                    -->
+                    </span>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
