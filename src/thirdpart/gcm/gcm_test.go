@@ -69,7 +69,7 @@ func TestSend(t *testing.T) {
 
 	{
 		broker.Reset()
-		_, err := tester.Send(to, "post line1\npost line2", "", data)
+		_, err := tester.Send(to, "post line1\npost line2\n\n", "", data)
 		if err != nil {
 			t.Fatalf("send error: %s", err)
 		}

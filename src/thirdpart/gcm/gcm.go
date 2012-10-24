@@ -38,6 +38,10 @@ func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage str
 	privateMessage = urlRegex.ReplaceAllString(privateMessage, "")
 	for _, line := range strings.Split(privateMessage, "\n") {
 		line = strings.Trim(line, " \r\n\t")
+		if line == "" {
+			continue
+		}
+
 		cutter, err := formatter.CutterParse(line, gcmLen)
 		if err != nil {
 			return "", fmt.Errorf("parse cutter error: %s", err)
