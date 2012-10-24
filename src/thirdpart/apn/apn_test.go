@@ -53,7 +53,7 @@ func TestSend(t *testing.T) {
 
 	{
 		broker.Reset()
-		_, err := tester.Send(to, `\(AAAAAAAA name1\), \(AAAAAAAA name2\) and \(AAAAAAAA name3\) are accepted on \(“some cross”\), \(IIIII name1\), \(IIIII name2\) and \(IIIII name3\) interested, \(UUUU name1\), \(UUUU name2\) and \(UUUU name3\) are unavailable, \(PPPPPPP name1\), \(PPPPPPP name2\) and \(PPPPPPP name3\) are pending. \(3 of 10 accepted\). https://exfe.com/#!token=932ce5324321433253`, "public message", data)
+		_, err := tester.Send(to, `\(AAAAAAAA name1\), \(AAAAAAAA name2\) and \(AAAAAAAA name3\) are accepted on \(“some cross”\), \(IIIII name1\), \(IIIII name2\) and \(IIIII name3\) interested, \(UUUU name1\), \(UUUU name2\) and \(UUUU name3\) are unavailable, \(PPPPPPP name1\), \(PPPPPPP name2\) and \(PPPPPPP name3\) are pending. \(3 of 10 accepted\). https://exfe.com/#!token=932ce5324321433253`, "", data)
 		if err != nil {
 			t.Fatalf("send error: %s", err)
 		}
@@ -74,7 +74,7 @@ func TestSend(t *testing.T) {
 
 	{
 		broker.Reset()
-		_, err := tester.Send(to, "post line1\npost line2", "public message", data)
+		_, err := tester.Send(to, "post line1\npost line2", "", data)
 		if err != nil {
 			t.Fatalf("send error: %s", err)
 		}
