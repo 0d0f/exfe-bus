@@ -25,10 +25,6 @@ func (f *Facebook) Provider() string {
 	return provider
 }
 
-func (f *Facebook) MessageType() thirdpart.MessageType {
-	return thirdpart.EmailMessage
-}
-
 func (f *Facebook) Send(to *model.Recipient, privateMessage string, publicMessage string, info *thirdpart.InfoData) (string, error) {
 	return f.helper.SendEmail(fmt.Sprintf("%s@facebook.com", to.ExternalUsername), privateMessage)
 }

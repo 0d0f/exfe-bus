@@ -29,10 +29,6 @@ func (g *GCM) Provider() string {
 	return "Android"
 }
 
-func (g *GCM) MessageType() thirdpart.MessageType {
-	return thirdpart.ShortMessage
-}
-
 func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (id string, err error) {
 	ids := ""
 	privateMessage = urlRegex.ReplaceAllString(privateMessage, "")

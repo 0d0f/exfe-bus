@@ -71,7 +71,6 @@ type InfoData struct {
 
 type Sender interface {
 	Provider() string
-	MessageType() MessageType
 	Send(to *model.Recipient, privateMessage string, publicMessage string, data *InfoData) (id string, err error)
 }
 

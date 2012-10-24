@@ -25,10 +25,6 @@ func (f *Faker) Provider() string {
 	return f.provider
 }
 
-func (f *Faker) MessageType() MessageType {
-	return f.messageType
-}
-
 func (f *Faker) Send(to *model.Recipient, privateMessage string, publicMessage string, data *InfoData) (id string, err error) {
 	f.tos = append(f.tos, to)
 	f.privateMessages = append(f.privateMessages, privateMessage)

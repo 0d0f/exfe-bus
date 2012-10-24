@@ -19,10 +19,6 @@ func (e *Email) Provider() string {
 	return "email"
 }
 
-func (e *Email) MessageType() thirdpart.MessageType {
-	return thirdpart.EmailMessage
-}
-
 func (e *Email) Send(to *model.Recipient, privateMessage string, publicMessage string, info *thirdpart.InfoData) (string, error) {
 	return e.helper.SendEmail(to.ExternalID, privateMessage)
 }

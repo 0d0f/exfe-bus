@@ -39,10 +39,6 @@ func (a *Apn) Provider() string {
 	return "iOS"
 }
 
-func (a *Apn) MessageType() thirdpart.MessageType {
-	return thirdpart.ShortMessage
-}
-
 func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (string, error) {
 	ids := ""
 	privateMessage = urlRegex.ReplaceAllString(privateMessage, "")

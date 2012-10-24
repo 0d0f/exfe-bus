@@ -41,10 +41,6 @@ func (t *Twitter) Provider() string {
 	return provider
 }
 
-func (t *Twitter) MessageType() thirdpart.MessageType {
-	return thirdpart.ShortMessage
-}
-
 type twitterReply struct {
 	IDstr string `json:"id_str"`
 }
