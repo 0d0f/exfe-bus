@@ -48,6 +48,7 @@ func main() {
 		return
 	}
 	cross := business.NewCross(localTemplate, &config)
+	conversation := business.NewConversation(localTemplate, &config)
 
 	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
@@ -62,6 +63,7 @@ func main() {
 	bus.Register(iom)
 	bus.Register(thirdpart)
 	bus.Register(cross)
+	bus.Register(conversation)
 
 	go func() {
 		<-quit
