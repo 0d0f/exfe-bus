@@ -1,4 +1,4 @@
-package business
+package notifier
 
 import (
 	"github.com/stretchrcom/testify/assert"

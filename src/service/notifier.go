@@ -1,18 +1,18 @@
 package main
 
 import (
-	"business"
 	"formatter"
 	"model"
+	"notifier"
 )
 
 type Conversation struct {
-	conversation *business.Conversation
+	conversation *notifier.Conversation
 }
 
 func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Config) *Conversation {
 	return &Conversation{
-		conversation: business.NewConversation(localTemplate, config),
+		conversation: notifier.NewConversation(localTemplate, config),
 	}
 }
 
