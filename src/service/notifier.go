@@ -20,6 +20,6 @@ func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Confi
 //
 // Cross内容太长，懒得写例子了……
 //
-func (c *Conversation) Update(updates []model.ConversationUpdate) error {
+func (c *Conversation) Update(updates []model.ConversationUpdate, i *int) error {
 	return c.conversation.Update(updates)
 }
