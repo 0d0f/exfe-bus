@@ -33,6 +33,11 @@
     "addr": "127.0.0.1",
     "port": 23333
   },
+  "exfe_queue": {
+    "addr": "127.0.0.1",
+    "port": 23334
+  },
+
   "token_manager": {
     "table_name": "tokens"
   },
