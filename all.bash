@@ -7,6 +7,7 @@ go get $1 github.com/googollee/go-encoding-ex
 go get $1 github.com/sloonz/go-iconv
 go get $1 github.com/googollee/go-logger
 go get $1 code.google.com/p/go-mysql-driver/mysql
+go get $1 launchpad.net/tomb
 cat build.list | while read l;
 do
   GOPATH=$GOPATH:$(pwd) go install $1 $l

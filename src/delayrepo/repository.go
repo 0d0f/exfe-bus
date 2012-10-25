@@ -3,6 +3,7 @@ package delayrepo
 import (
 	"errors"
 	"github.com/googollee/go-logger"
+	"launchpad.net/tomb"
 	"time"
 )
 
@@ -17,23 +18,31 @@ var ChangedError = errors.New("Repository changed while poping.")
 
 type Callback func(key string, datas [][]byte)
 
-func ServRepository(log *logger.SubLogger, repo Repository, quit chan int, f Callback) {
-	for {
-		next, err := repo.NextWakeup()
-		if err != nil {
-			log.Crit("next wake up failed: %s", err)
-		}
-		select {
-		case <-quit:
-			log.Info("quit")
-			return
-		case <-time.After(next):
-			key, datas, err := repo.Pop()
+func ServRepository(log *logger.SubLogger, repo Repository, f Callback) *tomb.Tomb {
+	var tomb tomb.Tomb
+
+	go func() {
+		defer tomb.Done()
+
+		for {
+			next, err := repo.NextWakeup()
 			if err != nil {
-				log.Crit("pop failed: %s", err)
-				continue
+				log.Crit("next wake up failed: %s", err)
 			}
-			f(key, datas)
+			select {
+			case <-tomb.Dying():
+				log.Info("quit")
+				return
+			case <-time.After(next):
+				key, datas, err := repo.Pop()
+				if err != nil {
+					log.Crit("pop failed: %s", err)
+					continue
+				}
+				f(key, datas)
+			}
 		}
-	}
+	}()
+
+	return &tomb
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/googollee/go-logger"
 	"gobus"
+	"launchpad.net/tomb"
 	"model"
 	"os"
 	"strings"
@@ -51,7 +52,7 @@ func getCallback(log *logger.SubLogger, services map[string]*gobus.Client) func(
 func main() {
 	var config model.Config
 	output, quit := daemon.Init("exfe.json", &config)
-	quits := make([]chan int, 0)
+	tombs := make([]*tomb.Tomb, 0)
 
 	log, err := logger.New(output, "service bus", logger.Lshortfile)
 	if err != nil {
@@ -75,9 +76,8 @@ func main() {
 
 	instant := NewInstant(services)
 
-	head10mQuit := make(chan int)
-	head10m := NewHead10m(services, &config, head10mQuit)
-	quits = append(quits, head10mQuit)
+	head10m, head10mTomb := NewHead10m(services, &config)
+	tombs = append(tombs, head10mTomb)
 
 	url := fmt.Sprintf("http://%s:%d", config.ExfeQueue.Addr, config.ExfeQueue.Port)
 	log.Info("start at %s", url)
@@ -94,8 +94,9 @@ func main() {
 
 	go func() {
 		<-quit
-		for i, _ := range quits {
-			quits[i] <- 1
+		for i, _ := range tombs {
+			tombs[i].Kill(nil)
+			tombs[i].Wait()
 		}
 		log.Info("quit")
 		os.Exit(-1)

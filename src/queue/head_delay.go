@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gobus"
+	"launchpad.net/tomb"
 	"model"
 )
 
@@ -15,19 +16,19 @@ type Head struct {
 	config   *model.Config
 }
 
-func NewHead(services map[string]*gobus.Client, delayInMinute int, config *model.Config, quit chan int) *Head {
+func NewHead(services map[string]*gobus.Client, delayInMinute int, config *model.Config) (*Head, *tomb.Tomb) {
 	name := fmt.Sprintf("delayrepo:head_%sm", delayInMinute)
 	delay := delayInMinute * 60
 	redis := broker.NewRedisImp()
 	repo := delayrepo.NewHead(name, delay, redis)
 	log := config.Log.SubPrefix(name)
-	go delayrepo.ServRepository(log, repo, quit, getCallback(log, services))
+	tomb := delayrepo.ServRepository(log, repo, getCallback(log, services))
 
 	return &Head{
 		services: services,
 		repo:     repo,
 		config:   config,
-	}
+	}, tomb
 }
 
 func (i *Head) Push(meta gobus.HTTPMeta, arg PushArg, count *int) error {
@@ -47,8 +48,7 @@ type Head10m struct {
 	*Head
 }
 
-func NewHead10m(services map[string]*gobus.Client, config *model.Config, quit chan int) *Head10m {
-	return &Head10m{
-		NewHead(services, 10, config, quit),
-	}
+func NewHead10m(services map[string]*gobus.Client, config *model.Config) (*Head10m, *tomb.Tomb) {
+	repo, tomb := NewHead(services, 10, config)
+	return &Head10m{repo}, tomb
 }

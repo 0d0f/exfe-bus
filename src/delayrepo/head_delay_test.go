@@ -16,10 +16,9 @@ func TestHead(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	quit := make(chan int)
 	q = NewHead("hdt", 2, redis)
 
-	go ServRepository(log.SubPrefix("serv"), q, quit, func(key string, data [][]byte) {
+	tomb := ServRepository(log.SubPrefix("serv"), q, func(key string, data [][]byte) {
 		assert.Equal(t, key, "test1")
 		assert.Equal(t, fmt.Sprintf("%+v", data), "[[48] [49] [50] [51] [52] [53] [54] [55] [56] [57]]")
 	})
@@ -35,5 +34,6 @@ func TestHead(t *testing.T) {
 	assert.Equal(t, err, nil)
 	time.Sleep(next * 3 / 2)
 
-	quit <- 1
+	tomb.Kill(nil)
+	tomb.Wait()
 }
