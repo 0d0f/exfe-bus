@@ -1,6 +1,7 @@
 package delayrepo
 
 import (
+	"broker"
 	"github.com/googollee/godis"
 )
 
@@ -8,7 +9,7 @@ type Redis struct {
 	redis *godis.Client
 }
 
-func (r *Redis) NewPipeClient() RedisPipeBroker {
+func (r *Redis) NewPipeClient() broker.RedisPipe {
 	return godis.NewPipeClientFromClient(r.redis)
 }
 

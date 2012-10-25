@@ -1,29 +1,19 @@
 package delayrepo
 
 import (
-	"errors"
+	"broker"
 	"fmt"
 	"time"
 )
-
-type Queue interface {
-	Push(key string, data []byte) error
-	Pop() ([][]byte, error)
-	NextWakeup() (time.Duration, error)
-}
-
-var EmptyQueueError = errors.New("Empty queue.")
-var QueueChangedError = errors.New("Queue changed before pop")
-var QueueFullError = errors.New("Queue is full, wait and try again")
 
 type timeSaver interface {
 	SaveTime(time int64, key string) error
 }
 
 type delay struct {
-	redis RedisBroker
+	redis broker.Redis
 
-	delayInSecond int64
+	delayInSecond int
 	redisPrefix   string
 	timeHashName  string
 	timeSaver     timeSaver
@@ -34,12 +24,16 @@ func (q *delay) Push(key string, data []byte) (err error) {
 	return
 }
 
-func (q *delay) Pop() ([][]byte, error) {
+func (q *delay) Pop() (string, [][]byte, error) {
 	key, err := q.getTimeoutKey()
-	if err == EmptyQueueError {
-		return nil, nil
+	if err == EmptyError {
+		return "", nil, nil
 	}
-	return q.popFromKey(key)
+	datas, err := q.popFromKey(key)
+	if err != nil {
+		return "", nil, err
+	}
+	return key, datas, nil
 }
 
 func (q *delay) NextWakeup() (time.Duration, error) {
@@ -55,10 +49,10 @@ func (q *delay) NextWakeup() (time.Duration, error) {
 	if err != nil {
 		return time.Duration(q.delayInSecond) * time.Second, err
 	}
-	return time.Duration(int64(score)+q.delayInSecond-time.Now().Unix()) * time.Second, nil
+	return time.Duration(int64(score)+int64(q.delayInSecond)-time.Now().Unix()) * time.Second, nil
 }
 
-func (q *delay) initDelay(name string, delayInSecond int64, redis RedisBroker, timeSaver timeSaver) {
+func (q *delay) initDelay(name string, delayInSecond int, redis broker.Redis, timeSaver timeSaver) {
 	q.redis = redis
 	q.delayInSecond = delayInSecond
 	q.redisPrefix = fmt.Sprintf("gobus:queue:%s", name)
@@ -80,7 +74,7 @@ func (q *delay) pushWithTime(time int64, key string, data []byte) error {
 }
 
 func (q *delay) getTimeoutKey() (string, error) {
-	end := time.Now().Unix() - q.delayInSecond
+	end := time.Now().Unix() - int64(q.delayInSecond)
 
 	reply, err := q.redis.Zrangebyscore(q.timeHashName, "0", fmt.Sprintf("%d", end))
 	if err != nil {
@@ -88,7 +82,7 @@ func (q *delay) getTimeoutKey() (string, error) {
 	}
 
 	if len(reply.Elems) == 0 {
-		return "", EmptyQueueError
+		return "", EmptyError
 	}
 
 	key := string(reply.Elems[0].Elem)
@@ -123,7 +117,7 @@ func (q *delay) popFromKey(key string) ([][]byte, error) {
 	}
 	r := pipe.Exec()
 	if len(r) == 0 {
-		return nil, QueueChangedError
+		return nil, ChangedError
 	}
 
 	ret := make([][]byte, len(r[0].Elems))
@@ -135,17 +129,17 @@ func (q *delay) popFromKey(key string) ([][]byte, error) {
 
 //////////////////////////////
 
-type HeadDelay struct {
+type Head struct {
 	delay
 }
 
-func NewHeadDelay(name string, delayInSecond int64, redis RedisBroker) *HeadDelay {
-	ret := new(HeadDelay)
+func NewHead(name string, delayInSecond int, redis broker.Redis) *Head {
+	ret := new(Head)
 	ret.initDelay(name, delayInSecond, redis, ret)
 	return ret
 }
 
-func (q *HeadDelay) SaveTime(time int64, key string) error {
+func (q *Head) SaveTime(time int64, key string) error {
 	score, _ := q.redis.Zscore(q.timeHashName, key)
 	if score < 0 {
 		score = float64(time)

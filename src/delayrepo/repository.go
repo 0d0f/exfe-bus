@@ -1,0 +1,39 @@
+package delayrepo
+
+import (
+	"errors"
+	"github.com/googollee/go-logger"
+	"time"
+)
+
+type Repository interface {
+	Push(key string, data []byte) error
+	Pop() (key string, datas [][]byte, err error)
+	NextWakeup() (time.Duration, error)
+}
+
+var EmptyError = errors.New("Empty.")
+var ChangedError = errors.New("Repository changed while poping.")
+
+type Callback func(key string, datas [][]byte)
+
+func ServRepository(log *logger.SubLogger, repo Repository, quit chan int, f Callback) {
+	for {
+		next, err := repo.NextWakeup()
+		if err != nil {
+			log.Crit("next wake up failed: %s", err)
+		}
+		select {
+		case <-quit:
+			log.Info("quit")
+			return
+		case <-time.After(next):
+			key, datas, err := repo.Pop()
+			if err != nil {
+				log.Crit("pop failed: %s", err)
+				continue
+			}
+			f(key, datas)
+		}
+	}
+}

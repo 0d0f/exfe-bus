@@ -15,14 +15,7 @@ func NewInstant(services map[string]*gobus.Client) *Instant {
 	}
 }
 
-type PushArg struct {
-	Service string      `json:"service"`
-	Method  string      `json:"method"`
-	Key     string      `json:"key"`
-	Data    interface{} `json:"data"`
-}
-
-func (i *Instant) Push(arg PushArg, count *int) error {
+func (i *Instant) Push(meta gobus.HTTPMeta, arg PushArg, count *int) error {
 	client, ok := i.services[arg.Service]
 	if !ok {
 		return fmt.Errorf("can't find service %s", arg.Service)
