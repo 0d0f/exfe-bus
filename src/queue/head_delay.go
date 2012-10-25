@@ -36,7 +36,7 @@ func (i *Head) Push(meta gobus.HTTPMeta, arg PushArg, count *int) error {
 	if err != nil {
 		return fmt.Errorf("can't marshal input data: %s", err)
 	}
-	err = i.repo.Push(arg.Key, data)
+	err = i.repo.Push(fmt.Sprintf("%s,%s,%s", arg.Service, arg.Method, arg.Key), data)
 	if err != nil {
 		return fmt.Errorf("push to repo failed: %s", err)
 	}
