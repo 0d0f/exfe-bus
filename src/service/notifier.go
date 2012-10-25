@@ -2,6 +2,7 @@ package main
 
 import (
 	"formatter"
+	"gobus"
 	"model"
 	"notifier"
 )
@@ -20,6 +21,7 @@ func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Confi
 //
 // Cross内容太长，懒得写例子了……
 //
-func (c *Conversation) Update(updates []model.ConversationUpdate, i *int) error {
+func (c *Conversation) Update(meta *gobus.HTTPMeta, updates []model.ConversationUpdate, i *int) error {
+	*i = 0
 	return c.conversation.Update(updates)
 }
