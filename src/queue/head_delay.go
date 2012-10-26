@@ -17,7 +17,7 @@ type Head struct {
 }
 
 func NewHead(services map[string]*gobus.Client, delayInMinute int, config *model.Config) (*Head, *tomb.Tomb) {
-	name := fmt.Sprintf("delayrepo:head_%sm", delayInMinute)
+	name := fmt.Sprintf("delayrepo:head_%dm", delayInMinute)
 	delay := delayInMinute * 60
 	redis := broker.NewRedisImp()
 	repo := delayrepo.NewHead(name, delay, redis)
