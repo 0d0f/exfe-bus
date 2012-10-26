@@ -22,10 +22,35 @@ func main() {
 
 	server := gobus.CreateServer(c.Redis.Netaddr, c.Redis.Db, c.Redis.Password, "twitter")
 
-	server.Register(twitter_service.NewFriendships())
-	server.Register(twitter_service.NewUsers(c.Site_api))
-	server.Register(twitter_service.NewStatuses())
-	server.Register(twitter_service.NewDirectMessages(c.Site_api))
+	err := server.Register(twitter_service.NewFriendships())
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	err = server.Register(twitter_service.NewUsers(c.Site_api))
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	err = server.Register(twitter_service.NewStatuses())
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	err = server.Register(twitter_service.NewDirectMessages(c.Site_api))
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
 
-	server.Serve(c.Twitter.Time_out * 1e9)
+	err = server.Serve(c.Twitter.Time_out * 1e9)
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
 }

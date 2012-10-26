@@ -89,8 +89,18 @@ func main() {
 		return
 	}
 
-	bus.Register(instant)
-	bus.Register(head10m)
+	err = bus.Register(instant)
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	err = bus.Register(head10m)
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
 
 	go func() {
 		<-quit
@@ -102,5 +112,10 @@ func main() {
 		os.Exit(-1)
 		return
 	}()
-	bus.ListenAndServe()
+	err = bus.ListenAndServe()
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
 }
