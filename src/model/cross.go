@@ -1,5 +1,9 @@
 package model
 
+import (
+	"fmt"
+)
+
 type Cross struct {
 	ID          uint64    `json:"id"`
 	By          Identity  `json:"by_identity"`
@@ -12,6 +16,10 @@ type Cross struct {
 
 func (c Cross) Equal(other *Cross) bool {
 	return c.ID == other.ID
+}
+
+func (c Cross) String() string {
+	return fmt.Sprintf("Cross:%d", c.ID)
 }
 
 type CrossUpdate struct {

@@ -16,3 +16,12 @@ type SendArg struct {
 func (a SendArg) String() string {
 	return fmt.Sprintf("{to:%s info:%s}", a.To, a.Info)
 }
+
+type ConversationUpdate []model.ConversationUpdate
+
+func (u ConversationUpdate) String() string {
+	if len(u) == 0 {
+		return "{updates:0}"
+	}
+	return fmt.Sprintf("{to:%s with:%s updates}:%d", u[0].To, u[0].Cross, len(u))
+}
