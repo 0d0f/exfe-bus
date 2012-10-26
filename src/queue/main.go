@@ -61,17 +61,15 @@ func main() {
 	}
 	config.Log = log
 
-	servicesName := map[string]string{
-		"conversation": "Conversation",
-	}
+	servicesName := []string{"Conversation"}
 	services := make(map[string]*gobus.Client)
-	for k, v := range servicesName {
-		s, err := gobus.NewClient(fmt.Sprintf("http://%s:%d/%s", config.ExfeService.Addr, config.ExfeService.Port, v))
+	for _, serviceName := range servicesName {
+		s, err := gobus.NewClient(fmt.Sprintf("http://%s:%d/%s", config.ExfeService.Addr, config.ExfeService.Port, serviceName))
 		if err != nil {
-			log.Crit("can't create gobus client for service %s: %s", k, err)
+			log.Crit("can't create gobus client for service %s: %s", serviceName, err)
 			os.Exit(-1)
 		}
-		services[k] = s
+		services[serviceName] = s
 	}
 
 	instant := NewInstant(services)
