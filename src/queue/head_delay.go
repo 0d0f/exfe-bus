@@ -12,13 +12,14 @@ import (
 
 type Head struct {
 	services map[string]*gobus.Client
+	name     string
 	repo     *delayrepo.Head
 	config   *model.Config
 }
 
-func NewHead(services map[string]*gobus.Client, delayInMinute int, config *model.Config) (*Head, *tomb.Tomb) {
-	name := fmt.Sprintf("delayrepo:head_%dm", delayInMinute)
-	delay := delayInMinute * 60
+func NewHead(services map[string]*gobus.Client, delayInSecond int, config *model.Config) (*Head, *tomb.Tomb) {
+	name := fmt.Sprintf("delayrepo:head_%ds", delayInSecond)
+	delay := delayInSecond
 	redis := broker.NewRedisImp()
 	repo := delayrepo.NewHead(name, delay, redis)
 	log := config.Log.SubPrefix(name)
@@ -26,6 +27,7 @@ func NewHead(services map[string]*gobus.Client, delayInMinute int, config *model
 
 	return &Head{
 		services: services,
+		name:     name,
 		repo:     repo,
 		config:   config,
 	}, tomb
@@ -44,11 +46,6 @@ func (i *Head) Push(meta *gobus.HTTPMeta, arg PushArg, count *int) error {
 	return nil
 }
 
-type Head10m struct {
-	*Head
-}
-
-func NewHead10m(services map[string]*gobus.Client, config *model.Config) (*Head10m, *tomb.Tomb) {
-	repo, tomb := NewHead(services, 10, config)
-	return &Head10m{repo}, tomb
+func (i Head) String() string {
+	return i.name
 }

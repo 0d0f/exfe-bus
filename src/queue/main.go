@@ -78,9 +78,6 @@ func main() {
 
 	instant := NewInstant(services)
 
-	head10m, head10mTomb := NewHead10m(services, &config)
-	tombs = append(tombs, head10mTomb)
-
 	url := fmt.Sprintf("http://%s:%d", config.ExfeQueue.Addr, config.ExfeQueue.Port)
 	log.Info("start at %s", url)
 
@@ -99,13 +96,18 @@ func main() {
 		return
 	}
 	log.Info("register Instant %d methods.", count)
-	count, err = bus.Register(head10m)
-	if err != nil {
-		log.Crit("gobus launch failed: %s", err)
-		os.Exit(-1)
-		return
+
+	for name, delayInSecond := range config.ExfeQueue.Head {
+		head, headTomb := NewHead(services, delayInSecond, &config)
+		tombs = append(tombs, headTomb)
+		count, err = bus.RegisterName(name, head)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register %s %d methods.", name, count)
 	}
-	log.Info("register Head10m %d methods.", count)
 
 	go func() {
 		<-quit

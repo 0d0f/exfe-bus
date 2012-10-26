@@ -38,8 +38,9 @@ type Config struct {
 		Port int    `json:"port"`
 	} `json:"exfe_service"`
 	ExfeQueue struct {
-		Addr string `json:"addr"`
-		Port int    `json:"port"`
+		Addr string         `json:"addr"`
+		Port int            `json:"port"`
+		Head map[string]int `json:"head"`
 	} `json:"exfe_queue"`
 
 	TokenManager struct {
