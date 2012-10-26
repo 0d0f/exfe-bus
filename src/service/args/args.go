@@ -23,5 +23,5 @@ func (u ConversationUpdateArg) String() string {
 	if len(u) == 0 {
 		return "{updates:0}"
 	}
-	return fmt.Sprintf("{to:%s with:%s updates}:%d", u[0].To, u[0].Cross, len(u))
+	return fmt.Sprintf("{to:%s with:%s updates:%d}", u[0].To, u[0].Cross, len(u))
 }
