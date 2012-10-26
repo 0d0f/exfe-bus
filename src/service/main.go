@@ -15,7 +15,7 @@ func main() {
 	var config model.Config
 	output, quit := daemon.Init("exfe.json", &config)
 
-	log, err := logger.New(output, "service bus", logger.Lshortfile)
+	log, err := logger.New(output, "service bus")
 	if err != nil {
 		panic(err)
 		return

@@ -58,7 +58,7 @@ func main() {
 	output, quit := daemon.Init("exfe.json", &config)
 	tombs := make([]*tomb.Tomb, 0)
 
-	log, err := logger.New(output, "service bus", logger.Lshortfile)
+	log, err := logger.New(output, "service bus")
 	if err != nil {
 		panic(err)
 		return
