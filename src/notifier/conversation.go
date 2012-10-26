@@ -91,8 +91,8 @@ func (c *Conversation) Update(updates []model.ConversationUpdate) error {
 			Type:    thirdpart.Conversation,
 		},
 	}
-	var i int
-	err = client.Do("Send", &arg, &i)
+	var id string
+	err = client.Do("Send", &arg, &id)
 	if err != nil {
 		return fmt.Errorf("send error: %s", err)
 	}
