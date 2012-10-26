@@ -19,6 +19,10 @@ type PushArg struct {
 	Data    interface{} `json:"data"`
 }
 
+func (a PushArg) String() string {
+	return fmt.Sprintf("{service:%s method:%s key:%s}", a.Service, a.Method, a.Key)
+}
+
 func getCallback(log *logger.SubLogger, services map[string]*gobus.Client) func(key string, datas [][]byte) {
 	return func(key string, datas [][]byte) {
 		names := strings.SplitN(key, ",", 3)
