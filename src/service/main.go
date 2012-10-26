@@ -57,10 +57,30 @@ func main() {
 		os.Exit(-1)
 		return
 	}
-	bus.Register(tkMng)
-	bus.Register(iom)
-	bus.Register(thirdpart)
-	bus.Register(conversation)
+	err = bus.Register(tkMng)
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	err = bus.Register(iom)
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	err = bus.Register(thirdpart)
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	err = bus.Register(conversation)
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
 
 	go func() {
 		<-quit
@@ -68,5 +88,10 @@ func main() {
 		os.Exit(-1)
 		return
 	}()
-	bus.ListenAndServe()
+	err = bus.ListenAndServe()
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
 }
