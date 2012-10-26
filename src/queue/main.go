@@ -89,18 +89,21 @@ func main() {
 		return
 	}
 
-	err = bus.Register(instant)
+	var count int
+	count, err = bus.Register(instant)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
 		return
 	}
-	err = bus.Register(head10m)
+	log.Info("register Instant %d methods.", count)
+	count, err = bus.Register(head10m)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
 		return
 	}
+	log.Info("register Head10m %d methods.", count)
 
 	go func() {
 		<-quit

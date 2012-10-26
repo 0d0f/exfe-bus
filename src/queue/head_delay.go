@@ -31,7 +31,7 @@ func NewHead(services map[string]*gobus.Client, delayInMinute int, config *model
 	}, tomb
 }
 
-func (i *Head) Push(meta gobus.HTTPMeta, arg PushArg, count *int) error {
+func (i *Head) Push(meta *gobus.HTTPMeta, arg PushArg, count *int) error {
 	data, err := json.Marshal(arg.Data)
 	if err != nil {
 		return fmt.Errorf("can't marshal input data: %s", err)

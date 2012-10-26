@@ -57,30 +57,35 @@ func main() {
 		os.Exit(-1)
 		return
 	}
-	err = bus.Register(tkMng)
+	var count int
+	count, err = bus.Register(tkMng)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
 		return
 	}
-	err = bus.Register(iom)
+	log.Info("register TokenManager %d methods.", count)
+	count, err = bus.Register(iom)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
 		return
 	}
-	err = bus.Register(thirdpart)
+	log.Info("register IOM %d methods.", count)
+	count, err = bus.Register(thirdpart)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
 		return
 	}
-	err = bus.Register(conversation)
+	log.Info("register Thirdpart %d methods.", count)
+	count, err = bus.Register(conversation)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
 		return
 	}
+	log.Info("register Conversation %d methods.", count)
 
 	go func() {
 		<-quit

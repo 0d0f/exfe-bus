@@ -15,7 +15,7 @@ func NewInstant(services map[string]*gobus.Client) *Instant {
 	}
 }
 
-func (i *Instant) Push(meta gobus.HTTPMeta, arg PushArg, count *int) error {
+func (i *Instant) Push(meta *gobus.HTTPMeta, arg PushArg, count *int) error {
 	client, ok := i.services[arg.Service]
 	if !ok {
 		return fmt.Errorf("can't find service %s", arg.Service)
