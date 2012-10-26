@@ -39,7 +39,9 @@ func ServRepository(log *logger.SubLogger, repo Repository, f Callback) *tomb.To
 					log.Crit("pop failed: %s", err)
 					continue
 				}
-				f(key, datas)
+				if len(datas) > 0 {
+					f(key, datas)
+				}
 			}
 		}
 	}()
