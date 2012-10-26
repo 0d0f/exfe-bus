@@ -99,7 +99,6 @@ func (b *EmailBot) GetIDFromInput(input interface{}) (id string, content interfa
 		text = b.stripGmail(text)
 		text = b.stripHtml(text)
 	}
-	fmt.Println(mediatype)
 	text = b.stripReply(text)
 
 	id = from[0].Address
@@ -141,7 +140,6 @@ func (b *EmailBot) stripReply(content string) string {
 	ret := make([]string, len(lines), len(lines))
 
 	for i, line := range lines {
-		fmt.Println("line:", line)
 		if b.isReplys(line) {
 			ret = ret[:i]
 			break
