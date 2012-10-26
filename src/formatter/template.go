@@ -21,6 +21,9 @@ func NewTemplate(name string) *template.Template {
 	ret := template.New(name)
 
 	funcs := template.FuncMap{
+		"append": func(str ...string) string {
+			return strings.Join(str, "")
+		},
 		"column": func(max int, joiner string, content string) string {
 			buf := bytes.NewBuffer(nil)
 			for len(content) > max {
