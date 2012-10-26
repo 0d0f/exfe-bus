@@ -199,7 +199,7 @@
                             </td>
                             <td valign="top">
                                 <a href="{{ $url }}" style="text-decoration: none;">
-                                    <span style="color:#212121; text-decoration: none;">{{ .Content | html }}</span>
+                                    <span style="color:#212121; text-decoration: none;">{{ .Content | html | treplace "\n" "<br />" }}</span>
                                     <br />
                                     <span style="font-size: 12px; color:#797979; text-decoration: none;">{{ .By_identity.Name | html }}</span> <span style="font-size: 12px; color:#A9A9A9; text-decoration: none;">at</span> <span  style="font-size: 12px; color:#797979; text-decoration: none;">{{ .CreatedAt $timezone | html }}</span>
                                 </a>

@@ -38,6 +38,9 @@ var helper = map[string]interface{}{
 	"replace": func(s, old, new string) string {
 		return strings.Replace(s, old, new, -1)
 	},
+	"treplace": func(old, new, s string) string {
+		return strings.Replace(s, old, new, -1)
+	},
 	"base64": func(s string) string {
 		return base64.StdEncoding.EncodeToString([]byte(s))
 	},

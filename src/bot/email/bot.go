@@ -22,7 +22,8 @@ var replyLine = [...]string{
 	`^From:.*[mailto:.*]`,
 	`^On (.*) wrote:`,
 	"发自我的 iPhone",
-	"^[ \t\n\r]*$",
+	`EXFE ·X· <x\+[a-zA-Z0-9]*@exfe.com>$`,
+	`^>+`,
 }
 
 var removeLine = [...]string{
@@ -145,7 +146,7 @@ func (b *EmailBot) stripReply(content string) string {
 		}
 		ret[i] = line
 	}
-	return strings.Join(ret, "\n")
+	return strings.Trim(strings.Join(ret, "\n"), " \r\n\t")
 }
 
 func (b *EmailBot) stripGmail(text string) string {
