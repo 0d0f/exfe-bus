@@ -69,6 +69,10 @@ type InfoData struct {
 	Type    DataType `json:"type"`
 }
 
+func (i InfoData) String() string {
+	return fmt.Sprintf("{cross:%d type:%s}", i.CrossID, i.Type)
+}
+
 type Sender interface {
 	Provider() string
 	Send(to *model.Recipient, privateMessage string, publicMessage string, data *InfoData) (id string, err error)
