@@ -17,9 +17,9 @@ func (a SendArg) String() string {
 	return fmt.Sprintf("{to:%s info:%s}", a.To, a.Info)
 }
 
-type ConversationUpdate []model.ConversationUpdate
+type ConversationUpdateArg []model.ConversationUpdate
 
-func (u ConversationUpdate) String() string {
+func (u ConversationUpdateArg) String() string {
 	if len(u) == 0 {
 		return "{updates:0}"
 	}

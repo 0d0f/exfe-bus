@@ -5,6 +5,7 @@ import (
 	"gobus"
 	"model"
 	"notifier"
+	"service/args"
 )
 
 type Conversation struct {
@@ -21,7 +22,7 @@ func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Confi
 //
 // Cross内容太长，懒得写例子了……
 //
-func (c *Conversation) Update(meta *gobus.HTTPMeta, updates []model.ConversationUpdate, i *int) error {
+func (c *Conversation) Update(meta *gobus.HTTPMeta, updates args.ConversationUpdateArg, i *int) error {
 	*i = 0
 	return c.conversation.Update(updates)
 }
