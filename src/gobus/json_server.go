@@ -76,7 +76,7 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ret = fmt.Sprintf("%s", err)
 		return
 	}
-	ret = output.Interface()
+	ret = output.Elem.Interface()
 	subLogger.Debug("return %s", ret)
 }
 
