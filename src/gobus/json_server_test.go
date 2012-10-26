@@ -33,7 +33,7 @@ func (s *TestServer) POST(meta *HTTPMeta, arg int, reply *int) error {
 }
 
 func TestJSONServer(t *testing.T) {
-	l, err := logger.New(logger.Stderr, "test gobus", logger.LstdFlags)
+	l, err := logger.New(logger.Stderr, "test gobus")
 	if err != nil {
 		panic(err)
 	}
@@ -46,6 +46,14 @@ func TestJSONServer(t *testing.T) {
 	if count != 4 {
 		t.Fatalf("only register %d methods, should be 4", count)
 	}
+	count, err = s.RegisterName("test_server", server)
+	if err != nil {
+		t.Fatalf("register error: %s", err)
+	}
+	if count != 4 {
+		t.Fatalf("only register %d methods, should be 4", count)
+	}
+
 	h := &http.Server{
 		Addr:    "127.0.0.1:1234",
 		Handler: s,

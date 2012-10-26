@@ -22,7 +22,7 @@ func (t *gobusTest) Add(meta *HTTPMeta, args AddArgs, reply *int) error {
 const gobusUrl = "http://127.0.0.1:12345"
 
 func TestGobus(t *testing.T) {
-	l, err := logger.New(logger.Stderr, "test gobus", logger.LstdFlags)
+	l, err := logger.New(logger.Stderr, "test gobus")
 	if err != nil {
 		panic(err)
 	}
@@ -32,6 +32,13 @@ func TestGobus(t *testing.T) {
 	}
 	test := new(gobusTest)
 	count, err := s.Register(test)
+	if err != nil {
+		t.Fatalf("register error: %s", err)
+	}
+	if count != 1 {
+		t.Fatalf("only register %d methods, should be 1", count)
+	}
+	count, err = s.RegisterName("test", test)
 	if err != nil {
 		t.Fatalf("register error: %s", err)
 	}

@@ -33,6 +33,10 @@ func (s *Server) Register(service interface{}) (int, error) {
 	return s.jsonServer.Register(service)
 }
 
+func (s *Server) RegisterName(name string, service interface{}) (int, error) {
+	return s.jsonServer.RegisterName(name, service)
+}
+
 func (s *Server) ListenAndServe() error {
 	h := &http.Server{
 		Addr:    s.url,

@@ -26,8 +26,12 @@ func (s *JSONServer) Register(arg interface{}) (int, error) {
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
+	return s.RegisterName(t.Name(), arg)
+}
+
+func (s *JSONServer) RegisterName(name string, arg interface{}) (int, error) {
 	service := newServiceType(arg)
-	s.services[t.Name()] = service
+	s.services[name] = service
 	return len(service.methods), nil
 }
 
