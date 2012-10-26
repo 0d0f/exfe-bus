@@ -39,7 +39,13 @@ func TestJSONServer(t *testing.T) {
 	}
 	s := NewJSONServer(l)
 	server := new(TestServer)
-	s.Register(server)
+	count, err := s.Register(server)
+	if err != nil {
+		t.Fatalf("register error: %s", err)
+	}
+	if count != 4 {
+		t.Fatalf("only register %d methods, should be 4", count)
+	}
 	h := &http.Server{
 		Addr:    "127.0.0.1:1234",
 		Handler: s,

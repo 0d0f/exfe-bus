@@ -21,13 +21,14 @@ func NewJSONServer(l *logger.Logger) *JSONServer {
 	}
 }
 
-func (s *JSONServer) Register(arg interface{}) error {
+func (s *JSONServer) Register(arg interface{}) (int, error) {
 	t := reflect.TypeOf(arg)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
-	s.services[t.Name()] = newServiceType(arg)
-	return nil
+	service := newServiceType(arg)
+	s.services[t.Name()] = service
+	return len(service.methods), nil
 }
 
 func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {

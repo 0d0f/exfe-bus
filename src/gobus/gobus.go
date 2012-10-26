@@ -29,7 +29,7 @@ func NewServer(u string, l *logger.Logger) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) Register(service interface{}) error {
+func (s *Server) Register(service interface{}) (int, error) {
 	return s.jsonServer.Register(service)
 }
 

@@ -31,7 +31,13 @@ func TestGobus(t *testing.T) {
 		t.Fatalf("create gobus server fail: %s", err)
 	}
 	test := new(gobusTest)
-	s.Register(test)
+	count, err := s.Register(test)
+	if err != nil {
+		t.Fatalf("register error: %s", err)
+	}
+	if count != 1 {
+		t.Fatalf("only register %d methods, should be 1", count)
+	}
 	go s.ListenAndServe()
 
 	c, err := NewClient(fmt.Sprintf("%s/%s", gobusUrl, "gobusTest"))
