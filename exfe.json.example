@@ -21,7 +21,7 @@
   "email": {
     "host": "smtp.gmail.com",
     "port": 465,
-    "user": "contact@0d0f.com",
+    "username": "contact@0d0f.com",
     "password": "[S9rQ+vNjJloR*Vs",
     "account": "[DEV]EXFE ·X·",
     "domain": "0d0f.com",

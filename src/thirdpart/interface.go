@@ -188,7 +188,10 @@ func (h *HelperImp) SendEmail(to string, content string) (id string, err error) 
 	}
 	s.Quit()
 	err = smtp.SendMail(h.emailServer, h.emailAuth, h.emailFrom, []string{to}, []byte(content))
-	return "", fmt.Errorf("mail send fail: %s", err)
+	if err != nil {
+		return "", fmt.Errorf("mail send fail: %s", err)
+	}
+	return "", nil
 }
 
 type FakeHelper struct {
