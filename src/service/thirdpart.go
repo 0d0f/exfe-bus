@@ -11,6 +11,7 @@ import (
 	"service/args"
 	"thirdpart"
 	"thirdpart/apn"
+	"thirdpart/email"
 	"thirdpart/facebook"
 	"thirdpart/gcm"
 	"thirdpart/twitter"
@@ -41,6 +42,9 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 	facebook_ := facebook.New(helper)
 	t.AddSender(facebook_)
 	t.AddUpdater(facebook_)
+
+	email_ := email.New(helper)
+	t.AddSender(email_)
 
 	apn_ := apn.New(apns_, getApnErrorHandler(config.Log.SubPrefix("apn error")))
 	t.AddSender(apn_)
