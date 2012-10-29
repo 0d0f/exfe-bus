@@ -41,7 +41,8 @@ func (a *Apn) Provider() string {
 
 func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (string, error) {
 	ids := ""
-	privateMessage = urlRegex.ReplaceAllString(privateMessage, "")
+	privateMessage = tailUrlRegex.ReplaceAllString(privateMessage, "")
+	privateMessage = tailQuoteUrlRegex.ReplaceAllString(privateMessage, ")")
 	for _, line := range strings.Split(privateMessage, "\n") {
 		line = strings.Trim(line, " \n\r\t")
 		if line == "" {
@@ -99,4 +100,5 @@ func apnLen(content string) int {
 	return len([]byte(content))
 }
 
-var urlRegex = regexp.MustCompile(` *(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?`)
+var tailUrlRegex = regexp.MustCompile(` *(http|https):\/\/exfe.com(\/[\w#!:.?+=&%@!\-\/]*)?$`)
+var tailQuoteUrlRegex = regexp.MustCompile(` *(http|https):\/\/exfe.com(\/[\w#!:.?+=&%@!\-\/]*)?\)$`)

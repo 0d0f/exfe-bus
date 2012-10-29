@@ -31,7 +31,8 @@ func (g *GCM) Provider() string {
 
 func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (id string, err error) {
 	ids := ""
-	privateMessage = urlRegex.ReplaceAllString(privateMessage, "")
+	privateMessage = tailUrlRegex.ReplaceAllString(privateMessage, "")
+	privateMessage = tailQuoteUrlRegex.ReplaceAllString(privateMessage, ")")
 	for _, line := range strings.Split(privateMessage, "\n") {
 		line = strings.Trim(line, " \r\n\t")
 		if line == "" {
@@ -57,7 +58,6 @@ func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage str
 				return "", fmt.Errorf("send to %s error: %s", to, err)
 			}
 
-			fmt.Println(resp.Results)
 			for i := range resp.Results {
 				if resp.Results[i].RegistrationID != to.ExternalID {
 					continue
@@ -79,4 +79,5 @@ func gcmLen(content string) int {
 	return utf8.RuneCountInString(content)
 }
 
-var urlRegex = regexp.MustCompile(` *(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?`)
+var tailUrlRegex = regexp.MustCompile(` *(http|https):\/\/exfe.com(\/[\w#!:.?+=&%@!\-\/]*)?$`)
+var tailQuoteUrlRegex = regexp.MustCompile(` *(http|https):\/\/exfe.com(\/[\w#!:.?+=&%@!\-\/]*)?\)$`)

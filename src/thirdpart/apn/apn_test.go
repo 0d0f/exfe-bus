@@ -74,6 +74,25 @@ func TestSend(t *testing.T) {
 
 	{
 		broker.Reset()
+		_, err := tester.Send(to, `Post: abc ("Title" https://exfe.com/#!token=932ce5324321433253)`, "", data)
+		if err != nil {
+			t.Fatalf("send error: %s", err)
+		}
+		results := []string{
+			`Post: abc ("Title")`,
+		}
+		if got, expect := len(broker.notifications), len(results); got != expect {
+			t.Errorf("got: %d, expect: %d", got, expect)
+		}
+		for i, r := range results {
+			if got, expect := broker.notifications[i].Payload.Aps.Alert, r; got != expect {
+				t.Errorf("%d got: %s, expect %s", i, got, expect)
+			}
+		}
+	}
+
+	{
+		broker.Reset()
 		_, err := tester.Send(to, "post line1\npost line2\n\n", "", data)
 		if err != nil {
 			t.Fatalf("send error: %s", err)
