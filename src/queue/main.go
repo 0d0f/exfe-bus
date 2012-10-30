@@ -13,14 +13,50 @@ import (
 )
 
 type PushArg struct {
-	Service string      `json:"service"`
-	Method  string      `json:"method"`
-	Key     string      `json:"key"`
-	Data    interface{} `json:"data"`
+	Service  string            `json:"service"`
+	Method   string            `json:"method"`
+	MergeKey string            `json:"merge_key"`
+	Tos      []model.Recipient `json:"tos"` // it will expand and overwrite "to" field in data
+	Data     interface{}       `json:"data"`
 }
 
 func (a PushArg) String() string {
-	return fmt.Sprintf("{service:%s method:%s key:%s}", a.Service, a.Method, a.Key)
+	return fmt.Sprintf("{service:%s method:%s key:%s tos:%s}", a.Service, a.Method, a.MergeKey, a.Tos)
+}
+
+func (a PushArg) FindService(services map[string]*gobus.Client) (*gobus.Client, error) {
+	client, ok := services[a.Service]
+	if !ok {
+		return nil, fmt.Errorf("can't find service %s", a.Service)
+	}
+	return client, nil
+}
+
+func (a PushArg) Expand() ([][]interface{}, []string) {
+	datas := make(map[string][]interface{})
+	for _, to := range a.Tos {
+		data, ok := datas[to.ID()]
+		if !ok {
+			data = make([]interface{}, 0)
+		}
+		if d, ok := a.Data.(map[string]interface{}); ok {
+			d["to"] = to
+		}
+		data = append(data, a.Data)
+		datas[to.ID()] = data
+	}
+	// if no tos, send data directly
+	if len(datas) == 0 {
+		datas["-"] = []interface{}{a.Data}
+	}
+	ret := make([][]interface{}, len(datas))
+	keys := make([]string, len(datas))
+	index := 0
+	for k, _ := range datas {
+		ret[index] = datas[k]
+		keys[index] = fmt.Sprintf("%s,%s,%s,%s", a.Service, a.Method, k, a.MergeKey)
+	}
+	return ret, keys
 }
 
 func getCallback(log *logger.SubLogger, services map[string]*gobus.Client) func(key string, datas [][]byte) {

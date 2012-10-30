@@ -39,6 +39,13 @@ func (r Recipient) SameUser(other *Identity) bool {
 	return false
 }
 
+func (r Recipient) ID() string {
+	if r.ExternalID != "" {
+		return fmt.Sprintf("%s@%s", r.ExternalID, r.Provider)
+	}
+	return fmt.Sprintf("%s@%s", r.ExternalUsername, r.Provider)
+}
+
 func (r Recipient) String() string {
 	return fmt.Sprintf("Recipient:%s(%s)@%s(i%d/u%d/t%s)", r.ExternalUsername, r.ExternalID, r.Provider, r.IdentityID, r.UserID, r.Token)
 }
