@@ -26,8 +26,8 @@ func (i *Instant) Push(meta *gobus.HTTPMeta, arg PushArg, count *int) error {
 		return client.Do(arg.Method, arg.Data, &r)
 	}
 
+	data, ok := arg.Data.(map[string]interface{})
 	for _, to := range arg.Tos {
-		data, ok := arg.Data.(map[string]interface{})
 		if ok {
 			data["to"] = to
 		}

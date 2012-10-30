@@ -34,19 +34,36 @@ func NewHead(services map[string]*gobus.Client, delayInSecond int, config *model
 }
 
 func (i *Head) Push(meta *gobus.HTTPMeta, arg PushArg, count *int) error {
-	datas, keys := arg.Expand()
 	*count = 0
-	for index, _ := range datas {
-		data, err := json.Marshal(datas[index])
+	if len(arg.Tos) == 0 {
+		*count = 1
+		data, err := json.Marshal(arg.Data)
 		if err != nil {
 			return fmt.Errorf("can't marshal input data: %s", err)
 		}
-		err = i.repo.Push(keys[index], data)
+		err = i.repo.Push(fmt.Sprintf("%s,%s,%s,-", arg.Service, arg.Method, arg.MergeKey), data)
+		if err != nil {
+			return fmt.Errorf("push to repo failed: %s", err)
+		}
+		return nil
+	}
+
+	data, ok := arg.Data.(map[string]interface{})
+	for _, to := range arg.Tos {
+		if ok {
+			data["to"] = to
+		}
+		d, err := json.Marshal(data)
+		if err != nil {
+			return fmt.Errorf("can't marshal input data: %s", err)
+		}
+		err = i.repo.Push(fmt.Sprintf("%s,%s,%s,%s", arg.Service, arg.Method, arg.MergeKey, to), d)
 		if err != nil {
 			return fmt.Errorf("push to repo failed: %s", err)
 		}
 		*count++
 	}
+
 	return nil
 }
 
