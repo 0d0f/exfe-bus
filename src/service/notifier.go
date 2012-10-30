@@ -24,5 +24,10 @@ func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Confi
 //
 func (c *Conversation) Update(meta *gobus.HTTPMeta, updates args.ConversationUpdateArg, i *int) error {
 	*i = 0
-	return c.conversation.Update(updates)
+	err := c.conversation.Update(updates)
+	if err == notifier.SendSelfError {
+		meta.Log.Info("send to %s: %s", updates[0].To, err)
+		return nil
+	}
+	return err
 }

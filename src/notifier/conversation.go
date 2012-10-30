@@ -10,6 +10,8 @@ import (
 	"thirdpart"
 )
 
+var SendSelfError = fmt.Errorf("no need send self")
+
 type UpdateArg struct {
 	To    model.Recipient
 	Cross model.Cross
@@ -41,7 +43,7 @@ func ArgFromUpdates(updates []model.ConversationUpdate, config *model.Config) (*
 		posts[i] = &updates[i].Post
 	}
 	if !needSend {
-		return nil, fmt.Errorf("no need send self")
+		return nil, SendSelfError
 	}
 
 	ret := &UpdateArg{
