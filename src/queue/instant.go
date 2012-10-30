@@ -22,22 +22,21 @@ func (i *Instant) Push(meta *gobus.HTTPMeta, arg PushArg, count *int) error {
 	*count = 0
 	if len(arg.Tos) == 0 {
 		var r int
-		err := client.Do(arg.Method, arg.Data, &r)
-		if err == nil {
-			*count = 1
+		*count = 1
+		return client.Do(arg.Method, arg.Data, &r)
+	}
+
+	for _, to := range arg.Tos {
+		data, ok := arg.Data.(map[string]interface{})
+		if ok {
+			data["to"] = to
 		}
-	} else {
-		for _, to := range arg.Tos {
-			data, ok := arg.Data.(map[string]interface{})
-			if ok {
-				data["to"] = to
-			}
-			var r int
-			err := client.Do(arg.Method, data, &r)
-			if err == nil {
-				*count++
-			}
+		var r int
+		err := client.Do(arg.Method, []interface{}{data}, &r)
+		if err != nil {
+			return err
 		}
+		*count++
 	}
 	return nil
 }
