@@ -75,7 +75,7 @@ func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Confi
 func (c *Conversation) Update(updates []model.ConversationUpdate) error {
 	private, public, err := c.getContent(updates)
 	if err != nil {
-		return fmt.Errorf("can't get content: %s", err)
+		return err
 	}
 
 	url := fmt.Sprintf("http://%s:%d", c.config.ExfeService.Addr, c.config.ExfeService.Port)
@@ -104,7 +104,7 @@ func (c *Conversation) Update(updates []model.ConversationUpdate) error {
 func (c *Conversation) getContent(updates []model.ConversationUpdate) (string, string, error) {
 	arg, err := ArgFromUpdates(updates, c.config)
 	if err != nil {
-		return "", "", fmt.Errorf("can't parse posts: %s", err)
+		return "", "", err
 	}
 
 	messageType, err := thirdpart.MessageTypeFromProvider(arg.To.Provider)
