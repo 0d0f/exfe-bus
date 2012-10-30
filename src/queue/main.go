@@ -32,24 +32,20 @@ func (a PushArg) FindService(services map[string]*gobus.Client) (*gobus.Client, 
 	return client, nil
 }
 
-func (a PushArg) Expand() ([][]interface{}, []string) {
-	datas := make(map[string][]interface{})
+func (a PushArg) Expand() ([]interface{}, []string) {
+	datas := make(map[string]interface{})
 	for _, to := range a.Tos {
-		data, ok := datas[to.ID()]
-		if !ok {
-			data = make([]interface{}, 0)
+		data, ok := a.Data.(map[string]interface{})
+		if ok {
+			data["to"] = to
 		}
-		if d, ok := a.Data.(map[string]interface{}); ok {
-			d["to"] = to
-		}
-		data = append(data, a.Data)
 		datas[to.ID()] = data
 	}
 	// if no tos, send data directly
 	if len(datas) == 0 {
 		datas["-"] = []interface{}{a.Data}
 	}
-	ret := make([][]interface{}, len(datas))
+	ret := make([]interface{}, len(datas))
 	keys := make([]string, len(datas))
 	index := 0
 	for k, _ := range datas {

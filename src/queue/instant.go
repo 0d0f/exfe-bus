@@ -19,13 +19,24 @@ func (i *Instant) Push(meta *gobus.HTTPMeta, arg PushArg, count *int) error {
 	if err != nil {
 		return err
 	}
-	datas, _ := arg.Expand()
 	*count = 0
-	for _, data := range datas {
+	if len(arg.Tos) == 0 {
 		var r int
-		err := client.Do(arg.Method, data, &r)
+		err := client.Do(arg.Method, arg.Data, &r)
 		if err == nil {
-			*count++
+			*count = 1
+		}
+	} else {
+		for _, to := range arg.Tos {
+			data, ok := arg.Data.(map[string]interface{})
+			if ok {
+				data["to"] = to
+			}
+			var r int
+			err := client.Do(arg.Method, data, &r)
+			if err == nil {
+				*count++
+			}
 		}
 	}
 	return nil
