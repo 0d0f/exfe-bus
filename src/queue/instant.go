@@ -28,7 +28,10 @@ func (i *Instant) Push(meta *gobus.HTTPMeta, arg PushArg, count *int) error {
 	if err != nil {
 		return err
 	}
-	*count = 0
+	*count = len(arg.Tos)
+	if *count == 0 {
+		*count = 1
+	}
 
 	go func() {
 		if len(arg.Tos) == 0 {
