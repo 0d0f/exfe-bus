@@ -7,6 +7,7 @@ import (
 	"github.com/googollee/go-logger"
 	"github.com/googollee/godis"
 	"gobus"
+	"imsg"
 	"model"
 	"os"
 )
@@ -48,6 +49,13 @@ func main() {
 	}
 	conversation := NewConversation(localTemplate, &config)
 
+	imsg, err := imsg.NewiMsg(&config)
+	if err != nil {
+		log.Crit("load imsg failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+
 	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
 
@@ -86,6 +94,14 @@ func main() {
 		return
 	}
 	log.Info("register Conversation %d methods.", count)
+
+	count, err = bus.Register(imsg)
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	log.Info("register imsg %d methods.", count)
 
 	go func() {
 		<-quit

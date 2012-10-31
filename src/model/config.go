@@ -66,5 +66,5 @@ type Config struct {
 		} `json:"gcm"`
 	} `json:"thirdpart"`
 
-	Log *logger.Logger
+	Log *logger.Logger `json:"-"`
 }

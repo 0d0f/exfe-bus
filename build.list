@@ -6,3 +6,4 @@ email
 c2dm
 service
 queue
+imsg/imsg_sender
