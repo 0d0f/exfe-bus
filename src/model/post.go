@@ -32,7 +32,7 @@ func (p *Post) CreatedAtInZone(timezone string) (string, error) {
 }
 
 type ConversationUpdate struct {
-	To    Recipient `json:"recipient"`
+	To    Recipient `json:"to"`
 	Cross Cross     `json:"cross"`
 	Post  Post      `json:"post"`
 }
