@@ -32,29 +32,6 @@ func (a PushArg) FindService(services map[string]*gobus.Client) (*gobus.Client, 
 	return client, nil
 }
 
-func (a PushArg) Expand() ([]interface{}, []string) {
-	datas := make(map[string]interface{})
-	for _, to := range a.Tos {
-		data, ok := a.Data.(map[string]interface{})
-		if ok {
-			data["to"] = to
-		}
-		datas[to.ID()] = data
-	}
-	// if no tos, send data directly
-	if len(datas) == 0 {
-		datas["-"] = []interface{}{a.Data}
-	}
-	ret := make([]interface{}, len(datas))
-	keys := make([]string, len(datas))
-	index := 0
-	for k, _ := range datas {
-		ret[index] = datas[k]
-		keys[index] = fmt.Sprintf("%s,%s,%s,%s", a.Service, a.Method, k, a.MergeKey)
-	}
-	return ret, keys
-}
-
 func getCallback(log *logger.SubLogger, services map[string]*gobus.Client) func(key string, datas [][]byte) {
 	return func(key string, datas [][]byte) {
 		names := strings.SplitN(key, ",", 3)
