@@ -3,7 +3,7 @@ VERSION:2.0
 PRODID:-//exfe//exfe.com //
 X-WR-CALNAME:{{.Cross.Title}}
 X-WR-CALDESC:exfe cal
-X-WR-TIMEZONE:{{.To.Timezone}}
+X-WR-TIMEZONE:{{.Timezone}}
 BEGIN:VEVENT
 UID:!{{.Cross.ID}}@exfe
 DTSTAMP:{{$time := .Cross.Time.BeginAt.UTCTime "20060102T150405Z"}}{{$time}}

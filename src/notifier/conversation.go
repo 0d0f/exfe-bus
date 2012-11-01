@@ -60,6 +60,13 @@ func (a *UpdateArg) Link() string {
 	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
 }
 
+func (a *UpdateArg) Timezone() string {
+	if a.To.Timezone != "" {
+		return a.To.Timezone
+	}
+	return a.Cross.Time.BeginAt.Timezone
+}
+
 type Conversation struct {
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
