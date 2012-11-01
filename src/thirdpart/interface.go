@@ -91,7 +91,7 @@ type Helper interface {
 }
 
 type updateFriendsArg struct {
-	UserID     uint64            `json:"user_id"`
+	UserID     int64             `json:"user_id"`
 	Identities []*model.Identity `json:"identities"`
 }
 
