@@ -14,6 +14,7 @@ import (
 
 type IMsg struct {
 	connChan chan Load
+	isRun    bool
 }
 
 func NewiMsg(config *model.Config) (*IMsg, error) {
@@ -27,14 +28,19 @@ func NewiMsg(config *model.Config) (*IMsg, error) {
 	c.Rand = rand.Reader
 	addr := "0.0.0.0:25000"
 
-	go listen(addr, &c, connChan, config.Log)
-
-	return &IMsg{
+	ret := &IMsg{
 		connChan: connChan,
-	}, nil
+		isRun:    false,
+	}
+
+	go listen(ret, addr, &c, connChan, config.Log)
+	return ret, nil
 }
 
 func (i *IMsg) Send(meta *gobus.HTTPMeta, load *Load, r *int) error {
+	if !i.isRun {
+		return fmt.Errorf("%s", "can't connect to client sender")
+	}
 	i.connChan <- *load
 	l := <-i.connChan
 	if l.Content != "" {
@@ -43,7 +49,7 @@ func (i *IMsg) Send(meta *gobus.HTTPMeta, load *Load, r *int) error {
 	return nil
 }
 
-func listen(addr string, c *tls.Config, connChan chan Load, log *logger.Logger) {
+func listen(imsg *IMsg, addr string, c *tls.Config, connChan chan Load, log *logger.Logger) {
 	for {
 		log.Info("imsg server: listening")
 		listener, err := tls.Listen("tcp", addr, c)
@@ -59,7 +65,9 @@ func listen(addr string, c *tls.Config, connChan chan Load, log *logger.Logger) 
 			continue
 		}
 		listener.Close()
+		imsg.isRun = true
 		handleClient(conn, connChan, log.SubCode())
+		imsg.isRun = false
 	}
 }
 
@@ -107,7 +115,7 @@ func handleClient(conn net.Conn, connChan chan Load, log *logger.SubLogger) {
 				return
 			}
 			connChan <- load
-		case <-time.After(30 * time.Second):
+		case <-time.After(10 * time.Second):
 			var load Load
 
 			load.Type = Ping
