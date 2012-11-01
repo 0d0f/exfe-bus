@@ -1,5 +1,9 @@
 package imsg
 
+import (
+	"fmt"
+)
+
 type LoadType int
 
 const (
@@ -13,4 +17,8 @@ type Load struct {
 	Type    LoadType `json:"type"`
 	To      string   `json:"to"`
 	Content string   `json:"content"`
+}
+
+func (l Load) String() string {
+	return fmt.Sprintf("{type:%d to:%s}", l.Type, l.To)
 }

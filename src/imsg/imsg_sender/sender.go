@@ -16,7 +16,7 @@ import (
 
 func main() {
 	if len(os.Args) != 5 {
-		fmt.Println("Usage: %s [addr: exfe.com:25000] [cert] [key] [time out in second]", os.Args[0])
+		fmt.Printf("Usage: %s [addr: exfe.com:25000] [cert] [key] [time out in second]\n", os.Args[0])
 		return
 	}
 	addr := os.Args[1]
@@ -24,7 +24,7 @@ func main() {
 	keyFile := os.Args[3]
 	t, err := strconv.Atoi(os.Args[4])
 	if err != nil {
-		fmt.Println("Usage: %s [addr: exfe.com:25000] [cert] [key] [time out in second]", os.Args[0])
+		fmt.Printf("Usage: %s [addr: exfe.com:25000] [cert] [key] [time out in second]\n", os.Args[0])
 		return
 	}
 	timeout := time.Duration(t) * time.Second
@@ -84,9 +84,12 @@ func main() {
 		case imsg.Send:
 			log.Info("received send to %s", load.To)
 
-			err := SendiMsg("E:exfe@me.com", load.To, load.Content)
+			err := SendiMsg(load.To, load.Content)
 			load.Type = imsg.Respond
-			load.Content = err.Error()
+			load.Content = ""
+			if err != nil {
+				load.Content = err.Error()
+			}
 			l, err := json.Marshal(load)
 			if err != nil {
 				log.Crit("marshal: %s", err)
@@ -105,8 +108,8 @@ func main() {
 	log.Info("exiting")
 }
 
-func SendiMsg(from, to, content string) error {
-	cmd := exec.Command("osascript", "/usr/local/bin/exfe_imsg.applescript", from, to, content)
+func SendiMsg(to, content string) error {
+	cmd := exec.Command("osascript", "/usr/local/bin/exfe_imsg.applescript", to, content)
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return err

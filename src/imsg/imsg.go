@@ -44,9 +44,8 @@ func (i *IMsg) Send(meta *gobus.HTTPMeta, load *Load, r *int) error {
 }
 
 func listen(addr string, c *tls.Config, connChan chan Load, log *logger.Logger) {
-
-	log.Info("server: listening")
 	for {
+		log.Info("imsg server: listening")
 		listener, err := tls.Listen("tcp", addr, c)
 		if err != nil {
 			log.Err("listen error: %s", err)
@@ -89,15 +88,22 @@ func handleClient(conn net.Conn, connChan chan Load, log *logger.SubLogger) {
 			n, err := conn.Read(reply)
 			if err != nil {
 				log.Err("read error: %s", err)
+				load.Type = Respond
+				load.Content = fmt.Sprintf("read error: %s", err)
+				connChan <- load
 				return
 			}
 			err = json.Unmarshal(reply[:n], &load)
 			if err != nil {
 				log.Err("unmashal error: %s", err)
+				load.Content = fmt.Sprintf("unmashal error: %s", err)
+				connChan <- load
 				return
 			}
 			if load.Type != Respond {
-				log.Info("client not respone")
+				log.Info("client no respond")
+				load.Content = fmt.Sprintf("client no respond")
+				connChan <- load
 				return
 			}
 			connChan <- load
