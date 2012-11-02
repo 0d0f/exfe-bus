@@ -105,14 +105,14 @@ func TestTemplateSub(t *testing.T) {
 }
 
 func TestTemplateFor(t *testing.T) {
-	templ, err := NewTemplate("test").Parse(`{{range for .}}{{.Index}} - {{.V}}{{if not .Last}}, {{end}}{{end}}`)
+	templ, err := NewTemplate("test").Parse(`{{range for .}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}{{.Index}} - {{.V}}{{end}}`)
 	if err != nil {
 		t.Fatalf("unexpect error: %s", err)
 	}
 	buf := bytes.NewBuffer(nil)
 	err = templ.Execute(buf, []string{"a", "b", "c", "d"})
 	assert.Equal(t, err, nil)
-	assert.Equal(t, buf.String(), "1 - a, 2 - b, 3 - c, 4 - d")
+	assert.Equal(t, buf.String(), "1 - a, 2 - b, 3 - c and 4 - d")
 }
 
 func TestTemplateLimit(t *testing.T) {
@@ -124,6 +124,17 @@ func TestTemplateLimit(t *testing.T) {
 	err = templ.Execute(buf, nil)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, buf.String(), "12…")
+}
+
+func TestTemplatePlural(t *testing.T) {
+	templ, err := NewTemplate("test").Parse(`{{plural "is" "are" 1}}{{plural "is" "are" 2}}`)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	buf := bytes.NewBuffer(nil)
+	err = templ.Execute(buf, nil)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, buf.String(), "isare")
 }
 
 func TestLocalTemplate(t *testing.T) {

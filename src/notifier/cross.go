@@ -101,6 +101,13 @@ Bys:
 	return ret, nil
 }
 
+func (a *SummaryArg) Timezone() string {
+	if a.To.Timezone != "" {
+		return a.To.Timezone
+	}
+	return a.Cross.Time.BeginAt.Timezone
+}
+
 func (a *SummaryArg) TotalOldAccepted() int {
 	ret := 0
 	for _, e := range a.OldAccepted {
@@ -123,6 +130,48 @@ func (a *SummaryArg) IsPlaceChanged() bool {
 	return !a.Cross.Place.Same(&a.OldCross.Place)
 }
 
+func (a *SummaryArg) IsPlaceTitleChanged() bool {
+	return a.Cross.Place.Title != a.OldCross.Place.Title
+}
+
+func (a *SummaryArg) IsPlaceDescChanged() bool {
+	return a.Cross.Place.Description != a.OldCross.Place.Description
+}
+
+func (a *SummaryArg) IsDescriptionChanged() bool {
+	return a.Cross.Description != a.OldCross.Description
+}
+
+func (a *SummaryArg) IsComboChanged() bool {
+	changedNumber := 0
+	if a.IsTimeChanged() {
+		changedNumber++
+	}
+	if a.IsTimeChanged() {
+		changedNumber++
+	}
+	if a.IsPlaceTitleChanged() {
+		changedNumber++
+	}
+	if a.IsPlaceDescChanged() {
+		changedNumber++
+	}
+	if a.IsDescriptionChanged() {
+		changedNumber++
+	}
+
+	return changedNumber > 1
+}
+
+func (a *SummaryArg) ToIn(invitations []model.Invitation) bool {
+	for _, i := range invitations {
+		if a.To.SameUser(&i.Identity) {
+			return true
+		}
+	}
+	return false
+}
+
 func (a *SummaryArg) ListBy(limit int, join string) string {
 	buf := bytes.NewBuffer(nil)
 	for i, by := range a.Bys {
@@ -140,6 +189,16 @@ func (a *SummaryArg) ListBy(limit int, join string) string {
 
 func (a *SummaryArg) Link() string {
 	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
+}
+
+func (a *SummaryArg) NeedShowBy() bool {
+	if len(a.Bys) != 1 {
+		return false
+	}
+	if a.To.SameUser(&a.Bys[0]) {
+		return false
+	}
+	return true
 }
 
 type Cross struct {

@@ -14,6 +14,7 @@ import (
 type ForElement struct {
 	V     interface{}
 	Index int
+	First bool
 	Last  bool
 }
 
@@ -71,9 +72,16 @@ func NewTemplate(name string) *template.Template {
 			for i, n := 0, v.Len(); i < n; i++ {
 				ret[i].V = v.Index(i).Interface()
 				ret[i].Index = i + 1
+				ret[i].First = i == 0
 				ret[i].Last = i == (n - 1)
 			}
 			return ret, nil
+		},
+		"plural": func(single, multi string, length int) string {
+			if length <= 1 {
+				return single
+			}
+			return multi
 		},
 	}
 	ret.Funcs(funcs)

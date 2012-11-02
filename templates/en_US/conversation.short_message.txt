@@ -1,2 +1,2 @@
-{{$link := .Link}}{{$title := .Cross.Title}}{{range .Posts}}{{.By.Name | replace `\` `\\`}}: {{.Content | limit 60 | replace `\` `\\`}} \((“{{$title | limit 20 | replace `\` `\\`}}” {{$link}})\)
+{{$link := .Link | replace `\` `\\`}}{{$title := .Cross.Title | limit 20 | replace `\` `\\`}}{{range .Posts}}{{.By.Name | replace `\` `\\`}}: {{.Content | limit 60 | replace `\` `\\`}} \((“{{$title}}” {{$link}})\)
 {{end}}

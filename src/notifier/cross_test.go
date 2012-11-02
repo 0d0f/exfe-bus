@@ -373,9 +373,13 @@ func TestCrossSummaryTwitter(t *testing.T) {
 
 	c := NewCross(localTemplate, &config)
 	private, public, err := c.getContent(updates)
-	t.Logf("err: %s", err)
-	t.Errorf("private:-----start------\n%s\n-------end-------", private)
-	t.Errorf("public:-----start------\n%s\n-------end-------", public)
+	assert.Equal(t, err, nil)
+	t.Logf("private:-----start------\n%s\n-------end-------", private)
+	expectPrivate := "\n\n\n\n\n\n\n\n\\(“Test Cross”\\) update: \\(“New Title”\\). 4:45PM on Tue, Oct 23 at \\(Test Place1\\). 5 people invited. http://site/url/#!token=recipient_twitter1_token\n\n\\(facebook5 name\\) is invited to \\(“New Title”\\) by facebook4 name, email1 name, etc. http://site/url/#!token=recipient_twitter1_token\n\n\\(facebook6 name\\) left \\(“New Title”\\). http://site/url/#!token=recipient_twitter1_token\n\n\n\n\n\n\n\\(email2 name\\) and \\(facebook5 name\\) accepted \\(“New Title”\\), \\(twitter3 name\\) is unavailable, 5 of 9 accepted. http://site/url/#!token=recipient_twitter1_token\n\n\n\n"
+	assert.Equal(t, private, expectPrivate)
+	t.Logf("private:-----start------\n%s\n-------end-------", private)
+	expectPublic := `Updates: http://site/url/#!token=recipient_twitter1_token (Please follow @EXFE to receive details PRIVATELY through Direct Message.)`
+	assert.Equal(t, public, expectPublic)
 }
 
 func TestCrossSummaryEmail(t *testing.T) {

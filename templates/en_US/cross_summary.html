@@ -84,7 +84,7 @@
                             <td>
                                 <a href="{{.Link}}" style="color: #191919; text-decoration: none;">
                                     <p style="margin: 0;">
-                                        <span class="exfe_mail_identity_name">{{.Cross.Exfee.TotalAccepted | html }}</span> Accepted: {{range for .NewAccepted}}<span class='exfe_mail_identity_name'>{{.V.Identity.Name | html}}</span>{{if not .Last}}, {{end}}{{end}}{{if .OldAccepted}}, and {{.TotalOldAccepted | html}} others{{end}}.
+                                        <span class="exfe_mail_identity_name">{{.Cross.Exfee.CountPeople .Cross.Exfee.Accepted | html }}</span> Accepted: {{range for .NewAccepted}}<span class='exfe_mail_identity_name'>{{.V.Identity.Name | html}}</span>{{if not .Last}}, {{end}}{{end}}{{if .OldAccepted}}, and {{.TotalOldAccepted | html}} others{{end}}.
                                     </p>
                                 </a>
                             </td>

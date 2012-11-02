@@ -32,7 +32,7 @@ func TestConversationUpdateToSelf(t *testing.T) {
 
 	c := NewConversation(localTemplate, &config)
 	private, public, err := c.getContent(updates)
-	assert.Equal(t, err.Error(), "can't parse posts: no need send self")
+	assert.Equal(t, err.Error(), "no need send self")
 	assert.Equal(t, private, "")
 	assert.Equal(t, public, "")
 }

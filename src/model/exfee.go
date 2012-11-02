@@ -31,9 +31,9 @@ func (e *Exfee) Parse() {
 	}
 }
 
-func (e Exfee) TotalAccepted() int {
+func (e Exfee) CountPeople(invitations []Invitation) int {
 	ret := 0
-	for _, i := range e.Accepted {
+	for _, i := range invitations {
 		ret += 1 + int(i.Mates)
 	}
 	return ret
