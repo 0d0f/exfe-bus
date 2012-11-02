@@ -25,3 +25,12 @@ func (u ConversationUpdateArg) String() string {
 	}
 	return fmt.Sprintf("{to:%s with:%s updates:%d}", u[0].To, u[0].Cross, len(u))
 }
+
+type CrossUpdateArg []model.CrossUpdate
+
+func (u CrossUpdateArg) String() string {
+	if len(u) == 0 {
+		return "{updates:0}"
+	}
+	return fmt.Sprintf("{to:%s with:%s updates:%d}", u[0].To, u[0].Cross, len(u))
+}

@@ -48,6 +48,7 @@ func main() {
 		return
 	}
 	conversation := NewConversation(localTemplate, &config)
+	cross := NewCross(localTemplate, &config)
 
 	imsg, err := imsg.NewiMsg(&config)
 	if err != nil {
@@ -73,6 +74,7 @@ func main() {
 		return
 	}
 	log.Info("register TokenManager %d methods.", count)
+
 	count, err = bus.Register(iom)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
@@ -80,6 +82,7 @@ func main() {
 		return
 	}
 	log.Info("register IOM %d methods.", count)
+
 	count, err = bus.Register(thirdpart)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
@@ -87,6 +90,7 @@ func main() {
 		return
 	}
 	log.Info("register Thirdpart %d methods.", count)
+
 	count, err = bus.Register(conversation)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
@@ -94,6 +98,14 @@ func main() {
 		return
 	}
 	log.Info("register Conversation %d methods.", count)
+
+	count, err = bus.Register(cross)
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	log.Info("register Cross %d methods.", count)
 
 	count, err = bus.Register(imsg)
 	if err != nil {

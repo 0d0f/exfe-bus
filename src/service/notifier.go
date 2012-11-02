@@ -33,3 +33,24 @@ func (c *Conversation) Update(meta *gobus.HTTPMeta, updates args.ConversationUpd
 	}
 	return err
 }
+
+type Cross struct {
+	cross *notifier.Cross
+}
+
+func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config) *Cross {
+	return &Cross{
+		cross: notifier.NewCross(localTemplate, config),
+	}
+}
+
+// 发送Cross的更新汇总消息updates
+//
+// 例子：
+//
+//
+func (c *Cross) Summary(meta *gobus.HTTPMeta, updates args.CrossUpdateArg, i *int) error {
+	*i = 0
+	err := c.cross.Summary(updates)
+	return err
+}
