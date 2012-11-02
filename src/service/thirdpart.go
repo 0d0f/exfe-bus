@@ -63,7 +63,7 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 //
 // 例子：
 //
-//   > curl http://127.0.0.1:23333/Thirdpart?method=Send -d '{"to":{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1},"public":"public","private":"private","info":{"cross_id":234,"type":"u"}}'
+//   > curl http://127.0.0.1:23333/Thirdpart?method=Send -d '{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1}'
 //
 func (t *Thirdpart) Send(meta *gobus.HTTPMeta, arg *args.SendArg, id *string) error {
 	var err error
