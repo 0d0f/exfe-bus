@@ -234,8 +234,8 @@ func (c *Cross) Summary(updates []model.CrossUpdate) error {
 			Type:    thirdpart.CrossUpdate,
 		},
 	}
-	var i int
-	err = client.Do("Send", &arg, &i)
+	var ids string
+	err = client.Do("Send", &arg, &ids)
 	if err != nil {
 		return fmt.Errorf("send error: %s", err)
 	}
