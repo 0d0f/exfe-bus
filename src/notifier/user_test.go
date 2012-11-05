@@ -60,3 +60,29 @@ func TestUserConfirmTwitter(t *testing.T) {
 	assert.Equal(t, private, expectPrivate)
 	assert.Equal(t, public, "")
 }
+
+func TestUserResetEmail(t *testing.T) {
+	arg := ArgBase{}
+	arg.To = remail1
+
+	u := NewUser(localTemplate, &config)
+	private, public, err := u.getResetPasswordContent(arg)
+	assert.Equal(t, err, nil)
+	t.Logf("private:---------start---------\n%s\n---------end----------", private)
+	expectPrivate := "Content-Type: multipart/alternative; boundary=\"bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60\"\nTo: =?utf-8?B?ZW1haWwxIG5hbWU=?= <email1@domain.com>\nFrom: =?utf-8?B?YnVzaW5lc3MgdGVzdGVy?= <x@test.com>\nSubject: =?utf-8?B?RVhGRSByZXNldCBmb3Jnb3R0ZW4gcGFzc3dvcmQ=?=\n\n--bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: base64\n\nSGksIGVtYWlsMSBuYW1lLgoKWW91IGp1c3QgcmVxdWVzdGVkIHRvIHJlc2V0IHlvdXIgZm9yZ290dGVu\r\nIEVYRkUgcGFzc3dvcmQuCgpQbGVhc2UgY2xpY2sgaGVyZSB0byBzZXQgbmV3IHBhc3N3b3JkOiBodHRw\r\nOi8vc2l0ZS91cmwvIyF0b2tlbj1yZWNpcGllbnRfZW1haWwxX3Rva2VuIChUaGlzIHNpbmdsZS11c2Ug\r\nbGluayB3aWxsIGJlIGV4cGlyZWQgaW4gMSBkYXkuKQoKVGhpcyBlbWFpbCBpcyBzZW50IHRvIGVtYWls\r\nMUBkb21haW4uY29tIHBlciBmb3Jnb3QgcGFzc3dvcmQgcmVxdWVzdCBvbiBFWEZFKCBodHRwOi8vc2l0\r\nZS91cmwgKS4K\n--bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60\nContent-Type: text/html; charset=utf-8\nContent-Transfer-Encoding: base64\n\nPCFET0NUWVBFIGh0bWw+CjxodG1sPgogICAgPGhlYWQ+CiAgICAgICAgPHRpdGxlPjwvdGl0bGU+CiAg\r\nICAgICAgPG1ldGEgaHR0cC1lcXVpdj0iQ29udGVudC1UeXBlIiBjb250ZW50PSJ0ZXh0L2h0bWw7IGNo\r\nYXJzZXQ9VVRGLTgiPgogICAgPC9oZWFkPgogICAgPGJvZHk+CiAgICAgICAgPHRhYmxlIGJvcmRlcj0i\r\nMCIgY2VsbHBhZGRpbmc9IjAiIGNlbGxzcGFjaW5nPSIwIiBzdHlsZT0iZm9udC1mYW1pbHk6IFZlcmRh\r\nbmE7IGZvbnQtc2l6ZTogMTRweDsgbGluZS1oZWlnaHQ6IDIwcHg7IGNvbG9yOiAjMzMzMzMzOyBmb250\r\nLXdlaWdodDogbm9ybWFsOyB3aWR0aDogNjQwcHg7IHBhZGRpbmc6IDIwcHg7IGJhY2tncm91bmQtY29s\r\nb3I6ICNmYmZiZmI7Ij4KICAgICAgICAgICAgPHRyPgogICAgICAgICAgICAgICAgPHRkPgogICAgICAg\r\nICAgICAgICAgICAgIEhpLCA8c3BhbiBzdHlsZT0iY29sb3I6ICMxOTE5MTk7Ij5lbWFpbDEgbmFtZTwv\r\nc3Bhbj4KICAgICAgICAgICAgICAgIDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0\r\ncj48dGQgaGVpZ2h0PSIyMCI+PC90ZD48L3RyPgogICAgICAgICAgICA8dHI+CiAgICAgICAgICAgICAg\r\nICA8dGQ+CiAgICAgICAgICAgICAgICAgICAgWW91IGp1c3QgcmVxdWVzdGVkIHRvIHJlc2V0IHlvdXIg\r\nZm9yZ290dGVuIDxhIHN0eWxlPSJjb2xvcjogIzNhNmVhNTsgdGV4dC1kZWNvcmF0aW9uOiBub25lOyIg\r\naHJlZj0iaHR0cDovL3NpdGUvdXJsIj5FWEZFPC9hPiBwYXNzd29yZC4KICAgICAgICAgICAgICAgIDwv\r\ndGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0cj48dGQgaGVpZ2h0PSIyMCI+PC90ZD48\r\nL3RyPgogICAgICAgICAgICA8dHI+CiAgICAgICAgICAgICAgICA8dGQ+CiAgICAgICAgICAgICAgICAg\r\nICAgUGxlYXNlIGNsaWNrIGhlcmUgdG8gc2V0IG5ldyBwYXNzd29yZDogPGEgc3R5bGU9ImNvbG9yOiMz\r\nMzMzMzM7IHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyIgaHJlZj0iaHR0cDovL3NpdGUvdXJsLyMh\r\ndG9rZW49cmVjaXBpZW50X2VtYWlsMV90b2tlbiI+aHR0cDovL3NpdGUvdXJsLyMhdG9rZW49cmVjaXDi\r\ngKY8L2E+PGJyIC8+CiAgICAgICAgICAgICAgICAgICAgVGhpcyBzaW5nbGUtdXNlIGxpbmsgd2lsbCBi\r\nZSBleHBpcmVkIGluIDEgZGF5LgogICAgICAgICAgICAgICAgPC90ZD4KICAgICAgICAgICAgPC90cj4K\r\nICAgICAgICAgICAgPHRyPjx0ZCBoZWlnaHQ9IjQwIj48L3RkPjwvdHI+CiAgICAgICAgICAgIDx0cj4K\r\nICAgICAgICAgICAgICAgIDx0ZCBzdHlsZT0iZm9udC1zaXplOiAxMXB4OyBsaW5lLWhlaWdodDogMTNw\r\neDsgY29sb3I6ICM2NjY2NjY7Ij4KICAgICAgICAgICAgICAgICAgICBUaGlzIGVtYWlsIGlzIHNlbnQg\r\ndG8gPGEgc3R5bGU9ImNvbG9yOiAjNjY2NjY2OyB0ZXh0LWRlY29yYXRpb246IG5vbmU7IGZvbnQtc3R5\r\nbGU6IGl0YWxpYzsiIGhyZWY9Im1haWx0bzplbWFpbDFAZG9tYWluLmNvbSI+ZW1haWwxQGRvbWFpbi5j\r\nb208L2E+IHBlciBmb3Jnb3QgcGFzc3dvcmQgcmVxdWVzdCBvbiA8YSBzdHlsZT0iY29sb3I6ICMzYTZl\r\nYTU7IHRleHQtZGVjb3JhdGlvbjogbm9uZTsiIGhyZWY9Imh0dHA6Ly9zaXRlL3VybCI+RVhGRTwvYT4u\r\nCiAgICAgICAgICAgICAgICA8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgIDwvdGFibGU+CiAg\r\nICA8L2JvZHk+CjwvaHRtbD4K\n--bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60--\n"
+	assert.Equal(t, private, expectPrivate)
+	assert.Equal(t, public, "")
+}
+
+func TestUserResetTwitter(t *testing.T) {
+	arg := ArgBase{}
+	arg.To = rtwitter1
+
+	u := NewUser(localTemplate, &config)
+	private, public, err := u.getResetPasswordContent(arg)
+	assert.Equal(t, err, nil)
+	t.Logf("private:---------start---------\n%s\n---------end----------", private)
+	expectPrivate := "Please click here to set new password: \\(http://site/url/#!token=recipient_twitter1_token\\) (This single-use link will be expired in 1 day.)"
+	assert.Equal(t, private, expectPrivate)
+	assert.Equal(t, public, "")
+}
