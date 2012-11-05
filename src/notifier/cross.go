@@ -270,34 +270,33 @@ func (c *Cross) Summary(updates []model.CrossUpdate) error {
 	return nil
 }
 
-func (c *Cross) Invite(invitations []InvitationArg) error {
+func (c *Cross) Invite(invitation InvitationArg) error {
 	url := fmt.Sprintf("http://%s:%d/Thirdpart", c.config.ExfeService.Addr, c.config.ExfeService.Port)
 	client, err := gobus.NewClient(url)
 	if err != nil {
 		return fmt.Errorf("can't create gobus client: %s", err)
 	}
 
-	for _, i := range invitations {
-		private, public, err := c.getInvitationContent(i)
-		if err != nil {
-			return fmt.Errorf("can't get content: %s", err)
-		}
-
-		arg := args.SendArg{
-			To:             &i.To,
-			PrivateMessage: private,
-			PublicMessage:  public,
-			Info: &thirdpart.InfoData{
-				CrossID: i.Cross.ID,
-				Type:    thirdpart.CrossInvitation,
-			},
-		}
-		var ids string
-		err = client.Do("Send", &arg, &ids)
-		if err != nil {
-			return fmt.Errorf("send error: %s", err)
-		}
+	private, public, err := c.getInvitationContent(invitation)
+	if err != nil {
+		return fmt.Errorf("can't get content: %s", err)
 	}
+
+	arg := args.SendArg{
+		To:             &invitation.To,
+		PrivateMessage: private,
+		PublicMessage:  public,
+		Info: &thirdpart.InfoData{
+			CrossID: invitation.Cross.ID,
+			Type:    thirdpart.CrossInvitation,
+		},
+	}
+	var ids string
+	err = client.Do("Send", &arg, &ids)
+	if err != nil {
+		return fmt.Errorf("send error: %s", err)
+	}
+
 	return nil
 }
 
