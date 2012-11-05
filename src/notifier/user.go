@@ -1,13 +1,11 @@
 package notifier
 
 import (
-	"bytes"
 	"fmt"
 	"formatter"
 	"gobus"
 	"model"
 	"service/args"
-	"thirdpart"
 )
 
 type WelcomeArg struct {
@@ -37,69 +35,45 @@ func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config) *User
 }
 
 func (u User) Welcome(arg WelcomeArg) error {
-	private, public, err := u.getWelcomeContent(arg)
+	err := arg.Parse(u.config)
+	if err != nil {
+		return err
+	}
+
+	content, err := GetContent(u.localTemplate, "user_welcome", arg)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
-
-	url := fmt.Sprintf("http://%s:%d", u.config.ExfeService.Addr, u.config.ExfeService.Port)
-	client, err := gobus.NewClient(fmt.Sprintf("%s/%s", url, "Thirdpart"))
-	if err != nil {
-		return fmt.Errorf("can't create gobus client: %s", err)
-	}
-
-	a := args.SendArg{
-		To:             &arg.To,
-		PrivateMessage: private,
-		PublicMessage:  public,
-		Info: &thirdpart.InfoData{
-			CrossID: 0,
-			Type:    thirdpart.CrossInvitation,
-		},
-	}
-	var ids string
-	err = client.Do("Send", &a, &ids)
-	if err != nil {
-		return fmt.Errorf("send error: %s", err)
-	}
-	return nil
+	return u.send(content, arg.ArgBase)
 }
 
 func (u User) Confirm(arg ConfirmArg) error {
-	private, public, err := u.getConfirmContent(arg)
+	err := arg.Parse(u.config)
+	if err != nil {
+		return err
+	}
+
+	content, err := GetContent(u.localTemplate, "user_confirm", arg)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
-
-	url := fmt.Sprintf("http://%s:%d", u.config.ExfeService.Addr, u.config.ExfeService.Port)
-	client, err := gobus.NewClient(fmt.Sprintf("%s/%s", url, "Thirdpart"))
-	if err != nil {
-		return fmt.Errorf("can't create gobus client: %s", err)
-	}
-
-	a := args.SendArg{
-		To:             &arg.To,
-		PrivateMessage: private,
-		PublicMessage:  public,
-		Info: &thirdpart.InfoData{
-			CrossID: 0,
-			Type:    thirdpart.CrossInvitation,
-		},
-	}
-	var ids string
-	err = client.Do("Send", &a, &ids)
-	if err != nil {
-		return fmt.Errorf("send error: %s", err)
-	}
-	return nil
+	return u.send(content, arg.ArgBase)
 }
 
 func (u User) ResetPassword(arg ArgBase) error {
-	private, public, err := u.getResetPasswordContent(arg)
+	err := arg.Parse(u.config)
+	if err != nil {
+		return err
+	}
+
+	content, err := GetContent(u.localTemplate, "user_resetpass", arg)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
+	return u.send(content, arg)
+}
 
+func (u User) send(content string, arg ArgBase) error {
 	url := fmt.Sprintf("http://%s:%d", u.config.ExfeService.Addr, u.config.ExfeService.Port)
 	client, err := gobus.NewClient(fmt.Sprintf("%s/%s", url, "Thirdpart"))
 	if err != nil {
@@ -108,12 +82,8 @@ func (u User) ResetPassword(arg ArgBase) error {
 
 	a := args.SendArg{
 		To:             &arg.To,
-		PrivateMessage: private,
-		PublicMessage:  public,
-		Info: &thirdpart.InfoData{
-			CrossID: 0,
-			Type:    thirdpart.CrossInvitation,
-		},
+		PrivateMessage: content,
+		PublicMessage:  "",
 	}
 	var ids string
 	err = client.Do("Send", &a, &ids)
@@ -121,55 +91,4 @@ func (u User) ResetPassword(arg ArgBase) error {
 		return fmt.Errorf("send error: %s", err)
 	}
 	return nil
-}
-
-func (u User) getWelcomeContent(arg WelcomeArg) (string, string, error) {
-	arg.Config = u.config
-	messageType, err := thirdpart.MessageTypeFromProvider(arg.To.Provider)
-	if err != nil {
-		return "", "", err
-	}
-
-	templateName := fmt.Sprintf("user_welcome.%s", messageType)
-	private := bytes.NewBuffer(nil)
-	err = u.localTemplate.Execute(private, arg.To.Language, templateName, arg)
-	if err != nil {
-		return "", "", fmt.Errorf("private template(%s) failed: %s", templateName, err)
-	}
-
-	return private.String(), "", nil
-}
-
-func (u User) getConfirmContent(arg ConfirmArg) (string, string, error) {
-	arg.Config = u.config
-	messageType, err := thirdpart.MessageTypeFromProvider(arg.To.Provider)
-	if err != nil {
-		return "", "", err
-	}
-
-	templateName := fmt.Sprintf("user_confirm.%s", messageType)
-	private := bytes.NewBuffer(nil)
-	err = u.localTemplate.Execute(private, arg.To.Language, templateName, arg)
-	if err != nil {
-		return "", "", fmt.Errorf("private template(%s) failed: %s", templateName, err)
-	}
-
-	return private.String(), "", nil
-}
-
-func (u User) getResetPasswordContent(arg ArgBase) (string, string, error) {
-	arg.Config = u.config
-	messageType, err := thirdpart.MessageTypeFromProvider(arg.To.Provider)
-	if err != nil {
-		return "", "", err
-	}
-
-	templateName := fmt.Sprintf("user_resetpass.%s", messageType)
-	private := bytes.NewBuffer(nil)
-	err = u.localTemplate.Execute(private, arg.To.Language, templateName, arg)
-	if err != nil {
-		return "", "", fmt.Errorf("private template(%s) failed: %s", templateName, err)
-	}
-
-	return private.String(), "", nil
 }
