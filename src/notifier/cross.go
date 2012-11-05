@@ -11,12 +11,11 @@ import (
 )
 
 type SummaryArg struct {
-	To       *model.Recipient `json:"-"`
+	ArgBase
 	OldCross *model.Cross     `json:"-"`
-	Cross    *model.Cross     `json:"-"`
+	Cross    model.Cross      `json:"-"`
 	Bys      []model.Identity `json:"-"`
 
-	Config        *model.Config      `json:"-"`
 	NewInvited    []model.Invitation `json:"-"`
 	Removed       []model.Invitation `json:"-"`
 	NewAccepted   []model.Invitation `json:"-"`
@@ -31,7 +30,7 @@ func SummaryFromUpdates(updates []model.CrossUpdate, config *model.Config) (*Sum
 		return nil, fmt.Errorf("no update info")
 	}
 
-	to := &updates[0].To
+	to := updates[0].To
 	bys := make([]model.Identity, 0)
 
 Bys:
@@ -48,12 +47,10 @@ Bys:
 	}
 
 	ret := &SummaryArg{
-		To:       to,
 		Bys:      bys,
 		OldCross: &updates[0].OldCross,
-		Cross:    &updates[len(updates)-1].Cross,
+		Cross:    updates[len(updates)-1].Cross,
 
-		Config:        config,
 		NewInvited:    make([]model.Invitation, 0),
 		Removed:       make([]model.Invitation, 0),
 		NewAccepted:   make([]model.Invitation, 0),
@@ -62,6 +59,8 @@ Bys:
 		NewInterested: make([]model.Invitation, 0),
 		NewPending:    make([]model.Invitation, 0),
 	}
+	ret.To = to
+	ret.Config = config
 
 	ret.Cross.Exfee.Parse()
 	ret.OldCross.Exfee.Parse()
@@ -163,15 +162,6 @@ func (a *SummaryArg) IsComboChanged() bool {
 	return changedNumber > 1
 }
 
-func (a *SummaryArg) ToIn(invitations []model.Invitation) bool {
-	for _, i := range invitations {
-		if a.To.SameUser(&i.Identity) {
-			return true
-		}
-	}
-	return false
-}
-
 func (a *SummaryArg) ListBy(limit int, join string) string {
 	buf := bytes.NewBuffer(nil)
 	for i, by := range a.Bys {
@@ -187,10 +177,6 @@ func (a *SummaryArg) ListBy(limit int, join string) string {
 	return buf.String()
 }
 
-func (a *SummaryArg) Link() string {
-	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
-}
-
 func (a *SummaryArg) NeedShowBy() bool {
 	if len(a.Bys) != 1 {
 		return false
@@ -202,10 +188,8 @@ func (a *SummaryArg) NeedShowBy() bool {
 }
 
 type InvitationArg struct {
-	To    model.Recipient `json:"to"`
-	Cross model.Cross     `json:"cross"`
-
-	Config model.Config `json:"-"`
+	ArgBase
+	Cross model.Cross `json:"cross"`
 }
 
 func (a InvitationArg) Timezone() string {
@@ -215,21 +199,8 @@ func (a InvitationArg) Timezone() string {
 	return a.Cross.Time.BeginAt.Timezone
 }
 
-func (a InvitationArg) Link() string {
-	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
-}
-
 func (a InvitationArg) IsCreator() bool {
 	return a.To.SameUser(&a.Cross.By)
-}
-
-func (a InvitationArg) ToIn(invitations []model.Invitation) bool {
-	for _, i := range invitations {
-		if a.To.SameUser(&i.Identity) {
-			return true
-		}
-	}
-	return false
 }
 
 func (a InvitationArg) LongDescription() bool {
@@ -328,6 +299,7 @@ func (c *Cross) Invite(invitations []InvitationArg) error {
 }
 
 func (c *Cross) getInvitationContent(invitation InvitationArg) (string, string, error) {
+	invitation.Config = c.config
 	invitation.Cross.Exfee.Parse()
 
 	messageType, err := thirdpart.MessageTypeFromProvider(invitation.To.Provider)

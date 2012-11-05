@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    </head>
+    <body>
+        <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 14px; line-height: 20px; color: #191919; font-weight: normal; width: 640px; padding: 10px 20px 30px 20px; background-color: #fbfbfb;">
+            <tr>
+                <td valign="top">
+                    <p style="font-size: 18px; line-height: 24px;">
+                    Hi, {{.To.Name | html}}
+                    </p>
+                    <p>
+                        <span style="font-size: 18px; line-height: 24px;">Welcome to <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a>!</span>
+                        <br>
+                        <span>An utility for hanging out with friends.</span>
+                    </p>
+                    {{if .NeedVerify}}
+                    <p>
+                        <span style="font-size:14px; color:#333; ">Please click here to verify your identity:</span> <a style="color:#191919; text-decoration: underline;" href="{{.Link}}">{{.Link | limit 30 | html}}</a>
+                    </p>
+                    {{end}}
+                    <p>
+                        <span style="color: #3a6ea5;">·X·</span> (cross) is a gathering of people, on purpose or not. We save you from calling up every one RSVP, losing in endless emails messages off the point.
+                    </p>
+                    <p>
+                        <span style="color: #3a6ea5;">EXFE</span> your friends. Gather a <span style="color: #3a6ea5;">·X·</span>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td height="20"></td>
+            </tr>
+            <tr>
+                <td>
+                    <img style="float: left; margin-left: 20px; margin-right: 40px; margin-bottom: 10px;" src="{{.Config.SiteImg}}/email/rome.png">
+                    <div style="color:#333333;">
+                        <p style="font-size: 18px; line-height: 24px; margin: 0 0 20px 0">
+                            “Rome wasn't built in a day.”
+                        </p>
+                        <p style="margin: 0;">
+                        <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a> [ˈɛksfi] is still in <span style ="font-weight: bold;">pilot</span> stage. We’re building up blocks of it, consequently some bugs or unfinished pages may happen. Any feedback, please email <a style="font-style: italic; color: #333333; text-decoration: underline;" href="mailto:feedback@exfe.com">feedback@exfe.com</a>. Much appreciated.
+                        </p>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td height="20"></td>
+            </tr>
+            <tr>
+                <td style="color: #666666; font-size: 11px;">
+                    This is sent to <a style="font-style: italic; color: #666666; text-decoration: none;" href="mailto:{{.To.ExternalID }}">{{.To.ExternalID | html }}</a> per identity registration request on <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a>.
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
