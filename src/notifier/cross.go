@@ -60,7 +60,10 @@ Bys:
 		NewPending:    make([]model.Invitation, 0),
 	}
 	ret.To = to
-	ret.Config = config
+	err := ret.ArgBase.Parse(config)
+	if err != nil {
+		return nil, err
+	}
 
 	ret.Cross.Exfee.Parse()
 	ret.OldCross.Exfee.Parse()
@@ -298,57 +301,41 @@ func (c *Cross) Invite(invitations []InvitationArg) error {
 	return nil
 }
 
-func (c *Cross) getInvitationContent(invitation InvitationArg) (string, string, error) {
-	invitation.Config = c.config
-	invitation.Cross.Exfee.Parse()
-
-	messageType, err := thirdpart.MessageTypeFromProvider(invitation.To.Provider)
-	if err != nil {
-		return "", "", err
-	}
-
-	templateName := fmt.Sprintf("cross_invitation.%s", messageType)
-	private := bytes.NewBuffer(nil)
-	err = c.localTemplate.Execute(private, invitation.To.Language, templateName, invitation)
-	if err != nil {
-		return "", "", fmt.Errorf("private template(%s) failed: %s", templateName, err)
-	}
-
-	templateName = fmt.Sprintf("cross_invitation_public.%s", messageType)
-	public := bytes.NewBuffer(nil)
-	err = c.localTemplate.Execute(public, invitation.To.Language, templateName, invitation)
-	if err != nil {
-		return "", "", fmt.Errorf("public template(%s) failed: %s", templateName, err)
-	}
-
-	return private.String(), public.String(), nil
-}
-
 func (c *Cross) getSummaryContent(updates []model.CrossUpdate) (string, string, error) {
 	arg, err := SummaryFromUpdates(updates, c.config)
 	if err != nil {
-		return "", "", fmt.Errorf("can't parse update: %s", err)
-	}
-	messageType, err := thirdpart.MessageTypeFromProvider(arg.To.Provider)
-	if err != nil {
 		return "", "", err
 	}
 
-	templateName := fmt.Sprintf("cross_summary.%s", messageType)
-	private := bytes.NewBuffer(nil)
-	err = c.localTemplate.Execute(private, arg.To.Language, templateName, arg)
+	private, err := GetContent(c.localTemplate, "cross_summary", arg)
 	if err != nil {
-		return "", "", fmt.Errorf("private template(%s) failed: %s", templateName, err)
+		return "", "", fmt.Errorf("can't get content: %s", err)
+	}
+	public, err := GetContent(c.localTemplate, "cross_summary_public", arg)
+	if err != nil {
+		return "", "", fmt.Errorf("can't get content: %s", err)
 	}
 
-	templateName = fmt.Sprintf("cross_summary_public.%s", messageType)
-	public := bytes.NewBuffer(nil)
-	err = c.localTemplate.Execute(public, arg.To.Language, templateName, arg)
+	return private, public, nil
+}
+
+func (c *Cross) getInvitationContent(arg InvitationArg) (string, string, error) {
+	err := arg.Parse(c.config)
 	if err != nil {
-		return "", "", fmt.Errorf("public template(%s) failed: %s", templateName, err)
+		return "", "", err
+	}
+	arg.Cross.Exfee.Parse()
+
+	private, err := GetContent(c.localTemplate, "cross_invitation", arg)
+	if err != nil {
+		return "", "", fmt.Errorf("can't get content: %s", err)
+	}
+	public, err := GetContent(c.localTemplate, "cross_invitation_public", arg)
+	if err != nil {
+		return "", "", fmt.Errorf("can't get content: %s", err)
 	}
 
-	return private.String(), public.String(), nil
+	return private, public, nil
 }
 
 func in(id *model.Invitation, ids []model.Invitation) bool {
