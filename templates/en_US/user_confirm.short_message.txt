@@ -1,0 +1,1 @@
+\(You({{.To.ExternalUsername}})\) has been requested for verification{{if .NeedShowBy}} by \({{.By.Name}}\){{end}} on EXFE. Please click here to verify: \({{.Link}}\)

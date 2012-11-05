@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    </head>
+    <body>
+        <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 14px; line-height: 20px; color: #333333; font-weight: normal; width: 640px; padding: 20px; background-color: #fbfbfb;">
+            <tr>
+                <td>
+                    Hi, <span style="color: #191919;">{{.To.Name | html}}.</span>
+                </td>
+            </tr>
+            <tr><td height="20"></td></tr>
+            <tr>
+                <td>
+                    Your email <a href="mailto:{{.To.ExternalID}}" style="text-decoration: none; color: #333333; font-style: italic;">{{.To.ExternalID | html }}</a> has been requested for verification{{if .NeedShowBy}} by <span style="color: #191919;">{{.By.Name | html}}</span>{{end}} on <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a>.
+                </td>
+            </tr>
+            <tr><td height="20"></td></tr>
+            <tr>
+                <td>
+                    <a style="color:#333333; text-decoration: none;" href="{{.Link}}">Please click here to verify: <span style="text-decoration: underline;">{{.Link | limit 30 | html }}</span></a>
+                </td>
+            </tr>
+            <tr><td height="20"></td></tr>
+            <tr>
+                <td>
+                    <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a> is a utility for hanging out with friends. We save you from calling up every one RSVP, losing in endless emails and messages off the point.
+                </td>
+            </tr>
+            <tr><td height="40"></td></tr>
+            <tr>
+                <td style="font-size: 11px; line-height: 13px; color: #666666;">
+                    This email is sent to <a style="color: #666666; text-decoration: none; font-style: italic;" href="mailto:{{.To.ExternalID}}">{{.To.ExternalID | html}}</a> per identity verification request on <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a>.
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
