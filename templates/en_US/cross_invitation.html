@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+            .exfe_mail_label {
+                background-color: #D5E8F2;
+                color: #3a6ea5;
+                font-size: 11px;
+                padding: 0 2px 0 2px;
+            }
+            .exfe_mail_mates {
+                color: #3a6ea5;
+                font-size: 12px;
+            }
+            .exfe_mail_identity {
+                font-style: italic;
+            }
+            .exfe_mail_identity_name {
+                color: #191919;
+            }
+        </style>
+    </head>
+    <body>
+        <table width="640" border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 19px; color: #191919; font-weight: normal; padding: 30px 40px 30px 40px; background-color: #fbfbfb; min-height: 562px;">
+            <tr>
+                <td colspan="3" valign="top" style="font-size: 32px; line-height: 38px; padding-bottom: 18px;">
+                    <a href="{{.Link}}" style="color: #3a6ea5; text-decoration: none; font-weight: lighter;">
+                        {{.Cross.Title | html}}
+                    </a>
+                </td>
+            </tr>
+            <tr>
+                <td width="340" style="vertical-align: text-top;">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td height="19" valign="top" style="padding-bottom: 10px;">
+                                To: <span style="font-weight: bold;">{{.To.Name | html}}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td valign="top" style="padding-bottom: 20px;">
+                                {{if .IsCreator}}
+                                You're gathering this <span style="color: #3a6ea5; text-decoration: none;">·X·</span>.
+                                {{ else }}
+                                Invitation from <span>{{.By.Name | html}}</span>.
+                                {{ end }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <table border="0" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td valign="top" width="160">
+                                            <a href="{{.Link}}" style="text-decoration: none;">
+                                            	{{$time := .Cross.Time.StringInZone .Timezone}}
+                                                {{if $time}}
+                                                <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
+                                                    {{$time | html}}
+                                                </p>
+                                                {{else}}
+                                                <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
+                                                    Time
+                                                </p>
+                                                <p style="color: #191919; margin: 0;">
+                                                    To be decided
+                                                </p>
+                                                {{end}}
+                                            </a>
+                                        </td>
+                                        <td valign="top">
+                                            <a href="{{.Link}}" style="text-decoration: none;">
+                                                {{if .Cross.Place.Title}}
+                                                <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
+                                                    {{.Cross.Place.Title | html}}
+                                                </p>
+                                                <p style="color: #191919; margin: 0;">
+                                                    {{.Cross.Place.Description | replace "\n" "<br />" | html}}
+                                                </p>
+                                                {{else}}
+                                                <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
+                                                    Place
+                                                </p>
+                                                <p style="color: #191919; margin: 0;">
+                                                    To be decided
+                                                </p> 
+                                                {{end}}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        {{if .ToIn .Cross.Exfee.Accepted}}
+                        <tr>
+                            <td style="line-height:19px; padding-top: 30px;">
+                                <span style="display: block; float: left; color: #333333;">
+                                You've been <span style="font-weight: bold; color: #3a6ea5;">CONFIRMED</span> to attend.</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td valign="top" style="padding-bottom: 30px;">
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #E6E6E6; color: #191919; padding: 5px 25px 5px 25px;" alt="Check it out" href="{{.Link}}">Check it out...</a>
+                            </td>
+                        </tr>
+                        {{else}}
+                        <tr>
+                            <td valign="top" style="padding-top: 30px; padding-bottom: 30px;">
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #3A6EA5; color: #FFFFFF; padding: 5px 30px 5px 30px; margin-left: 25px;" alt="Accept" href="{{.Link}}/accept">I'm in</a>
+                                <a style="float: left; display: block; text-decoration: none; border: 1px solid #bebebe; background-color: #E6E6E6; color: #191919; padding: 5px 25px 5px 25px; margin-left: 15px;" alt="Check it out" href="{{.Link}}">Check it out...</a>
+                            </td>
+                        </tr>
+                        {{end}}
+                        <tr>
+                            <td valign="top">
+                                {{.Cross.Description | replace "\n" "<br />" | html}}
+                                {{if .LongDescription}}
+                                <a style="font-style: italic; color: #666666; text-decoration: none;" href="{{.Link}}">...more</a>
+                                {{ end }}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td width="30"></td>
+                <td valign="top">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td height="68" valign="bottom" align="right">
+                                <!--<span style="color: #3a6ea5;">3</span> confirmed-->
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <table border="0" style="color: #333333;" cellpadding="0" cellspacing="0">
+                                    {{range .Cross.Exfee.Invitations}}
+                                    <tr>
+                                        <td width="25" height="25" align="left" valign="top">
+                                            <img width="20" height="20" title="{{.Identity.Name | replace `"` `\"`}}" alt="{{.Identity.Name | replace `"` `\"`}}" src="{{.Identity.Avatar}}">
+                                        </td>
+                                        <td>
+                                          <span>{{.Identity.Name | html}}</span>{{if .Mates}} <span class="exfe_mail_mates">+{{.Mates | html}}</span>{{end}}{{if .Host}} <span class="exfe_mail_label">host</span>{{end}}{{if not .Identity.UserID}} <span class="exfe_mail_identity">{{.Identity.ExternalID | html}}</span>{{end}}
+                                        </td>
+                                    </tr>
+                                    {{end}}
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3" style="font-size: 11px; line-height: 15px; color: #7F7F7F; padding-top: 40px;">
+                    Reply this email directly as conversation.<!-- , or Try <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.AppUrl}}">EXFE</a> app.-->
+                    <br />
+                    This <a style="color: #3a6ea5; text-decoration: none;" href="{{.Link}}">·X·</a> invitation is sent by <span class="exfe_mail_identity_name">{{.Cross.By.Name | html}}</span> from <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a>.
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

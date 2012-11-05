@@ -1,0 +1,34 @@
+{{if .IsCreator}}You're gathering this ·X·.{{else}}Invitation from {{.By.Name}}.Name }}.{{end}}
+
+
+{{.Cross.Title}}
+=======
+{{.Link}}
+{{$time := .Cross.Time.StringInZone .Timezone}}{{if $time}}
+{{$time}}
+======={{else}}
+Time
+=======
+  To be decided.{{end}}
+
+{{if .Cross.Place.Title}}{{.Cross.Place.Title}}{{else}}Place{{end}}
+=======
+  {{if .Cross.Place.Description}}{{.Cross.Place.Description}}{{else}}To be decided.{{end}}
+
+
+{{if .ToIn .Cross.Exfee.Accepted}}You've been CONFIRMED to attend. Check it out: {{.Link}}{{else}}I'm in. Check it out: {{.Link}}/accept{{end}}
+
+
+{{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} Invited:{{range .Cross.Exfee.Accepted}}
++ {{.Identity.Name}}{{if not .Identity.UserID}} {{.Identity.ExternalID}}{{end}}{{if .Host}} (Host){{end}}{{if .Mates}} with {{.Mates}} people{{end}}{{end}}{{range .Cross.Exfee.Interested}}
+· {{.Identity.Name}}{{if not .Identity.UserID}} {{.Identity.ExternalID}}{{end}}{{if .Host}} (Host){{end}}{{if .Mates}} with {{.Mates}} people{{end}}{{end}}{{range .Cross.Exfee.Pending}}
+· {{.Identity.Name}}{{if not .Identity.UserID}} {{.Identity.ExternalID}}{{end}}{{if .Host}} (Host){{end}}{{if .Mates}} with {{.Mates}} people{{end}}{{end}}{{range .Cross.Exfee.Declined}}
+· {{.Identity.Name}}{{if not .Identity.UserID}} {{.Identity.ExternalID}}{{end}}{{if .Host}} (Host){{end}}{{if .Mates}} with {{.Mates}} people{{end}}{{end}}
+
+{{if .Cross.Description}}
+Description
+-------
+  {{.Cross.Description}}{{if .LongDescription}}...{{ end }}
+
+{{end}}
+# Reply this email directly as conversation. #

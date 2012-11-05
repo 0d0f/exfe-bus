@@ -201,6 +201,60 @@ func (a *SummaryArg) NeedShowBy() bool {
 	return true
 }
 
+type InvitationArg struct {
+	To    model.Recipient `json:"to"`
+	Cross model.Cross     `json:"cross"`
+
+	Config model.Config `json:"-"`
+}
+
+func (a InvitationArg) Timezone() string {
+	if a.To.Timezone != "" {
+		return a.To.Timezone
+	}
+	return a.Cross.Time.BeginAt.Timezone
+}
+
+func (a InvitationArg) Link() string {
+	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
+}
+
+func (a InvitationArg) IsCreator() bool {
+	return a.To.SameUser(&a.Cross.By)
+}
+
+func (a InvitationArg) ToIn(invitations []model.Invitation) bool {
+	for _, i := range invitations {
+		if a.To.SameUser(&i.Identity) {
+			return true
+		}
+	}
+	return false
+}
+
+func (a InvitationArg) LongDescription() bool {
+	if len(a.Cross.Description) > 200 {
+		return true
+	}
+	return false
+}
+
+func (a InvitationArg) ListInvitations() string {
+	l := len(a.Cross.Exfee.Invitations)
+	max := 3
+	ret := ""
+	for i := 0; i < 3 && i < l; i++ {
+		if i > 0 {
+			ret += ", "
+		}
+		ret += a.Cross.Exfee.Invitations[i].Identity.Name
+	}
+	if l > max {
+		ret += "…"
+	}
+	return ret
+}
+
 type Cross struct {
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
@@ -214,7 +268,7 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config) *Cro
 }
 
 func (c *Cross) Summary(updates []model.CrossUpdate) error {
-	private, public, err := c.getContent(updates)
+	private, public, err := c.getSummaryContent(updates)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
@@ -242,7 +296,63 @@ func (c *Cross) Summary(updates []model.CrossUpdate) error {
 	return nil
 }
 
-func (c *Cross) getContent(updates []model.CrossUpdate) (string, string, error) {
+func (c *Cross) Invite(invitations []InvitationArg) error {
+	url := fmt.Sprintf("http://%s:%d/Thirdpart", c.config.ExfeService.Addr, c.config.ExfeService.Port)
+	client, err := gobus.NewClient(url)
+	if err != nil {
+		return fmt.Errorf("can't create gobus client: %s", err)
+	}
+
+	for _, i := range invitations {
+		private, public, err := c.getInvitationContent(i)
+		if err != nil {
+			return fmt.Errorf("can't get content: %s", err)
+		}
+
+		arg := args.SendArg{
+			To:             &i.To,
+			PrivateMessage: private,
+			PublicMessage:  public,
+			Info: &thirdpart.InfoData{
+				CrossID: i.Cross.ID,
+				Type:    thirdpart.CrossInvitation,
+			},
+		}
+		var ids string
+		err = client.Do("Send", &arg, &ids)
+		if err != nil {
+			return fmt.Errorf("send error: %s", err)
+		}
+	}
+	return nil
+}
+
+func (c *Cross) getInvitationContent(invitation InvitationArg) (string, string, error) {
+	invitation.Cross.Exfee.Parse()
+
+	messageType, err := thirdpart.MessageTypeFromProvider(invitation.To.Provider)
+	if err != nil {
+		return "", "", err
+	}
+
+	templateName := fmt.Sprintf("cross_invitation.%s", messageType)
+	private := bytes.NewBuffer(nil)
+	err = c.localTemplate.Execute(private, invitation.To.Language, templateName, invitation)
+	if err != nil {
+		return "", "", fmt.Errorf("private template(%s) failed: %s", templateName, err)
+	}
+
+	templateName = fmt.Sprintf("cross_invitation_public.%s", messageType)
+	public := bytes.NewBuffer(nil)
+	err = c.localTemplate.Execute(public, invitation.To.Language, templateName, invitation)
+	if err != nil {
+		return "", "", fmt.Errorf("public template(%s) failed: %s", templateName, err)
+	}
+
+	return private.String(), public.String(), nil
+}
+
+func (c *Cross) getSummaryContent(updates []model.CrossUpdate) (string, string, error) {
 	arg, err := SummaryFromUpdates(updates, c.config)
 	if err != nil {
 		return "", "", fmt.Errorf("can't parse update: %s", err)
