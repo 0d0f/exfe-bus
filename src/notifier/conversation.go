@@ -1,7 +1,6 @@
 package notifier
 
 import (
-	"bytes"
 	"fmt"
 	"formatter"
 	"gobus"
@@ -13,11 +12,9 @@ import (
 var SendSelfError = fmt.Errorf("no need send self")
 
 type UpdateArg struct {
-	To    model.Recipient
+	ArgBase
 	Cross model.Cross
 	Posts []*model.Post
-
-	Config *model.Config
 }
 
 func ArgFromUpdates(updates []model.ConversationUpdate, config *model.Config) (*UpdateArg, error) {
@@ -47,17 +44,16 @@ func ArgFromUpdates(updates []model.ConversationUpdate, config *model.Config) (*
 	}
 
 	ret := &UpdateArg{
-		To:     to,
-		Cross:  cross,
-		Posts:  posts,
-		Config: config,
+		Cross: cross,
+		Posts: posts,
+	}
+	ret.To = to
+	err := ret.Parse(config)
+	if err != nil {
+		return nil, nil
 	}
 
 	return ret, nil
-}
-
-func (a *UpdateArg) Link() string {
-	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
 }
 
 func (a *UpdateArg) Timezone() string {
@@ -80,7 +76,7 @@ func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Confi
 }
 
 func (c *Conversation) Update(updates []model.ConversationUpdate) error {
-	private, public, err := c.getContent(updates)
+	private, err := c.getConversationContent(updates)
 	if err != nil {
 		return err
 	}
@@ -94,7 +90,7 @@ func (c *Conversation) Update(updates []model.ConversationUpdate) error {
 	arg := args.SendArg{
 		To:             &updates[0].To,
 		PrivateMessage: private,
-		PublicMessage:  public,
+		PublicMessage:  "",
 		Info: &thirdpart.InfoData{
 			CrossID: updates[0].Cross.ID,
 			Type:    thirdpart.Conversation,
@@ -108,23 +104,16 @@ func (c *Conversation) Update(updates []model.ConversationUpdate) error {
 	return nil
 }
 
-func (c *Conversation) getContent(updates []model.ConversationUpdate) (string, string, error) {
+func (c *Conversation) getConversationContent(updates []model.ConversationUpdate) (string, error) {
 	arg, err := ArgFromUpdates(updates, c.config)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	messageType, err := thirdpart.MessageTypeFromProvider(arg.To.Provider)
+	content, err := GetContent(c.localTemplate, "conversation", arg)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	templateName := fmt.Sprintf("conversation.%s", messageType)
-	private := bytes.NewBuffer(nil)
-	err = c.localTemplate.Execute(private, arg.To.Language, templateName, arg)
-	if err != nil {
-		return "", "", fmt.Errorf("private template(%s) failed: %s", templateName, err)
-	}
-
-	return private.String(), "", nil
+	return content, nil
 }
