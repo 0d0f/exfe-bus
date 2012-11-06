@@ -25,7 +25,7 @@ func (u User) Welcome(arg model.UserWelcome) error {
 		return err
 	}
 
-	content, err := GetContent(u.localTemplate, "user_welcome", arg)
+	content, err := GetContent(u.localTemplate, "user_welcome", arg.To, arg)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
@@ -38,7 +38,7 @@ func (u User) Confirm(arg model.UserConfirm) error {
 		return err
 	}
 
-	content, err := GetContent(u.localTemplate, "user_confirm", arg)
+	content, err := GetContent(u.localTemplate, "user_confirm", arg.To, arg)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
@@ -51,7 +51,7 @@ func (u User) ResetPassword(arg model.ThirdpartTo) error {
 		return err
 	}
 
-	content, err := GetContent(u.localTemplate, "user_resetpass", arg)
+	content, err := GetContent(u.localTemplate, "user_resetpass", arg.To, arg)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}

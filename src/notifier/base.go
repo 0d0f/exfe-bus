@@ -8,8 +8,7 @@ import (
 	"thirdpart"
 )
 
-func GetContent(localTemplate *formatter.LocalTemplate, template string, arg model.ServiceToInterface) (string, error) {
-	to := arg.ToRecipient()
+func GetContent(localTemplate *formatter.LocalTemplate, template string, to model.Recipient, arg interface{}) (string, error) {
 	t, err := thirdpart.MessageTypeFromProvider(to.Provider)
 	if err != nil {
 		return "", err

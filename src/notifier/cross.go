@@ -85,11 +85,11 @@ func (c *Cross) getSummaryContent(updates []model.CrossUpdate) (string, string, 
 		return "", "", err
 	}
 
-	private, err := GetContent(c.localTemplate, "cross_summary", arg)
+	private, err := GetContent(c.localTemplate, "cross_summary", arg.To, arg)
 	if err != nil {
 		return "", "", fmt.Errorf("can't get content: %s", err)
 	}
-	public, err := GetContent(c.localTemplate, "cross_summary_public", arg)
+	public, err := GetContent(c.localTemplate, "cross_summary_public", arg.To, arg)
 	if err != nil {
 		return "", "", fmt.Errorf("can't get content: %s", err)
 	}
@@ -104,11 +104,11 @@ func (c *Cross) getInvitationContent(arg model.CrossInvitation) (string, string,
 	}
 	arg.Cross.Exfee.Parse()
 
-	private, err := GetContent(c.localTemplate, "cross_invitation", arg)
+	private, err := GetContent(c.localTemplate, "cross_invitation", arg.To, arg)
 	if err != nil {
 		return "", "", fmt.Errorf("can't get content: %s", err)
 	}
-	public, err := GetContent(c.localTemplate, "cross_invitation_public", arg)
+	public, err := GetContent(c.localTemplate, "cross_invitation_public", arg.To, arg)
 	if err != nil {
 		return "", "", fmt.Errorf("can't get content: %s", err)
 	}

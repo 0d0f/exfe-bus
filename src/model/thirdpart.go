@@ -47,10 +47,6 @@ func (t ThirdpartTos) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(c, ","))
 }
 
-type ServiceToInterface interface {
-	ToRecipient() Recipient
-}
-
 type DataType string
 
 func (t DataType) String() string {

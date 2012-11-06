@@ -56,7 +56,7 @@ func (c *Conversation) getConversationContent(updates []model.ConversationUpdate
 		return "", err
 	}
 
-	content, err := GetContent(c.localTemplate, "conversation", arg)
+	content, err := GetContent(c.localTemplate, "conversation", arg.To, arg)
 	if err != nil {
 		return "", err
 	}
