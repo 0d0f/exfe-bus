@@ -12,7 +12,7 @@ func TestHead(t *testing.T) {
 	var q Repository
 	redis := NewRedis()
 
-	log, err := logger.New(logger.Stderr, "test", logger.LstdFlags)
+	log, err := logger.New(logger.Stderr, "test")
 	if err != nil {
 		panic(err)
 	}
