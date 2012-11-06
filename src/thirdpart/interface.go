@@ -51,31 +51,9 @@ func MessageTypeFromProvider(provider string) (MessageType, error) {
 	return "", fmt.Errorf("unknow provider: %s", provider)
 }
 
-type DataType string
-
-func (t DataType) String() string {
-	return string(t)
-}
-
-const (
-	CrossInvitation DataType = "i"
-	CrossUpdate              = "u"
-	CrossRemove              = "r"
-	Conversation             = "c"
-)
-
-type InfoData struct {
-	CrossID uint64   `json:"cross_id"`
-	Type    DataType `json:"type"`
-}
-
-func (i InfoData) String() string {
-	return fmt.Sprintf("{cross:%d type:%s}", i.CrossID, i.Type)
-}
-
 type Sender interface {
 	Provider() string
-	Send(to *model.Recipient, privateMessage string, publicMessage string, data *InfoData) (id string, err error)
+	Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (id string, err error)
 }
 
 type Updater interface {

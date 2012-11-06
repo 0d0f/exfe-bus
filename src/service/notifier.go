@@ -5,7 +5,6 @@ import (
 	"gobus"
 	"model"
 	"notifier"
-	"service/args"
 )
 
 type Conversation struct {
@@ -24,7 +23,7 @@ func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Confi
 //
 // > curl 'http://127.0.0.1:23333/Conversation?method=Update' -d '[{"to":{"identity_id":11,"user_id":1,"name":"email1 name","auth_data":"","timezone":"+0800","token":"recipient_email1_token","language":"en_US","provider":"email","external_id":"sender1@gmail.com","external_username":"sender1@gmail.com"},"cross":{"id":123,"by_identity":{"id":11,"name":"email1 name","nickname":"email1 nick","bio":"email1 bio","timezone":"+0800","connected_user_id":1,"avatar_filename":"http://path/to/email1.avatar","provider":"email","external_id":"sender1@gmail.com","external_username":"sender1@gmail.com"},"title":"Test Cross","description":"test cross description","time":{"begin_at":{"date_word":"","date":"","time_word":"","time":"","timezone":""},"origin":"","output_format":0},"place":{"id":0,"title":"","description":"","lng":"","lat":"","provider":"","external_id":""},"exfee":{"id":0,"name":"","invitations":null}},"post":{"id":1,"by_identity":{"id":11,"name":"email1 name","nickname":"email1 nick","bio":"email1 bio","timezone":"+0800","connected_user_id":1,"avatar_filename":"http://path/to/email1.avatar","provider":"email","external_id":"sender1@gmail.com","external_username":"sender1@gmail.com"},"content":"email1 post sth","via":"abc","created_at":"2012-10-24 16:31:00"}},{"recipient":{"identity_id":11,"user_id":1,"name":"email1 name","auth_data":"","timezone":"+0800","token":"recipient_email1_token","language":"en_US","provider":"email","external_id":"sender1@gmail.com","external_username":"sender1@gmail.com"},"cross":{"id":123,"by_identity":{"id":11,"name":"email1 name","nickname":"email1 nick","bio":"email1 bio","timezone":"+0800","connected_user_id":1,"avatar_filename":"http://path/to/email1.avatar","provider":"email","external_id":"sender1@gmail.com","external_username":"sender1@gmail.com"},"title":"Test Cross","description":"test cross description","time":{"begin_at":{"date_word":"","date":"","time_word":"","time":"","timezone":""},"origin":"","output_format":0},"place":{"id":0,"title":"","description":"","lng":"","lat":"","provider":"","external_id":""},"exfee":{"id":0,"name":"","invitations":null}},"post":{"id":2,"by_identity":{"id":22,"name":"twitter3 name","nickname":"twitter3 nick","bio":"twitter3 bio","timezone":"+0800","connected_user_id":3,"avatar_filename":"http://path/to/twitter3.avatar","provider":"twitter","external_id":"twitter3@domain.com","external_username":"twitter3@domain.com"},"content":"twitter3 post sth","via":"abc","created_at":"2012-10-24 16:40:00"}}]'
 //
-func (c *Conversation) Update(meta *gobus.HTTPMeta, updates args.ConversationUpdateArg, i *int) error {
+func (c *Conversation) Update(meta *gobus.HTTPMeta, updates model.ConversationUpdates, i *int) error {
 	*i = 0
 	err := c.conversation.Update(updates)
 	if err == notifier.SendSelfError {
@@ -49,7 +48,7 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config) *Cro
 // 例子：
 //
 //
-func (c *Cross) Summary(meta *gobus.HTTPMeta, updates args.CrossUpdateArg, i *int) error {
+func (c *Cross) Summary(meta *gobus.HTTPMeta, updates model.CrossUpdates, i *int) error {
 	*i = 0
 	err := c.cross.Summary(updates)
 	return err

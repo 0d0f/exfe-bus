@@ -2,11 +2,12 @@ package notifier
 
 import (
 	"github.com/stretchrcom/testify/assert"
+	"model"
 	"testing"
 )
 
 func TestUserWelcomeEmail(t *testing.T) {
-	arg := WelcomeArg{}
+	arg := model.UserWelcome{}
 	arg.To = remail1
 	arg.NeedVerify = true
 
@@ -20,7 +21,7 @@ func TestUserWelcomeEmail(t *testing.T) {
 }
 
 func TestUserWelcomeTwitter(t *testing.T) {
-	arg := WelcomeArg{}
+	arg := model.UserWelcome{}
 	arg.To = rtwitter1
 	arg.NeedVerify = true
 
@@ -34,9 +35,9 @@ func TestUserWelcomeTwitter(t *testing.T) {
 }
 
 func TestUserConfirmEmail(t *testing.T) {
-	arg := ConfirmArg{}
+	arg := model.UserConfirm{}
 	arg.To = remail1
-	arg.By = &email2
+	arg.By = email2
 
 	err := arg.Parse(&config)
 	assert.Equal(t, err, nil)
@@ -48,9 +49,9 @@ func TestUserConfirmEmail(t *testing.T) {
 }
 
 func TestUserConfirmTwitter(t *testing.T) {
-	arg := ConfirmArg{}
+	arg := model.UserConfirm{}
 	arg.To = rtwitter1
-	arg.By = &email2
+	arg.By = email2
 
 	err := arg.Parse(&config)
 	assert.Equal(t, err, nil)
@@ -62,7 +63,7 @@ func TestUserConfirmTwitter(t *testing.T) {
 }
 
 func TestUserResetEmail(t *testing.T) {
-	arg := ArgBase{}
+	arg := model.ThirdpartTo{}
 	arg.To = remail1
 
 	err := arg.Parse(&config)
@@ -75,7 +76,7 @@ func TestUserResetEmail(t *testing.T) {
 }
 
 func TestUserResetTwitter(t *testing.T) {
-	arg := ArgBase{}
+	arg := model.ThirdpartTo{}
 	arg.To = rtwitter1
 
 	err := arg.Parse(&config)

@@ -8,7 +8,6 @@ import (
 	"github.com/virushuo/Go-Apns"
 	"gobus"
 	"model"
-	"service/args"
 	"thirdpart"
 	"thirdpart/apn"
 	"thirdpart/email"
@@ -65,9 +64,9 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 //
 //   > curl http://127.0.0.1:23333/Thirdpart?method=Send -d '{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1}'
 //
-func (t *Thirdpart) Send(meta *gobus.HTTPMeta, arg *args.SendArg, id *string) error {
+func (t *Thirdpart) Send(meta *gobus.HTTPMeta, arg model.ThirdpartSend, id *string) error {
 	var err error
-	*id, err = t.thirdpart.Send(arg.To, arg.PrivateMessage, arg.PublicMessage, arg.Info)
+	*id, err = t.thirdpart.Send(&arg.To, arg.PrivateMessage, arg.PublicMessage, arg.Info)
 	return err
 }
 

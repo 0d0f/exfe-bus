@@ -5,22 +5,7 @@ import (
 	"formatter"
 	"gobus"
 	"model"
-	"service/args"
 )
-
-type WelcomeArg struct {
-	ArgBase
-	NeedVerify bool `json:"need_verify"`
-}
-
-type ConfirmArg struct {
-	ArgBase
-	By *model.Identity `json:"by"`
-}
-
-func (a ConfirmArg) NeedShowBy() bool {
-	return !a.To.SameUser(a.By)
-}
 
 type User struct {
 	localTemplate *formatter.LocalTemplate
@@ -34,7 +19,7 @@ func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config) *User
 	}
 }
 
-func (u User) Welcome(arg WelcomeArg) error {
+func (u User) Welcome(arg model.UserWelcome) error {
 	err := arg.Parse(u.config)
 	if err != nil {
 		return err
@@ -44,10 +29,10 @@ func (u User) Welcome(arg WelcomeArg) error {
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
-	return u.send(content, arg.ArgBase)
+	return u.send(content, arg.ThirdpartTo)
 }
 
-func (u User) Confirm(arg ConfirmArg) error {
+func (u User) Confirm(arg model.UserConfirm) error {
 	err := arg.Parse(u.config)
 	if err != nil {
 		return err
@@ -57,10 +42,10 @@ func (u User) Confirm(arg ConfirmArg) error {
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
-	return u.send(content, arg.ArgBase)
+	return u.send(content, arg.ThirdpartTo)
 }
 
-func (u User) ResetPassword(arg ArgBase) error {
+func (u User) ResetPassword(arg model.ThirdpartTo) error {
 	err := arg.Parse(u.config)
 	if err != nil {
 		return err
@@ -73,18 +58,18 @@ func (u User) ResetPassword(arg ArgBase) error {
 	return u.send(content, arg)
 }
 
-func (u User) send(content string, arg ArgBase) error {
+func (u User) send(content string, arg model.ThirdpartTo) error {
 	url := fmt.Sprintf("http://%s:%d", u.config.ExfeService.Addr, u.config.ExfeService.Port)
 	client, err := gobus.NewClient(fmt.Sprintf("%s/%s", url, "Thirdpart"))
 	if err != nil {
 		return fmt.Errorf("can't create gobus client: %s", err)
 	}
 
-	a := args.SendArg{
-		To:             &arg.To,
+	a := model.ThirdpartSend{
 		PrivateMessage: content,
 		PublicMessage:  "",
 	}
+	arg.To = arg.To
 	var ids string
 	err = client.Do("Send", &a, &ids)
 	if err != nil {

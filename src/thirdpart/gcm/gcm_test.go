@@ -36,9 +36,9 @@ var to = &model.Recipient{
 	UserID:           2,
 }
 
-var data = &thirdpart.InfoData{
+var data = &model.InfoData{
 	CrossID: 12345,
-	Type:    thirdpart.CrossUpdate,
+	Type:    model.TypeCrossUpdate,
 }
 
 func TestSend(t *testing.T) {

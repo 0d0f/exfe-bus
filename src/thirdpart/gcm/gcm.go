@@ -7,7 +7,6 @@ import (
 	"model"
 	"regexp"
 	"strings"
-	"thirdpart"
 	"unicode/utf8"
 )
 
@@ -29,7 +28,7 @@ func (g *GCM) Provider() string {
 	return "Android"
 }
 
-func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (id string, err error) {
+func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (id string, err error) {
 	ids := ""
 	privateMessage = tailUrlRegex.ReplaceAllString(privateMessage, "")
 	privateMessage = tailQuoteUrlRegex.ReplaceAllString(privateMessage, ")")

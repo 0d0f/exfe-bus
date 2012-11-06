@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Cross struct {
@@ -27,4 +28,66 @@ type CrossUpdate struct {
 	OldCross Cross     `json:"old_cross"`
 	Cross    Cross     `json:"cross"`
 	By       Identity  `json:"by"`
+}
+
+type CrossUpdates []CrossUpdate
+
+func (u CrossUpdates) String() string {
+	if len(u) == 0 {
+		return "{updates:0}"
+	}
+	return fmt.Sprintf("{to:%s with:%s updates:%d}", u[0].To, u[0].Cross, len(u))
+}
+
+type CrossInvitation struct {
+	ThirdpartTo
+	Cross Cross `json:"cross"`
+}
+
+func (a CrossInvitation) String() string {
+	return fmt.Sprintf("{to:%s cross:%d}", a.ThirdpartTo.String(), a.Cross.ID)
+}
+
+func (a CrossInvitation) Timezone() string {
+	if a.To.Timezone != "" {
+		return a.To.Timezone
+	}
+	return a.Cross.Time.BeginAt.Timezone
+}
+
+func (a CrossInvitation) IsCreator() bool {
+	return a.To.SameUser(&a.Cross.By)
+}
+
+func (a CrossInvitation) LongDescription() bool {
+	if len(a.Cross.Description) > 200 {
+		return true
+	}
+	return false
+}
+
+func (a CrossInvitation) ListInvitations() string {
+	l := len(a.Cross.Exfee.Invitations)
+	max := 3
+	ret := ""
+	for i := 0; i < 3 && i < l; i++ {
+		if i > 0 {
+			ret += ", "
+		}
+		ret += a.Cross.Exfee.Invitations[i].Identity.Name
+	}
+	if l > max {
+		ret += "…"
+	}
+	return ret
+}
+
+type CrossInvitations []CrossInvitation
+
+func (c CrossInvitations) String() string {
+	invitations := make([]string, len(c))
+	for i := range c {
+		invitations[i] = c.String()
+	}
+	return fmt.Sprintf("[%s]", strings.Join(invitations, ","))
 }

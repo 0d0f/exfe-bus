@@ -11,21 +11,21 @@ type Faker struct {
 	tos             []*model.Recipient
 	privateMessages []string
 	publicMessages  []string
-	datas           []*InfoData
+	datas           []*model.InfoData
 }
 
 func (f *Faker) Reset() {
 	f.tos = make([]*model.Recipient, 0)
 	f.privateMessages = make([]string, 0)
 	f.publicMessages = make([]string, 0)
-	f.datas = make([]*InfoData, 0)
+	f.datas = make([]*model.InfoData, 0)
 }
 
 func (f *Faker) Provider() string {
 	return f.provider
 }
 
-func (f *Faker) Send(to *model.Recipient, privateMessage string, publicMessage string, data *InfoData) (id string, err error) {
+func (f *Faker) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (id string, err error) {
 	f.tos = append(f.tos, to)
 	f.privateMessages = append(f.privateMessages, privateMessage)
 	f.publicMessages = append(f.publicMessages, publicMessage)

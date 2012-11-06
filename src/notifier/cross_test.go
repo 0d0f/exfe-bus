@@ -464,7 +464,7 @@ func TestCrossInvitationEmail(t *testing.T) {
 	cross1.Time = time1
 	cross1.Exfee = exfee1
 
-	inv := InvitationArg{}
+	inv := model.CrossInvitation{}
 	inv.To = remail1
 	inv.Cross = cross1
 
@@ -482,7 +482,7 @@ func TestCrossInvitationTwitter(t *testing.T) {
 	cross1.Time = time1
 	cross1.Exfee = exfee1
 
-	inv := InvitationArg{}
+	inv := model.CrossInvitation{}
 	inv.To = rtwitter1
 	inv.Cross = cross1
 

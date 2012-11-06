@@ -7,7 +7,6 @@ import (
 	"model"
 	"regexp"
 	"strings"
-	"thirdpart"
 )
 
 type Broker interface {
@@ -39,7 +38,7 @@ func (a *Apn) Provider() string {
 	return "iOS"
 }
 
-func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (string, error) {
+func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
 	ids := ""
 	privateMessage = tailUrlRegex.ReplaceAllString(privateMessage, "")
 	privateMessage = tailQuoteUrlRegex.ReplaceAllString(privateMessage, ")")

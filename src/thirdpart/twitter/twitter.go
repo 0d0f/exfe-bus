@@ -45,7 +45,7 @@ type twitterReply struct {
 	IDstr string `json:"id_str"`
 }
 
-func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage string, data *thirdpart.InfoData) (string, error) {
+func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
 	ids, err := t.sendPrivate(to, privateMessage)
 	if err != nil && strings.Index(err.Error(), `"code":150`) > 0 {
 		ids, err = t.sendPublic(to, publicMessage)
