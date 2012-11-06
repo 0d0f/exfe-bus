@@ -107,7 +107,7 @@ type CrossInvitations []CrossInvitation
 func (c CrossInvitations) String() string {
 	invitations := make([]string, len(c))
 	for i := range c {
-		invitations[i] = c.String()
+		invitations[i] = c[i].String()
 	}
 	return fmt.Sprintf("[%s]", strings.Join(invitations, ","))
 }
