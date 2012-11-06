@@ -56,6 +56,7 @@ func (c *Cross) Invite(meta *gobus.HTTPMeta, invitations model.CrossInvitations,
 			return err
 		}
 	}
+	*i++
 	return nil
 }
 

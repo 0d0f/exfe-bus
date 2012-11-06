@@ -1,4 +1,4 @@
-{{if .IsCreator}}You're gathering this ·X·.{{else}}Invitation from {{.By.Name}}.Name }}.{{end}}
+{{if .IsCreator}}You're gathering this ·X·.{{else}}Invitation from {{.Cross.By.Name}}.Name }}.{{end}}
 
 
 {{.Cross.Title}}
