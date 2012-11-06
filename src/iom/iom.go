@@ -65,8 +65,11 @@ func (h *Iom) Update(userid string, hash string) error {
 }
 
 func (h *Iom) FindLatestHash(userid string) (string, error) {
-	reply, err := h.redis.Zrangebyscore(timeKey(userid), "-Inf", "+Inf", "LIMIT", "offset", "1")
-	return string(reply.Elems[0].Elem), err
+	reply, err := h.redis.Zrangebyscore(timeKey(userid), "-inf", "+inf", "LIMIT", "0", "1")
+	if err != nil {
+		return "", err
+	}
+	return string(reply.Elems[0].Elem), nil
 }
 
 func (h *Iom) Create(userid string, data string) (string, error) {

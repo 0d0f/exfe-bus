@@ -65,7 +65,7 @@ func (r *TestTokenRepo) UpdateExpireAtByToken(key, rand string, expireAt *time.T
 func (r *TestTokenRepo) UpdateExpireAtByKey(key string, expireAt *time.Time) error {
 	for k, v := range r.store {
 		if v.Key == key {
-			v.ExpireAt = expire_at
+			v.ExpireAt = expireAt
 			r.store[k] = v
 		}
 	}

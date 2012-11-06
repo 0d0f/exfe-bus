@@ -1,0 +1,5 @@
+find . -name *_test.go | sed 's/^\.\/src\///g' | sed 's/\/[^/]*_test.go$//g' | sort | uniq | while read l
+do
+  echo testing $l...
+  ./go.env test "$l"
+done
