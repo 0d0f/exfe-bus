@@ -40,12 +40,32 @@ func (u CrossUpdates) String() string {
 }
 
 type CrossInvitation struct {
-	ThirdpartTo
-	Cross Cross `json:"cross"`
+	To    Recipient `json:"to"`
+	Cross Cross     `json:"cross"`
+
+	Config *Config `json:"-"`
 }
 
 func (a CrossInvitation) String() string {
-	return fmt.Sprintf("{to:%s cross:%d}", a.ThirdpartTo.String(), a.Cross.ID)
+	return fmt.Sprintf("{to:%s cross:%d}", a.To, a.Cross.ID)
+}
+
+func (a *CrossInvitation) Parse(config *Config) (err error) {
+	a.Config = config
+	return nil
+}
+
+func (a CrossInvitation) ToIn(invitations []Invitation) bool {
+	for _, i := range invitations {
+		if a.To.SameUser(&i.Identity) {
+			return true
+		}
+	}
+	return false
+}
+
+func (a CrossInvitation) Link() string {
+	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
 }
 
 func (a CrossInvitation) Timezone() string {

@@ -70,10 +70,12 @@ func (i InfoData) String() string {
 }
 
 type ThirdpartSend struct {
-	ThirdpartTo
+	To             Recipient `json:"to"`
 	PrivateMessage string    `json:"private"`
 	PublicMessage  string    `json:"public"`
 	Info           *InfoData `json:"info"`
+
+	Config *Config `json:"-"`
 }
 
 func (a ThirdpartSend) String() string {

@@ -29,7 +29,7 @@ func (u User) Welcome(arg model.UserWelcome) error {
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
-	return u.send(content, arg.ThirdpartTo)
+	return u.send(content, arg.To)
 }
 
 func (u User) Confirm(arg model.UserConfirm) error {
@@ -42,7 +42,7 @@ func (u User) Confirm(arg model.UserConfirm) error {
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
-	return u.send(content, arg.ThirdpartTo)
+	return u.send(content, arg.To)
 }
 
 func (u User) ResetPassword(arg model.ThirdpartTo) error {
@@ -55,10 +55,10 @@ func (u User) ResetPassword(arg model.ThirdpartTo) error {
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
-	return u.send(content, arg)
+	return u.send(content, arg.To)
 }
 
-func (u User) send(content string, arg model.ThirdpartTo) error {
+func (u User) send(content string, to model.Recipient) error {
 	url := fmt.Sprintf("http://%s:%d", u.config.ExfeService.Addr, u.config.ExfeService.Port)
 	client, err := gobus.NewClient(fmt.Sprintf("%s/%s", url, "Thirdpart"))
 	if err != nil {
@@ -66,10 +66,10 @@ func (u User) send(content string, arg model.ThirdpartTo) error {
 	}
 
 	a := model.ThirdpartSend{
+		To:             to,
 		PrivateMessage: content,
 		PublicMessage:  "",
 	}
-	arg.To = arg.To
 	var ids string
 	err = client.Do("Send", &a, &ids)
 	if err != nil {

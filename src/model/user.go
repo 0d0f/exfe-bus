@@ -6,12 +6,23 @@ import (
 )
 
 type UserWelcome struct {
-	ThirdpartTo
-	NeedVerify bool `json:"need_verify"`
+	To         Recipient `json:"to"`
+	NeedVerify bool      `json:"need_verify"`
+
+	Config *Config `json:"-"`
 }
 
 func (w UserWelcome) String() string {
-	return fmt.Sprintf("{to:%s needverify:%v}", w.ThirdpartTo.String(), w.NeedVerify)
+	return fmt.Sprintf("{to:%s needverify:%v}", w.To.String(), w.NeedVerify)
+}
+
+func (w *UserWelcome) Parse(config *Config) (err error) {
+	w.Config = config
+	return nil
+}
+
+func (w UserWelcome) Link() string {
+	return fmt.Sprintf("%s/#!token=%s", w.Config.SiteUrl, w.To.Token)
 }
 
 type UserWelcomes []UserWelcome
@@ -25,12 +36,23 @@ func (w UserWelcomes) String() string {
 }
 
 type UserConfirm struct {
-	ThirdpartTo
-	By Identity `json:"by"`
+	To Recipient `json:"to"`
+	By Identity  `json:"by"`
+
+	Config *Config `json:"-"`
 }
 
 func (c UserConfirm) String() string {
-	return fmt.Sprintf("{to:%s by:%s}", c.ThirdpartTo.String(), c.By.String())
+	return fmt.Sprintf("{to:%s by:%s}", c.To.String(), c.By.String())
+}
+
+func (c *UserConfirm) Parse(config *Config) (err error) {
+	c.Config = config
+	return nil
+}
+
+func (c UserConfirm) Link() string {
+	return fmt.Sprintf("%s/#!token=%s", c.Config.SiteUrl, c.To.Token)
 }
 
 func (a UserConfirm) NeedShowBy() bool {
