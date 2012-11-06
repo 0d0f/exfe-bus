@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 )
 
 type ThirdpartTo struct {
@@ -34,6 +35,16 @@ func (a ThirdpartTo) Link() string {
 
 func (a ThirdpartTo) ToRecipient() Recipient {
 	return a.To
+}
+
+type ThirdpartTos []ThirdpartTo
+
+func (t ThirdpartTos) String() string {
+	c := make([]string, len(t))
+	for i := range t {
+		c[i] = t[i].String()
+	}
+	return fmt.Sprintf("[%s]", strings.Join(c, ","))
 }
 
 type ServiceToInterface interface {

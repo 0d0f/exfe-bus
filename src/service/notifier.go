@@ -43,13 +43,68 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config) *Cro
 	}
 }
 
+// 发送Cross的邀请消息invitations
+//
+func (c Cross) Invite(meta *gobus.HTTPMeta, invitations model.CrossInvitations, i *int) error {
+	for *i = range invitations {
+		err := c.cross.Invite(invitations[*i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // 发送Cross的更新汇总消息updates
 //
-// 例子：
-//
-//
-func (c *Cross) Summary(meta *gobus.HTTPMeta, updates model.CrossUpdates, i *int) error {
+func (c Cross) Summary(meta *gobus.HTTPMeta, updates model.CrossUpdates, i *int) error {
 	*i = 0
 	err := c.cross.Summary(updates)
 	return err
+}
+
+type User struct {
+	user *notifier.User
+}
+
+func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config) *User {
+	return &User{
+		user: notifier.NewUser(localTemplate, config),
+	}
+}
+
+// 发送给用户的邀请
+//
+func (u User) Welcome(meta *gobus.HTTPMeta, welcomes model.UserWelcomes, i *int) error {
+	for *i = range welcomes {
+		err := u.user.Welcome(welcomes[*i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// 发送给用户的确认请求
+//
+func (u User) Confirm(meta *gobus.HTTPMeta, confirmations model.UserConfirms, i *int) error {
+	for *i = range confirmations {
+		err := u.user.Confirm(confirmations[*i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// 发送给用户的重置密码请求
+//
+func (u User) ResetPassword(meta *gobus.HTTPMeta, tos model.ThirdpartTos, i *int) error {
+	for *i = range tos {
+		err := u.user.ResetPassword(tos[*i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

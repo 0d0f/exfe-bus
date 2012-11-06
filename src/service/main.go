@@ -49,6 +49,7 @@ func main() {
 	}
 	conversation := NewConversation(localTemplate, &config)
 	cross := NewCross(localTemplate, &config)
+	user := NewUser(localTemplate, &config)
 
 	imsg, err := imsg.NewiMsg(&config)
 	if err != nil {
@@ -106,6 +107,14 @@ func main() {
 		return
 	}
 	log.Info("register Cross %d methods.", count)
+
+	count, err = bus.Register(user)
+	if err != nil {
+		log.Crit("gobus launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	log.Info("register User %d methods.", count)
 
 	count, err = bus.Register(imsg)
 	if err != nil {
