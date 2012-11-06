@@ -1,6 +1,8 @@
 package notifier
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/stretchrcom/testify/assert"
 	"model"
 	"testing"
@@ -38,6 +40,10 @@ func TestUserConfirmEmail(t *testing.T) {
 	arg := model.UserConfirm{}
 	arg.To = remail1
 	arg.By = email2
+
+	d, _ := json.Marshal(arg)
+	fmt.Println(string(d))
+	t.Errorf("show")
 
 	err := arg.Parse(&config)
 	assert.Equal(t, err, nil)
