@@ -12,26 +12,6 @@ import (
 	"strings"
 )
 
-type PushArg struct {
-	Service  string            `json:"service"`
-	Method   string            `json:"method"`
-	MergeKey string            `json:"merge_key"`
-	Tos      []model.Recipient `json:"tos"` // it will expand and overwrite "to" field in data
-	Data     interface{}       `json:"data"`
-}
-
-func (a PushArg) String() string {
-	return fmt.Sprintf("{service:%s method:%s key:%s tos:%s}", a.Service, a.Method, a.MergeKey, a.Tos)
-}
-
-func (a PushArg) FindService(services map[string]*gobus.Client) (*gobus.Client, error) {
-	client, ok := services[a.Service]
-	if !ok {
-		return nil, fmt.Errorf("can't find service %s", a.Service)
-	}
-	return client, nil
-}
-
 func getCallback(log *logger.SubLogger, services map[string]*gobus.Client) func(key string, datas [][]byte) {
 	return func(key string, datas [][]byte) {
 		names := strings.SplitN(key, ",", 3)
