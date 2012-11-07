@@ -36,7 +36,7 @@
   "exfe_queue": {
     "addr": "127.0.0.1",
     "port": 23334,
-    "head": {"ShortHead":600}
+    "head": {"Head10":600}
   },
 
   "token_manager": {
