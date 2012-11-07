@@ -43,7 +43,7 @@ func MessageTypeFromProvider(provider string) (MessageType, error) {
 		return EmailMessage, nil
 	case "iOS":
 		return ShortMessage, nil
-	case "android":
+	case "Android":
 		return ShortMessage, nil
 	case "twitter":
 		return ShortMessage, nil
