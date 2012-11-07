@@ -98,15 +98,15 @@ func (u *User) Welcome(meta *gobus.HTTPMeta, welcomes model.UserWelcomes, i *int
 	return nil
 }
 
-// 发送给用户的确认请求
+// 发送给用户的验证请求
 //
 // 例子：
 //
-// > curl 'http://127.0.0.1:23333/User?method=Confirm' -d '[{"to":{"identity_id":11,"user_id":1,"name":"email1 name","auth_data":"","timezone":"+0800","token":"recipient_email1_token","language":"en_US","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"by":{"id":12,"name":"email2 name","nickname":"email2 nick","bio":"email2 bio","timezone":"+0800","connected_user_id":2,"avatar_filename":"http://path/to/email2.avatar","provider":"email","external_id":"email2@domain.com","external_username":"email2@domain.com"}}]'
+// > curl 'http://127.0.0.1:23333/User?method=Verify' -d '[{"to":{"identity_id":11,"user_id":1,"name":"email1 name","auth_data":"","timezone":"+0800","token":"recipient_email1_token","language":"en_US","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"by":{"id":12,"name":"email2 name","nickname":"email2 nick","bio":"email2 bio","timezone":"+0800","connected_user_id":2,"avatar_filename":"http://path/to/email2.avatar","provider":"email","external_id":"email2@domain.com","external_username":"email2@domain.com"}}]'
 //
-func (u *User) Confirm(meta *gobus.HTTPMeta, confirmations model.UserConfirms, i *int) error {
+func (u *User) Verify(meta *gobus.HTTPMeta, confirmations model.UserVerifys, i *int) error {
 	for *i = range confirmations {
-		err := u.user.Confirm(confirmations[*i])
+		err := u.user.Verify(confirmations[*i])
 		if err != nil {
 			return err
 		}

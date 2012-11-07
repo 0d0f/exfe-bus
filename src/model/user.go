@@ -35,33 +35,33 @@ func (w UserWelcomes) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(welcome, ","))
 }
 
-type UserConfirm struct {
+type UserVerify struct {
 	To Recipient `json:"to"`
 	By Identity  `json:"by"`
 
 	Config *Config `json:"-"`
 }
 
-func (c UserConfirm) String() string {
+func (c UserVerify) String() string {
 	return fmt.Sprintf("{to:%s by:%s}", c.To.String(), c.By.String())
 }
 
-func (c *UserConfirm) Parse(config *Config) (err error) {
+func (c *UserVerify) Parse(config *Config) (err error) {
 	c.Config = config
 	return nil
 }
 
-func (c UserConfirm) Link() string {
+func (c UserVerify) Link() string {
 	return fmt.Sprintf("%s/#!token=%s", c.Config.SiteUrl, c.To.Token)
 }
 
-func (a UserConfirm) NeedShowBy() bool {
+func (a UserVerify) NeedShowBy() bool {
 	return !a.To.SameUser(&a.By)
 }
 
-type UserConfirms []UserConfirm
+type UserVerifys []UserVerify
 
-func (u UserConfirms) String() string {
+func (u UserVerifys) String() string {
 	c := make([]string, len(u))
 	for i := range u {
 		c[i] = u[i].String()

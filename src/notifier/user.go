@@ -32,13 +32,13 @@ func (u User) Welcome(arg model.UserWelcome) error {
 	return u.send(content, arg.To)
 }
 
-func (u User) Confirm(arg model.UserConfirm) error {
+func (u User) Verify(arg model.UserVerify) error {
 	err := arg.Parse(u.config)
 	if err != nil {
 		return err
 	}
 
-	content, err := GetContent(u.localTemplate, "user_confirm", arg.To, arg)
+	content, err := GetContent(u.localTemplate, "user_verify", arg.To, arg)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}

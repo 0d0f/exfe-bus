@@ -34,28 +34,28 @@ func TestUserWelcomeTwitter(t *testing.T) {
 	assert.Equal(t, content, expectPrivate)
 }
 
-func TestUserConfirmEmail(t *testing.T) {
-	arg := model.UserConfirm{}
+func TestUserVerifyEmail(t *testing.T) {
+	arg := model.UserVerify{}
 	arg.To = remail1
 	arg.By = email2
 
 	err := arg.Parse(&config)
 	assert.Equal(t, err, nil)
-	content, err := GetContent(localTemplate, "user_confirm", arg.To, arg)
+	content, err := GetContent(localTemplate, "user_verify", arg.To, arg)
 	assert.Equal(t, err, nil)
 	t.Logf("content:---------start---------\n%s\n---------end----------", content)
 	expectPrivate := "Content-Type: multipart/alternative; boundary=\"bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60\"\nTo: =?utf-8?B?ZW1haWwxIG5hbWU=?= <email1@domain.com>\nFrom: =?utf-8?B?YnVzaW5lc3MgdGVzdGVy?= <x@test.com>\nSubject: =?utf-8?B?RVhGRSBpZGVudGl0eSB2ZXJpZmljYXRpb24=?=\n\n--bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: base64\n\nSGksIGVtYWlsMSBuYW1lLgoKWW91ciBlbWFpbCBlbWFpbDFAZG9tYWluLmNvbSBoYXMgYmVlbiByZXF1\r\nZXN0ZWQgZm9yIHZlcmlmaWNhdGlvbiBieSBlbWFpbDIgbmFtZSBvbiBFWEZFLgoKUGxlYXNlIGNsaWNr\r\nIGhlcmUgdG8gdmVyaWZ5OiBodHRwOi8vc2l0ZS91cmwvIyF0b2tlbj1yZWNpcGllbnRfZW1haWwxX3Rv\r\na2VuCgpFWEZFIGlzIGEgdXRpbGl0eSBmb3IgaGFuZ2luZyBvdXQgd2l0aCBmcmllbmRzLiBXZSBzYXZl\r\nIHlvdSBmcm9tIGNhbGxpbmcgdXAgZXZlcnkgb25lIFJTVlAsIGxvc2luZyBpbiBlbmRsZXNzIGVtYWls\r\ncyBhbmQgbWVzc2FnZXMgb2ZmIHRoZSBwb2ludC4KClRoaXMgZW1haWwgaXMgc2VudCB0byBlbWFpbDFA\r\nZG9tYWluLmNvbSBwZXIgaWRlbnRpdHkgdmVyaWZpY2F0aW9uIHJlcXVlc3Qgb24gRVhGRSggaHR0cDov\r\nL3NpdGUvdXJsICku\n--bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60\nContent-Type: text/html; charset=utf-8\nContent-Transfer-Encoding: base64\n\nPCFET0NUWVBFIGh0bWw+CjxodG1sPgogICAgPGhlYWQ+CiAgICAgICAgPHRpdGxlPjwvdGl0bGU+CiAg\r\nICAgICAgPG1ldGEgaHR0cC1lcXVpdj0iQ29udGVudC1UeXBlIiBjb250ZW50PSJ0ZXh0L2h0bWw7IGNo\r\nYXJzZXQ9VVRGLTgiPgogICAgPC9oZWFkPgogICAgPGJvZHk+CiAgICAgICAgPHRhYmxlIGJvcmRlcj0i\r\nMCIgY2VsbHBhZGRpbmc9IjAiIGNlbGxzcGFjaW5nPSIwIiBzdHlsZT0iZm9udC1mYW1pbHk6IFZlcmRh\r\nbmE7IGZvbnQtc2l6ZTogMTRweDsgbGluZS1oZWlnaHQ6IDIwcHg7IGNvbG9yOiAjMzMzMzMzOyBmb250\r\nLXdlaWdodDogbm9ybWFsOyB3aWR0aDogNjQwcHg7IHBhZGRpbmc6IDIwcHg7IGJhY2tncm91bmQtY29s\r\nb3I6ICNmYmZiZmI7Ij4KICAgICAgICAgICAgPHRyPgogICAgICAgICAgICAgICAgPHRkPgogICAgICAg\r\nICAgICAgICAgICAgIEhpLCA8c3BhbiBzdHlsZT0iY29sb3I6ICMxOTE5MTk7Ij5lbWFpbDEgbmFtZS48\r\nL3NwYW4+CiAgICAgICAgICAgICAgICA8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8\r\ndHI+PHRkIGhlaWdodD0iMjAiPjwvdGQ+PC90cj4KICAgICAgICAgICAgPHRyPgogICAgICAgICAgICAg\r\nICAgPHRkPgogICAgICAgICAgICAgICAgICAgIFlvdXIgZW1haWwgPGEgaHJlZj0ibWFpbHRvOmVtYWls\r\nMUBkb21haW4uY29tIiBzdHlsZT0idGV4dC1kZWNvcmF0aW9uOiBub25lOyBjb2xvcjogIzMzMzMzMzsg\r\nZm9udC1zdHlsZTogaXRhbGljOyI+ZW1haWwxQGRvbWFpbi5jb208L2E+IGhhcyBiZWVuIHJlcXVlc3Rl\r\nZCBmb3IgdmVyaWZpY2F0aW9uIGJ5IDxzcGFuIHN0eWxlPSJjb2xvcjogIzE5MTkxOTsiPmVtYWlsMiBu\r\nYW1lPC9zcGFuPiBvbiA8YSBzdHlsZT0iY29sb3I6ICMzYTZlYTU7IHRleHQtZGVjb3JhdGlvbjogbm9u\r\nZTsiIGhyZWY9Imh0dHA6Ly9zaXRlL3VybCI+RVhGRTwvYT4uCiAgICAgICAgICAgICAgICA8L3RkPgog\r\nICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHI+PHRkIGhlaWdodD0iMjAiPjwvdGQ+PC90cj4K\r\nICAgICAgICAgICAgPHRyPgogICAgICAgICAgICAgICAgPHRkPgogICAgICAgICAgICAgICAgICAgIDxh\r\nIHN0eWxlPSJjb2xvcjojMzMzMzMzOyB0ZXh0LWRlY29yYXRpb246IG5vbmU7IiBocmVmPSJodHRwOi8v\r\nc2l0ZS91cmwvIyF0b2tlbj1yZWNpcGllbnRfZW1haWwxX3Rva2VuIj5QbGVhc2UgY2xpY2sgaGVyZSB0\r\nbyB2ZXJpZnk6IDxzcGFuIHN0eWxlPSJ0ZXh0LWRlY29yYXRpb246IHVuZGVybGluZTsiPmh0dHA6Ly9z\r\naXRlL3VybC8jIXRva2VuPXJlY2lw4oCmPC9zcGFuPjwvYT4KICAgICAgICAgICAgICAgIDwvdGQ+CiAg\r\nICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0cj48dGQgaGVpZ2h0PSIyMCI+PC90ZD48L3RyPgog\r\nICAgICAgICAgICA8dHI+CiAgICAgICAgICAgICAgICA8dGQ+CiAgICAgICAgICAgICAgICAgICAgPGEg\r\nc3R5bGU9ImNvbG9yOiAjM2E2ZWE1OyB0ZXh0LWRlY29yYXRpb246IG5vbmU7IiBocmVmPSJodHRwOi8v\r\nc2l0ZS91cmwiPkVYRkU8L2E+IGlzIGEgdXRpbGl0eSBmb3IgaGFuZ2luZyBvdXQgd2l0aCBmcmllbmRz\r\nLiBXZSBzYXZlIHlvdSBmcm9tIGNhbGxpbmcgdXAgZXZlcnkgb25lIFJTVlAsIGxvc2luZyBpbiBlbmRs\r\nZXNzIGVtYWlscyBhbmQgbWVzc2FnZXMgb2ZmIHRoZSBwb2ludC4KICAgICAgICAgICAgICAgIDwvdGQ+\r\nCiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0cj48dGQgaGVpZ2h0PSI0MCI+PC90ZD48L3Ry\r\nPgogICAgICAgICAgICA8dHI+CiAgICAgICAgICAgICAgICA8dGQgc3R5bGU9ImZvbnQtc2l6ZTogMTFw\r\neDsgbGluZS1oZWlnaHQ6IDEzcHg7IGNvbG9yOiAjNjY2NjY2OyI+CiAgICAgICAgICAgICAgICAgICAg\r\nVGhpcyBlbWFpbCBpcyBzZW50IHRvIDxhIHN0eWxlPSJjb2xvcjogIzY2NjY2NjsgdGV4dC1kZWNvcmF0\r\naW9uOiBub25lOyBmb250LXN0eWxlOiBpdGFsaWM7IiBocmVmPSJtYWlsdG86ZW1haWwxQGRvbWFpbi5j\r\nb20iPmVtYWlsMUBkb21haW4uY29tPC9hPiBwZXIgaWRlbnRpdHkgdmVyaWZpY2F0aW9uIHJlcXVlc3Qg\r\nb24gPGEgc3R5bGU9ImNvbG9yOiAjM2E2ZWE1OyB0ZXh0LWRlY29yYXRpb246IG5vbmU7IiBocmVmPSJo\r\ndHRwOi8vc2l0ZS91cmwiPkVYRkU8L2E+LgogICAgICAgICAgICAgICAgPC90ZD4KICAgICAgICAgICAg\r\nPC90cj4KICAgICAgICA8L3RhYmxlPgogICAgPC9ib2R5Pgo8L2h0bWw+Cg==\n--bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60--\n"
 	assert.Equal(t, content, expectPrivate)
 }
 
-func TestUserConfirmTwitter(t *testing.T) {
-	arg := model.UserConfirm{}
+func TestUserVerifyTwitter(t *testing.T) {
+	arg := model.UserVerify{}
 	arg.To = rtwitter1
 	arg.By = email2
 
 	err := arg.Parse(&config)
 	assert.Equal(t, err, nil)
-	content, err := GetContent(localTemplate, "user_confirm", arg.To, arg)
+	content, err := GetContent(localTemplate, "user_verify", arg.To, arg)
 	assert.Equal(t, err, nil)
 	t.Logf("content:---------start---------\n%s\n---------end----------", content)
 	expectPrivate := "\\(You(twitter1@domain.com)\\) has been requested for verification by \\(email2 name\\) on EXFE. Please click here to verify: \\(http://site/url/#!token=recipient_twitter1_token\\)"
