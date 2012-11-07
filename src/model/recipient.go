@@ -5,7 +5,7 @@ import (
 )
 
 type Recipient struct {
-	IdentityID       uint64 `json:"identity_id"`
+	IdentityID       int64  `json:"identity_id"`
 	UserID           int64  `json:"user_id"`
 	Name             string `json:"name"`
 	AuthData         string `json:"auth_data"`

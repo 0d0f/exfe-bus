@@ -5,7 +5,7 @@ import (
 )
 
 type Identity struct {
-	ID       uint64 `json:"id,omitempty"`
+	ID       int64  `json:"id,omitempty"`
 	Name     string `json:"name,omitempty"`
 	Nickname string `json:"nickname,omitempty"`
 	Bio      string `json:"bio,omitempty"`
