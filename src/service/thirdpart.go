@@ -32,7 +32,7 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 	gcms_ := gcms.New(config.Thirdpart.Gcm.Key)
 	helper := thirdpart.NewHelper(config)
 
-	t := thirdpart.New()
+	t := thirdpart.New(config)
 
 	twitter_ := twitter.New(config, twitterBroker, helper)
 	t.AddSender(twitter_)

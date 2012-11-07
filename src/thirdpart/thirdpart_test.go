@@ -71,7 +71,8 @@ func TestThirdpartSender(t *testing.T) {
 		provider:    "faker2",
 		messageType: HTMLMessage,
 	}
-	third := New()
+	config := new(model.Config)
+	third := New(config)
 	third.AddSender(faker1)
 	third.AddSender(faker2)
 
@@ -118,7 +119,8 @@ func TestThirdpartUpdate(t *testing.T) {
 		provider:    "faker2",
 		messageType: HTMLMessage,
 	}
-	third := New()
+	config := new(model.Config)
+	third := New(config)
 	third.AddUpdater(faker1)
 	third.AddUpdater(faker2)
 

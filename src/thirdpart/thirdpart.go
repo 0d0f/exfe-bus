@@ -8,12 +8,14 @@ import (
 type Thirdpart struct {
 	senders  map[string]Sender
 	updaters map[string]Updater
+	config   *model.Config
 }
 
-func New() *Thirdpart {
+func New(config *model.Config) *Thirdpart {
 	return &Thirdpart{
 		senders:  make(map[string]Sender),
 		updaters: make(map[string]Updater),
+		config:   config,
 	}
 }
 
@@ -23,7 +25,12 @@ func (t *Thirdpart) AddSender(sender Sender) {
 
 func (t *Thirdpart) Send(to *model.Recipient, privateMessage, publicMessage string, data *model.InfoData) (string, error) {
 	if to.ExternalID == "" {
-		go t.UpdateIdentity(to)
+		go func() {
+			err := t.UpdateIdentity(to)
+			if err != nil {
+				t.config.Log.Crit("update %s identity error: %s", to, err)
+			}
+		}()
 	}
 	sender, ok := t.senders[to.Provider]
 	if !ok {
