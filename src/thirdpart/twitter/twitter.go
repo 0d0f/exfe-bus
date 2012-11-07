@@ -21,19 +21,21 @@ type Twitter struct {
 	broker      Broker
 	accessToken *thirdpart.Token
 	helper      thirdpart.Helper
+	config      *model.Config
 }
 
 const twitterApiBase = "https://api.twitter.com/1.1/"
 const provider = "twitter"
 
-func New(accessToken, accessSecret string, broker Broker, helper thirdpart.Helper) *Twitter {
+func New(config *model.Config, broker Broker, helper thirdpart.Helper) *Twitter {
 	return &Twitter{
 		broker: broker,
 		accessToken: &thirdpart.Token{
-			Token:  accessToken,
-			Secret: accessSecret,
+			Token:  config.Thirdpart.Twitter.AccessToken,
+			Secret: config.Thirdpart.Twitter.AccessSecret,
 		},
 		helper: helper,
+		config: config,
 	}
 }
 
@@ -42,7 +44,8 @@ func (t *Twitter) Provider() string {
 }
 
 type twitterReply struct {
-	IDstr string `json:"id_str"`
+	IDstr     string      `json:"id_str"`
+	Recipient twitterInfo `json:"recipient"`
 }
 
 func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
@@ -71,7 +74,7 @@ func (t *Twitter) sendPrivate(to *model.Recipient, message string) (string, erro
 		if err != nil {
 			return "", fmt.Errorf("parse %s private message failed: %s", to, err)
 		}
-		for _, content := range cutter.Limit(140) {
+		for i, content := range cutter.Limit(140) {
 			params.Set("text", content)
 			resp, err = t.broker.Do(t.accessToken, "POST", "direct_messages/new.json", params)
 			if err != nil {
@@ -84,6 +87,14 @@ func (t *Twitter) sendPrivate(to *model.Recipient, message string) (string, erro
 				return "", fmt.Errorf("parse %s reply error: %s", to, err)
 			}
 			ids = fmt.Sprintf("%s,%s", ids, reply.IDstr)
+			if i == 0 {
+				go func() {
+					err := t.helper.UpdateIdentity(to, reply.Recipient)
+					if err != nil {
+						t.config.Log.Crit("can't update %s identity: %s", to, err)
+					}
+				}()
+			}
 		}
 	}
 	return ids, nil

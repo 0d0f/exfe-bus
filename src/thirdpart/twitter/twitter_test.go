@@ -42,6 +42,9 @@ func (b *FakeBroker) Do(accessToken *thirdpart.Token, cmd, path string, params u
 	b.params = append(b.params, copyValues(params))
 	b.id++
 	ret := bytes.NewBufferString(fmt.Sprintf(`{"id_str":"%d"}`, b.id))
+	if path == "direct_messages/new.json" {
+		ret = bytes.NewBufferString(fmt.Sprintf(`{"id_str":"%d","recipient":{"id_str":"7890","screen_name":"twitter_id","profile_image_url":"http://twitter/avatar","description":"desc","name":"twitterName"}}`, b.id))
+	}
 	return ioutil.NopCloser(ret), nil
 }
 
@@ -67,7 +70,8 @@ func TestSend(t *testing.T) {
 	helper := new(thirdpart.FakeHelper)
 	broker := new(FakeBroker)
 	broker.Reset()
-	twitter := New("", "", broker, helper)
+	config := new(model.Config)
+	twitter := New(config, broker, helper)
 	var tester thirdpart.Sender
 	tester = twitter
 

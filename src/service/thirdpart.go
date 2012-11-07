@@ -34,7 +34,7 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 
 	t := thirdpart.New()
 
-	twitter_ := twitter.New(config.Thirdpart.Twitter.AccessToken, config.Thirdpart.Twitter.AccessSecret, twitterBroker, helper)
+	twitter_ := twitter.New(config, twitterBroker, helper)
 	t.AddSender(twitter_)
 	t.AddUpdater(twitter_)
 
