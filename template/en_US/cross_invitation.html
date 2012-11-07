@@ -60,10 +60,10 @@ Description
         </style>
     </head>
     <body>
-        <table width="640" border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 19px; color: #191919; font-weight: normal; padding: 30px 40px 30px 40px; background-color: #fbfbfb; min-height: 562px;">
+        <table width="640" border="0" cellpadding="0" cellspacing="0" style="font-family: Helvetica; font-size: 13px; line-height: 19px; color: #191919; font-weight: normal; padding: 30px 40px 30px 40px; background-color: #fbfbfb; min-height: 562px;">
             <tr>
                 <td colspan="3" valign="top" style="font-size: 32px; line-height: 38px; padding-bottom: 18px;">
-                    <a href="{{ .Cross.LinkTo .Config.Site_url .Token }}" style="color: #3a6ea5; text-decoration: none; font-weight: lighter;">
+                    <a href="{{ .Cross.LinkTo .Config.Site_url .Token }}" style="color: #3a6ea5; text-decoration: none; font-weight: 300;">
                         {{ .Cross.Title | html }}
                     </a>
                 </td>
@@ -77,11 +77,11 @@ Description
                             </td>
                         </tr>
                         <tr>
-                            <td valign="top" style="padding-bottom: 20px;">
+                            <td valign="top" style="padding-bottom: 20px; font-size: 20px;">
                                 {{ if .IsHost }}
                                 You're gathering this <span style="color: #3a6ea5; text-decoration: none;">·X·</span>.
                                 {{ else }}
-                                Invitation from <span>{{ $a := index .By_identities 0 }}{{ $a.Name | html }}</span>.
+                                Invitation from <span style="font-weight: 800;">{{ $a := index .By_identities 0 }}{{ $a.Name | html }}</span>.
                                 {{ end }}
                             </td>
                         </tr>
