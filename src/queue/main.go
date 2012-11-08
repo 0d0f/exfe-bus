@@ -54,7 +54,7 @@ func main() {
 	}
 	config.Log = log
 
-	servicesName := []string{"Conversation"}
+	servicesName := []string{"Conversation", "Thirdpart", "User", "Cross"}
 	services := make(map[string]*gobus.Client)
 	for _, serviceName := range servicesName {
 		s, err := gobus.NewClient(fmt.Sprintf("http://%s:%d/%s", config.ExfeService.Addr, config.ExfeService.Port, serviceName))
