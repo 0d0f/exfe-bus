@@ -110,4 +110,23 @@ func TestSend(t *testing.T) {
 			}
 		}
 	}
+
+	{
+		broker.Reset()
+		_, err := tester.Send(to, `Googol Lee: 测试时间 \((“看电影 007” https://exfe.com/#!token=cd48a91ee3c2afb545d32f301b342510)\)`, "", data)
+		if err != nil {
+			t.Fatalf("send error: %s", err)
+		}
+		results := []string{
+			`Googol Lee: 测试时间 (“看电影 007”)`,
+		}
+		if got, expect := len(broker.notifications), len(results); got != expect {
+			t.Errorf("got: %d, expect: %d", got, expect)
+		}
+		for i, r := range results {
+			if got, expect := broker.notifications[i].Payload.Aps.Alert, r; got != expect {
+				t.Errorf("%d got: %s, expect %s", i, got, expect)
+			}
+		}
+	}
 }
