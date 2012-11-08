@@ -74,7 +74,7 @@ func TestSend(t *testing.T) {
 
 	{
 		broker.Reset()
-		_, err := tester.Send(to, `Post: abc ("Title" https://exfe.com/#!token=932ce5324321433253)`, "", data)
+		_, err := tester.Send(to, `Post: abc \(("Title" https://exfe.com/#!token=932ce5324321433253)\)`, "", data)
 		if err != nil {
 			t.Fatalf("send error: %s", err)
 		}
@@ -113,12 +113,14 @@ func TestSend(t *testing.T) {
 
 	{
 		broker.Reset()
-		_, err := tester.Send(to, `Googol Lee: 测试时间 \((“看电影 007” https://exfe.com/#!token=cd48a91ee3c2afb545d32f301b342510)\)`, "", data)
+		_, err := tester.Send(to, `Googol Lee: 测试时间 \((“看电影 007” https://exfe.com/#!token=cd48a91ee3c2afb545d32f301b342510)\)
+aadfdafdas https://exfe.com/fdafa`, "", data)
 		if err != nil {
 			t.Fatalf("send error: %s", err)
 		}
 		results := []string{
 			`Googol Lee: 测试时间 (“看电影 007”)`,
+			`aadfdafdas`,
 		}
 		if got, expect := len(broker.notifications), len(results); got != expect {
 			t.Errorf("got: %d, expect: %d", got, expect)

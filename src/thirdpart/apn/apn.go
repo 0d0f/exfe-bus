@@ -40,10 +40,10 @@ func (a *Apn) Provider() string {
 
 func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
 	ids := ""
-	privateMessage = tailUrlRegex.ReplaceAllString(privateMessage, "")
-	privateMessage = tailQuoteUrlRegex.ReplaceAllString(privateMessage, ")")
 	for _, line := range strings.Split(privateMessage, "\n") {
 		line = strings.Trim(line, " \n\r\t")
+		line = tailUrlRegex.ReplaceAllString(line, "")
+		line = tailQuoteUrlRegex.ReplaceAllString(line, `)\)`)
 		if line == "" {
 			continue
 		}
@@ -100,4 +100,4 @@ func apnLen(content string) int {
 }
 
 var tailUrlRegex = regexp.MustCompile(` *(http|https):\/\/exfe.com(\/[\w#!:.?+=&%@!\-\/]*)?$`)
-var tailQuoteUrlRegex = regexp.MustCompile(` *(http|https):\/\/exfe.com(\/[\w#!:.?+=&%@!\-\/]*)?\)?(\\\))?$`)
+var tailQuoteUrlRegex = regexp.MustCompile(` *(http|https):\/\/exfe.com(\/[\w#!:.?+=&%@!\-\/]*)?\)(\\\))$`)
