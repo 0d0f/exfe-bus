@@ -85,7 +85,7 @@ func NewHelper(config *model.Config) *HelperImp {
 		config:      config,
 		emailServer: fmt.Sprintf("%s:%d", config.Email.Host, config.Email.Port),
 		emailAuth:   smtp.PlainAuth("", config.Email.Username, config.Email.Password, config.Email.Host),
-		emailFrom:   fmt.Sprintf("exfe@%s", config.Email.Domain),
+		emailFrom:   fmt.Sprintf("x@%s", config.Email.Domain),
 	}
 }
 
