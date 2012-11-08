@@ -58,7 +58,7 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	service, method, err := s.findMethod(r, methodName)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		ret = err
+		ret = err.Error()
 		return
 	}
 
@@ -78,7 +78,7 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		subLogger.Err("failed with input %s: %s", inputElem, err)
-		ret = fmt.Sprintf("%s", err)
+		ret = err.Error()
 		return
 	}
 	ret = output.Elem().Interface()

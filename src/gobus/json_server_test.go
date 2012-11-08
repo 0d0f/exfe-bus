@@ -132,3 +132,36 @@ func TestJSONServer(t *testing.T) {
 		}
 	}
 }
+
+func TestJSONServerWrongRequest(t *testing.T) {
+	l, err := logger.New(logger.Stderr, "test gobus")
+	if err != nil {
+		panic(err)
+	}
+	s := NewJSONServer(l)
+
+	h := &http.Server{
+		Addr:    "127.0.0.1:1235",
+		Handler: s,
+	}
+	go h.ListenAndServe()
+
+	{
+		fmt.Println("wrong")
+		buf := bytes.NewBufferString("1")
+		resp, err := http.Post("http://127.0.0.1:1235/TestServer?method=Double", "application/json", buf)
+		if err != nil {
+			t.Fatalf("http post error: %s", err)
+		}
+		if resp.StatusCode != 400 {
+			t.Errorf("http should respond 400, got: %s", resp.Status)
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatal("read body error: %s", err)
+		}
+		if got, expect := string(body), "\"can't find service TestServer\"\n"; got != expect {
+			t.Errorf("expect: (%s), got: (%s)", expect, got)
+		}
+	}
+}
