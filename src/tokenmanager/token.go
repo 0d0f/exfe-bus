@@ -26,11 +26,9 @@ type tokenJson struct {
 
 // expireAt == nil for never expire.
 func NewToken(resource, data string, expireAt *time.Time) *Token {
-	hash := md5.New()
-	io.WriteString(hash, fmt.Sprintf("%s%x", time.Now().String(), randBytes()))
 	return &Token{
 		Key:       md5Resource(resource),
-		Rand:      fmt.Sprintf("%x", hash.Sum(nil)),
+		Rand:      md5Resource(fmt.Sprintf("%s%x", time.Now().String(), randBytes())),
 		Data:      data,
 		ExpireAt:  expireAt,
 		CreatedAt: time.Now(),
