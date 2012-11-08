@@ -5,19 +5,23 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"formatter"
 	"github.com/googollee/go-logger"
-	"gobus"
 	"model"
 	"net"
+	"regexp"
+	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 type IMsg struct {
 	connChan chan Load
 	isRun    bool
+	config   *model.Config
 }
 
-func NewiMsg(config *model.Config) (*IMsg, error) {
+func New(config *model.Config) (*IMsg, error) {
 	connChan := make(chan Load)
 
 	cert, err := tls.LoadX509KeyPair(config.Thirdpart.Apn.Cert, config.Thirdpart.Apn.Key)
@@ -31,22 +35,47 @@ func NewiMsg(config *model.Config) (*IMsg, error) {
 	ret := &IMsg{
 		connChan: connChan,
 		isRun:    false,
+		config:   config,
 	}
 
 	go listen(ret, addr, &c, connChan, config.Log)
 	return ret, nil
 }
 
-func (i *IMsg) Send(meta *gobus.HTTPMeta, load *Load, r *int) error {
-	if !i.isRun {
-		return fmt.Errorf("%s", "can't connect to client sender")
+func (i *IMsg) Provider() string {
+	return "imessage"
+}
+
+func (i *IMsg) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
+	for _, line := range strings.Split(privateMessage, "\n") {
+		line = strings.Trim(line, " \r\n\t")
+		line = tailUrlRegex.ReplaceAllString(line, "")
+		line = tailQuoteUrlRegex.ReplaceAllString(line, `)\)`)
+		if line == "" {
+			continue
+		}
+
+		cutter, err := formatter.CutterParse(line, imsgLen)
+		if err != nil {
+			return "", fmt.Errorf("parse cutter error: %s", err)
+		}
+
+		load := Load{
+			Type:    Send,
+			To:      to.ExternalID,
+			Content: line,
+		}
+
+		for _, content := range cutter.Limit(140) {
+			load.Content = content
+			i.connChan <- load
+			l := <-i.connChan
+			if l.Content != "" {
+				i.config.Log.Err("imessage send error: %s", l.Content)
+			}
+		}
 	}
-	i.connChan <- *load
-	l := <-i.connChan
-	if l.Content != "" {
-		return fmt.Errorf("%s", l.Content)
-	}
-	return nil
+	return "", nil
 }
 
 func listen(imsg *IMsg, addr string, c *tls.Config, connChan chan Load, log *logger.Logger) {
@@ -153,3 +182,10 @@ func handleClient(conn net.Conn, connChan chan Load, log *logger.SubLogger) {
 
 	log.Info("closed")
 }
+
+func imsgLen(content string) int {
+	return utf8.RuneCountInString(content)
+}
+
+var tailUrlRegex = regexp.MustCompile(` *(http|https):\/\/exfe.com(\/[\w#!:.?+=&%@!\-\/]*)?$`)
+var tailQuoteUrlRegex = regexp.MustCompile(` *(http|https):\/\/exfe.com(\/[\w#!:.?+=&%@!\-\/]*)?\)(\\\))$`)

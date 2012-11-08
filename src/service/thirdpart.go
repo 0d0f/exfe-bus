@@ -13,6 +13,7 @@ import (
 	"thirdpart/email"
 	"thirdpart/facebook"
 	"thirdpart/gcm"
+	"thirdpart/imsg"
 	"thirdpart/twitter"
 	"time"
 )
@@ -50,6 +51,12 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 
 	gcm_ := gcm.New(gcms_)
 	t.AddSender(gcm_)
+
+	imsg_, err := imsg.New(config)
+	if err != nil {
+		return nil, fmt.Errorf("can't connect imessage: %s", err)
+	}
+	t.AddSender(imsg_)
 
 	return &Thirdpart{
 		thirdpart: t,
