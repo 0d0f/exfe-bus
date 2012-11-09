@@ -150,3 +150,24 @@ func (q *Head) SaveTime(time int64, key string) error {
 	}
 	return nil
 }
+
+//////////////////////////////
+
+type Tail struct {
+	delay
+}
+
+func NewTail(name string, delayInSecond uint, redis broker.Redis) *Tail {
+	ret := new(Tail)
+	ret.initDelay(name, delayInSecond, redis, ret)
+	return ret
+}
+
+func (q *Tail) SaveTime(time int64, key string) error {
+	score := time
+	_, err := q.redis.Zadd(q.timeHashName, score, key)
+	if err != nil {
+		return err
+	}
+	return nil
+}
