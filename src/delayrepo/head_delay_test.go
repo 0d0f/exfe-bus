@@ -1,6 +1,7 @@
 package delayrepo
 
 import (
+	"broker"
 	"fmt"
 	"github.com/googollee/go-logger"
 	"github.com/stretchrcom/testify/assert"
@@ -10,7 +11,7 @@ import (
 
 func TestHead(t *testing.T) {
 	var q Repository
-	redis := NewRedis()
+	redis := broker.NewRedisImp()
 
 	log, err := logger.New(logger.Stderr, "test")
 	if err != nil {
