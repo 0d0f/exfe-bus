@@ -43,6 +43,7 @@ type Config struct {
 		Addr string          `json:"addr"`
 		Port uint            `json:"port"`
 		Head map[string]uint `json:"head"`
+		Tail map[string]uint `json:"tail"`
 	} `json:"exfe_queue"`
 
 	TokenManager struct {

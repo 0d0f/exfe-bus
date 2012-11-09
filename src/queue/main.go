@@ -98,6 +98,18 @@ func main() {
 		log.Info("register %s %d methods.", name, count)
 	}
 
+	for name, delayInSecond := range config.ExfeQueue.Tail {
+		tail, tailTomb := NewTail(services, delayInSecond, &config)
+		tombs = append(tombs, tailTomb)
+		count, err = bus.RegisterName(name, tail)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register %s %d methods.", name, count)
+	}
+
 	go func() {
 		<-quit
 		for i, _ := range tombs {
