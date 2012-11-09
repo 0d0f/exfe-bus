@@ -24,8 +24,12 @@ func NewRedisMultiplexer(config *model.Config) *RedisMultiplexer {
 		config:  config,
 		get:     make(chan *godis.Client),
 		back:    make(chan *godis.Client),
-		timeout: 30 * time.Second,
-		max:     5,
+		timeout: time.Duration(config.Redis.HeartBeatInSecond) * time.Second,
+		max:     int(config.Redis.MaxConnections),
+	}
+	if ret.max == 0 {
+		config.Log.Crit("config Redis.MaxConnections should not 0!")
+		panic("config Redis.MaxConnections should not 0!")
 	}
 	for i := 0; i < ret.max; i++ {
 		ret.list.PushBack(ret.createRedis())

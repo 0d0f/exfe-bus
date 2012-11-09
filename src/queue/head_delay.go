@@ -17,7 +17,7 @@ type Head struct {
 	config   *model.Config
 }
 
-func NewHead(services map[string]*gobus.Client, delayInSecond int, config *model.Config) (*Head, *tomb.Tomb) {
+func NewHead(services map[string]*gobus.Client, delayInSecond uint, config *model.Config) (*Head, *tomb.Tomb) {
 	name := fmt.Sprintf("delayrepo:head_%ds", delayInSecond)
 	delay := delayInSecond
 	redis := broker.NewRedisMultiplexer(config)

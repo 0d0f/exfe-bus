@@ -14,19 +14,21 @@ type Config struct {
 
 	DB struct {
 		Addr     string `json:"addr"`
-		Port     int    `json:"port"`
+		Port     uint   `json:"port"`
 		Username string `json:"username"`
 		Password string `json:"password"`
 		DbName   string `json:"db_name"`
 	} `json:"db"`
 	Redis struct {
-		Netaddr  string `json:"netaddr"`
-		Db       int    `json:"db"`
-		Password string `json:"password"`
+		Netaddr           string `json:"netaddr"`
+		Db                int    `json:"db"`
+		Password          string `json:"password"`
+		MaxConnections    uint   `json:"max_connections"`
+		HeartBeatInSecond uint   `json:"heart_beat_in_second"`
 	} `json:"redis"`
 	Email struct {
 		Host     string `json:"host"`
-		Port     int    `json:"port"`
+		Port     uint   `json:"port"`
 		Username string `json:"username"`
 		Password string `json:"password"`
 		Name     string `json:"name"`
@@ -35,12 +37,12 @@ type Config struct {
 
 	ExfeService struct {
 		Addr string `json:"addr"`
-		Port int    `json:"port"`
+		Port uint   `json:"port"`
 	} `json:"exfe_service"`
 	ExfeQueue struct {
-		Addr string         `json:"addr"`
-		Port int            `json:"port"`
-		Head map[string]int `json:"head"`
+		Addr string          `json:"addr"`
+		Port uint            `json:"port"`
+		Head map[string]uint `json:"head"`
 	} `json:"exfe_queue"`
 
 	TokenManager struct {

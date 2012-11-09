@@ -13,7 +13,7 @@ type timeSaver interface {
 type delay struct {
 	redis broker.Redis
 
-	delayInSecond int
+	delayInSecond uint
 	redisPrefix   string
 	timeHashName  string
 	timeSaver     timeSaver
@@ -52,7 +52,7 @@ func (q *delay) NextWakeup() (time.Duration, error) {
 	return time.Duration(int64(score)+int64(q.delayInSecond)-time.Now().Unix()) * time.Second, nil
 }
 
-func (q *delay) initDelay(name string, delayInSecond int, redis broker.Redis, timeSaver timeSaver) {
+func (q *delay) initDelay(name string, delayInSecond uint, redis broker.Redis, timeSaver timeSaver) {
 	q.redis = redis
 	q.delayInSecond = delayInSecond
 	q.redisPrefix = fmt.Sprintf("gobus:queue:%s", name)
@@ -133,7 +133,7 @@ type Head struct {
 	delay
 }
 
-func NewHead(name string, delayInSecond int, redis broker.Redis) *Head {
+func NewHead(name string, delayInSecond uint, redis broker.Redis) *Head {
 	ret := new(Head)
 	ret.initDelay(name, delayInSecond, redis, ret)
 	return ret
