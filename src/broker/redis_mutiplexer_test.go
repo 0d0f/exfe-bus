@@ -16,6 +16,7 @@ func TestRedisMultiplexer(t *testing.T) {
 	config := new(model.Config)
 	config.Log = log
 	config.Redis.MaxConnections = 5
+	config.Redis.HeartBeatInSecond = 60
 	m := NewRedisMultiplexer(config)
 
 	{
