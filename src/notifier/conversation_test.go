@@ -22,20 +22,6 @@ var post2 = model.Post{
 	CreatedAt: "2012-10-24 16:40:00",
 }
 
-func TestConversationUpdateToSelf(t *testing.T) {
-	update1 := model.ConversationUpdate{
-		To:    remail1,
-		Cross: cross,
-		Post:  post1,
-	}
-	updates := []model.ConversationUpdate{update1}
-
-	c := NewConversation(localTemplate, &config)
-	private, err := c.getConversationContent(updates)
-	assert.Equal(t, err.Error(), "no need send self")
-	assert.Equal(t, private, "")
-}
-
 func TestConversationUpdateTwitter(t *testing.T) {
 	update1 := model.ConversationUpdate{
 		To:    rtwitter1,
