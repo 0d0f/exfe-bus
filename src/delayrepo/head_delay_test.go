@@ -28,12 +28,35 @@ func TestHead(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, next, 2*time.Second)
 
-	for i := 0; i < 10; i++ {
-		q.Push("test1", []byte(fmt.Sprintf("%d", i)))
+	{
+		for i := 0; i < 10; i++ {
+			q.Push("test1", []byte(fmt.Sprintf("%d", i)))
+		}
+		next, err = q.NextWakeup()
+		assert.Equal(t, err, nil)
+		assert.Equal(t, next, 2*time.Second)
+		time.Sleep(next * 3 / 2)
 	}
-	next, err = q.NextWakeup()
-	assert.Equal(t, err, nil)
-	time.Sleep(next * 3 / 2)
+
+	{
+		for i := 0; i < 5; i++ {
+			q.Push("test1", []byte(fmt.Sprintf("%d", i)))
+		}
+		next, err = q.NextWakeup()
+		assert.Equal(t, err, nil)
+		assert.Equal(t, next, 2*time.Second)
+
+		time.Sleep(next / 2)
+
+		for i := 5; i < 10; i++ {
+			q.Push("test1", []byte(fmt.Sprintf("%d", i)))
+		}
+		next, err = q.NextWakeup()
+		assert.Equal(t, err, nil)
+		assert.Equal(t, next, time.Second)
+
+		time.Sleep(next * 3 / 2)
+	}
 
 	tomb.Kill(nil)
 	tomb.Wait()
