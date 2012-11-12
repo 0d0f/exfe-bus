@@ -70,8 +70,6 @@ func main() {
 
 		switch load.Type {
 		case imsg.Ping:
-			log.Info("received ping")
-
 			load.Type = imsg.Pong
 			l, err := json.Marshal(load)
 			if err != nil {
@@ -79,7 +77,6 @@ func main() {
 				return
 			}
 			_, err = conn.Write(l)
-			log.Info("pong")
 			if err != nil {
 				log.Crit("write: %s", err)
 				return
