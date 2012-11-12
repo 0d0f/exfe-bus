@@ -14,13 +14,22 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 4 {
-		fmt.Printf("Usage: %s [addr: exfe.com:25000] [cert] [key]\n", os.Args[0])
+	if len(os.Args) != 5 {
+		fmt.Printf("Usage: %s [pid file] [addr: exfe.com:25000] [cert] [key]\n", os.Args[0])
 		return
 	}
-	addr := os.Args[1]
-	certFile := os.Args[2]
-	keyFile := os.Args[3]
+	pid := os.Args[1]
+	addr := os.Args[2]
+	certFile := os.Args[3]
+	keyFile := os.Args[4]
+
+	p, err := os.Create(pid)
+	if err != nil {
+		fmt.Printf("can't create pid %s: %s\n", pid, err)
+		os.Exit(-1)
+	}
+	p.Write([]byte(fmt.Sprintf("%d", os.Getpid())))
+	p.Close()
 
 	log, err := logger.New(logger.Stderr, "imsg sender")
 	if err != nil {
