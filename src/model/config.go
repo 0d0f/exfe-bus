@@ -12,7 +12,8 @@ type Config struct {
 	TemplatePath string `json:"template_path"`
 	DefaultLang  string `json:"default_lang"`
 
-	DB struct {
+	Test bool `json:"test"`
+	DB   struct {
 		Addr     string `json:"addr"`
 		Port     uint   `json:"port"`
 		Username string `json:"username"`

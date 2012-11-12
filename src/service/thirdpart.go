@@ -9,6 +9,7 @@ import (
 	"gobus"
 	"model"
 	"thirdpart"
+	"thirdpart/_performance"
 	"thirdpart/apn"
 	"thirdpart/email"
 	"thirdpart/facebook"
@@ -51,6 +52,12 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 
 	gcm_ := gcm.New(gcms_)
 	t.AddSender(gcm_)
+
+	if config.Test {
+		performance := _performance.New()
+		t.AddSender(performance)
+		t.AddUpdater(performance)
+	}
 
 	imsg_, err := imsg.New(config)
 	if err != nil {
