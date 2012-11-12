@@ -8,26 +8,20 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"thirdpart/imsg"
 	"time"
 )
 
 func main() {
-	if len(os.Args) != 5 {
-		fmt.Printf("Usage: %s [addr: exfe.com:25000] [cert] [key] [time out in second]\n", os.Args[0])
+	if len(os.Args) != 4 {
+		fmt.Printf("Usage: %s [addr: exfe.com:25000] [cert] [key]\n", os.Args[0])
 		return
 	}
 	addr := os.Args[1]
 	certFile := os.Args[2]
 	keyFile := os.Args[3]
-	t, err := strconv.Atoi(os.Args[4])
-	if err != nil {
-		fmt.Printf("Usage: %s [addr: exfe.com:25000] [cert] [key] [time out in second]\n", os.Args[0])
-		return
-	}
-	timeout := time.Duration(t) * time.Second
+
 	log, err := logger.New(logger.Stderr, "imsg sender")
 	if err != nil {
 		panic(err)
@@ -95,7 +89,6 @@ func main() {
 				log.Crit("marshal: %s", err)
 				return
 			}
-			time.Sleep(timeout)
 			_, err = conn.Write(l)
 			log.Info("respond: %s", load.Content)
 			if err != nil {
