@@ -6,6 +6,7 @@
   "template_path": "",
   "default_lang": "en_US",
 
+  "test": false,
   "db": {
     "addr": "127.0.0.1",
     "port": 3306,
