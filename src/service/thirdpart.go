@@ -90,8 +90,14 @@ func (t *Thirdpart) Send(meta *gobus.HTTPMeta, arg model.ThirdpartSend, id *stri
 //
 //   > curl http://127.0.0.1:23333/Thirdpart?method=UpdateIdentity -d '{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1}'
 //
-func (t *Thirdpart) UpdateIdentity(meta *gobus.HTTPMeta, to *model.Recipient, i *int) error {
-	return t.thirdpart.UpdateIdentity(to)
+func (t *Thirdpart) UpdateIdentity(meta *gobus.HTTPMeta, tos model.ThirdpartTos, i *int) error {
+	for _, to := range tos {
+		err := t.thirdpart.UpdateIdentity(&to.To)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // 同步更新to在第三方网站的好友信息
@@ -100,8 +106,14 @@ func (t *Thirdpart) UpdateIdentity(meta *gobus.HTTPMeta, to *model.Recipient, i 
 //
 //   > curl http://127.0.0.1:23333/Thirdpart?method=UpdateFriends -d '{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1}'
 //
-func (t *Thirdpart) UpdateFriends(meta *gobus.HTTPMeta, to *model.Recipient, i *int) error {
-	return t.thirdpart.UpdateFriends(to)
+func (t *Thirdpart) UpdateFriends(meta *gobus.HTTPMeta, tos model.ThirdpartTos, i *int) error {
+	for _, to := range tos {
+		err := t.thirdpart.UpdateFriends(&to.To)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func getApnErrorHandler(log *logger.SubLogger) apn.ErrorHandler {
