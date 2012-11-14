@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"text/template"
+	"unicode/utf8"
 )
 
 type ForElement struct {
@@ -61,7 +62,10 @@ func NewTemplate(name string) *template.Template {
 			if len(str) <= max {
 				return str
 			}
-			return str[:max-1] + "…"
+			for str = str[:max-1]; !utf8.ValidString(str); {
+				str = str[:len(str)-1]
+			}
+			return str + "…"
 		},
 		"for": func(array interface{}) (interface{}, error) {
 			v := reflect.ValueOf(array)
