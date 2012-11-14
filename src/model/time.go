@@ -25,10 +25,10 @@ func (t EFTime) UTCTime(layout string) (string, error) {
 	var time_ time.Time
 	var err error
 	if t.Time == "" {
-		time_, err = time.Parse("2006-01-02", t.Date)
+		time_, err = time.Parse("2006-1-02", t.Date)
 	} else if t.Date != "" {
 		str := fmt.Sprintf("%s %s", t.Date, t.Time)
-		time_, err = time.Parse("2006-01-02 15:04:05", str)
+		time_, err = time.Parse("2006-1-02 15:04:05", str)
 	}
 	if err != nil {
 		return "", err
@@ -92,11 +92,11 @@ func (t EFTime) timeInZone(targetLoc *time.Location) (time.Time, error) {
 
 	switch {
 	case t.Time != "" && t.Date != "":
-		t_, err = time.Parse("2006-01-02 15:04:05", fmt.Sprintf("%s %s", t.Date, t.Time[:8]))
+		t_, err = time.Parse("2006-1-02 15:04:05", fmt.Sprintf("%s %s", t.Date, t.Time[:8]))
 	case t.Time != "" && t.Date == "":
 		t_, err = time.Parse("15:04:05", fmt.Sprintf("%s", t.Time[:8]))
 	case t.Time == "" && t.Date != "":
-		t_, err = time.Parse("2006-01-02", fmt.Sprintf("%s", t.Date))
+		t_, err = time.Parse("2006-1-02", fmt.Sprintf("%s", t.Date))
 	}
 
 	if err != nil {
