@@ -170,10 +170,10 @@ func (t *Thirdpart) sendCallback(recipient model.Recipient, err error) {
 	url := fmt.Sprintf("%s/v2/gobus/NotificationCallback", t.config.SiteApi)
 	resp, err := http.Post(url, "application/json", buf)
 	if err != nil {
-		t.log.Crit("send notification callback error: %s", err)
+		t.log.Crit("send callback(%s) to %s error: %s", buf.String(), url, err)
 	}
 	if resp.StatusCode != 200 {
-		t.log.Crit("send notification callback failed: %s", resp.Status)
+		t.log.Crit("send callback(%s) to %s failed: %s", buf.String(), url, resp.Status)
 	}
 }
 
