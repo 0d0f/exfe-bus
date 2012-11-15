@@ -66,7 +66,7 @@ func (i *Head) Push(meta *gobus.HTTPMeta, arg model.QueuePush, count *int) error
 		if err != nil {
 			return fmt.Errorf("can't marshal input data: %s", err)
 		}
-		err = i.repo.Push(fmt.Sprintf("%s,%s,%s,%s@%s", arg.Service, arg.Method, arg.MergeKey, to.ExternalID, to.Provider), d)
+		err = i.repo.Push(fmt.Sprintf("%s,%s,%s,%s(%s)@%s", arg.Service, arg.Method, arg.MergeKey, to.ExternalID, to.ExternalUsername, to.Provider), d)
 		if err != nil {
 			return fmt.Errorf("push to repo failed: %s", err)
 		}
