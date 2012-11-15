@@ -2,12 +2,16 @@ package main
 
 import (
 	"broker"
+	"bytes"
+	"encoding/json"
 	"fmt"
 	gcms "github.com/googollee/go-gcm"
 	"github.com/googollee/go-logger"
 	"github.com/virushuo/Go-Apns"
 	"gobus"
 	"model"
+	"net/http"
+	"ringcache"
 	"thirdpart"
 	"thirdpart/_performance"
 	"thirdpart/apn"
@@ -23,9 +27,14 @@ type Thirdpart struct {
 	thirdpart *thirdpart.Thirdpart
 	log       *logger.SubLogger
 	config    *model.Config
+	sendCache *ringcache.RingCache
 }
 
 func NewThirdpart(config *model.Config) (*Thirdpart, error) {
+	if config.Thirdpart.MaxStateCache == 0 {
+		return nil, fmt.Errorf("config.Thirdpart.MaxStateCache should be bigger than 0")
+	}
+
 	twitterBroker := broker.NewTwitter(config.Thirdpart.Twitter.ClientToken, config.Thirdpart.Twitter.ClientSecret)
 	apns_, err := apns.New(config.Thirdpart.Apn.Cert, config.Thirdpart.Apn.Key, config.Thirdpart.Apn.Server, time.Duration(config.Thirdpart.Apn.TimeoutInMinutes)*time.Minute)
 	if err != nil {
@@ -69,6 +78,7 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 		thirdpart: t,
 		log:       config.Log.SubPrefix("thirdpart"),
 		config:    config,
+		sendCache: ringcache.New(int(config.Thirdpart.MaxStateCache)),
 	}, nil
 }
 
@@ -80,7 +90,28 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 //
 func (t *Thirdpart) Send(meta *gobus.HTTPMeta, arg model.ThirdpartSend, id *string) error {
 	var err error
+	if arg.To.ExternalID == "" {
+		go func() {
+			err := t.thirdpart.UpdateIdentity(&arg.To)
+			if err != nil {
+				t.config.Log.Crit("update %s identity error: %s", arg.To, err)
+			}
+		}()
+	}
 	*id, err = t.thirdpart.Send(&arg.To, arg.PrivateMessage, arg.PublicMessage, arg.Info)
+
+	key := fmt.Sprintf("%s(%s)@%s", arg.To.ExternalID, arg.To.ExternalUsername, arg.To.Provider)
+	lastErr := t.sendCache.Get(key)
+	if lastErr == nil {
+		t.sendCallback(arg.To, err)
+	} else {
+		lastError := lastErr.(string)
+		if (lastError == "" && err != nil) || (lastError != "" && err == nil) {
+			t.sendCallback(arg.To, err)
+		}
+	}
+
+	t.sendCache.Push(key, err.Error())
 	return err
 }
 
@@ -116,8 +147,39 @@ func (t *Thirdpart) UpdateFriends(meta *gobus.HTTPMeta, tos model.ThirdpartTos, 
 	return nil
 }
 
+func (t *Thirdpart) sendCallback(recipient model.Recipient, err error) {
+	arg := callbackArg{
+		Recipient: recipient,
+	}
+	if err != nil {
+		arg.Error = err.Error()
+	}
+
+	buf := bytes.NewBuffer(nil)
+	encoder := json.NewEncoder(buf)
+	err = encoder.Encode(arg)
+	if err != nil {
+		t.log.Crit("encoding json error: %s", err)
+		return
+	}
+
+	url := fmt.Sprintf("%s/v2/gobus/NotificationCallback", t.config.SiteApi)
+	resp, err := http.Post(url, "application/json", buf)
+	if err != nil {
+		t.log.Crit("send notification callback error: %s", err)
+	}
+	if resp.StatusCode != 200 {
+		t.log.Crit("send notification callback failed:", resp.Status)
+	}
+}
+
 func getApnErrorHandler(log *logger.SubLogger) apn.ErrorHandler {
 	return func(err apns.NotificationError) {
 		log.Err("%s", err)
 	}
+}
+
+type callbackArg struct {
+	Recipient model.Recipient `json:"recipient"`
+	Error     string          `json:"error"`
 }

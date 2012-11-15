@@ -51,7 +51,8 @@ type Config struct {
 		TableName string `json:"table_name"`
 	} `json:"token_manager"`
 	Thirdpart struct {
-		Twitter struct {
+		MaxStateCache uint `json:"max_state_cache"`
+		Twitter       struct {
 			ClientToken  string `json:"client_token"`
 			ClientSecret string `json:"client_secret"`
 			AccessToken  string `json:"access_token"`

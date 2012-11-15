@@ -24,14 +24,6 @@ func (t *Thirdpart) AddSender(sender Sender) {
 }
 
 func (t *Thirdpart) Send(to *model.Recipient, privateMessage, publicMessage string, data *model.InfoData) (string, error) {
-	if to.ExternalID == "" {
-		go func() {
-			err := t.UpdateIdentity(to)
-			if err != nil {
-				t.config.Log.Crit("update %s identity error: %s", to, err)
-			}
-		}()
-	}
 	sender, ok := t.senders[to.Provider]
 	if !ok {
 		return "", fmt.Errorf("can't find %s sender", to.Provider)
