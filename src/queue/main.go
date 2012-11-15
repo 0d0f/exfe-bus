@@ -37,7 +37,8 @@ func getCallback(log *logger.SubLogger, services map[string]*gobus.Client) func(
 		var i int
 		err := service.Do(method, d, &i)
 		if err != nil {
-			log.Crit("call service %s method %s failed: %s", serviceName, method, err)
+			j, _ := json.Marshal(d)
+			log.Crit("call %s|%s with %s failed: %s", serviceName, method, string(j), err)
 		}
 	}
 }
