@@ -111,7 +111,11 @@ func (t *Thirdpart) Send(meta *gobus.HTTPMeta, arg model.ThirdpartSend, id *stri
 		}
 	}
 
-	t.sendCache.Push(key, err.Error())
+	if err != nil {
+		t.sendCache.Push(key, err.Error())
+	} else {
+		t.sendCache.Push(key, "")
+	}
 	return err
 }
 
@@ -169,7 +173,7 @@ func (t *Thirdpart) sendCallback(recipient model.Recipient, err error) {
 		t.log.Crit("send notification callback error: %s", err)
 	}
 	if resp.StatusCode != 200 {
-		t.log.Crit("send notification callback failed:", resp.Status)
+		t.log.Crit("send notification callback failed: %s", resp.Status)
 	}
 }
 
