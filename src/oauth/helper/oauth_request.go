@@ -24,7 +24,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	client, err := request.AccessClient(temp_token, verifier, "http://api.twitter.com/1/")
+	client, err := request.AccessClient(temp_token, verifier, "http://api.twitter.com/1.1/")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

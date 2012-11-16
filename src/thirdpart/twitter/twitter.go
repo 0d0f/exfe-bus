@@ -50,8 +50,12 @@ type twitterReply struct {
 
 func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
 	ids, err := t.sendPrivate(to, privateMessage)
-	if err != nil && strings.Index(err.Error(), `"code":150`) > 0 {
+	if err != nil {
 		ids, err = t.sendPublic(to, publicMessage)
+	}
+
+	if err != nil {
+		return "", err
 	}
 
 	if ids != "" {
