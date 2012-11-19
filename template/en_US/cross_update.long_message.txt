@@ -23,11 +23,9 @@
 {{end}}{{if .Removed}}· Removed: {{range for .Removed}}{{.data.Identity.Name}}{{if not .last}}, {{end}}{{end}}.
 {{end}}
 
-{{if .Posts}}{{$timezone := .Timezone}}{{range .Posts}}· {{.By.Name}} at {{.CreatedAtInZone $timezone}} said:
-    {{.Content}}
-{{end}}
- 
-{{end}}{{if .ManyPosts}}
-{{.Cross.Link}}
 
-{{end}}# Reply this email directly as conversation. #
+{{if .IsDescriptionChanged}}*{{end}}{{limit 233 .Cross.Description}}{{if .IsDescriptionChanged}}*{{end}}
+
+
+{{.Cross.Link}}
+# Reply this email directly as conversation. #
