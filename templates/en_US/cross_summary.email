@@ -1,4 +1,4 @@
-Content-Type: multipart/mixed; boundary="56040bc4f71301a3dc363b960b1796dafbb8b190894fd231dda878b5be75"
+{{if .NeedEmail}}Content-Type: multipart/mixed; boundary="56040bc4f71301a3dc363b960b1796dafbb8b190894fd231dda878b5be75"
 References: <x+{{.Cross.ID}}@exfe.com>
 To: =?utf-8?B?{{.To.Name | base64}}?= <{{.To.ExternalID}}>
 From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <x+{{.Cross.ID}}@{{.Config.Email.Domain}}>
@@ -26,3 +26,4 @@ Content-Transfer-Encoding: base64
 
 {{sub "cross.ics" . | replace "\n" "\r\n" | base64 | column 80 "\r\n"}}
 --56040bc4f71301a3dc363b960b1796dafbb8b190894fd231dda878b5be75--
+{{end}}

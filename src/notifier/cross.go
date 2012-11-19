@@ -95,6 +95,8 @@ func (c *Cross) getSummaryContent(updates []model.CrossUpdate) (string, string, 
 		return "", "", err
 	}
 
+	fmt.Printf("%s\n", arg.NewInvited)
+
 	if !arg.IsChanged() {
 		return "", "", nil
 	}
@@ -245,6 +247,29 @@ func (a *SummaryArg) TotalOldAccepted() int {
 		ret += 1 + int(e.Mates)
 	}
 	return ret
+}
+
+func (a *SummaryArg) NeedEmail() bool {
+	if a.IsTitleChanged() {
+		return true
+	}
+	if a.IsTimeChanged() {
+		return true
+	}
+	if a.IsPlaceChanged() {
+		return true
+	}
+	if a.IsDescriptionChanged() {
+		return true
+	}
+	peopleChanged := len(a.NewInvited)
+	peopleChanged += len(a.Removed)
+	peopleChanged += len(a.NewAccepted)
+	peopleChanged += len(a.NewDeclined)
+	if peopleChanged > 0 {
+		return true
+	}
+	return false
 }
 
 func (a *SummaryArg) IsChanged() bool {
