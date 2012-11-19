@@ -45,6 +45,10 @@ func (m *TokenManager) GenerateToken(resource, data string, expireAfterSecond ti
 }
 
 func (m *TokenManager) GetToken(token string) (*Token, error) {
+	if len(token) < TOKEN_KEY_LENGTH {
+		return nil, fmt.Errorf("token(%s) invalid", token)
+	}
+
 	tk, err := m.repo.FindByToken(m.splitToken(token))
 	if err != nil {
 		return nil, err
@@ -63,6 +67,10 @@ func (m *TokenManager) FindTokens(resource string) (tokens []*Token, err error) 
 }
 
 func (m *TokenManager) UpdateData(token, data string) error {
+	if len(token) < TOKEN_KEY_LENGTH {
+		return fmt.Errorf("token(%s) invalid", token)
+	}
+
 	key, rand := m.splitToken(token)
 	return m.repo.UpdateDataByToken(key, rand, data)
 }
@@ -77,10 +85,18 @@ func (m *TokenManager) VerifyToken(token, resource string) (bool, *Token, error)
 }
 
 func (m *TokenManager) DeleteToken(token string) error {
+	if len(token) < TOKEN_KEY_LENGTH {
+		return fmt.Errorf("token(%s) invalid", token)
+	}
+
 	return m.repo.DeleteByToken(m.splitToken(token))
 }
 
 func (m *TokenManager) RefreshToken(token string, duration time.Duration) error {
+	if len(token) < TOKEN_KEY_LENGTH {
+		return fmt.Errorf("token(%s) invalid", token)
+	}
+
 	var expireAt *time.Time
 	if duration < 0 {
 		expireAt = nil
