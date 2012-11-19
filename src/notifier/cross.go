@@ -21,9 +21,19 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config) *Cro
 }
 
 func (c *Cross) Summary(updates model.CrossUpdates) error {
+	to := updates[0].To
+	if to.Provider == "twitter" {
+		c.config.Log.Debug("not send to twitter: %s", to)
+		return nil
+	}
+
 	private, public, err := c.getSummaryContent(updates)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
+	}
+
+	if private == "" && public == "" {
+		return nil
 	}
 
 	url := fmt.Sprintf("http://%s:%d", c.config.ExfeService.Addr, c.config.ExfeService.Port)
@@ -40,7 +50,7 @@ func (c *Cross) Summary(updates model.CrossUpdates) error {
 			Type:    model.TypeCrossUpdate,
 		},
 	}
-	arg.To = updates[0].To
+	arg.To = to
 	var ids string
 	err = client.Do("Send", &arg, &ids)
 	if err != nil {
@@ -83,6 +93,10 @@ func (c *Cross) getSummaryContent(updates []model.CrossUpdate) (string, string, 
 	arg, err := SummaryFromUpdates(updates, c.config)
 	if err != nil {
 		return "", "", err
+	}
+
+	if !arg.IsChanged() {
+		return "", "", nil
 	}
 
 	private, err := GetContent(c.localTemplate, "cross_summary", arg.To, arg)
@@ -231,6 +245,31 @@ func (a *SummaryArg) TotalOldAccepted() int {
 		ret += 1 + int(e.Mates)
 	}
 	return ret
+}
+
+func (a *SummaryArg) IsChanged() bool {
+	if a.IsTitleChanged() {
+		return true
+	}
+	if a.IsTimeChanged() {
+		return true
+	}
+	if a.IsPlaceChanged() {
+		return true
+	}
+	if a.IsDescriptionChanged() {
+		return true
+	}
+	peopleChanged := len(a.NewInvited)
+	peopleChanged += len(a.Removed)
+	peopleChanged += len(a.NewAccepted)
+	peopleChanged += len(a.NewDeclined)
+	peopleChanged += len(a.NewInterested)
+	peopleChanged += len(a.NewPending)
+	if peopleChanged > 0 {
+		return true
+	}
+	return false
 }
 
 func (a *SummaryArg) IsTimeChanged() bool {

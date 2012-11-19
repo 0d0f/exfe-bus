@@ -20,6 +20,12 @@ func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Confi
 }
 
 func (c *Conversation) Update(updates model.ConversationUpdates) error {
+	to := updates[0].To
+	if to.Provider == "twitter" {
+		c.config.Log.Debug("not send to twitter: %s", to)
+		return nil
+	}
+
 	private, err := c.getConversationContent(updates)
 	if err != nil {
 		return err
@@ -39,7 +45,7 @@ func (c *Conversation) Update(updates model.ConversationUpdates) error {
 			Type:    model.TypeConversation,
 		},
 	}
-	arg.To = updates[0].To
+	arg.To = to
 	var id string
 	err = client.Do("Send", &arg, &id)
 	if err != nil {
