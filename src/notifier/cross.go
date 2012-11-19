@@ -95,8 +95,6 @@ func (c *Cross) getSummaryContent(updates []model.CrossUpdate) (string, string, 
 		return "", "", err
 	}
 
-	fmt.Printf("%s\n", arg.NewInvited)
-
 	if !arg.IsChanged() {
 		return "", "", nil
 	}
