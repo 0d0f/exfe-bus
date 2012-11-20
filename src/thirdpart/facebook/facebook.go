@@ -62,6 +62,10 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 				f.helper.Log().Err("can't get %s facebook infomation: %s", friend.Id, err)
 				continue
 			}
+			if user.ExternalUsername() == "" {
+				f.helper.Log().Err("facebook user %d doesn't have username, ignored", friend.Id)
+				continue
+			}
 			users = append(users, user)
 		}
 		err = f.helper.UpdateFriends(to, users)
