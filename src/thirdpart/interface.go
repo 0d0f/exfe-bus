@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/googollee/go-logger"
 	"model"
 	"net"
 	"net/http"
@@ -66,6 +67,8 @@ type Helper interface {
 	UpdateIdentity(to *model.Recipient, externalUser ExternalUser) error
 	UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error
 	SendEmail(to string, content string) (id string, err error)
+
+	Log() *logger.Logger
 }
 
 type updateFriendsArg struct {
@@ -87,6 +90,10 @@ func NewHelper(config *model.Config) *HelperImp {
 		emailAuth:   smtp.PlainAuth("", config.Email.Username, config.Email.Password, config.Email.Host),
 		emailFrom:   fmt.Sprintf("x@%s", config.Email.Domain),
 	}
+}
+
+func (h *HelperImp) Log() *logger.Logger {
+	return h.config.Log
 }
 
 func (h *HelperImp) UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error {
@@ -177,6 +184,11 @@ func (h *HelperImp) SendEmail(to string, content string) (id string, err error) 
 }
 
 type FakeHelper struct {
+	log *logger.Logger
+}
+
+func (h *FakeHelper) Log() *logger.Logger {
+	return h.log
 }
 
 func (h *FakeHelper) UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error {

@@ -55,9 +55,14 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 		if len(friends.Data) == 0 {
 			break
 		}
-		users := make([]thirdpart.ExternalUser, len(friends.Data))
-		for i, _ := range friends.Data {
-			users[i] = friends.Data[i]
+		users := make([]thirdpart.ExternalUser, 0)
+		for _, friend := range friends.Data {
+			user, err := f.getInfo(idToken, friend.Id)
+			if err != nil {
+				f.helper.Log().Err("can't get %s facebook infomation: %s", friend.Id, err)
+				continue
+			}
+			users = append(users, user)
 		}
 		err = f.helper.UpdateFriends(to, users)
 		if err != nil {
@@ -73,28 +78,36 @@ func (f *Facebook) UpdateIdentity(to *model.Recipient) error {
 	if err != nil {
 		return fmt.Errorf("can't convert %s's AuthData(%s): %s", to, to.AuthData, err)
 	}
-	url := fmt.Sprintf("https://graph.facebook.com/me?access_token=%s", idToken.Token)
-	resp, err := http.Get(url)
+	user, err := f.getInfo(idToken, "me")
 	if err != nil {
-		return fmt.Errorf("facebook get %s info from %s error: %s", to, url, err)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("facebook get %s info body from %s fail: %s", to, url, err)
-	}
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("facebook get %s info from %s fail: (%s) %s", to, url, resp.Status, string(body))
-	}
-	var user facebookUser
-	err = json.Unmarshal(body, &user)
-	if err != nil {
-		return fmt.Errorf("facebook get %s info json error: %s", to, err)
+		return err
 	}
 	err = f.helper.UpdateIdentity(to, user)
 	if err != nil {
 		return fmt.Errorf("update %s info error: %s", to, err)
 	}
 	return nil
+}
+
+func (f Facebook) getInfo(idToken *facebookIdentityToken, id string) (*facebookUser, error) {
+	url := fmt.Sprintf("https://graph.facebook.com/%s?access_token=%s", id, idToken.Token)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("facebook get %s info from %s error: %s", id, url, err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("facebook get %s info body from %s fail: %s", id, url, err)
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("facebook get %s info from %s fail: (%s) %s", id, url, resp.Status, string(body))
+	}
+	var user facebookUser
+	err = json.Unmarshal(body, &user)
+	if err != nil {
+		return nil, fmt.Errorf("facebook get %s info json error: %s", id, err)
+	}
+	return &user, nil
 }
 
 func (f *Facebook) getToken(to *model.Recipient) (*facebookIdentityToken, error) {
@@ -150,5 +163,5 @@ func (f facebookUser) Bio() string {
 }
 
 func (f facebookUser) Avatar() string {
-	return fmt.Sprintf("http://graph.facebook.com/%s/picture", f.Username)
+	return fmt.Sprintf("http://graph.facebook.com/%s/picture", f.Id)
 }
