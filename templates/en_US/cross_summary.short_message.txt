@@ -9,7 +9,7 @@
 \(“{{$oldTitle}}”\) update:{{if .IsTitleChanged}} \(“{{$title}}”\).{{end}} {{$time}} at \({{$placeTitle}}\). {{.Cross.Exfee.CountPeople .Cross.Exfee.Accepted}} people invited. {{$link}}
 {{else}}
 {{if .IsTitleChanged}}\(“{{$oldTitle}}”\) is now called \(“{{$title}}”\){{if .NeedShowBy}}, set by \({{$by}}\){{end}}. {{$link}}{{end}}
-{{if or .IsTimeChanged .IsPlaceTitleChanged}}\(“{{$title}}”\) update: \({{$time}}\) at \({{$placeTitle}}\){{if .NeedShowBy}}, set by \({{$by}}\){{end}}. {{$link}}{{end}}
+{{if or .IsTimeChanged .IsPlaceTitleChanged}}\(“{{$title}}”\) update: \({{$time}}\){{if $placeTitle}} at \({{$placeTitle}}\){{end}}{{if .NeedShowBy}}, set by \({{$by}}\){{end}}. {{$link}}{{end}}
 {{if .IsPlaceDescChanged}}\(“{{$title}}”\) place details updated{{if .NeedShowBy}}, set by \({{$by}}\){{end}}. {{$link}}{{end}}
 {{if .IsDescriptionChanged}}\(“{{$title}}”\) description updated{{if .NeedShowBy}}, set by \({{$by}}\){{end}}. {{$link}}{{end}}
 {{end}}
@@ -20,6 +20,7 @@
 {{else}}{{range for .Removed}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Identity.Name}}\){{end}} left \(“{{$title}}”\){{if .NeedShowBy}}, removed by \({{$by}}\){{end}}. {{$link}}
 {{end}}
 {{end}}
+{{if .IsExfeeChanged}}
 {{$NoAccepted := not .NewAccepted}}
 {{$NoInterested := not .NewInterested}}
 {{$NoDeclined := not .NewDeclined}}
@@ -29,3 +30,4 @@
 {{if .ToIn .NewInterested | and .NeedShowBy}}\({{$by}}\) set you interested in \(“{{$title}}”\). {{.link}}{{end}}
 {{if .ToIn .NewDeclined | and .NeedShowBy}}\({{$by}}\) set you unavailable for \(“{{$title}}”\). {{.link}}{{end}}
 {{if .ToIn .NewPending | and .NeedShowBy}}\({{$by}}\) set you pending on \(“{{$title}}”\). {{.link}}{{end}}
+{{end}}

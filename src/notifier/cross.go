@@ -283,6 +283,13 @@ func (a *SummaryArg) IsChanged() bool {
 	if a.IsDescriptionChanged() {
 		return true
 	}
+	if a.IsExfeeChanged() {
+		return true
+	}
+	return false
+}
+
+func (a *SummaryArg) IsExfeeChanged() bool {
 	peopleChanged := len(a.NewInvited)
 	peopleChanged += len(a.Removed)
 	peopleChanged += len(a.NewAccepted)
