@@ -32,7 +32,7 @@ func (f *Facebook) Send(to *model.Recipient, privateMessage string, publicMessag
 func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 	idToken, err := f.getToken(to)
 	if err != nil {
-		return fmt.Errorf("can't convert %s's AuthData: %s", to, err)
+		return fmt.Errorf("can't convert %s's AuthData(%s): %s", to, to.AuthData, err)
 	}
 	url := fmt.Sprintf("https://graph.facebook.com/%s/friends?access_token=%s", to.ExternalID, idToken.Token)
 	for {
@@ -71,7 +71,7 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 func (f *Facebook) UpdateIdentity(to *model.Recipient) error {
 	idToken, err := f.getToken(to)
 	if err != nil {
-		return fmt.Errorf("can't convert %s's AuthData: %s", to, err)
+		return fmt.Errorf("can't convert %s's AuthData(%s): %s", to, to.AuthData, err)
 	}
 	url := fmt.Sprintf("https://graph.facebook.com/me?access_token=%s", idToken.Token)
 	resp, err := http.Get(url)
