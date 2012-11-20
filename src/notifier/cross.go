@@ -286,13 +286,16 @@ func (a *SummaryArg) IsChanged() bool {
 	if a.IsExfeeChanged() {
 		return true
 	}
+	peopleChanged := len(a.NewInvited)
+	peopleChanged += len(a.Removed)
+	if peopleChanged > 0 {
+		return true
+	}
 	return false
 }
 
 func (a *SummaryArg) IsExfeeChanged() bool {
-	peopleChanged := len(a.NewInvited)
-	peopleChanged += len(a.Removed)
-	peopleChanged += len(a.NewAccepted)
+	peopleChanged := len(a.NewAccepted)
 	peopleChanged += len(a.NewDeclined)
 	peopleChanged += len(a.NewInterested)
 	peopleChanged += len(a.NewPending)
