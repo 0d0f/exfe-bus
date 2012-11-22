@@ -36,6 +36,8 @@ func main() {
 		return
 	}
 
+	log.Info("start")
+
 	tomb := email.Daemon(&config, localTemplate, client)
 
 	<-quit
