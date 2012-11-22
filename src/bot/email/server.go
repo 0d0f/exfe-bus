@@ -50,7 +50,7 @@ func (s *EmailBotServer) Serve() error {
 		return err
 	}
 	for _, id := range ids {
-		fmt.Printf("get mail id: %s\n", id)
+		s.config.Log.Debug("get mail id: %s\n", id)
 		msg, err := s.conn.GetMessage(id)
 		if err != nil {
 			return fmt.Errorf("Get message(%v) error: %s", id, err)
