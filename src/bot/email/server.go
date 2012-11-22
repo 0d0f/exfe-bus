@@ -93,9 +93,7 @@ func Daemon(config *model.Config) *tomb.Tomb {
 			for {
 				err := s.Serve()
 				if err != nil {
-					config.Log.Crit("email error: %s", err)
-					s.Close()
-					break
+					config.Log.Err("email error: %s", err)
 				}
 				select {
 				case <-t.Dying():
