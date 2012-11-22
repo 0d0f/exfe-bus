@@ -20,6 +20,8 @@ type Email struct {
 	Date      time.Time
 	MessageID string
 	Text      string
+
+	Config *model.Config
 }
 
 func (m *Email) ToUrlValues() url.Values {
@@ -64,6 +66,8 @@ func (c *EmailContext) EmailWithCrossID(input *Email) error {
 }
 
 func (c *EmailContext) Default(input *Email) error {
+	input.Config = c.mailBot.config
+
 	buf := bytes.NewBuffer(nil)
 	err := c.mailBot.localTemplate.Execute(buf, "en_US", "conversation_reply.email", input)
 	if err != nil {
