@@ -1,11 +1,11 @@
 package email
 
 import (
-	"exfe/service"
 	"fmt"
 	"github.com/googollee/goimap"
 	"github.com/sloonz/go-iconv"
 	"gobot"
+	"model"
 	"net/mail"
 	"old_gobus"
 	"regexp"
@@ -33,7 +33,7 @@ var removeLine = [...]string{
 }
 
 type EmailBot struct {
-	config      *exfe_service.Config
+	config      *model.Config
 	bus         *gobus.Client
 	crossId     *regexp.Regexp
 	retReplacer *strings.Replacer
@@ -41,7 +41,7 @@ type EmailBot struct {
 	replyLine   []*regexp.Regexp
 }
 
-func NewEmailBot(config *exfe_service.Config) *EmailBot {
+func NewEmailBot(config *model.Config) *EmailBot {
 	reply := make([]*regexp.Regexp, len(replyLine), len(replyLine))
 	for i, l := range replyLine {
 		reply[i] = regexp.MustCompile(l)

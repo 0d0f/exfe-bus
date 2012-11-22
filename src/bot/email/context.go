@@ -48,7 +48,7 @@ func (c *EmailContext) EmailWithCrossID(input *Email) error {
 	if input.CrossId == "" {
 		return bot.BotNotMatched
 	}
-	url := fmt.Sprintf("%s/v2/gobus/PostConversation", c.mailBot.config.Site_api)
+	url := fmt.Sprintf("%s/v2/gobus/PostConversation", c.mailBot.config.SiteApi)
 	fmt.Printf("send to: %s, post content: %s\n", url, input.ToUrlValues().Encode())
 	resp, err := http.PostForm(url, input.ToUrlValues())
 	if err != nil {
@@ -69,7 +69,7 @@ func (c *EmailContext) Default(input *Email) error {
 		input.Text)
 	mailarg := &email_service.MailArg{
 		To:      []*mail.Address{input.From},
-		From:    &mail.Address{c.mailBot.config.EmailName, fmt.Sprintf("x@%s", c.mailBot.config.EmailDomain)},
+		From:    &mail.Address{c.mailBot.config.Email.Name, fmt.Sprintf("x@%s", c.mailBot.config.Email.Domain)},
 		Subject: fmt.Sprintf("Re: %s", input.Subject),
 		Text:    body,
 		Html:    fmt.Sprintf("<html><body><p>%s</p></body></html>", strings.Replace(body, "\n", "<br />", -1)),

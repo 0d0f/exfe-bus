@@ -2,18 +2,29 @@ package main
 
 import (
 	"bot/email"
-	"exfe/service"
-	"log"
+	"daemon"
+	"github.com/googollee/go-logger"
+	"model"
 )
 
 func main() {
-	config := exfe_service.InitConfig()
-	log.SetPrefix("exfe.bot")
-	log.Printf("service start")
+	var config model.Config
+	output, quit := daemon.Init("exfe.json", &config)
 
-	quit := make(chan int)
+	log, err := logger.New(output, "bot")
+	if err != nil {
+		panic(err)
+		return
+	}
+	config.Log = log
 
-	go email.Daemon(config, quit)
+	log.Info("service start")
+
+	tomb := email.Daemon(&config)
 
 	<-quit
+	tomb.Kill(nil)
+	tomb.Wait()
+
+	log.Info("quit")
 }
