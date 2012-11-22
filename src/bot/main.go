@@ -3,8 +3,12 @@ package main
 import (
 	"bot/email"
 	"daemon"
+	"fmt"
+	"formatter"
 	"github.com/googollee/go-logger"
+	"gobus"
 	"model"
+	"os"
 )
 
 func main() {
@@ -18,9 +22,21 @@ func main() {
 	}
 	config.Log = log
 
-	log.Info("service start")
+	localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
+	if err != nil {
+		log.Crit("load local template failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	url := fmt.Sprintf("http://%s:%d/Thirdpart", config.ExfeService.Addr, config.ExfeService.Port)
+	client, err := gobus.NewClient(url)
+	if err != nil {
+		log.Crit("create gobus client failed: %s", err)
+		os.Exit(-1)
+		return
+	}
 
-	tomb := email.Daemon(&config)
+	tomb := email.Daemon(&config, localTemplate, client)
 
 	<-quit
 	tomb.Kill(nil)

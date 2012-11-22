@@ -2,8 +2,10 @@ package email
 
 import (
 	"fmt"
+	"formatter"
 	"github.com/googollee/goimap"
 	"gobot"
+	"gobus"
 	"launchpad.net/tomb"
 	"model"
 	"time"
@@ -15,8 +17,8 @@ type EmailBotServer struct {
 	config *model.Config
 }
 
-func NewEmailBotServer(c *model.Config) *EmailBotServer {
-	b := bot.NewBot(NewEmailBot(c))
+func NewEmailBotServer(c *model.Config, localTemplate *formatter.LocalTemplate, sender *gobus.Client) *EmailBotServer {
+	b := bot.NewBot(NewEmailBot(c, localTemplate, sender))
 	b.Register("EmailWithCrossID")
 	b.Register("Default")
 	return &EmailBotServer{
@@ -70,14 +72,14 @@ func (s *EmailBotServer) Serve() error {
 	return nil
 }
 
-func Daemon(config *model.Config) *tomb.Tomb {
+func Daemon(config *model.Config, localTemplate *formatter.LocalTemplate, sender *gobus.Client) *tomb.Tomb {
 	t := tomb.Tomb{}
 
 	go func() {
 		defer t.Done()
 
 		for {
-			s := NewEmailBotServer(config)
+			s := NewEmailBotServer(config, localTemplate, sender)
 
 			for i := 0; ; i++ {
 				err := s.Conn()
