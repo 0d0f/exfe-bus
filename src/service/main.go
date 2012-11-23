@@ -22,34 +22,6 @@ func main() {
 	}
 	config.Log = log
 
-	redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
-
-	tkMng, err := NewTokenManager(&config)
-	if err != nil {
-		log.Crit("create token manager failed: %s", err)
-		os.Exit(-1)
-		return
-	}
-
-	iom := NewIom(&config, redis)
-
-	thirdpart, err := NewThirdpart(&config)
-	if err != nil {
-		log.Crit("create thirdpart failed: %s", err)
-		os.Exit(-1)
-		return
-	}
-
-	localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
-	if err != nil {
-		log.Crit("load local template failed: %s", err)
-		os.Exit(-1)
-		return
-	}
-	conversation := NewConversation(localTemplate, &config)
-	cross := NewCross(localTemplate, &config)
-	user := NewUser(localTemplate, &config)
-
 	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
 
@@ -60,53 +32,90 @@ func main() {
 		return
 	}
 	var count int
-	count, err = bus.Register(tkMng)
-	if err != nil {
-		log.Crit("gobus launch failed: %s", err)
-		os.Exit(-1)
-		return
-	}
-	log.Info("register TokenManager %d methods.", count)
 
-	count, err = bus.Register(iom)
-	if err != nil {
-		log.Crit("gobus launch failed: %s", err)
-		os.Exit(-1)
-		return
-	}
-	log.Info("register IOM %d methods.", count)
+	if config.ExfeService.Services.TokenManager {
+		tkMng, err := NewTokenManager(&config)
+		if err != nil {
+			log.Crit("create token manager failed: %s", err)
+			os.Exit(-1)
+			return
+		}
 
-	count, err = bus.Register(thirdpart)
-	if err != nil {
-		log.Crit("gobus launch failed: %s", err)
-		os.Exit(-1)
-		return
+		count, err = bus.Register(tkMng)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register TokenManager %d methods.", count)
 	}
-	log.Info("register Thirdpart %d methods.", count)
 
-	count, err = bus.Register(conversation)
-	if err != nil {
-		log.Crit("gobus launch failed: %s", err)
-		os.Exit(-1)
-		return
-	}
-	log.Info("register Conversation %d methods.", count)
+	if config.ExfeService.Services.Iom {
+		redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
 
-	count, err = bus.Register(cross)
-	if err != nil {
-		log.Crit("gobus launch failed: %s", err)
-		os.Exit(-1)
-		return
-	}
-	log.Info("register Cross %d methods.", count)
+		iom := NewIom(&config, redis)
 
-	count, err = bus.Register(user)
-	if err != nil {
-		log.Crit("gobus launch failed: %s", err)
-		os.Exit(-1)
-		return
+		count, err = bus.Register(iom)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register IOM %d methods.", count)
 	}
-	log.Info("register User %d methods.", count)
+
+	if config.ExfeService.Services.Thirdpart {
+		thirdpart, err := NewThirdpart(&config)
+		if err != nil {
+			log.Crit("create thirdpart failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+
+		count, err = bus.Register(thirdpart)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register Thirdpart %d methods.", count)
+	}
+
+	if config.ExfeService.Services.Notifier {
+		localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
+		if err != nil {
+			log.Crit("load local template failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+
+		conversation := NewConversation(localTemplate, &config)
+		count, err = bus.Register(conversation)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register Conversation %d methods.", count)
+
+		cross := NewCross(localTemplate, &config)
+		count, err = bus.Register(cross)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register Cross %d methods.", count)
+
+		user := NewUser(localTemplate, &config)
+		count, err = bus.Register(user)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register User %d methods.", count)
+	}
 
 	go func() {
 		<-quit

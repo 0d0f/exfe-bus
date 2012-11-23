@@ -37,8 +37,14 @@ type Config struct {
 	} `json:"email"`
 
 	ExfeService struct {
-		Addr string `json:"addr"`
-		Port uint   `json:"port"`
+		Addr     string `json:"addr"`
+		Port     uint   `json:"port"`
+		Services struct {
+			TokenManager bool `json:"tokenmanager"`
+			Iom          bool `json:"iom"`
+			Thirdpart    bool `json:"thirdpart"`
+			Notifier     bool `json:"notifier"`
+		} `json:"services"`
 	} `json:"exfe_service"`
 	ExfeQueue struct {
 		Addr string          `json:"addr"`
