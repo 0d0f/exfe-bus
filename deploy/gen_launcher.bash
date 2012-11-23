@@ -1,6 +1,6 @@
 OUTPUT=$1
 
-if [ "$OUTPUT" == "" ]
+if [ "$OUTPUT" = "" ]
 then
   echo $0 [output path]
   exit -1

@@ -1,13 +1,13 @@
 U_ID="$1"
 G_ID="$2"
 
-if [ "$U_ID" == "" ]
+if [ "$U_ID" = "" ]
 then
   echo Usage: $0 [UID] [GID]
   exit -1
 fi
 
-if [ "$G_ID" == "" ]
+if [ "$G_ID" = "" ]
 then
   echo Usage: $0 [UID] [GID]
   exit -1
