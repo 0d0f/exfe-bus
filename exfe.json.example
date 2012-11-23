@@ -73,49 +73,5 @@
       "imap_password": "",
       "timeout_in_second": 5
     }
-  },
-
-  "iom_url": "http://127.0.0.1:1234/iom",
-  "email_name": "EXFE ·X·",
-  "email_domain": "0d0f.com",
-  "iom": {
-    "port": 1234
-  },
-  "cross": {
-    "time_out": 5,
-    "delay": {
-      "twitter": 300,
-      "push": 300,
-      "email": 300
-    }
-  },
-  "user": {
-    "time_out": 5
-  },
-  "twitter": {
-    "client_token": "",
-    "client_secret": "",
-    "access_token": "",
-    "access_secret": "",
-    "screen_name": "",
-    "time_out": 5
-  },
-  "apn": {
-    "time_out": 5,
-    "cert": "apns_dev_cert.pem",
-    "key": "apns_dev_key.pem",
-    "server": "gateway.sandbox.push.apple.com:2195",
-    "rootca": "root.ca"
-  },
-  "gcm": {
-    "time_out": 5,
-    "key": ""
-  },
-  "email": {
-    "time_out": 5,
-    "host": "smtp.gmail.com",
-    "port": 465,
-    "user": "contact@0d0f.com",
-    "password": "[S9rQ+vNjJloR*Vs"
   }
 }
