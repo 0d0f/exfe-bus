@@ -47,6 +47,7 @@
     "table_name": "tokens"
   },
   "thirdpart": {
+    "max_state_cache": 1000,
     "twitter": {
       "client_token": "",
       "client_secret": "",
@@ -63,6 +64,14 @@
     },
     "gcm": {
       "key": ""
+    }
+  },
+  "bot": {
+    "email": {
+      "imap_host": "",
+      "imap_user": "",
+      "imap_password": "",
+      "timeout_in_second": 5
     }
   },
 
@@ -82,12 +91,6 @@
   },
   "user": {
     "time_out": 5
-  },
-  "bot": {
-    "imap_time_out": 5,
-    "imap_host": "",
-    "imap_user": "",
-    "imap_password": ""
   },
   "twitter": {
     "client_token": "",

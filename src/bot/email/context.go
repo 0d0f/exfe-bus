@@ -1,15 +1,14 @@
 package email
 
 import (
-	"email/service"
+	"bytes"
 	"fmt"
 	"gobot"
 	"io/ioutil"
+	"model"
 	"net/http"
 	"net/mail"
-	"net/textproto"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -17,15 +16,17 @@ type Email struct {
 	From      *mail.Address
 	To        []*mail.Address
 	Subject   string
-	CrossId   string
+	CrossID   string
 	Date      time.Time
-	MessageId string
+	MessageID string
 	Text      string
+
+	Config *model.Config
 }
 
 func (m *Email) ToUrlValues() url.Values {
 	ret := make(url.Values)
-	ret.Add("cross_id", m.CrossId)
+	ret.Add("cross_id", m.CrossID)
 	ret.Add("content", m.Text)
 	ret.Add("external_id", m.From.Address)
 	ret.Add("time", m.Date.Format("2006-01-02 15:04:05 -0700"))
@@ -45,38 +46,53 @@ func NewEmailContext(id string, b *EmailBot) *EmailContext {
 }
 
 func (c *EmailContext) EmailWithCrossID(input *Email) error {
-	if input.CrossId == "" {
+	if input.CrossID == "" {
 		return bot.BotNotMatched
 	}
-	url := fmt.Sprintf("%s/v2/gobus/PostConversation", c.mailBot.config.Site_api)
-	fmt.Printf("send to: %s, post content: %s\n", url, input.ToUrlValues().Encode())
+	url := fmt.Sprintf("%s/v2/gobus/PostConversation", c.mailBot.config.SiteApi)
+	c.mailBot.config.Log.Debug("send to: %s, post content: %s\n", url, input.ToUrlValues().Encode())
 	resp, err := http.PostForm(url, input.ToUrlValues())
 	if err != nil {
-		return fmt.Errorf("message(%s) send to server error: %s", input.MessageId, err)
+		return fmt.Errorf("message(%s) send to server error: %s", input.MessageID, err)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("message(%s) get response body error: %s", input.MessageId, err)
+		return fmt.Errorf("message(%s) get response body error: %s", input.MessageID, err)
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("message(%s) send error(%s): %s", input.MessageId, resp.Status, string(body))
+		return fmt.Errorf("message(%s) send error(%s): %s", input.MessageID, resp.Status, string(body))
 	}
 	return nil
 }
 
 func (c *EmailContext) Default(input *Email) error {
-	body := fmt.Sprintf("Sorry for the inconvenience, but email you just sent to EXFE was not sent from an attendee identity to the X (cross). Please try again from the correct email address.\n\n--\n%s",
-		input.Text)
-	mailarg := &email_service.MailArg{
-		To:      []*mail.Address{input.From},
-		From:    &mail.Address{c.mailBot.config.EmailName, fmt.Sprintf("x@%s", c.mailBot.config.EmailDomain)},
-		Subject: fmt.Sprintf("Re: %s", input.Subject),
-		Text:    body,
-		Html:    fmt.Sprintf("<html><body><p>%s</p></body></html>", strings.Replace(body, "\n", "<br />", -1)),
-		Header:  make(textproto.MIMEHeader),
+	input.Config = c.mailBot.config
+
+	buf := bytes.NewBuffer(nil)
+	err := c.mailBot.localTemplate.Execute(buf, "en_US", "conversation_reply.email", input)
+	if err != nil {
+		c.mailBot.config.Log.Crit("template(conversation_reply.email) failed: %s", err)
+		return badrequest
 	}
-	mailarg.Header.Set("In-Reply-To", input.MessageId)
-	mailarg.Header.Set("References", input.MessageId)
-	c.mailBot.bus.Send("EmailSend", &mailarg, 5)
+
+	arg := model.ThirdpartSend{
+		PrivateMessage: buf.String(),
+		PublicMessage:  "",
+		Info: &model.InfoData{
+			CrossID: 0,
+			Type:    model.TypeCrossInvitation,
+		},
+	}
+	arg.To = model.Recipient{
+		Provider:         "email",
+		ExternalID:       input.From.Address,
+		ExternalUsername: input.From.Address,
+	}
+	var ids string
+	err = c.mailBot.sender.Do("Send", &arg, &ids)
+	if err != nil {
+		c.mailBot.config.Log.Crit("send error: %s", err)
+	}
+
 	return badrequest
 }
