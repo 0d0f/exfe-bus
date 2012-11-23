@@ -2,6 +2,6 @@
 
 BIN={{bin_name}}
 
-cd /usr/local/etc/exfebus
-PATH=/usr/local/bin:$PATH exfebus_${BIN} -pid="/var/run/gobus/worker_exfe_${BIN}.pid" >>/var/log/gobus/worker_exfe_${BIN}.log 2>&1
+cd /usr/local/etc/gobus
+PATH=/usr/local/bin:$PATH exfebus_${BIN} -pid="/var/run/gobus/exfe_${BIN}.pid" >>/var/log/gobus/exfe_${BIN}.log 2>&1
 

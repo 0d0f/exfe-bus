@@ -1,7 +1,7 @@
-check process gobus_worker_exfe_{{bin_name}}
-  with pidfile /var/run/gobus/worker_exfe_{{bin_name}}.pid
-  start program = "/usr/local/etc/rc.d/exfebus_{{bin_name}}" as uid {{uid}} and gid {{gid}}
-  stop program = "/bin/sh -c 'kill -s QUIT `cat /var/run/gobus/worker_exfe_{{bin_name}}.pid` && rm -f /var/run/gobus/worker_exfe_{{bin_name}}.pid; exit 0;'"
+check process gobus_exfe_{{bin_name}}
+  with pidfile /var/run/gobus/exfe_{{bin_name}}.pid
+  start program = "/usr/local/etc/rc.d/exfe_{{bin_name}}" as uid {{uid}} and gid {{gid}}
+  stop program = "/bin/sh -c 'kill -s QUIT `cat /var/run/gobus/exfe_{{bin_name}}.pid` && rm -f /var/run/gobus/exfe_{{bin_name}}.pid; exit 0;'"
   if totalmem is greater than 300 MB for 10 cycles then restart  # eating up memory?
-  group gobus_workers
+  group gobus_
 
