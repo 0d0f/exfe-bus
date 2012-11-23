@@ -7,7 +7,7 @@ mkdir -p /usr/local/etc/gobus
 
 chown ${U_NAME}:${G_NAME} /var/log/gobus /var/run/gobus
 
-echo RUN="/var/log/gobus" > /etc/init.d/exfe
+echo RUN="/var/run/gobus" > /etc/init.d/exfe
 echo mkdir -p '$RUN' >> /etc/init.d/exfe
 echo chown ${U_NAME}:${G_NAME} '$RUN' >> /etc/init.d/exfe
 
