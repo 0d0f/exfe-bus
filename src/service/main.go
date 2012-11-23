@@ -1,11 +1,11 @@
 package main
 
 import (
+	"broker"
 	"daemon"
 	"fmt"
 	"formatter"
 	"github.com/googollee/go-logger"
-	"github.com/googollee/godis"
 	"gobus"
 	"model"
 	"os"
@@ -21,6 +21,8 @@ func main() {
 		return
 	}
 	config.Log = log
+
+	redis := broker.NewRedisMultiplexer(&config)
 
 	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
@@ -51,8 +53,6 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Iom {
-		redis := godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
-
 		iom := NewIom(&config, redis)
 
 		count, err = bus.Register(iom)

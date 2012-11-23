@@ -1,9 +1,9 @@
 package iom
 
 import (
+	"broker"
 	"encoding/base64"
 	"fmt"
-	"github.com/googollee/godis"
 	"strings"
 	"time"
 )
@@ -28,10 +28,10 @@ func HashFromCount(count int64) (string, error) {
 }
 
 type Iom struct {
-	redis *godis.Client
+	redis broker.Redis
 }
 
-func NewIom(redis *godis.Client) *Iom {
+func NewIom(redis broker.Redis) *Iom {
 	return &Iom{
 		redis: redis,
 	}

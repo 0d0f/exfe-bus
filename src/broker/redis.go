@@ -7,6 +7,8 @@ import (
 type RedisClient interface {
 	Quit() error
 
+	Get(key string) (godis.Elem, error)
+	Set(key string, value interface{}) error
 	Del(keys ...string) (int64, error)
 
 	Rpush(key string, value interface{}) (int64, error)
@@ -14,6 +16,7 @@ type RedisClient interface {
 
 	Zadd(key string, score interface{}, member interface{}) (bool, error)
 	Zrem(key string, member interface{}) (bool, error)
+	Zcount(key string, min float64, max float64) (int64, error)
 	Zscore(key string, member interface{}) (float64, error)
 	Zrange(key string, start int, stop int) (*godis.Reply, error)
 	Zrangebyscore(key string, min string, max string, args ...string) (*godis.Reply, error)

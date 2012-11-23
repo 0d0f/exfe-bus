@@ -60,6 +60,18 @@ func (m *RedisMultiplexer) Quit() error {
 	return nil // no quit
 }
 
+func (m *RedisMultiplexer) Get(key string) (godis.Elem, error) {
+	redis := <-m.get
+	defer func() { m.back <- redis }()
+	return redis.Get(key)
+}
+
+func (m *RedisMultiplexer) Set(key string, value interface{}) error {
+	redis := <-m.get
+	defer func() { m.back <- redis }()
+	return redis.Set(key, value)
+}
+
 func (m *RedisMultiplexer) Del(keys ...string) (int64, error) {
 	redis := <-m.get
 	defer func() { m.back <- redis }()
@@ -88,6 +100,12 @@ func (m *RedisMultiplexer) Zrem(key string, member interface{}) (bool, error) {
 	redis := <-m.get
 	defer func() { m.back <- redis }()
 	return redis.Zrem(key, member)
+}
+
+func (m *RedisMultiplexer) Zcount(key string, min float64, max float64) (int64, error) {
+	redis := <-m.get
+	defer func() { m.back <- redis }()
+	return redis.Zcount(key, min, max)
 }
 
 func (m *RedisMultiplexer) Zscore(key string, member interface{}) (float64, error) {
