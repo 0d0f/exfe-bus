@@ -3,5 +3,5 @@
 BIN={{bin_name}}
 
 cd /usr/local/etc/gobus
-PATH=/usr/local/bin:$PATH exfe_${BIN} -pid="/var/run/gobus/exfe_${BIN}.pid" >>/var/log/gobus/exfe_${BIN}.log 2>&1
+PATH=/usr/local/bin:$PATH exfe_${BIN} -pid="/var/run/gobus/exfe_${BIN}.pid" >/dev/null 2>&1
 
