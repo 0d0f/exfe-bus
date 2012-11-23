@@ -1,1 +1,0 @@
-·X· {{ .Arg.Cross.Title }} {{ .TotalAccepted }} Accepted: {{ $a := .Invitations }}{{ range $i, $e := $a }}{{ .Identity.Name }}{{ if last $i $a | not }}, {{ end }}{{ end }}{{ if .HasOther }} and {{ .OtherCount }} {{ if .IsOthers }}others{{ else }}other{{ end }}{{ end }}.
