@@ -62,10 +62,12 @@ func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage str
 			payload.Aps.Alert = content
 			payload.Aps.Badge = 1
 			payload.Aps.Sound = ""
-			payload.SetCustom("args", ExfePush{
-				Cid: data.CrossID,
-				T:   data.Type.String(),
-			})
+			if data != nil {
+				payload.SetCustom("args", ExfePush{
+					Cid: data.CrossID,
+					T:   data.Type.String(),
+				})
+			}
 			notification := apns.Notification{
 				DeviceToken: to.ExternalID,
 				Identifier:  id,
