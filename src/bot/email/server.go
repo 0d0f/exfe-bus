@@ -1,23 +1,24 @@
 package email
 
 import (
-	"exfe/service"
 	"fmt"
+	"formatter"
 	"github.com/googollee/goimap"
 	"gobot"
-	"log"
-	"os"
+	"gobus"
+	"launchpad.net/tomb"
+	"model"
 	"time"
 )
 
 type EmailBotServer struct {
 	bot    *bot.Bot
 	conn   *imap.IMAPClient
-	config *exfe_service.Config
+	config *model.Config
 }
 
-func NewEmailBotServer(c *exfe_service.Config) *EmailBotServer {
-	b := bot.NewBot(NewEmailBot(c))
+func NewEmailBotServer(c *model.Config, localTemplate *formatter.LocalTemplate, sender *gobus.Client) *EmailBotServer {
+	b := bot.NewBot(NewEmailBot(c, localTemplate, sender))
 	b.Register("EmailWithCrossID")
 	b.Register("Default")
 	return &EmailBotServer{
@@ -28,16 +29,20 @@ func NewEmailBotServer(c *exfe_service.Config) *EmailBotServer {
 }
 
 func (s *EmailBotServer) Conn() error {
-	conn, err := imap.NewClient(s.config.Bot.Imap_host)
+	conn, err := imap.NewClient(s.config.Bot.Email.IMAPHost)
 	if err != nil {
 		return err
 	}
-	err = conn.Login(s.config.Bot.Imap_user, s.config.Bot.Imap_password)
+	err = conn.Login(s.config.Bot.Email.IMAPUser, s.config.Bot.Email.IMAPPassword)
 	if err != nil {
 		return err
 	}
 	s.conn = conn
 	return nil
+}
+
+func (s *EmailBotServer) Close() error {
+	return s.conn.Close()
 }
 
 func (s *EmailBotServer) Serve() error {
@@ -47,7 +52,7 @@ func (s *EmailBotServer) Serve() error {
 		return err
 	}
 	for _, id := range ids {
-		fmt.Printf("get mail id: %s\n", id)
+		s.config.Log.Debug("get mail id: %s\n", id)
 		msg, err := s.conn.GetMessage(id)
 		if err != nil {
 			return fmt.Errorf("Get message(%v) error: %s", id, err)
@@ -67,28 +72,39 @@ func (s *EmailBotServer) Serve() error {
 	return nil
 }
 
-func Daemon(config *exfe_service.Config, quit chan int) {
-	l := log.New(os.Stderr, "exfe.bot.email", log.LstdFlags)
-	s := NewEmailBotServer(config)
-	for {
-		err := s.Conn()
-		if err == nil {
-			break
+func Daemon(config *model.Config, localTemplate *formatter.LocalTemplate, sender *gobus.Client) *tomb.Tomb {
+	t := tomb.Tomb{}
+
+	go func() {
+		defer t.Done()
+
+		for {
+			s := NewEmailBotServer(config, localTemplate, sender)
+
+			for i := 0; ; i++ {
+				err := s.Conn()
+				if err == nil {
+					break
+				}
+				if i > 10 {
+					i = 0
+					config.Log.Crit("email connect error: %s", err)
+				}
+				config.Log.Err("email connect error: %s", err)
+			}
+			for {
+				err := s.Serve()
+				if err != nil {
+					config.Log.Err("email error: %s", err)
+				}
+				select {
+				case <-t.Dying():
+					return
+				case <-time.After(time.Duration(s.config.Bot.Email.TimeoutInSecond) * time.Second):
+				}
+			}
 		}
-		l.Printf("email connect error: %s", err)
-	}
-	for {
-		err := s.Serve()
-		if err != nil {
-			l.Printf("email error: %s", err)
-			quit <- 1
-			return
-		}
-		select {
-		case <-quit:
-			quit <- 1
-			return
-		case <-time.After(s.config.Bot.Imap_time_out * time.Second):
-		}
-	}
+	}()
+
+	return &t
 }

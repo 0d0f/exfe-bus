@@ -2,18 +2,47 @@ package main
 
 import (
 	"bot/email"
-	"exfe/service"
-	"log"
+	"daemon"
+	"fmt"
+	"formatter"
+	"github.com/googollee/go-logger"
+	"gobus"
+	"model"
+	"os"
 )
 
 func main() {
-	config := exfe_service.InitConfig()
-	log.SetPrefix("exfe.bot")
-	log.Printf("service start")
+	var config model.Config
+	output, quit := daemon.Init("exfe.json", &config)
 
-	quit := make(chan int)
+	log, err := logger.New(output, "bot")
+	if err != nil {
+		panic(err)
+		return
+	}
+	config.Log = log
 
-	go email.Daemon(config, quit)
+	localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
+	if err != nil {
+		log.Crit("load local template failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	url := fmt.Sprintf("http://%s:%d/Thirdpart", config.ExfeService.Addr, config.ExfeService.Port)
+	client, err := gobus.NewClient(url)
+	if err != nil {
+		log.Crit("create gobus client failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+
+	log.Info("start")
+
+	tomb := email.Daemon(&config, localTemplate, client)
 
 	<-quit
+	tomb.Kill(nil)
+	tomb.Wait()
+
+	log.Info("quit")
 }

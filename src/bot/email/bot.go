@@ -1,13 +1,14 @@
 package email
 
 import (
-	"exfe/service"
 	"fmt"
+	"formatter"
 	"github.com/googollee/goimap"
 	"github.com/sloonz/go-iconv"
 	"gobot"
+	"gobus"
+	"model"
 	"net/mail"
-	"old_gobus"
 	"regexp"
 	"strings"
 )
@@ -33,15 +34,16 @@ var removeLine = [...]string{
 }
 
 type EmailBot struct {
-	config      *exfe_service.Config
-	bus         *gobus.Client
-	crossId     *regexp.Regexp
-	retReplacer *strings.Replacer
-	remover     []*regexp.Regexp
-	replyLine   []*regexp.Regexp
+	config        *model.Config
+	crossId       *regexp.Regexp
+	retReplacer   *strings.Replacer
+	remover       []*regexp.Regexp
+	replyLine     []*regexp.Regexp
+	localTemplate *formatter.LocalTemplate
+	sender        *gobus.Client
 }
 
-func NewEmailBot(config *exfe_service.Config) *EmailBot {
+func NewEmailBot(config *model.Config, localTemplate *formatter.LocalTemplate, sender *gobus.Client) *EmailBot {
 	reply := make([]*regexp.Regexp, len(replyLine), len(replyLine))
 	for i, l := range replyLine {
 		reply[i] = regexp.MustCompile(l)
@@ -51,12 +53,13 @@ func NewEmailBot(config *exfe_service.Config) *EmailBot {
 		remover[i] = regexp.MustCompile(l)
 	}
 	return &EmailBot{
-		config:      config,
-		bus:         gobus.CreateClient(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password, "email"),
-		crossId:     regexp.MustCompile(`^.*?\+([0-9]*)@.*$`),
-		retReplacer: strings.NewReplacer("\r\n", "\n", "\r", "\n"),
-		remover:     remover,
-		replyLine:   reply,
+		config:        config,
+		crossId:       regexp.MustCompile(`^.*?\+([0-9]*)@.*$`),
+		retReplacer:   strings.NewReplacer("\r\n", "\n", "\r", "\n"),
+		remover:       remover,
+		replyLine:     reply,
+		localTemplate: localTemplate,
+		sender:        sender,
 	}
 }
 
@@ -106,9 +109,9 @@ func (b *EmailBot) GetIDFromInput(input interface{}) (id string, content interfa
 		From:      from[0],
 		To:        to,
 		Subject:   msg.Header.Get("Subject"),
-		CrossId:   b.getCrossId(to),
+		CrossID:   b.getCrossId(to),
 		Date:      date,
-		MessageId: msg.Header.Get("Message-Id"),
+		MessageID: msg.Header.Get("Message-Id"),
 		Text:      text,
 	}
 	return

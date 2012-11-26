@@ -70,6 +70,14 @@ type Config struct {
 			Key string `json:"key"`
 		} `json:"gcm"`
 	} `json:"thirdpart"`
+	Bot struct {
+		Email struct {
+			IMAPHost        string `json:"imap_host"`
+			IMAPUser        string `json:"imap_user"`
+			IMAPPassword    string `json:"imap_password"`
+			TimeoutInSecond uint   `json:"timeout_in_second"`
+		} `json:"email"`
+	} `json:"bot"`
 
 	Log *logger.Logger `json:"-"`
 }
