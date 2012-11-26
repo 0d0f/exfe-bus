@@ -36,14 +36,14 @@ func (w UserWelcomes) String() string {
 }
 
 type UserVerify struct {
-	To     Recipient `json:"to"`
-	ByName string    `json:"by_name"`
+	To       Recipient `json:"to"`
+	UserName string    `json:"user_name"`
 
 	Config *Config `json:"-"`
 }
 
 func (c UserVerify) String() string {
-	return fmt.Sprintf("{to:%s by:%s}", c.To.String(), c.ByName)
+	return fmt.Sprintf("{to:%s by:%s}", c.To.String(), c.UserName)
 }
 
 func (c *UserVerify) Parse(config *Config) (err error) {

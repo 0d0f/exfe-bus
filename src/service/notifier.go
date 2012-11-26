@@ -116,7 +116,7 @@ func (u *User) Verify(meta *gobus.HTTPMeta, confirmations model.UserVerifys, i *
 //
 // > curl 'http://127.0.0.1:23333/User?method=ResetPassword' -d '[{"to":{"identity_id":11,"user_id":1,"name":"email1 name","auth_data":"","timezone":"+0800","token":"recipient_email1_token","language":"en_US","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"}}]'
 //
-func (u *User) ResetPassword(meta *gobus.HTTPMeta, tos model.ThirdpartTos, i *int) error {
+func (u *User) ResetPassword(meta *gobus.HTTPMeta, tos model.UserVerifys, i *int) error {
 	for *i = range tos {
 		err := u.user.ResetPassword(tos[*i])
 		if err != nil {

@@ -45,7 +45,7 @@ func (u User) Verify(arg model.UserVerify) error {
 	return u.send(content, arg.To)
 }
 
-func (u User) ResetPassword(arg model.ThirdpartTo) error {
+func (u User) ResetPassword(arg model.UserVerify) error {
 	err := arg.Parse(u.config)
 	if err != nil {
 		return err

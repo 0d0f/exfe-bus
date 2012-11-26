@@ -1,1 +1,1 @@
-\(You({{.To.ExternalUsername}})\) has been requested for verification{{if .ByName}} by \({{.By.Name}}\){{end}} on EXFE. Please click here to verify: \({{.Link}}\)
+\(You({{.To.ExternalUsername}})\) has been requested for verification{{if .UserName}} by \({{.UserName}}\){{end}} on EXFE. Please click here to verify: \({{.Link}}\)
