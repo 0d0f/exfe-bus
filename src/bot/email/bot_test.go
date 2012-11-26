@@ -1,7 +1,6 @@
 package email
 
 import (
-	"exfe/service"
 	"github.com/stretchrcom/testify/assert"
 	"net/mail"
 	"os"
@@ -9,7 +8,6 @@ import (
 )
 
 func TestEmail(t *testing.T) {
-	var config exfe_service.Config
 	f, err := os.Open("test.email")
 	if err != nil {
 		t.Fatalf("can't open test.email: %s", err)
@@ -18,7 +16,7 @@ func TestEmail(t *testing.T) {
 	if err != nil {
 		t.Fatalf("test.email format error: %s", err)
 	}
-	bot := NewEmailBot(&config)
+	bot := NewEmailBot(nil, nil, nil)
 	id, content, err := bot.GetIDFromInput(message)
 	assert.Equal(t, err, nil)
 
