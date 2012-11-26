@@ -14,7 +14,7 @@
             <tr><td height="20"></td></tr>
             <tr>
                 <td>
-                    Your email <a href="mailto:{{.To.ExternalID}}" style="text-decoration: none; color: #333333; font-style: italic;">{{.To.ExternalID | html }}</a> has been requested for verification{{if .NeedShowBy}} by <span style="color: #191919;">{{.By.Name | html}}</span>{{end}} on <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a>.
+                    Your email <a href="mailto:{{.To.ExternalID}}" style="text-decoration: none; color: #333333; font-style: italic;">{{.To.ExternalID | html }}</a> has been requested for verification by <span style="color: #191919;">{{.ByName | html}}</span> on <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a>.
                 </td>
             </tr>
             <tr><td height="20"></td></tr>

@@ -98,7 +98,7 @@ func (u *User) Welcome(meta *gobus.HTTPMeta, welcomes model.UserWelcomes, i *int
 //
 // 例子：
 //
-// > curl 'http://127.0.0.1:23333/User?method=Verify' -d '[{"to":{"identity_id":11,"user_id":1,"name":"email1 name","auth_data":"","timezone":"+0800","token":"recipient_email1_token","language":"en_US","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"by":{"id":12,"name":"email2 name","nickname":"email2 nick","bio":"email2 bio","timezone":"+0800","connected_user_id":2,"avatar_filename":"http://path/to/email2.avatar","provider":"email","external_id":"email2@domain.com","external_username":"email2@domain.com"}}]'
+// > curl 'http://127.0.0.1:23333/User?method=Verify' -d '[{"to":{"identity_id":11,"user_id":1,"name":"email1 name","auth_data":"","timezone":"+0800","token":"recipient_email1_token","language":"en_US","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"by_name":"by user"}]'
 //
 func (u *User) Verify(meta *gobus.HTTPMeta, confirmations model.UserVerifys, i *int) error {
 	for *i = range confirmations {

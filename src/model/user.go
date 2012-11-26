@@ -36,14 +36,14 @@ func (w UserWelcomes) String() string {
 }
 
 type UserVerify struct {
-	To Recipient `json:"to"`
-	By Identity  `json:"by"`
+	To     Recipient `json:"to"`
+	ByName string    `json:"by_name"`
 
 	Config *Config `json:"-"`
 }
 
 func (c UserVerify) String() string {
-	return fmt.Sprintf("{to:%s by:%s}", c.To.String(), c.By.String())
+	return fmt.Sprintf("{to:%s by:%s}", c.To.String(), c.ByName)
 }
 
 func (c *UserVerify) Parse(config *Config) (err error) {
@@ -53,10 +53,6 @@ func (c *UserVerify) Parse(config *Config) (err error) {
 
 func (c UserVerify) Link() string {
 	return fmt.Sprintf("%s/#!token=%s", c.Config.SiteUrl, c.To.Token)
-}
-
-func (a UserVerify) NeedShowBy() bool {
-	return !a.To.SameUser(&a.By)
 }
 
 type UserVerifys []UserVerify
