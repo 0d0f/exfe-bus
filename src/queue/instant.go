@@ -39,7 +39,7 @@ func (i *Instant) Push(meta *gobus.HTTPMeta, arg model.QueuePush, count *int) er
 	go func() {
 		if len(arg.Tos) == 0 {
 			var r int
-			err := client.Do(arg.Method, arg.Data, &r)
+			err := client.Do(arg.Method, []interface{}{arg.Data}, &r)
 			if err != nil {
 				meta.Log.Err("send to %s, method %s fail: %s", arg.Service, arg.Method, err)
 				return
