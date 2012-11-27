@@ -2,4 +2,9 @@ find . -name *_test.go | sed 's/^\.\/src\///g' | sed 's/\/[^/]*_test.go$//g' | s
 do
   echo testing $l...
   ./go.env test "$l"
+  if [ "$?" != "0" ]
+  then
+    echo failed
+    exit -1
+  fi
 done

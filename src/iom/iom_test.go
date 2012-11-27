@@ -1,8 +1,8 @@
 package iom
 
 import (
+	"broker"
 	"fmt"
-	"github.com/googollee/godis"
 	"strings"
 	"testing"
 )
@@ -34,7 +34,7 @@ func TestHashFromCount(t *testing.T) {
 }
 
 func TestHashCreate(t *testing.T) {
-	redis := godis.New("", 0, "")
+	redis := broker.NewRedisImp("", 0, "")
 	handler := NewIom(redis)
 	h, _ := handler.Create("123", "http://123/a")
 	url, _ := handler.Get("123", h)
@@ -59,7 +59,7 @@ func TestHashCreate(t *testing.T) {
 }
 
 func TestHashUpdate(t *testing.T) {
-	redis := godis.New("", 0, "")
+	redis := broker.NewRedisImp("", 0, "")
 	handler := NewIom(redis)
 	for _, userid := range []string{"234", "345"} {
 		for _, crossid := range []string{"a", "b", "c", "d"} {

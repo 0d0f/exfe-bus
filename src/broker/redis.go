@@ -38,7 +38,7 @@ type RedisImp struct {
 	redis *godis.Client
 }
 
-func NewRedisImp() *RedisImp {
+func NewRedisImp(addr string, db int, passwd string) *RedisImp {
 	return &RedisImp{
 		redis: godis.New("", 0, ""),
 	}
@@ -50,6 +50,14 @@ func (r *RedisImp) NewPipeClient() RedisPipe {
 
 func (r *RedisImp) Quit() error {
 	return r.redis.Quit()
+}
+
+func (r *RedisImp) Get(key string) (godis.Elem, error) {
+	return r.redis.Get(key)
+}
+
+func (r *RedisImp) Set(key string, value interface{}) error {
+	return r.redis.Set(key, value)
 }
 
 func (r *RedisImp) Del(keys ...string) (int64, error) {
@@ -70,6 +78,10 @@ func (r *RedisImp) Zadd(key string, score interface{}, member interface{}) (bool
 
 func (r *RedisImp) Zrem(key string, member interface{}) (bool, error) {
 	return r.redis.Zrem(key, member)
+}
+
+func (r *RedisImp) Zcount(key string, min float64, max float64) (int64, error) {
+	return r.redis.Zcount(key, min, max)
 }
 
 func (r *RedisImp) Zscore(key string, member interface{}) (float64, error) {
