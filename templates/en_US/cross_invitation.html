@@ -71,7 +71,7 @@
                                                     {{.Cross.Place.Title | html}}
                                                 </p>
                                                 <p style="color: #191919; margin: 0;">
-                                                    {{.Cross.Place.Description | replace "\n" "<br />" | html}}
+                                                    {{.Cross.Place.Description | html | replace "\n" "<br />"}}
                                                 </p>
                                                 {{else}}
                                                 <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">

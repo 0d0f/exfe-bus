@@ -141,7 +141,7 @@
             <tr><td colspan="5" height="10"></td></tr>
             <tr>
                 <td colspan="5">
-                    <a href="{{.Link}}" style="color: {{if .IsDescriptionChanged}}#3a6ea5{{else}}#333333{{end}}; text-decoration: none;">{{limit 233 .Cross.Description | html}}</a>
+                    <a href="{{.Link}}" style="color: {{if .IsDescriptionChanged}}#3a6ea5{{else}}#333333{{end}}; text-decoration: none;">{{limit 233 .Cross.Description | html | replace "\n" "<br />"}}</a>
                 </td>
             </tr>
             <tr><td colspan="5" height="20"></td></tr>
