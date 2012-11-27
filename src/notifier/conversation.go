@@ -74,6 +74,10 @@ type UpdateArg struct {
 	Posts []*model.Post
 }
 
+func (a UpdateArg) Link() string {
+	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
+}
+
 func ArgFromUpdates(updates []model.ConversationUpdate, config *model.Config) (*UpdateArg, error) {
 	if updates == nil && len(updates) == 0 {
 		return nil, fmt.Errorf("no update info")

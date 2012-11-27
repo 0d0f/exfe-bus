@@ -29,10 +29,6 @@ func (a ThirdpartTo) ToIn(invitations []Invitation) bool {
 	return false
 }
 
-func (a ThirdpartTo) Link() string {
-	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
-}
-
 func (a ThirdpartTo) ToRecipient() Recipient {
 	return a.To
 }

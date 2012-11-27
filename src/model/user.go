@@ -22,7 +22,7 @@ func (w *UserWelcome) Parse(config *Config) (err error) {
 }
 
 func (w UserWelcome) Link() string {
-	return fmt.Sprintf("%s/#!token=%s", w.Config.SiteUrl, w.To.Token)
+	return fmt.Sprintf("%s/#token=%s", w.Config.SiteUrl, w.To.Token)
 }
 
 type UserWelcomes []UserWelcome
@@ -52,7 +52,7 @@ func (c *UserVerify) Parse(config *Config) (err error) {
 }
 
 func (c UserVerify) Link() string {
-	return fmt.Sprintf("%s/#!token=%s", c.Config.SiteUrl, c.To.Token)
+	return fmt.Sprintf("%s/#token=%s", c.Config.SiteUrl, c.To.Token)
 }
 
 type UserVerifys []UserVerify
