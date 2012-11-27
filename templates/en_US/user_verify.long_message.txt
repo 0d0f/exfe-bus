@@ -1,6 +1,6 @@
 Hi, {{.To.Name}}.
 
-Your email {{.To.ExternalID}} has been requested for verification{{if .NeedShowBy}} by {{.By.Name}}{{end}} on EXFE.
+Your email {{.To.ExternalID}} has been requested for verification{{if .UserName}} by {{.UserName}}{{end}} on EXFE.
 
 Please click here to verify: {{.Link}}
 

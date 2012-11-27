@@ -1,4 +1,4 @@
-Hi, {{.To.Name}}.
+Hi, {{.UserName}}.
 
 You just requested to reset your forgotten EXFE password.
 

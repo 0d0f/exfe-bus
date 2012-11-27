@@ -30,6 +30,12 @@ func (g *GCM) Provider() string {
 
 func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (id string, err error) {
 	ids := ""
+	if data == nil {
+		data = &model.InfoData{
+			CrossID: 0,
+			Type:    model.TypeCrossUpdate,
+		}
+	}
 	for _, line := range strings.Split(privateMessage, "\n") {
 		line = strings.Trim(line, " \r\n\t")
 		line = tailUrlRegex.ReplaceAllString(line, "")
@@ -45,8 +51,10 @@ func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage str
 		message := gcm.NewMessage(to.ExternalID)
 		message.SetPayload("badge", "1")
 		message.SetPayload("sound", "")
-		message.SetPayload("cid", fmt.Sprintf("%d", data.CrossID))
-		message.SetPayload("t", data.Type.String())
+		if data != nil {
+			message.SetPayload("cid", fmt.Sprintf("%d", data.CrossID))
+			message.SetPayload("t", data.Type.String())
+		}
 		message.DelayWhileIdle = true
 		message.CollapseKey = "exfe"
 
