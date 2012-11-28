@@ -36,6 +36,10 @@ type Config struct {
 		Domain   string `json:"domain"`
 	} `json:"email"`
 
+	Dispatcher struct {
+		Sender map[string]string `json:"sender"`
+	} `json:"dispatcher"`
+
 	ExfeService struct {
 		Addr     string `json:"addr"`
 		Port     uint   `json:"port"`

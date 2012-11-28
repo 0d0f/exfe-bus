@@ -30,6 +30,10 @@
     "domain": "0d0f.com"
   },
 
+  "dispatcher": {
+    "sender": {"_default": "127.0.0.1:23333"}
+  },
+
   "exfe_service": {
     "addr": "127.0.0.1",
     "port": 23333,
