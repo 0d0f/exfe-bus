@@ -75,21 +75,16 @@ func (c *EmailContext) Default(input *Email) error {
 		return badrequest
 	}
 
-	arg := model.ThirdpartSend{
-		PrivateMessage: buf.String(),
-		PublicMessage:  "",
-		Info: &model.InfoData{
-			CrossID: 0,
-			Type:    model.TypeCrossInvitation,
-		},
+	info := &model.InfoData{
+		CrossID: 0,
+		Type:    model.TypeCrossInvitation,
 	}
-	arg.To = model.Recipient{
+	to := model.Recipient{
 		Provider:         "email",
 		ExternalID:       input.From.Address,
 		ExternalUsername: input.From.Address,
 	}
-	var ids string
-	err = c.mailBot.sender.Do("Send", &arg, &ids)
+	_, err = c.mailBot.sender.Send(to, buf.String(), "", info)
 	if err != nil {
 		c.mailBot.config.Log.Crit("send error: %s", err)
 	}

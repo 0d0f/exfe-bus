@@ -2,11 +2,10 @@ package main
 
 import (
 	"bot/email"
+	"broker"
 	"daemon"
-	"fmt"
 	"formatter"
 	"github.com/googollee/go-logger"
-	"gobus"
 	"model"
 	"os"
 )
@@ -28,8 +27,7 @@ func main() {
 		os.Exit(-1)
 		return
 	}
-	url := fmt.Sprintf("http://%s:%d/Thirdpart", config.ExfeService.Addr, config.ExfeService.Port)
-	client, err := gobus.NewClient(url)
+	sender, err := broker.NewSender(&config)
 	if err != nil {
 		log.Crit("create gobus client failed: %s", err)
 		os.Exit(-1)
@@ -38,7 +36,7 @@ func main() {
 
 	log.Info("start")
 
-	tomb := email.Daemon(&config, localTemplate, client)
+	tomb := email.Daemon(&config, localTemplate, sender)
 
 	<-quit
 	tomb.Kill(nil)

@@ -1,12 +1,12 @@
 package email
 
 import (
+	"broker"
 	"fmt"
 	"formatter"
 	"github.com/googollee/goimap"
 	"github.com/sloonz/go-iconv"
 	"gobot"
-	"gobus"
 	"model"
 	"net/mail"
 	"regexp"
@@ -40,10 +40,10 @@ type EmailBot struct {
 	remover       []*regexp.Regexp
 	replyLine     []*regexp.Regexp
 	localTemplate *formatter.LocalTemplate
-	sender        *gobus.Client
+	sender        *broker.Sender
 }
 
-func NewEmailBot(config *model.Config, localTemplate *formatter.LocalTemplate, sender *gobus.Client) *EmailBot {
+func NewEmailBot(config *model.Config, localTemplate *formatter.LocalTemplate, sender *broker.Sender) *EmailBot {
 	reply := make([]*regexp.Regexp, len(replyLine), len(replyLine))
 	for i, l := range replyLine {
 		reply[i] = regexp.MustCompile(l)
