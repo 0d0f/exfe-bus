@@ -16,7 +16,7 @@ Time
   {{if .Cross.Place.Description}}{{.Cross.Place.Description}}{{else}}To be decided.{{end}}
 
 
-{{if .ToIn .Cross.Exfee.Accepted}}You've been CONFIRMED to attend. Check it out: {{.Link}}{{else}}I'm in. Check it out: {{.Link}}/accept{{end}}
+{{if .ToIn .Cross.Exfee.Accepted}}You've been CONFIRMED to attend. Check it out: {{.Link}}{{else}}I'm in. Check it out: {{.Config.SiteUrl}}/?token={{.To.Token}}&rsvp=accept{{end}}
 
 
 {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} Invited:{{range .Cross.Exfee.Accepted}}
