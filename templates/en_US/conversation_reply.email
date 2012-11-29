@@ -17,9 +17,9 @@ Content-Type: text/html; charset=utf-8
 
 <html>
 <body>
-<p>Sorry for the inconvenience, but email you just sent to EXFE was not sent from an attendee identity to the X (cross). Please try again from the correct email address.
-
--- 
+<p>Sorry for the inconvenience, but email you just sent to EXFE was not sent from an attendee identity to the X (cross). Please try again from the correct email address.</p>
+<p></p>
+<p>-- <br />
 {{.Text | html}}</p>
 </body>
 </html>
