@@ -88,6 +88,16 @@ func (b *EmailBot) GetIDFromInput(input interface{}) (id string, content interfa
 		e = fmt.Errorf("Get message(%v) time error: id, err")
 		return
 	}
+	title, charset, err := encodingex.DecodeEncodedWord(msg.Header.Get("Subject"))
+	if err != nil {
+		title = msg.Header.Get("Subject")
+	} else {
+		title, err = encodingex.Conv(title, "utf-8", charset)
+		if err != nil {
+			e = fmt.Errorf("Convert message(%v) subject from %s to utf8 error: %s", id, charset, err)
+			return
+		}
+	}
 	text, mediatype, charset, err := imap.GetBody(msg, "text/plain")
 	if err != nil {
 		e = fmt.Errorf("Get message(%v) body failed: %s", id, err)
@@ -108,7 +118,7 @@ func (b *EmailBot) GetIDFromInput(input interface{}) (id string, content interfa
 	content = &Email{
 		From:      from[0],
 		To:        to,
-		Subject:   msg.Header.Get("Subject"),
+		Subject:   title,
 		CrossID:   b.getCrossId(to),
 		Date:      date,
 		MessageID: msg.Header.Get("Message-Id"),
