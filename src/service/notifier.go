@@ -1,6 +1,7 @@
 package main
 
 import (
+	"broker"
 	"formatter"
 	"gobus"
 	"model"
@@ -11,9 +12,9 @@ type Conversation struct {
 	conversation *notifier.Conversation
 }
 
-func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Config) *Conversation {
+func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Config, sender *broker.Sender) *Conversation {
 	return &Conversation{
-		conversation: notifier.NewConversation(localTemplate, config),
+		conversation: notifier.NewConversation(localTemplate, config, sender),
 	}
 }
 
@@ -33,9 +34,9 @@ type Cross struct {
 	cross *notifier.Cross
 }
 
-func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config) *Cross {
+func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config, sender *broker.Sender) *Cross {
 	return &Cross{
-		cross: notifier.NewCross(localTemplate, config),
+		cross: notifier.NewCross(localTemplate, config, sender),
 	}
 }
 
@@ -72,9 +73,9 @@ type User struct {
 	user *notifier.User
 }
 
-func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config) *User {
+func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config, sender *broker.Sender) *User {
 	return &User{
-		user: notifier.NewUser(localTemplate, config),
+		user: notifier.NewUser(localTemplate, config, sender),
 	}
 }
 

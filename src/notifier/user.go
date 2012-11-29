@@ -1,21 +1,23 @@
 package notifier
 
 import (
+	"broker"
 	"fmt"
 	"formatter"
-	"gobus"
 	"model"
 )
 
 type User struct {
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
+	sender        *broker.Sender
 }
 
-func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config) *User {
+func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config, sender *broker.Sender) *User {
 	return &User{
 		localTemplate: localTemplate,
 		config:        config,
+		sender:        sender,
 	}
 }
 
@@ -59,19 +61,8 @@ func (u User) ResetPassword(arg model.UserVerify) error {
 }
 
 func (u User) send(content string, to model.Recipient) error {
-	url := fmt.Sprintf("http://%s:%d", u.config.ExfeService.Addr, u.config.ExfeService.Port)
-	client, err := gobus.NewClient(fmt.Sprintf("%s/%s", url, "Thirdpart"))
-	if err != nil {
-		return fmt.Errorf("can't create gobus client: %s", err)
-	}
+	_, err := u.sender.Send(to, content, "", nil)
 
-	a := model.ThirdpartSend{
-		To:             to,
-		PrivateMessage: content,
-		PublicMessage:  "",
-	}
-	var ids string
-	err = client.Do("Send", &a, &ids)
 	if err != nil {
 		return fmt.Errorf("send error: %s", err)
 	}

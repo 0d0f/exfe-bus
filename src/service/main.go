@@ -23,6 +23,12 @@ func main() {
 	config.Log = log
 
 	redis := broker.NewRedisMultiplexer(&config)
+	sender, err := broker.NewSender(&config)
+	if err != nil {
+		log.Crit("can't create sender: %s", err)
+		os.Exit(-1)
+		return
+	}
 
 	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
@@ -89,7 +95,7 @@ func main() {
 			return
 		}
 
-		conversation := NewConversation(localTemplate, &config)
+		conversation := NewConversation(localTemplate, &config, sender)
 		count, err = bus.Register(conversation)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)
@@ -98,7 +104,7 @@ func main() {
 		}
 		log.Info("register Conversation %d methods.", count)
 
-		cross := NewCross(localTemplate, &config)
+		cross := NewCross(localTemplate, &config, sender)
 		count, err = bus.Register(cross)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)
@@ -107,7 +113,7 @@ func main() {
 		}
 		log.Info("register Cross %d methods.", count)
 
-		user := NewUser(localTemplate, &config)
+		user := NewUser(localTemplate, &config, sender)
 		count, err = bus.Register(user)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)

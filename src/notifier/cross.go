@@ -1,22 +1,24 @@
 package notifier
 
 import (
+	"broker"
 	"bytes"
 	"fmt"
 	"formatter"
-	"gobus"
 	"model"
 )
 
 type Cross struct {
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
+	sender        *broker.Sender
 }
 
-func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config) *Cross {
+func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config, sender *broker.Sender) *Cross {
 	return &Cross{
 		localTemplate: localTemplate,
 		config:        config,
+		sender:        sender,
 	}
 }
 
@@ -36,23 +38,10 @@ func (c *Cross) Summary(updates model.CrossUpdates) error {
 		return nil
 	}
 
-	url := fmt.Sprintf("http://%s:%d", c.config.ExfeService.Addr, c.config.ExfeService.Port)
-	client, err := gobus.NewClient(fmt.Sprintf("%s/%s", url, "Thirdpart"))
-	if err != nil {
-		return fmt.Errorf("can't create gobus client: %s", err)
-	}
-
-	arg := model.ThirdpartSend{
-		PrivateMessage: private,
-		PublicMessage:  public,
-		Info: &model.InfoData{
-			CrossID: updates[0].Cross.ID,
-			Type:    model.TypeCrossUpdate,
-		},
-	}
-	arg.To = to
-	var ids string
-	err = client.Do("Send", &arg, &ids)
+	_, err = c.sender.Send(to, private, public, &model.InfoData{
+		CrossID: updates[0].Cross.ID,
+		Type:    model.TypeCrossUpdate,
+	})
 	if err != nil {
 		return fmt.Errorf("send error: %s", err)
 	}
@@ -60,28 +49,15 @@ func (c *Cross) Summary(updates model.CrossUpdates) error {
 }
 
 func (c *Cross) Invite(invitation model.CrossInvitation) error {
-	url := fmt.Sprintf("http://%s:%d/Thirdpart", c.config.ExfeService.Addr, c.config.ExfeService.Port)
-	client, err := gobus.NewClient(url)
-	if err != nil {
-		return fmt.Errorf("can't create gobus client: %s", err)
-	}
-
 	private, public, err := c.getInvitationContent(invitation)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
 
-	arg := model.ThirdpartSend{
-		PrivateMessage: private,
-		PublicMessage:  public,
-		Info: &model.InfoData{
-			CrossID: invitation.Cross.ID,
-			Type:    model.TypeCrossInvitation,
-		},
-	}
-	arg.To = invitation.To
-	var ids string
-	err = client.Do("Send", &arg, &ids)
+	_, err = c.sender.Send(invitation.To, private, public, &model.InfoData{
+		CrossID: invitation.Cross.ID,
+		Type:    model.TypeCrossInvitation,
+	})
 	if err != nil {
 		return fmt.Errorf("send error: %s", err)
 	}
