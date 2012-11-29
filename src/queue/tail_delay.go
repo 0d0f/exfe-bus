@@ -11,25 +11,23 @@ import (
 )
 
 type Tail struct {
-	services map[string]*gobus.Client
-	name     string
-	repo     *delayrepo.Tail
-	config   *model.Config
+	name   string
+	repo   *delayrepo.Tail
+	config *model.Config
 }
 
-func NewTail(services map[string]*gobus.Client, delayInSecond uint, config *model.Config) (*Tail, *tomb.Tomb) {
+func NewTail(delayInSecond uint, config *model.Config) (*Tail, *tomb.Tomb) {
 	name := fmt.Sprintf("delayrepo:tail_%ds", delayInSecond)
 	delay := delayInSecond
 	redis := broker.NewRedisMultiplexer(config)
 	repo := delayrepo.NewTail(name, delay, redis)
 	log := config.Log.SubPrefix(name)
-	tomb := delayrepo.ServRepository(log, repo, getCallback(log, services))
+	tomb := delayrepo.ServRepository(log, repo, getCallback(log, config))
 
 	return &Tail{
-		services: services,
-		name:     name,
-		repo:     repo,
-		config:   config,
+		name:   name,
+		repo:   repo,
+		config: config,
 	}, tomb
 }
 

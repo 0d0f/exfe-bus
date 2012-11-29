@@ -11,25 +11,23 @@ import (
 )
 
 type Head struct {
-	services map[string]*gobus.Client
-	name     string
-	repo     *delayrepo.Head
-	config   *model.Config
+	name   string
+	repo   *delayrepo.Head
+	config *model.Config
 }
 
-func NewHead(services map[string]*gobus.Client, delayInSecond uint, config *model.Config) (*Head, *tomb.Tomb) {
+func NewHead(delayInSecond uint, config *model.Config) (*Head, *tomb.Tomb) {
 	name := fmt.Sprintf("delayrepo:head_%ds", delayInSecond)
 	delay := delayInSecond
 	redis := broker.NewRedisMultiplexer(config)
 	repo := delayrepo.NewHead(name, delay, redis)
 	log := config.Log.SubPrefix(name)
-	tomb := delayrepo.ServRepository(log, repo, getCallback(log, services))
+	tomb := delayrepo.ServRepository(log, repo, getCallback(log, config))
 
 	return &Head{
-		services: services,
-		name:     name,
-		repo:     repo,
-		config:   config,
+		name:   name,
+		repo:   repo,
+		config: config,
 	}, tomb
 }
 

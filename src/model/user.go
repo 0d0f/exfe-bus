@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"strings"
 )
 
 type UserWelcome struct {
@@ -25,16 +24,6 @@ func (w UserWelcome) Link() string {
 	return fmt.Sprintf("%s/#token=%s", w.Config.SiteUrl, w.To.Token)
 }
 
-type UserWelcomes []UserWelcome
-
-func (w UserWelcomes) String() string {
-	welcome := make([]string, len(w))
-	for i := range w {
-		welcome[i] = w[i].String()
-	}
-	return fmt.Sprintf("[%s]", strings.Join(welcome, ","))
-}
-
 type UserVerify struct {
 	To       Recipient `json:"to"`
 	UserName string    `json:"user_name"`
@@ -53,14 +42,4 @@ func (c *UserVerify) Parse(config *Config) (err error) {
 
 func (c UserVerify) Link() string {
 	return fmt.Sprintf("%s/#token=%s", c.Config.SiteUrl, c.To.Token)
-}
-
-type UserVerifys []UserVerify
-
-func (u UserVerifys) String() string {
-	c := make([]string, len(u))
-	for i := range u {
-		c[i] = u[i].String()
-	}
-	return fmt.Sprintf("[%s]", strings.Join(c, ","))
 }

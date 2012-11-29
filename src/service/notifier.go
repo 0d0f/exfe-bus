@@ -46,15 +46,9 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config, send
 //
 // > curl 'http://127.0.0.1:23333/Cross?method=Invite' -d '[{"to":{"identity_id":11,"user_id":1,"name":"email1 name","auth_data":"","timezone":"+0800","token":"recipient_email1_token","language":"en_US","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"cross":{"id":123,"by_identity":{"id":11,"name":"email1 name","nickname":"email1 nick","bio":"email1 bio","timezone":"+0800","connected_user_id":1,"avatar_filename":"http://path/to/email1.avatar","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"title":"Test Cross","description":"test cross description","time":{"begin_at":{"date_word":"","date":"2012-10-23","time_word":"","time":"08:45:00","timezone":"+0800"},"origin":"2012-10-23 16:45:00","output_format":0},"place":{"id":0,"title":"","description":"","lng":"","lat":"","provider":"","external_id":""},"exfee":{"id":123,"name":"","invitations":[{"id":11,"host":true,"mates":2,"identity":{"id":11,"name":"email1 name","nickname":"email1 nick","bio":"email1 bio","timezone":"+0800","connected_user_id":1,"avatar_filename":"http://path/to/email1.avatar","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"rsvp_status":"NORESPONSE","by_identity":{"id":11,"name":"email1 name","nickname":"email1 nick","bio":"email1 bio","timezone":"+0800","connected_user_id":1,"avatar_filename":"http://path/to/email1.avatar","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"via":""},{"id":22,"host":false,"mates":0,"identity":{"id":12,"name":"email2 name","nickname":"email2 nick","bio":"email2 bio","timezone":"+0800","connected_user_id":2,"avatar_filename":"http://path/to/email2.avatar","provider":"email","external_id":"email2@domain.com","external_username":"email2@domain.com"},"rsvp_status":"NORESPONSE","by_identity":{"id":11,"name":"email1 name","nickname":"email1 nick","bio":"email1 bio","timezone":"+0800","connected_user_id":1,"avatar_filename":"http://path/to/email1.avatar","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"via":""},{"id":33,"host":false,"mates":0,"identity":{"id":22,"name":"twitter3 name","nickname":"twitter3 nick","bio":"twitter3 bio","timezone":"+0800","connected_user_id":3,"avatar_filename":"http://path/to/twitter3.avatar","provider":"twitter","external_id":"twitter3@domain.com","external_username":"twitter3@domain.com"},"rsvp_status":"NORESPONSE","by_identity":{"id":11,"name":"email1 name","nickname":"email1 nick","bio":"email1 bio","timezone":"+0800","connected_user_id":1,"avatar_filename":"http://path/to/email1.avatar","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"via":""},{"id":44,"host":false,"mates":0,"identity":{"id":32,"name":"facebook4 name","nickname":"facebook4 nick","bio":"facebook4 bio","timezone":"+0800","connected_user_id":4,"avatar_filename":"http://path/to/facebook4.avatar","provider":"facebook","external_id":"facebook4@domain.com","external_username":"facebook4@domain.com"},"rsvp_status":"NORESPONSE","by_identity":{"id":22,"name":"twitter3 name","nickname":"twitter3 nick","bio":"twitter3 bio","timezone":"+0800","connected_user_id":3,"avatar_filename":"http://path/to/twitter3.avatar","provider":"twitter","external_id":"twitter3@domain.com","external_username":"twitter3@domain.com"},"via":""}]}}}]'
 //
-func (c *Cross) Invite(meta *gobus.HTTPMeta, invitations model.CrossInvitations, i *int) error {
-	for *i = range invitations {
-		err := c.cross.Invite(invitations[*i])
-		if err != nil {
-			return err
-		}
-	}
-	*i++
-	return nil
+func (c *Cross) Invite(meta *gobus.HTTPMeta, invitation model.CrossInvitation, i *int) error {
+	*i = 1
+	return c.cross.Invite(invitation)
 }
 
 // 发送Cross的更新汇总消息updates
@@ -85,14 +79,9 @@ func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config, sende
 //
 // > curl 'http://127.0.0.1:23333/User?method=Welcome' -d '[{"to":{"identity_id":11,"user_id":1,"name":"email1 name","auth_data":"","timezone":"+0800","token":"recipient_email1_token","language":"en_US","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"need_verify":true}]'
 //
-func (u *User) Welcome(meta *gobus.HTTPMeta, welcomes model.UserWelcomes, i *int) error {
-	for *i = range welcomes {
-		err := u.user.Welcome(welcomes[*i])
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (u *User) Welcome(meta *gobus.HTTPMeta, welcome model.UserWelcome, i *int) error {
+	*i = 1
+	return u.user.Welcome(welcome)
 }
 
 // 发送给用户的验证请求
@@ -101,14 +90,9 @@ func (u *User) Welcome(meta *gobus.HTTPMeta, welcomes model.UserWelcomes, i *int
 //
 // > curl 'http://127.0.0.1:23333/User?method=Verify' -d '[{"to":{"identity_id":11,"user_id":1,"name":"email1 name","auth_data":"","timezone":"+0800","token":"recipient_email1_token","language":"en_US","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"by_name":"by user"}]'
 //
-func (u *User) Verify(meta *gobus.HTTPMeta, confirmations model.UserVerifys, i *int) error {
-	for *i = range confirmations {
-		err := u.user.Verify(confirmations[*i])
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (u *User) Verify(meta *gobus.HTTPMeta, confirmation model.UserVerify, i *int) error {
+	*i = 1
+	return u.user.Verify(confirmation)
 }
 
 // 发送给用户的重置密码请求
@@ -117,12 +101,7 @@ func (u *User) Verify(meta *gobus.HTTPMeta, confirmations model.UserVerifys, i *
 //
 // > curl 'http://127.0.0.1:23333/User?method=ResetPassword' -d '[{"to":{"identity_id":11,"user_id":1,"name":"email1 name","auth_data":"","timezone":"+0800","token":"recipient_email1_token","language":"en_US","provider":"email","external_id":"email1@domain.com","external_username":"email1@domain.com"},"by_name":"by user"}]'
 //
-func (u *User) ResetPassword(meta *gobus.HTTPMeta, tos model.UserVerifys, i *int) error {
-	for *i = range tos {
-		err := u.user.ResetPassword(tos[*i])
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (u *User) ResetPassword(meta *gobus.HTTPMeta, verify model.UserVerify, i *int) error {
+	*i = 1
+	return u.user.ResetPassword(verify)
 }
