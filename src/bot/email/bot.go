@@ -4,8 +4,8 @@ import (
 	"broker"
 	"fmt"
 	"formatter"
+	"github.com/googollee/go-encoding-ex"
 	"github.com/googollee/goimap"
-	"github.com/sloonz/go-iconv"
 	"gobot"
 	"model"
 	"net/mail"
@@ -93,7 +93,7 @@ func (b *EmailBot) GetIDFromInput(input interface{}) (id string, content interfa
 		e = fmt.Errorf("Get message(%v) body failed: %s", id, err)
 		return
 	}
-	text, err = iconv.Conv(text, "UTF-8", charset)
+	text, err = encodingex.Conv(text, "UTF-8", charset)
 	if err != nil {
 		e = fmt.Errorf("Convert message(%v) from %s to utf8 error: %s", id, charset, err)
 		return
