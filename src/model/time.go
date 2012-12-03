@@ -127,6 +127,10 @@ type CrossTime struct {
 }
 
 func (t CrossTime) StringInZone(targetZone string) (string, error) {
+	if t.Origin == "" {
+		return "", nil
+	}
+
 	loc, err := LoadLocation(t.BeginAt.Timezone)
 	if err != nil {
 		return "", fmt.Errorf("timezone(%s) invalid: %s", t.BeginAt.Timezone, err)
