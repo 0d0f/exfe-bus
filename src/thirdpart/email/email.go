@@ -2,6 +2,7 @@ package email
 
 import (
 	"model"
+	"strings"
 	"thirdpart"
 )
 
@@ -20,5 +21,6 @@ func (e *Email) Provider() string {
 }
 
 func (e *Email) Send(to *model.Recipient, privateMessage string, publicMessage string, info *model.InfoData) (string, error) {
+	privateMessage = strings.Replace(privateMessage, "to_email_address", to.ExternalID, -1)
 	return e.helper.SendEmail(to.ExternalID, privateMessage)
 }
