@@ -1,1 +1,1 @@
-Invitation: {{.Link}} (Please follow @EXFE to receive details PRIVATELY through Direct Message.)
+Invitation: {{.PublicLink}} (Please follow @EXFE to receive details PRIVATELY through Direct Message.)

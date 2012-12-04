@@ -340,6 +340,10 @@ func (a SummaryArg) Link() string {
 	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
 }
 
+func (a SummaryArg) PublicLink() string {
+	return fmt.Sprintf("%s/#!%d/%s", a.Config.SiteUrl, a.Cross.ID, a.To.Token[1:4])
+}
+
 func (a *SummaryArg) ListBy(limit int, join string) string {
 	buf := bytes.NewBuffer(nil)
 	for i, by := range a.Bys {

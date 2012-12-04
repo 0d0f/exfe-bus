@@ -1,1 +1,1 @@
-Updates: {{.Link}} (Please follow @EXFE to receive details PRIVATELY through Direct Message.)
+Updates: {{.PublicLink}} (Please follow @EXFE to receive details PRIVATELY through Direct Message.)
