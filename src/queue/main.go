@@ -50,7 +50,7 @@ func getCallback(log *logger.SubLogger, config *model.Config) func(string, [][]b
 			err := client.Do(method, arg, &i)
 			if err != nil {
 				j, _ := json.Marshal(arg)
-				log.Err("call %s|%s with %s failed: %s", service, method, string(j), err)
+				log.Err("call %s|%s failed(%s) with %s", service, method, err, string(j))
 			}
 		}
 	}
