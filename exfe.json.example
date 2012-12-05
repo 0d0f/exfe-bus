@@ -23,7 +23,6 @@
   },
   "email": {
     "host": "smtp.gmail.com",
-    "port": 465,
     "username": "contact@0d0f.com",
     "password": "[S9rQ+vNjJloR*Vs",
     "account": "[DEV]EXFE ·X·",

@@ -29,7 +29,6 @@ type Config struct {
 	} `json:"redis"`
 	Email struct {
 		Host             string `json:"host"`
-		Port             uint   `json:"port"`
 		Username         string `json:"username"`
 		Password         string `json:"password"`
 		Name             string `json:"name"`
