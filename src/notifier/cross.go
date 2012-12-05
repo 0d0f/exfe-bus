@@ -23,6 +23,10 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config, send
 }
 
 func (c *Cross) Summary(updates model.CrossUpdates) error {
+	if len(updates) == 0 {
+		return fmt.Errorf("len(updates) == 0")
+	}
+
 	to := updates[0].To
 	if to.Provider == "twitter" {
 		c.config.Log.Debug("not send to twitter: %s", to)

@@ -22,6 +22,10 @@ func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Confi
 }
 
 func (c *Conversation) Update(updates model.ConversationUpdates) error {
+	if len(updates) == 0 {
+		return fmt.Errorf("len(updates) == 0")
+	}
+
 	to := updates[0].To
 	if to.Provider == "twitter" {
 		c.config.Log.Debug("not send to twitter: %s", to)
