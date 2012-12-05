@@ -27,6 +27,16 @@ func (c *Conversation) Update(updates model.ConversationUpdates) error {
 		c.config.Log.Debug("not send to twitter: %s", to)
 		return nil
 	}
+	selfUpdates := true
+	for _, update := range updates {
+		if !to.SameUser(&update.Post.By) {
+			selfUpdates = false
+		}
+	}
+	if selfUpdates {
+		c.config.Log.Debug("not send with all self updates: %s", to)
+		return nil
+	}
 
 	private, err := c.getConversationContent(updates)
 	if err != nil {
@@ -76,7 +86,6 @@ func ArgFromUpdates(updates []model.ConversationUpdate, config *model.Config) (*
 	to := updates[0].To
 	cross := updates[0].Cross
 	posts := make([]*model.Post, len(updates))
-	selfUpdates := true
 
 	for i, update := range updates {
 		if !to.Equal(&update.To) {
@@ -85,14 +94,7 @@ func ArgFromUpdates(updates []model.ConversationUpdate, config *model.Config) (*
 		if !cross.Equal(&update.Cross) {
 			return nil, fmt.Errorf("updates not send to same exfee: %d, %d", cross.ID, update.Cross.ID)
 		}
-		if !to.SameUser(&update.Post.By) {
-			selfUpdates = false
-		}
 		posts[i] = &updates[i].Post
-	}
-
-	if selfUpdates {
-		return nil, fmt.Errorf("not send with all self updates")
 	}
 
 	ret := &UpdateArg{

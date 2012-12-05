@@ -28,6 +28,16 @@ func (c *Cross) Summary(updates model.CrossUpdates) error {
 		c.config.Log.Debug("not send to twitter: %s", to)
 		return nil
 	}
+	selfUpdates := true
+	for _, update := range updates {
+		if !to.SameUser(&update.By) {
+			selfUpdates = false
+		}
+	}
+	if selfUpdates {
+		c.config.Log.Debug("not send with all self updates: %s", to)
+		return nil
+	}
 
 	private, public, err := c.getSummaryContent(updates)
 	if err != nil {
@@ -137,15 +147,11 @@ func SummaryFromUpdates(updates []model.CrossUpdate, config *model.Config) (*Sum
 
 	to := updates[0].To
 	bys := make([]model.Identity, 0)
-	selfUpdates := true
 
 Bys:
 	for _, update := range updates {
 		if !to.Equal(&update.To) {
 			return nil, fmt.Errorf("updates not send to same recipient: %s, %s", to, update.To)
-		}
-		if !to.SameUser(&update.By) {
-			selfUpdates = false
 		}
 		for _, i := range bys {
 			if update.By.SameUser(i) {
@@ -153,10 +159,6 @@ Bys:
 			}
 		}
 		bys = append(bys, update.By)
-	}
-
-	if selfUpdates {
-		return nil, fmt.Errorf("not send with all self updates")
 	}
 
 	ret := &SummaryArg{
