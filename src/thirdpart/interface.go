@@ -6,11 +6,7 @@ import (
 	"fmt"
 	"github.com/googollee/go-logger"
 	"model"
-	"net"
-	"net/http"
-	"net/smtp"
 	"net/url"
-	"strings"
 )
 
 type Token struct {
@@ -69,118 +65,6 @@ type Helper interface {
 	SendEmail(to string, content string) (id string, err error)
 
 	Log() *logger.Logger
-}
-
-type updateFriendsArg struct {
-	UserID     int64             `json:"user_id"`
-	Identities []*model.Identity `json:"identities"`
-}
-
-type HelperImp struct {
-	config      *model.Config
-	emailServer string
-	emailAuth   smtp.Auth
-	emailFrom   string
-}
-
-func NewHelper(config *model.Config) *HelperImp {
-	return &HelperImp{
-		config:      config,
-		emailServer: fmt.Sprintf("%s:%d", config.Email.Host, config.Email.Port),
-		emailAuth:   smtp.PlainAuth("", config.Email.Username, config.Email.Password, config.Email.Host),
-		emailFrom:   fmt.Sprintf("x@%s", config.Email.Domain),
-	}
-}
-
-func (h *HelperImp) Log() *logger.Logger {
-	return h.config.Log
-}
-
-func (h *HelperImp) UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error {
-	arg := updateFriendsArg{
-		UserID:     to.UserID,
-		Identities: make([]*model.Identity, len(externalUsers)),
-	}
-	for i, u := range externalUsers {
-		user := &model.Identity{
-			Name:             u.Name(),
-			Provider:         u.Provider(),
-			ExternalID:       u.ExternalID(),
-			ExternalUsername: u.ExternalUsername(),
-			Bio:              u.Bio(),
-			Avatar:           u.Avatar(),
-		}
-		arg.Identities[i] = user
-	}
-	buf := bytes.NewBuffer(nil)
-	e := json.NewEncoder(buf)
-	err := e.Encode(arg)
-	if err != nil {
-		return fmt.Errorf("encoding user error: %s", err)
-	}
-	url := fmt.Sprintf("%s/v2/Gobus/AddFriends", h.config.SiteApi)
-	resp, err := http.Post(url, "application/json", buf)
-	if err != nil {
-		return fmt.Errorf("update %s friends fail: %s", to, err)
-	}
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("update %s friends fail: %s", to, resp.Status)
-	}
-	return nil
-}
-
-func (h *HelperImp) UpdateIdentity(to *model.Recipient, externalUser ExternalUser) error {
-	params := make(url.Values)
-	params.Set("id", fmt.Sprintf("%d", to.IdentityID))
-	params.Set("provider", externalUser.Provider())
-	params.Set("external_id", externalUser.ExternalID())
-	params.Set("name", externalUser.Name())
-	params.Set("bio", externalUser.Bio())
-	params.Set("avatar_filename", externalUser.Avatar())
-	params.Set("external_username", externalUser.ExternalUsername())
-
-	url := fmt.Sprintf("%s/v2/gobus/UpdateIdentity", h.config.SiteApi)
-	resp, err := http.PostForm(url, params)
-	if err != nil {
-		return fmt.Errorf("update with %v failed: %s", params, err)
-	}
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("update with %v failed: %s", params, resp.Status)
-	}
-	return nil
-}
-
-func (h *HelperImp) SendEmail(to string, content string) (id string, err error) {
-	mail_split := strings.Split(to, "@")
-	if len(mail_split) != 2 {
-		return "", fmt.Errorf("mail(%s) not valid.", to)
-	}
-	host := mail_split[1]
-	mx, err := net.LookupMX(host)
-	if err != nil {
-		return "", fmt.Errorf("lookup mail exchange fail: %s", err)
-	}
-	if len(mx) == 0 {
-		return "", fmt.Errorf("can't find mail exchange for %s", to)
-	}
-	s, err := smtp.Dial(fmt.Sprintf("%s:25", mx[0].Host))
-	if err != nil {
-		return "", fmt.Errorf("dial to mail exchange %s fail: %s", mx[0].Host, err)
-	}
-	err = s.Mail(h.emailFrom)
-	if err != nil {
-		return "", fmt.Errorf("set smtp mail fail: %s", err)
-	}
-	err = s.Rcpt(to)
-	if err != nil {
-		return "", fmt.Errorf("set smtp rcpt fail: %s", err)
-	}
-	s.Quit()
-	err = smtp.SendMail(h.emailServer, h.emailAuth, h.emailFrom, []string{to}, []byte(content))
-	if err != nil {
-		return "", fmt.Errorf("mail send fail: %s", err)
-	}
-	return "", nil
 }
 
 type FakeHelper struct {

@@ -3,6 +3,7 @@ go get $1 github.com/garyburd/go-oauth/oauth
 go get $1 github.com/virushuo/Go-Apns
 go get $1 github.com/googollee/go-gcm
 go get $1 github.com/googollee/goimap
+go get $1 github.com/googollee/go-multiplexer
 go get $1 github.com/googollee/go-aws/smtp
 go get $1 github.com/googollee/go-encoding-ex
 go get $1 github.com/googollee/go-logger
