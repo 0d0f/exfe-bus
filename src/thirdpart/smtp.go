@@ -26,9 +26,11 @@ func NewSmtpSenderInstance(log *logger.Logger, host string, a smtp.Auth) (*SmtpI
 	if err != nil {
 		return nil, err
 	}
+	sublog := log.SubPrefix(host)
+	sublog.Debug("sender connect to %s", host)
 	return &SmtpInstance{
 		conn: s,
-		log:  log.SubPrefix(host),
+		log:  sublog,
 	}, nil
 }
 
@@ -44,17 +46,21 @@ func NewSmtpCheckerInstance(host string, log *logger.Logger) (*SmtpInstance, err
 	if err != nil {
 		return nil, fmt.Errorf("dial to mail exchange %s fail: %s", mx[0].Host, err)
 	}
+	sublog := log.SubPrefix(host)
+	sublog.Debug("checker connect to %s", host)
 	return &SmtpInstance{
 		conn: s,
-		log:  log.SubPrefix(host),
+		log:  sublog,
 	}, nil
 }
 
 func (i *SmtpInstance) Ping() error {
+	i.log.Debug("ping")
 	return i.conn.Reset()
 }
 
 func (i *SmtpInstance) Close() error {
+	i.log.Debug("close")
 	return i.conn.Quit()
 }
 
