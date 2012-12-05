@@ -34,8 +34,8 @@ type Config struct {
 		Password         string `json:"password"`
 		Name             string `json:"name"`
 		Domain           string `json:"domain"`
-		IdleTimeoutInMin uint   `json:"idle_timeout_in_min"`
-		IntervalInMin    uint   `json:"interval_in_min"`
+		IdleTimeoutInSec uint   `json:"idle_timeout_in_sec"`
+		IntervalInSec    uint   `json:"interval_in_sec"`
 	} `json:"email"`
 
 	Dispatcher struct {

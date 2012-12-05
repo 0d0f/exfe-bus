@@ -32,10 +32,10 @@ func NewHelper(config *model.Config) *HelperImp {
 		config: config,
 		emailCheckers: multiplexer.NewHetero(func(key string) (multiplexer.Instance, error) {
 			return NewSmtpCheckerInstance(key, config.Log)
-		}, time.Duration(config.Email.IdleTimeoutInMin)*time.Minute, time.Duration(config.Email.IntervalInMin)*time.Minute),
+		}, time.Duration(config.Email.IdleTimeoutInSec)*time.Second, time.Duration(config.Email.IntervalInSec)*time.Second),
 		emailSender: multiplexer.NewHomo(func() (multiplexer.Instance, error) {
 			return NewSmtpSenderInstance(config.Log, config.Email.Host, auth)
-		}, 5, time.Duration(config.Email.IdleTimeoutInMin)*time.Minute, time.Duration(config.Email.IntervalInMin)*time.Minute),
+		}, 5, time.Duration(config.Email.IdleTimeoutInSec)*time.Second, time.Duration(config.Email.IntervalInSec)*time.Second),
 		emailFrom: fmt.Sprintf("x@%s", config.Email.Domain),
 	}
 }

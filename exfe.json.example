@@ -27,7 +27,9 @@
     "username": "contact@0d0f.com",
     "password": "[S9rQ+vNjJloR*Vs",
     "account": "[DEV]EXFE ·X·",
-    "domain": "0d0f.com"
+    "domain": "0d0f.com",
+    "idle_timeout_in_sec": 30,
+    "interval_in_sec": 10
   },
 
   "dispatcher": {
