@@ -80,6 +80,15 @@ type Config struct {
 		Gcm struct {
 			Key string `json:"key"`
 		} `json:"gcm"`
+		Sms struct {
+			Twilio struct {
+				Url       string `json:"url"`
+				FromPhone string `json:"from_phone"`
+			} `json:"twilio"`
+			DuanCaiWang struct {
+				Url string `json:"url"`
+			} `json:"duancaiwang"`
+		}
 	} `json:"thirdpart"`
 	Bot struct {
 		Email struct {

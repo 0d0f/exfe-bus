@@ -19,6 +19,7 @@ import (
 	"thirdpart/facebook"
 	"thirdpart/gcm"
 	"thirdpart/imsg"
+	"thirdpart/sms"
 	"thirdpart/twitter"
 	"time"
 )
@@ -61,6 +62,9 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 
 	gcm_ := gcm.New(gcms_)
 	t.AddSender(gcm_)
+
+	sms_ := sms.New(config)
+	t.AddSender(sms_)
 
 	if config.Test {
 		performance := _performance.New()

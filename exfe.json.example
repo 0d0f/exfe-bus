@@ -68,6 +68,15 @@
     },
     "gcm": {
       "key": ""
+    },
+    "sms": {
+      "twilio": {
+        "url": "https://{sid}:{token}@api.twilio.com/2010-04-01/Accounts/{sid}/SMS/Messages.json",
+        "from_phone": "+123"
+      },
+      "duancaiwang": {
+        "url": "http://6956-24f8e.sms-api.63810.com/api/SmsSend/user/{user}/hash/{hash}/encode/utf-8/smstype/notify"
+      }
     }
   },
   "bot": {
