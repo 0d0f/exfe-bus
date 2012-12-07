@@ -57,7 +57,7 @@ func (t *DuanCaiWang) Send(phone string, contents []string) (string, error) {
 			}
 		}
 		if reply.Active != nil {
-			ret += fmt.Sprintf(",%d-%d", reply.Active, reply.ID)
+			ret += fmt.Sprintf(",%d-%d", *reply.Active, reply.ID)
 		} else {
 			ret += fmt.Sprintf(",%d", reply.ID)
 		}
