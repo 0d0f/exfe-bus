@@ -100,7 +100,7 @@ func (a CrossInvitation) ListInvitations() string {
 		ret += a.Cross.Exfee.Invitations[i].Identity.Name
 	}
 	if l > max {
-		ret += "…"
+		ret += "..."
 	}
 	return ret
 }

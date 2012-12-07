@@ -2,6 +2,6 @@
 {{$time := .Cross.Time.StringInZone .Timezone | replace `\` `\\`}}
 {{$place := .Cross.Place.Title | limit 30| replace `\` `\\`}}
 {{$link := .Link | replace `\` `\\`}}
-{{if .IsCreator}}Successfully gathering \(“{{$title}}”\){{if $time}}, \({{$time}}\){{end}}{{if $place}} at \({{$place}}\){{end}}. {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} invited: {{.ListInvitations}} {{$link}}{{else}}
-{{if .ToIn .Cross.Exfee.Invitations}}Invitation from \({{.Cross.By.Name}}\): \(“{{$title}}”\){{if $time}}, \({{$time}}\){{end}}{{if $place}} at \({{$place}}\){{end}}. {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} people invited. {{$link}}{{end}}
+{{if .IsCreator}}Successfully gathering \("{{$title}}"\){{if $time}}, \({{$time}}\){{end}}{{if $place}} at \({{$place}}\){{end}}. {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} invited: {{.ListInvitations}} {{$link}}{{else}}
+{{if .ToIn .Cross.Exfee.Invitations}}Invitation from \({{.Cross.By.Name}}\): \("{{$title}}"\){{if $time}}, \({{$time}}\){{end}}{{if $place}} at \({{$place}}\){{end}}. {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} people invited. {{$link}}{{end}}
 {{end}}

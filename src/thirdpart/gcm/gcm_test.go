@@ -54,7 +54,7 @@ func TestSend(t *testing.T) {
 			t.Fatalf("send error: %s", err)
 		}
 		results := []string{
-			`AAAAAAAA name1, AAAAAAAA name2 and AAAAAAAA name3 are accepted on “some cross”, IIIII name1, IIIII name2 and IIIII name3 interested,…(1/2)`,
+			`AAAAAAAA name1, AAAAAAAA name2 and AAAAAAAA name3 are accepted on “some cross”, IIIII name1, IIIII name2 and IIIII name3 interested, (1/2)`,
 			`UUUU name1, UUUU name2 and UUUU name3 are unavailable, PPPPPPP name1, PPPPPPP name2 and PPPPPPP name3 are pending. 3 of 10 accepted. (2/2)`,
 		}
 		if got, expect := len(broker.messages), len(results); got != expect {
@@ -62,7 +62,7 @@ func TestSend(t *testing.T) {
 		}
 		for i, r := range results {
 			if got, expect := broker.messages[i], r; got != expect {
-				t.Errorf("%d got: %s, expect %s", i, got, expect)
+				t.Errorf("%d got: %s, expect: %s", i, got, expect)
 			}
 		}
 	}
@@ -81,7 +81,7 @@ func TestSend(t *testing.T) {
 		}
 		for i, r := range results {
 			if got, expect := broker.messages[i], r; got != expect {
-				t.Errorf("%d got: %s, expect %s", i, got, expect)
+				t.Errorf("%d got: %s, expect: %s", i, got, expect)
 			}
 		}
 	}
@@ -101,7 +101,7 @@ func TestSend(t *testing.T) {
 		}
 		for i, r := range results {
 			if got, expect := broker.messages[i], r; got != expect {
-				t.Errorf("%d got: %s, expect %s", i, got, expect)
+				t.Errorf("%d got: %s, expect: %s", i, got, expect)
 			}
 		}
 	}
@@ -122,7 +122,7 @@ aadfdafdas https://exfe.com/fdafa`, "", data)
 		}
 		for i, r := range results {
 			if got, expect := broker.messages[i], r; got != expect {
-				t.Errorf("%d got: %s, expect %s", i, got, expect)
+				t.Errorf("%d got: %s, expect: %s", i, got, expect)
 			}
 		}
 	}

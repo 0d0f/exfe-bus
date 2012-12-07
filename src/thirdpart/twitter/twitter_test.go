@@ -138,8 +138,8 @@ func TestSend(t *testing.T) {
 			}
 		}
 		results := []string{
-			`AAAAAAAA name1, AAAAAAAA name2 and AAAAAAAA name3 are accepted on “some cross”, IIIII name1, IIIII name2 and IIIII name3 interested,…(1/3)`,
-			`UUUU name1, UUUU name2 and UUUU name3 are unavailable, PPPPPPP name1, PPPPPPP name2 and PPPPPPP name3 are pending. 3 of 10 accepted.…(2/3)`,
+			`AAAAAAAA name1, AAAAAAAA name2 and AAAAAAAA name3 are accepted on “some cross”, IIIII name1, IIIII name2 and IIIII name3 interested, (1/3)`,
+			`UUUU name1, UUUU name2 and UUUU name3 are unavailable, PPPPPPP name1, PPPPPPP name2 and PPPPPPP name3 are pending. 3 of 10 accepted. (2/3)`,
 			`https://exfe.com/#!token=932ce5324321433253 (3/3)`,
 		}
 		for i := 0; i < 3; i++ {
@@ -171,8 +171,8 @@ func TestSend(t *testing.T) {
 			}
 		}
 		results := []string{
-			`@publicer AAAAAAAA name1, AAAAAAAA name2 and AAAAAAAA name3 are accepted on “some cross”, IIIII name1, IIIII name2 and IIIII name3…(1/3)`,
-			`@publicer interested, UUUU name1, UUUU name2 and UUUU name3 are unavailable, PPPPPPP name1, PPPPPPP name2 and PPPPPPP name3 are…(2/3)`,
+			`@publicer AAAAAAAA name1, AAAAAAAA name2 and AAAAAAAA name3 are accepted on “some cross”, IIIII name1, IIIII name2 and IIIII name3 (1/3)`,
+			`@publicer interested, UUUU name1, UUUU name2 and UUUU name3 are unavailable, PPPPPPP name1, PPPPPPP name2 and PPPPPPP name3 are (2/3)`,
 			`@publicer pending. 3 of 10 accepted. https://exfe.com/#!token=932ce5324321433253 (3/3)`,
 		}
 		for i := 0; i < 3; i++ {

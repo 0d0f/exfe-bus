@@ -59,8 +59,9 @@ func parseLexical(text string) ([]string, error) {
 type LengthFunc func(string) int
 
 type Cutter struct {
-	nodes []string
-	len   LengthFunc
+	origin string
+	nodes  []string
+	len    LengthFunc
 }
 
 func CutterParse(text string, f LengthFunc) (*Cutter, error) {
@@ -69,28 +70,22 @@ func CutterParse(text string, f LengthFunc) (*Cutter, error) {
 		return nil, err
 	}
 	return &Cutter{
-		nodes: nodes,
-		len:   f,
+		origin: strings.Join(nodes, ""),
+		nodes:  nodes,
+		len:    f,
 	}, nil
 }
 
 const emptyRunes = " \t\n\r"
 
 func (c *Cutter) Limit(max int) []string {
-	lens := make([]int, len(c.nodes))
-	length := 0
-	for i, s := range c.nodes {
-		lens[i] = c.len(s)
-		length += lens[i]
-	}
-	if length <= max {
-		return []string{strings.Join(c.nodes, "")}
+	if c.len(c.origin) <= max {
+		return []string{c.origin}
 	}
 
 	ret := make([]string, 0)
 	buf := bytes.NewBuffer(nil)
 	max = max - 6
-	length = 0
 	insert := func() {
 		str := strings.Trim(buf.String(), emptyRunes)
 		if str == "" {
@@ -100,21 +95,20 @@ func (c *Cutter) Limit(max int) []string {
 		buf.Reset()
 	}
 
-	for i, s := range c.nodes {
-		if length+lens[i] > max {
+	for _, s := range c.nodes {
+		str := buf.String()
+		if c.len(str+s) > max {
 			insert()
 			buf.WriteString(s)
-			length = lens[i]
 			continue
 		}
 		buf.WriteString(s)
-		length += lens[i]
 	}
 	insert()
 
 	for i, _ := range ret {
 		if i != len(ret)-1 {
-			ret[i] = fmt.Sprintf("%s…(%d/%d)", ret[i], i+1, len(ret))
+			ret[i] = fmt.Sprintf("%s (%d/%d)", ret[i], i+1, len(ret))
 		} else {
 			ret[i] = fmt.Sprintf("%s (%d/%d)", ret[i], i+1, len(ret))
 		}

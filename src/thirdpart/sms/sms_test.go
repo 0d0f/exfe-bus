@@ -46,14 +46,14 @@ func TestSend(t *testing.T) {
 	tester = sms
 
 	{
-		_, err := tester.Send(to, `\(AAAAAAAA name1\), \(AAAAAAAA name2\) and \(AAAAAAAA name3\) are accepted on \(“some cross”\), \(IIIII name1\), \(IIIII name2\) and \(IIIII name3\) interested, \(UUUU name1\), \(UUUU name2\) and \(UUUU name3\) are unavailable, \(PPPPPPP name1\), \(PPPPPPP name2\) and \(PPPPPPP name3\) are pending. \(3 of 10 accepted\). https://exfe.com/#!token=932ce5324321433253`, "", data)
+		_, err := tester.Send(to, `\(AAAAAAAA name1\), \(AAAAAAAA name2\) and \(AAAAAAAA name3\) are accepted on \("some cross"\), \(IIIII name1\), \(IIIII name2\) and \(IIIII name3\) interested, \(UUUU name1\), \(UUUU name2\) and \(UUUU name3\) are unavailable, \(PPPPPPP name1\), \(PPPPPPP name2\) and \(PPPPPPP name3\) are pending. \(3 of 10 accepted\). https://exfe.com/#!token=932ce5324321433253`, "", data)
 		if err != nil {
 			t.Fatalf("send error: %s", err)
 		}
 		results := []string{
-			`AAAAAAAA name1, AAAAAAAA name2 and AAAAAAAA name3 are accepted on “some cross”, IIIII name1, IIIII name2 and IIIII name3…(1/3)`,
-			`interested, UUUU name1, UUUU name2 and UUUU name3 are unavailable, PPPPPPP name1, PPPPPPP name2 and PPPPPPP name3 are pending.…(2/3)`,
-			`3 of 10 accepted. https://exfe.com/#!token=932ce5324321433253 (3/3)`,
+			`AAAAAAAA name1, AAAAAAAA name2 and AAAAAAAA name3 are accepted on "some cross", IIIII name1, IIIII name2 and IIIII name3 interested, (1/3)`,
+			`UUUU name1, UUUU name2 and UUUU name3 are unavailable, PPPPPPP name1, PPPPPPP name2 and PPPPPPP name3 are pending. 3 of 10 accepted. (2/3)`,
+			`https://exfe.com/#!token=932ce5324321433253 (3/3)`,
 		}
 		if got, expect := len(testSender.contents), len(results); got != expect {
 			t.Errorf("got: %d, expect: %d", got, expect)
@@ -109,7 +109,7 @@ aadfdafdas https://exfe.com/fdafa`, "", data)
 			t.Fatalf("send error: %s", err)
 		}
 		results := []string{
-			`Googol Lee: 测试时间 (“看电影 007”…(1/2)`,
+			`Googol Lee: 测试时间 (“看电影 007” (1/2)`,
 			`https://exfe.com/#!token=cd48a91ee3c2afb545d32f301b342510) (2/2)`,
 			`aadfdafdas https://exfe.com/fdafa`,
 		}

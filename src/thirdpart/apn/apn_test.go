@@ -58,8 +58,8 @@ func TestSend(t *testing.T) {
 			t.Fatalf("send error: %s", err)
 		}
 		results := []string{
-			`AAAAAAAA name1, AAAAAAAA name2 and AAAAAAAA name3 are accepted on “some cross”, IIIII name1, IIIII name2 and IIIII name3…(1/3)`,
-			`interested, UUUU name1, UUUU name2 and UUUU name3 are unavailable, PPPPPPP name1, PPPPPPP name2 and PPPPPPP name3 are pending.…(2/3)`,
+			`AAAAAAAA name1, AAAAAAAA name2 and AAAAAAAA name3 are accepted on “some cross”, IIIII name1, IIIII name2 and IIIII name3 (1/3)`,
+			`interested, UUUU name1, UUUU name2 and UUUU name3 are unavailable, PPPPPPP name1, PPPPPPP name2 and PPPPPPP name3 are pending. (2/3)`,
 			`3 of 10 accepted. (3/3)`,
 		}
 		if got, expect := len(broker.notifications), len(results); got != expect {
@@ -67,7 +67,7 @@ func TestSend(t *testing.T) {
 		}
 		for i, r := range results {
 			if got, expect := broker.notifications[i].Payload.Aps.Alert, r; got != expect {
-				t.Errorf("%d got: %s, expect %s", i, got, expect)
+				t.Errorf("%d got: %s, expect: %s", i, got, expect)
 			}
 		}
 	}
@@ -86,7 +86,7 @@ func TestSend(t *testing.T) {
 		}
 		for i, r := range results {
 			if got, expect := broker.notifications[i].Payload.Aps.Alert, r; got != expect {
-				t.Errorf("%d got: %s, expect %s", i, got, expect)
+				t.Errorf("%d got: %s, expect: %s", i, got, expect)
 			}
 		}
 	}

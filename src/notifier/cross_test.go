@@ -375,7 +375,7 @@ func TestCrossSummaryTwitter(t *testing.T) {
 	private, public, err := c.getSummaryContent(updates)
 	assert.Equal(t, err, nil)
 	t.Logf("private:-----start------\n%s\n-------end-------", private)
-	expectPrivate := "\n\n\n\n\n\n\n\n\\(“Test Cross”\\) update: \\(“New Title”\\). 4:45PM on Tue, Oct 23 at \\(Test Place1\\). 5 people invited. http://site/url/#!token=recipient_twitter1_token\n\n\\(facebook5 name\\) is invited to \\(“New Title”\\) by facebook4 name, email1 name, etc. http://site/url/#!token=recipient_twitter1_token\n\n\\(facebook6 name\\) left \\(“New Title”\\). http://site/url/#!token=recipient_twitter1_token\n\n\n\n\n\n\n\n\\(email2 name\\) and \\(facebook5 name\\) accepted \\(“New Title”\\), \\(twitter3 name\\) is unavailable, 5 of 9 accepted. http://site/url/#!token=recipient_twitter1_token\n\n\n\n\n"
+	expectPrivate := "\n\n\n\n\n\n\n\n\\(\"Test Cross\"\\) update: \\(\"New Title\"\\). 4:45PM on Tue, Oct 23 at \\(Test Place1\\). 5 people invited. http://site/url/#!token=recipient_twitter1_token\n\n\\(facebook5 name\\) is invited to \\(\"New Title\"\\) by facebook4 name, email1 name, etc. http://site/url/#!token=recipient_twitter1_token\n\n\\(facebook6 name\\) left \\(\"New Title\"\\). http://site/url/#!token=recipient_twitter1_token\n\n\n\n\n\n\n\n\\(email2 name\\) and \\(facebook5 name\\) accepted \\(\"New Title\"\\), \\(twitter3 name\\) is unavailable, 5 of 9 accepted. http://site/url/#!token=recipient_twitter1_token\n\n\n\n\n"
 	assert.Equal(t, private, expectPrivate)
 	t.Logf("private:-----start------\n%s\n-------end-------", private)
 	expectPublic := `Updates: http://site/url/#!123/eci (Please follow @EXFE to receive details PRIVATELY through Direct Message.)`
@@ -490,7 +490,7 @@ func TestCrossInvitationTwitter(t *testing.T) {
 	private, public, err := c.getInvitationContent(inv)
 	assert.Equal(t, err, nil)
 	t.Logf("private:---------start---------\n%s\n---------end----------", private)
-	expectPrivate := "\n\n\n\nSuccessfully gathering \\(“Test Cross”\\), \\(4:45PM on Tue, Oct 23\\). 6 invited: email1 name, email2 name, twitter3 name… http://site/url/#!token=recipient_twitter1_token"
+	expectPrivate := "\n\n\n\nSuccessfully gathering \\(\"Test Cross\"\\), \\(4:45PM on Tue, Oct 23\\). 6 invited: email1 name, email2 name, twitter3 name... http://site/url/#!token=recipient_twitter1_token"
 	assert.Equal(t, private, expectPrivate)
 	assert.Equal(t, public, "Invitation: http://site/url/#!123/eci (Please follow @EXFE to receive details PRIVATELY through Direct Message.)")
 }

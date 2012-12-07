@@ -35,8 +35,8 @@ func TestConversationUpdateTwitter(t *testing.T) {
 	}
 	updates := []model.ConversationUpdate{update1, update2}
 
-	expectPrivate := `email1 name: email1 post sth \((“Test Cross” http://site/url/#!token=recipient_twitter1_token)\)
-twitter3 name: twitter3 post sth \((“Test Cross” http://site/url/#!token=recipient_twitter1_token)\)
+	expectPrivate := `email1 name: email1 post sth \(("Test Cross" http://site/url/#!token=recipient_twitter1_token)\)
+twitter3 name: twitter3 post sth \(("Test Cross" http://site/url/#!token=recipient_twitter1_token)\)
 `
 	c := NewConversation(localTemplate, &config, nil)
 	private, err := c.getConversationContent(updates)

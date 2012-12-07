@@ -56,16 +56,22 @@ func NewTemplate(name string) *template.Template {
 			return buf.String(), err
 		},
 		"limit": func(max int, str string) string {
-			if max < 2 {
-				max = 2
+			if max < 4 {
+				max = 4
 			}
-			if len(str) <= max {
+			if utf8.RuneCountInString(str) <= max {
 				return str
 			}
-			for str = str[:max-1]; !utf8.ValidString(str); {
-				str = str[:len(str)-1]
+			max = max - 3
+			ret := bytes.NewBuffer(nil)
+			for _, b := range []byte(str) {
+				ret.WriteByte(b)
+				bs := ret.Bytes()
+				if utf8.Valid(bs) && utf8.RuneCount(bs) == max {
+					break
+				}
 			}
-			return str + "…"
+			return ret.String() + "..."
 		},
 		"for": func(array interface{}) (interface{}, error) {
 			v := reflect.ValueOf(array)

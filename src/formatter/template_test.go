@@ -116,14 +116,14 @@ func TestTemplateFor(t *testing.T) {
 }
 
 func TestTemplateLimit(t *testing.T) {
-	templ, err := NewTemplate("test").Parse(`{{"测试文字" | limit 5}}`)
+	templ, err := NewTemplate("test").Parse(`{{"测试文字测试文字" | limit 4}}`)
 	if err != nil {
 		t.Fatalf("unexpect error: %s", err)
 	}
 	buf := bytes.NewBuffer(nil)
 	err = templ.Execute(buf, nil)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, buf.String(), "测…")
+	assert.Equal(t, buf.String(), "测...")
 }
 
 func TestTemplatePlural(t *testing.T) {

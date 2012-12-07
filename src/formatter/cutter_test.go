@@ -69,7 +69,7 @@ func TestCutter(t *testing.T) {
 	}
 
 	{
-		got, expect := cutter.Limit(71), []string{`googol:\ 12345678901234567890\…(1/2)`, `("1234567890123" http://exfe.com/abcdefg) (2/2)`}
+		got, expect := cutter.Limit(71), []string{`googol:\ 12345678901234567890\ (1/2)`, `("1234567890123" http://exfe.com/abcdefg) (2/2)`}
 		if ok, i := equalArray(got, expect); !ok {
 			if i < 0 {
 				t.Fatalf("length not same: %v", got)
@@ -80,7 +80,7 @@ func TestCutter(t *testing.T) {
 	}
 
 	{
-		got, expect := cutter.Limit(70), []string{`googol:\ 12345678901234567890\…(1/2)`, `("1234567890123" http://exfe.com/abcdefg) (2/2)`}
+		got, expect := cutter.Limit(70), []string{`googol:\ 12345678901234567890\ (1/2)`, `("1234567890123" http://exfe.com/abcdefg) (2/2)`}
 		if ok, i := equalArray(got, expect); !ok {
 			if i < 0 {
 				t.Fatalf("length not same: %v", got)
@@ -91,7 +91,7 @@ func TestCutter(t *testing.T) {
 	}
 
 	{
-		got, expect := cutter.Limit(36), []string{`googol:\ 12345678901234567890\…(1/2)`, `("1234567890123" http://exfe.com/abcdefg) (2/2)`}
+		got, expect := cutter.Limit(36), []string{`googol:\ 12345678901234567890\ (1/2)`, `("1234567890123" http://exfe.com/abcdefg) (2/2)`}
 		if ok, i := equalArray(got, expect); !ok {
 			if i < 0 {
 				t.Fatalf("length not same: %v", got)
@@ -102,7 +102,7 @@ func TestCutter(t *testing.T) {
 	}
 
 	{
-		got, expect := cutter.Limit(35), []string{`googol:\ 12345678901234567890…(1/3)`, `\…(2/3)`, `("1234567890123" http://exfe.com/abcdefg) (3/3)`}
+		got, expect := cutter.Limit(35), []string{`googol:\ 12345678901234567890 (1/3)`, `\ (2/3)`, `("1234567890123" http://exfe.com/abcdefg) (3/3)`}
 		if ok, i := equalArray(got, expect); !ok {
 			if i < 0 {
 				t.Fatalf("length not same: %v", got)
@@ -113,10 +113,43 @@ func TestCutter(t *testing.T) {
 	}
 
 	{
-		got, expect := cutter.Limit(34), []string{`googol:\…(1/3)`, `12345678901234567890\…(2/3)`, `("1234567890123" http://exfe.com/abcdefg) (3/3)`}
+		got, expect := cutter.Limit(34), []string{`googol:\ (1/3)`, `12345678901234567890\ (2/3)`, `("1234567890123" http://exfe.com/abcdefg) (3/3)`}
 		if ok, i := equalArray(got, expect); !ok {
 			if i < 0 {
 				t.Fatalf("length not same: %v", got)
+			} else {
+				t.Errorf("%d node got: '%s', expect: '%s'", i, got[i], expect[i])
+			}
+		}
+	}
+}
+
+func smsLen(content string) int {
+	allAsc := true
+	for _, r := range content {
+		if r > 127 {
+			allAsc = false
+			break
+		}
+	}
+	if allAsc {
+		return len([]byte(content))
+	}
+	return utf8.RuneCountInString(content) * 2
+}
+
+func TestSmsCutter(t *testing.T) {
+	str := `Googol Lee: 测试时间 (“看电影 007” \(https://exfe.com/#!token=cd48a91ee3c2afb545d32f301b342510\))`
+	cutter, err := CutterParse(str, smsLen)
+	if err != nil {
+		t.Fatalf("parse string error: %s", err)
+	}
+
+	{
+		got, expect := cutter.Limit(140), []string{`Googol Lee: 测试时间 (“看电影 007” (1/2)`, `https://exfe.com/#!token=cd48a91ee3c2afb545d32f301b342510) (2/2)`}
+		if ok, i := equalArray(got, expect); !ok {
+			if i < 0 {
+				t.Fatalf("length not same: (%d)%v", len(got), got)
 			} else {
 				t.Errorf("%d node got: '%s', expect: '%s'", i, got[i], expect[i])
 			}
