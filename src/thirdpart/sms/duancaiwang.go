@@ -50,7 +50,11 @@ func (t *DuanCaiWang) Send(phone string, contents []string) (string, error) {
 			t.log.Err("send to %s reply decode failed: %s", phone, err)
 		}
 		if resp.StatusCode != 200 || !reply.Result {
-			return "", fmt.Errorf("send to %s response: %s(%+v)", phone, resp.Status, reply)
+			if reply.Msg == nil {
+				return "", fmt.Errorf("send to %s response: %s(%+v)", phone, resp.Status, reply)
+			} else {
+				return "", fmt.Errorf("send to %s response: %s(%+v)", phone, *reply.Msg, reply)
+			}
 		}
 		if reply.Active != nil {
 			ret += fmt.Sprintf(",%d-%d", reply.Active, reply.ID)
