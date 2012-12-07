@@ -103,14 +103,14 @@ func TestSend(t *testing.T) {
 	}
 
 	{
-		_, err := tester.Send(to, `Googol Lee: 测试时间 \((“看电影 007” https://exfe.com/#!token=cd48a91ee3c2afb545d32f301b342510)\)
+		_, err := tester.Send(to, `Googol Lee: 测试时间 (“看电影 007” \(https://exfe.com/#!token=cd48a91ee3c2afb545d32f301b342510\))
 aadfdafdas https://exfe.com/fdafa`, "", data)
 		if err != nil {
 			t.Fatalf("send error: %s", err)
 		}
 		results := []string{
-			`Googol Lee: 测试时间…(1/2)`,
-			`(“看电影 007” https://exfe.com/#!token=cd48a91ee3c2afb545d32f301b342510) (2/2)`,
+			`Googol Lee: 测试时间 (“看电影 007”…(1/2)`,
+			`https://exfe.com/#!token=cd48a91ee3c2afb545d32f301b342510) (2/2)`,
 			`aadfdafdas https://exfe.com/fdafa`,
 		}
 		if got, expect := len(testSender.contents), len(results); got != expect {

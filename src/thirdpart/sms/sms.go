@@ -68,6 +68,7 @@ func (s *Sms) Send(to *model.Recipient, privateMessage string, publicMessage str
 }
 
 func smsLen(content string) int {
+	fmt.Println(content)
 	allAsc := true
 	for _, r := range content {
 		if r > 127 {
@@ -76,7 +77,9 @@ func smsLen(content string) int {
 		}
 	}
 	if allAsc {
+		fmt.Println("asc")
 		return len([]byte(content))
 	}
+	fmt.Println("noasc")
 	return utf8.RuneCountInString(content) * 2
 }

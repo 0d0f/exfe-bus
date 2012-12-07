@@ -28,7 +28,7 @@ func (t *DuanCaiWang) Codes() []string {
 type duancaiwangReply struct {
 	Result  bool    `json:"result"`
 	Msg     *string `json:"msg"`
-	Active  int     `json:"active"`
+	Active  *int    `json:"active"`
 	ErrCode int     `json:"errcode"`
 	ID      int     `json:"msg_id"`
 }
@@ -52,7 +52,11 @@ func (t *DuanCaiWang) Send(phone string, contents []string) (string, error) {
 		if resp.StatusCode != 200 || !reply.Result {
 			return "", fmt.Errorf("send to %s response: %s(%+v)", phone, resp.Status, reply)
 		}
-		ret += fmt.Sprintf(",%d", reply.ID)
+		if reply.Active != nil {
+			ret += fmt.Sprintf(",%d-%d", reply.Active, reply.ID)
+		} else {
+			ret += fmt.Sprintf(",%d", reply.ID)
+		}
 	}
 	if len(ret) > 0 {
 		ret = ret[1:]
