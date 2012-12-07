@@ -34,6 +34,7 @@ type duancaiwangReply struct {
 }
 
 func (t *DuanCaiWang) Send(phone string, contents []string) (string, error) {
+	phone = phone[3:]
 	params := make(url.Values)
 	params.Add("mobile", phone)
 	ret := ""
