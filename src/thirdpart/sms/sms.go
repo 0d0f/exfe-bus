@@ -2,8 +2,10 @@ package sms
 
 import (
 	"fmt"
+	"formatter"
 	"model"
 	"strings"
+	"unicode/utf8"
 )
 
 type Sms struct {
@@ -48,9 +50,33 @@ func (s *Sms) Send(to *model.Recipient, privateMessage string, publicMessage str
 	lines := strings.Split(privateMessage, "\n")
 	contents := make([]string, 0)
 	for _, line := range lines {
-		if line != "" {
-			contents = append(contents, line)
+		line = strings.Trim(line, " \n\r\t")
+		if line == "" {
+			continue
+		}
+
+		cutter, err := formatter.CutterParse(line, smsLen)
+		if err != nil {
+			return "", fmt.Errorf("parse cutter error: %s", err)
+		}
+
+		for _, content := range cutter.Limit(140) {
+			contents = append(contents, content)
 		}
 	}
 	return sender.Send(phone, contents)
+}
+
+func smsLen(content string) int {
+	allAsc := true
+	for _, r := range content {
+		if r > 127 {
+			allAsc = false
+			break
+		}
+	}
+	if allAsc {
+		return len([]byte(content))
+	}
+	return utf8.RuneCountInString(content) * 2
 }
