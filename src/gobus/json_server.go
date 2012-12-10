@@ -43,7 +43,7 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e := json.NewEncoder(w)
 		err := e.Encode(ret)
 		if err != nil {
-			subLogger.Crit("%s can't encode return(%s) to json: %s", methodName, ret, err)
+			subLogger.Crit("%s encode return error(%s) with %s", methodName, err, ret)
 		}
 	}()
 	defer func() {
@@ -77,7 +77,7 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	output, err := method.call(service.service, &HTTPMeta{r, w, subLogger}, input)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		subLogger.Err("failed with input %s: %s", inputElem, err)
+		subLogger.Err("%s, with input %s", err, inputElem)
 		ret = err.Error()
 		return
 	}
