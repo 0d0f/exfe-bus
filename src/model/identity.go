@@ -42,7 +42,7 @@ func (i Identity) SameUser(other Identity) bool {
 }
 
 func (i Identity) String() string {
-	return fmt.Sprintf("Identity:%d", i.ID)
+	return fmt.Sprintf("Identity:(i%d/u%d)", i.ID, i.UserID)
 }
 
 type RsvpType string
