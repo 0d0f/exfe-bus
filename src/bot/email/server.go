@@ -96,6 +96,7 @@ func Daemon(config *model.Config, localTemplate *formatter.LocalTemplate, sender
 				err := s.Serve()
 				if err != nil {
 					config.Log.Err("email error: %s", err)
+					break
 				}
 				select {
 				case <-t.Dying():
