@@ -17,7 +17,7 @@
 {{if .Removed}}
 {{if .ToIn .Removed}}
 {{if .NeedShowBy}}You've been removed from \("{{$title}}"\) by \({{$by}}\). {{$link}}{{else}}You just quit \("{{$title}}"\). {{$link}}{{end}}
-{{else}}{{range for .Removed}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Identity.Name}}\){{end}} left \("{{$title}}"\){{if .NeedShowBy}}, removed by \({{$by}}\){{end}}. {{$link}}
+{{else}}{{range for .Removed}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Identity.Name}}\){{end}} left \("{{$title}}"\){{if .ShowBy .Removed}}, removed by \({{$by}}\){{end}}. {{$link}}
 {{end}}
 {{end}}
 {{if .IsExfeeChanged}}

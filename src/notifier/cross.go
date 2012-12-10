@@ -374,3 +374,16 @@ func (a *SummaryArg) NeedShowBy() bool {
 	}
 	return true
 }
+
+func (a *SummaryArg) ShowBy(ids []model.Invitation) bool {
+	if len(a.Bys) != 1 {
+		return false
+	}
+	if len(ids) != 1 {
+		return false
+	}
+	if a.Bys[0].SameUser(ids[0].Identity) {
+		return false
+	}
+	return true
+}
