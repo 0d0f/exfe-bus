@@ -121,8 +121,8 @@
                 <td valign="top">
                     <table border="0" cellpadding="0" cellspacing="0">
                         <tr>
-                            <td height="68" valign="bottom" align="right">
-                                <!--<span style="color: #3a6ea5;">3</span> confirmed-->
+                            <td height="105" valign="bottom" align="right">
+                                <a href="{{.Link}}"><img src="https://maps.googleapis.com/maps/api/staticmap?center={{.Cross.Place.Lat}},{{.Cross.Place.Lng}}&markers=icon%3a{{.Config.SiteImg | urlquery}}%2Fweb%2Fmap_pin_blue.png%7C{{.Cross.Place.Lat}},{{.Cross.Place.Lng}}&zoom=13&size=210x105&maptype=road&sensor=false" /></a>
                             </td>
                         </tr>
                         <tr>
