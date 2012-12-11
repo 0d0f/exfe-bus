@@ -108,6 +108,10 @@ func (h *HelperImp) SendEmail(to string, content string) (id string, err error) 
 
 	h.emailCheckers.Do(host, func(i multiplexer.Instance) {
 		s := i.(*SmtpInstance)
+		err = s.conn.Reset()
+		if err != nil {
+			return
+		}
 		err = s.conn.Mail(h.emailFrom)
 		if err != nil {
 			return
@@ -123,6 +127,10 @@ func (h *HelperImp) SendEmail(to string, content string) (id string, err error) 
 
 	h.emailSender.Do(func(i multiplexer.Instance) {
 		c := i.(*SmtpInstance).conn
+		err = c.Reset()
+		if err != nil {
+			return
+		}
 		err = c.Mail(h.emailFrom)
 		if err != nil {
 			return
