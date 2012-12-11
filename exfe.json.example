@@ -25,7 +25,7 @@
     "host": "smtp.gmail.com",
     "username": "x@0d0f.com",
     "password": "",
-    "account": "[DEV]EXFE ·X·",
+    "name": "[DEV]EXFE ·X·",
     "domain": "0d0f.com",
     "idle_timeout_in_sec": 30,
     "interval_in_sec": 10
