@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"github.com/googollee/go-aws/smtp"
 	"github.com/googollee/go-logger"
-	"github.com/googollee/go-multiplexer"
 	"model"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 )
 
 type updateFriendsArg struct {
@@ -20,23 +19,19 @@ type updateFriendsArg struct {
 }
 
 type HelperImp struct {
-	config        *model.Config
-	emailCheckers *multiplexer.Hetero
-	emailSender   *multiplexer.Homo
-	emailFrom     string
+	config    *model.Config
+	emailFrom string
+	emailHost string
+	auth      smtp.Auth
 }
 
 func NewHelper(config *model.Config) *HelperImp {
 	auth := smtp.PlainAuth("", config.Email.Username, config.Email.Password, config.Email.Host)
 	return &HelperImp{
-		config: config,
-		emailCheckers: multiplexer.NewHetero(func(key string) (multiplexer.Instance, error) {
-			return NewSmtpCheckerInstance(key, config.Log)
-		}, time.Duration(config.Email.IdleTimeoutInSec)*time.Second, time.Duration(config.Email.IntervalInSec)*time.Second),
-		emailSender: multiplexer.NewHomo(func() (multiplexer.Instance, error) {
-			return NewSmtpSenderInstance(config.Log, config.Email.Host, auth)
-		}, 5, time.Duration(config.Email.IdleTimeoutInSec)*time.Second, time.Duration(config.Email.IntervalInSec)*time.Second),
+		config:    config,
 		emailFrom: fmt.Sprintf("x@%s", config.Email.Domain),
+		emailHost: config.Email.Host,
+		auth:      auth,
 	}
 }
 
@@ -98,64 +93,34 @@ func (h *HelperImp) UpdateIdentity(to *model.Recipient, externalUser ExternalUse
 	return nil
 }
 
-func (h *HelperImp) SendEmail(to string, content string) (id string, err error) {
+func (h *HelperImp) SendEmail(to string, content string) (string, error) {
 	mail_split := strings.Split(to, "@")
 	if len(mail_split) != 2 {
 		return "", fmt.Errorf("mail(%s) not valid.", to)
 	}
 	host := mail_split[1]
-	err = nil
 
-	h.emailCheckers.Do(host, func(i multiplexer.Instance) {
-		s := i.(*SmtpInstance)
-		err = s.conn.Reset()
-		if err != nil {
-			return
-		}
-		err = s.conn.Mail(h.emailFrom)
-		if err != nil {
-			return
-		}
-		err = s.conn.Rcpt(to)
-		if err != nil {
-			return
-		}
-	})
+	mx, err := net.LookupMX(host)
 	if err != nil {
-		return "", fmt.Errorf("mail check fail: %s", err)
+		return "", fmt.Errorf("lookup mail exchange fail: %s", err)
 	}
+	if len(mx) == 0 {
+		return "", fmt.Errorf("can't find mail exchange of %s", host)
+	}
+	s, err := smtp.Dial(fmt.Sprintf("%s:25", mx[0].Host))
+	if err != nil {
+		return "", fmt.Errorf("dial to mail exchange %s fail: %s", mx[0].Host, err)
+	}
+	err = s.Mail(h.emailFrom)
+	if err != nil {
+		return "", fmt.Errorf("mail smtp %s command mail fail: %s", host, err)
+	}
+	err = s.Rcpt(to)
+	if err != nil {
+		return "", fmt.Errorf("mail smtp %s command rcpt fail: %s", host, err)
+	}
+	s.Quit()
 
-	h.emailSender.Do(func(i multiplexer.Instance) {
-		c := i.(*SmtpInstance).conn
-		err = c.Reset()
-		if err != nil {
-			return
-		}
-		err = c.Mail(h.emailFrom)
-		if err != nil {
-			return
-		}
-		err = c.Rcpt(to)
-		if err != nil {
-			return
-		}
-		var w *smtp.DataWriter
-		w, err = c.Data()
-		if err != nil {
-			return
-		}
-		_, err = w.Write([]byte(content))
-		if err != nil {
-			return
-		}
-		err = w.Close()
-		if err != nil {
-			return
-		}
-		id = w.MessageID()
-	})
-	if err != nil {
-		return "", fmt.Errorf("mail send fail: %s", err)
-	}
-	return id, nil
+	id, err := smtp.SendMail(h.emailHost+":25", h.auth, h.emailFrom, []string{to}, []byte(content))
+	return id, err
 }
