@@ -121,11 +121,14 @@
                 <td valign="top">
                     <table border="0" cellpadding="0" cellspacing="0">
                         <tr>
-                            <td height="105" valign="bottom" align="right">
-                                {{if .Cross.Place.Lng}}
+                            {{if .Cross.Place.Lng}}
+                            <td height="120" valign="bottom" align="right">
                                 <a href="{{.Link}}"><img src="https://maps.googleapis.com/maps/api/staticmap?center={{.Cross.Place.Lat}},{{.Cross.Place.Lng}}&markers=icon%3ahttp%3A%2F%2Fimg.exfe.com%2Fweb%2Fmap_pin_blue.png%7C{{.Cross.Place.Lat}},{{.Cross.Place.Lng}}&zoom=13&size=210x105&maptype=road&sensor=false" /></a>
-                                {{end}}
                             </td>
+                            {{else}}
+                            <td height="68" valign="bottom" align="right">
+                            </td>
+                            {{end}}
                         </tr>
                         <tr>
                             <td>
