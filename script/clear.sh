@@ -14,4 +14,4 @@ then
 	PASS_ARG=""
 fi
 
-echo "DELETE FROM ${TK_TABLE} WHERE expire_at < DATE_ADD(NOW(), INTERVAL "-7" DAY);" | mysql -u"${DB_NAME}" ${PASS_ARG} ${DB}
+echo "DELETE FROM ${TK_TABLE} WHERE expire_at < DATE_ADD(NOW(), INTERVAL \"-7\" DAY);" | mysql -u"${DB_NAME}" ${PASS_ARG} ${DB}
