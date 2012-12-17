@@ -37,9 +37,7 @@ type Config struct {
 		IntervalInSec    uint   `json:"interval_in_sec"`
 	} `json:"email"`
 
-	Dispatcher struct {
-		Sender map[string]string `json:"sender"`
-	} `json:"dispatcher"`
+	Dispatcher map[string]map[string]string `json:"dispatcher"`
 
 	ExfeService struct {
 		Addr     string `json:"addr"`

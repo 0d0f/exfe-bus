@@ -4,41 +4,51 @@ import (
 	"fmt"
 )
 
-type Dispatcher map[string]map[string]string
+type Table map[string]map[string]string
 
-func NewDispatcher(route map[string]map[string]string) Dispatcher {
-	ret := Dispatcher(route)
-	updateKeys := make([]string, 0)
-	for k, _ := range ret {
-		if l := len(k); l > 0 && k[l-1] != '/' {
-			updateKeys = append(updateKeys, k)
-		}
-	}
-	for _, k := range updateKeys {
-		ret[k+"/"] = ret[k]
-		delete(ret, k)
-	}
-	return ret
+func NewTable(route map[string]map[string]string) Table {
+	return Table(route)
 }
 
-func (d Dispatcher) Find(url, identity string) (string, error) {
-	if l := len(url); l > 0 && url[l-1] != '/' {
-		url = url + "/"
-	}
+func (d Table) Find(url, identity string) (string, error) {
 	urls, ok := d[url]
 	if !ok {
-		return "", fmt.Errorf("can't find dispatcher")
+		return "", fmt.Errorf("can't find table")
 	}
 	ret, ok := urls[identity]
 	if !ok {
 		ret, ok = urls["_default"]
 	}
 	if !ok {
-		return "", fmt.Errorf("can't find identity")
-	}
-	if l := len(ret); l > 0 && ret[l-1] != '/' {
-		ret = ret + "/"
+		return "", fmt.Errorf("can't find identity or default")
 	}
 
 	return ret, nil
+}
+
+type Dispatcher struct {
+	table Table
+}
+
+func NewDispatcher(table Table) *Dispatcher {
+	return &Dispatcher{
+		table: table,
+	}
+}
+
+func (d *Dispatcher) DoWithIdentity(identity, addr, method string, arg, reply interface{}) error {
+	url, err := d.table.Find(addr, identity)
+	fmt.Println(url)
+	if err != nil {
+		return err
+	}
+	client, err := NewClient(url)
+	if err != nil {
+		return err
+	}
+	return client.Do(method, arg, reply)
+}
+
+func (d *Dispatcher) Do(addr, method string, arg, reply interface{}) error {
+	return d.DoWithIdentity("_default", addr, method, arg, reply)
 }
