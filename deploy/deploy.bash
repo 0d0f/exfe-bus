@@ -1,3 +1,4 @@
+vimdiff /usr/local/etc/gobus/exfe.json exfe.json.example
 monit -g gobus stop
 ls /var/run/gobus/exfe_*.pid | while read l; do sudo kill `cat $l`; done
 ls bin/ | while read l; do sudo cp bin/$l /usr/local/bin/exfe_$l; chmod +x /usr/local/bin/exfe_$l; done
