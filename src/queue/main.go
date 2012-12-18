@@ -32,7 +32,7 @@ func getCallback(log *logger.SubLogger, config *model.Config) func(string, [][]b
 			var d interface{}
 			err := json.Unmarshal(data, &d)
 			if err != nil {
-				log.Err("can't unmarshal(%+v): %s", data, err)
+				log.Err("can't unmarshal %s(%+v)", err, data)
 				continue
 			}
 			if key != "" {
@@ -41,7 +41,7 @@ func getCallback(log *logger.SubLogger, config *model.Config) func(string, [][]b
 				var i int
 				err := client.Do(method, d, &i)
 				if err != nil {
-					log.Err("call %s|%s with %s failed: %s", service, method, string(data), err)
+					log.Err("call %s|%s failed(%s) with %s", service, method, err, string(data))
 				}
 			}
 		}
