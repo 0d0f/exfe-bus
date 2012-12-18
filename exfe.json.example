@@ -32,7 +32,7 @@
   },
 
   "dispatcher": {
-    "bus://Thirdpart": {"_default": "http://127.0.0.1:23333/Thirdpart"}
+    "bus://exfe_service/Thirdpart": {"_default": "http://127.0.0.1:23333/Thirdpart"}
   },
 
   "exfe_service": {
