@@ -20,6 +20,16 @@ type HTTPMeta struct {
 	Request  *http.Request
 	Response Response
 	Log      *logger.SubLogger
+	Vars     map[string]string
+}
+
+func newMeta(req *http.Request, resp Response, log *logger.SubLogger) *HTTPMeta {
+	return &HTTPMeta{
+		Request:  req,
+		Response: resp,
+		Log:      log,
+		Vars:     mux.Vars(req),
+	}
 }
 
 type Server struct {
@@ -33,8 +43,10 @@ func NewServer(u string, l *logger.Logger) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	router := mux.NewRouter()
+	router.StrictSlash(true)
 	return &Server{
-		router: mux.NewRouter(),
+		router: router,
 		url:    u_.Host,
 		log:    l,
 	}, nil
@@ -49,6 +61,12 @@ func (s *Server) Register(service interface{}) (int, error) {
 func (s *Server) RegisterName(name string, service interface{}) (int, error) {
 	server := newJSONServer(s.log, service)
 	s.router.Handle(fmt.Sprintf("/%s", name), server)
+	return server.MethodCount(), nil
+}
+
+func (s *Server) RegisterPath(path string, service interface{}) (int, error) {
+	server := newJSONServer(s.log, service)
+	s.router.Handle(path, server)
 	return server.MethodCount(), nil
 }
 

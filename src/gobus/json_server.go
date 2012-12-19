@@ -38,7 +38,6 @@ func (s *jsonServer) MethodCount() int {
 }
 
 func (s *jsonServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("enter serve http")
 	var ret interface{}
 	methodName := s.methodName(r)
 	subLogger := s.log.Sub(fmt.Sprintf("[%s|%s]", r.URL.Path, methodName))
@@ -77,7 +76,7 @@ func (s *jsonServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		inputElem = input.Elem().Interface()
 	}
 	subLogger.Debug("call with %+v", inputElem)
-	output, err := method.call(s.service.service, &HTTPMeta{r, w, subLogger}, input)
+	output, err := method.call(s.service.service, newMeta(r, w, subLogger), input)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		subLogger.Err("%s, with input %+v", err, inputElem)

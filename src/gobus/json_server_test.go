@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/googollee/go-logger"
-	"io/ioutil"
 	"net/http"
 	"testing"
 )
@@ -32,6 +31,32 @@ func (s *TestServer) POST(meta *HTTPMeta, arg int, reply *int) error {
 	return nil
 }
 
+type Resp struct {
+	buf     *bytes.Buffer
+	retCode int
+	header  http.Header
+}
+
+func newResp() *Resp {
+	return &Resp{
+		buf:     bytes.NewBuffer(nil),
+		retCode: http.StatusOK,
+		header:  make(http.Header),
+	}
+}
+
+func (r *Resp) Header() http.Header {
+	return r.header
+}
+
+func (r *Resp) Write(p []byte) (int, error) {
+	return r.buf.Write(p)
+}
+
+func (r *Resp) WriteHeader(code int) {
+	r.retCode = code
+}
+
 func TestJSONServer(t *testing.T) {
 	l, err := logger.New(logger.Stderr, "test gobus")
 	if err != nil {
@@ -48,80 +73,66 @@ func TestJSONServer(t *testing.T) {
 		t.Fatalf("server name %s, should be TestServer", name)
 	}
 
-	h := &http.Server{
-		Addr:    "127.0.0.1:1234",
-		Handler: s,
-	}
-	go h.ListenAndServe()
-
 	{
 		buf := bytes.NewBufferString("1")
-		resp, err := http.Post("http://127.0.0.1:1234?method=Double", "application/json", buf)
+		r, err := http.NewRequest("POST", "http://127.0.0.1:1234?method=Double", buf)
 		if err != nil {
-			t.Fatalf("http post error: %s", err)
+			t.Fatalf("new request error: %s", err)
 		}
-		if resp.StatusCode != 200 {
-			t.Errorf("http should respond 200, got: %s", resp.Status)
+		w := newResp()
+		s.ServeHTTP(w, r)
+		if w.retCode != 200 {
+			t.Errorf("http should respond 200, got: %s", w.retCode)
 		}
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatal("read body error: %s", err)
-		}
-		if got, expect := string(body), "2\n"; got != expect {
+		if got, expect := w.buf.String(), "2\n"; got != expect {
 			t.Errorf("expect: (%s), got: (%s)", expect, got)
 		}
 	}
 
 	{
 		buf := bytes.NewBufferString("2")
-		resp, err := http.Post("http://127.0.0.1:1234?method=Triple", "application/json", buf)
+		r, err := http.NewRequest("POST", "http://127.0.0.1:1234?method=Triple", buf)
 		if err != nil {
-			t.Fatalf("http post error: %s", err)
+			t.Fatalf("new request error: %s", err)
 		}
-		if resp.StatusCode != 200 {
-			t.Errorf("http should respond 200, got: %s", resp.Status)
+		w := newResp()
+		s.ServeHTTP(w, r)
+		if w.retCode != 200 {
+			t.Errorf("http should respond 200, got: %s", w.retCode)
 		}
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatal("read body error: %s", err)
-		}
-		if got, expect := string(body), "6\n"; got != expect {
+		if got, expect := w.buf.String(), "6\n"; got != expect {
 			t.Errorf("expect: (%s), got: (%s)", expect, got)
 		}
 	}
 
 	{
 		buf := bytes.NewBufferString("2")
-		resp, err := http.Post("http://127.0.0.1:1234?method=Error", "application/json", buf)
+		r, err := http.NewRequest("POST", "http://127.0.0.1:1234?method=Error", buf)
 		if err != nil {
-			t.Fatalf("http post error: %s", err)
+			t.Fatalf("new request error: %s", err)
 		}
-		if resp.StatusCode != http.StatusInternalServerError {
-			t.Errorf("http should respond 500, got: %s", resp.Status)
+		w := newResp()
+		s.ServeHTTP(w, r)
+		if w.retCode != 500 {
+			t.Errorf("http should respond 500, got: %s", w.retCode)
 		}
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatal("read body error: %s", err)
-		}
-		if got, expect := string(body), "\"inner error\"\n"; got != expect {
+		if got, expect := w.buf.String(), "\"inner error\"\n"; got != expect {
 			t.Errorf("expect: (%s), got: (%s)", expect, got)
 		}
 	}
 
 	{
 		buf := bytes.NewBufferString("3")
-		resp, err := http.Post("http://127.0.0.1:1234", "application/json", buf)
+		r, err := http.NewRequest("POST", "http://127.0.0.1:1234", buf)
 		if err != nil {
-			t.Fatalf("http post error: %s", err)
+			t.Fatalf("new request error: %s", err)
 		}
-		if resp.StatusCode != http.StatusCreated {
-			t.Errorf("http should respond 201, got: %s", resp.Status)
+		w := newResp()
+		s.ServeHTTP(w, r)
+		if w.retCode != 201 {
+			t.Errorf("http should respond 201, got: %s", w.retCode)
 		}
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatal("read body error: %s", err)
-		}
-		if got, expect := string(body), "12\n"; got != expect {
+		if got, expect := w.buf.String(), "12\n"; got != expect {
 			t.Errorf("expect: (%s), got: (%s)", expect, got)
 		}
 	}

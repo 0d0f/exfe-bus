@@ -56,6 +56,7 @@ func TestTable(t *testing.T) {
 }
 
 func TestDispatcher(t *testing.T) {
+	const gobusUrl = "http://127.0.0.1:12345"
 	l, err := logger.New(logger.Stderr, "test gobus")
 	if err != nil {
 		panic(err)
