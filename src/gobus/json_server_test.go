@@ -37,21 +37,15 @@ func TestJSONServer(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	s := NewJSONServer(l)
 	server := new(TestServer)
-	count, err := s.Register(server)
-	if err != nil {
-		t.Fatalf("register error: %s", err)
-	}
+	s := newJSONServer(l, server)
+	count := s.MethodCount()
 	if count != 4 {
-		t.Fatalf("only register %d methods, should be 4", count)
+		t.Fatalf("register %d methods, should be 4", count)
 	}
-	count, err = s.RegisterName("test_server", server)
-	if err != nil {
-		t.Fatalf("register error: %s", err)
-	}
-	if count != 4 {
-		t.Fatalf("only register %d methods, should be 4", count)
+	name := s.Name()
+	if name != "TestServer" {
+		t.Fatalf("server name %s, should be TestServer", name)
 	}
 
 	h := &http.Server{
@@ -62,7 +56,7 @@ func TestJSONServer(t *testing.T) {
 
 	{
 		buf := bytes.NewBufferString("1")
-		resp, err := http.Post("http://127.0.0.1:1234/TestServer?method=Double", "application/json", buf)
+		resp, err := http.Post("http://127.0.0.1:1234?method=Double", "application/json", buf)
 		if err != nil {
 			t.Fatalf("http post error: %s", err)
 		}
@@ -80,7 +74,7 @@ func TestJSONServer(t *testing.T) {
 
 	{
 		buf := bytes.NewBufferString("2")
-		resp, err := http.Post("http://127.0.0.1:1234/TestServer?method=Triple", "application/json", buf)
+		resp, err := http.Post("http://127.0.0.1:1234?method=Triple", "application/json", buf)
 		if err != nil {
 			t.Fatalf("http post error: %s", err)
 		}
@@ -98,7 +92,7 @@ func TestJSONServer(t *testing.T) {
 
 	{
 		buf := bytes.NewBufferString("2")
-		resp, err := http.Post("http://127.0.0.1:1234/TestServer?method=Error", "application/json", buf)
+		resp, err := http.Post("http://127.0.0.1:1234?method=Error", "application/json", buf)
 		if err != nil {
 			t.Fatalf("http post error: %s", err)
 		}
@@ -116,7 +110,7 @@ func TestJSONServer(t *testing.T) {
 
 	{
 		buf := bytes.NewBufferString("3")
-		resp, err := http.Post("http://127.0.0.1:1234/TestServer", "application/json", buf)
+		resp, err := http.Post("http://127.0.0.1:1234", "application/json", buf)
 		if err != nil {
 			t.Fatalf("http post error: %s", err)
 		}
@@ -128,39 +122,6 @@ func TestJSONServer(t *testing.T) {
 			t.Fatal("read body error: %s", err)
 		}
 		if got, expect := string(body), "12\n"; got != expect {
-			t.Errorf("expect: (%s), got: (%s)", expect, got)
-		}
-	}
-}
-
-func TestJSONServerWrongRequest(t *testing.T) {
-	l, err := logger.New(logger.Stderr, "test gobus")
-	if err != nil {
-		panic(err)
-	}
-	s := NewJSONServer(l)
-
-	h := &http.Server{
-		Addr:    "127.0.0.1:1235",
-		Handler: s,
-	}
-	go h.ListenAndServe()
-
-	{
-		fmt.Println("wrong")
-		buf := bytes.NewBufferString("1")
-		resp, err := http.Post("http://127.0.0.1:1235/TestServer?method=Double", "application/json", buf)
-		if err != nil {
-			t.Fatalf("http post error: %s", err)
-		}
-		if resp.StatusCode != 400 {
-			t.Errorf("http should respond 400, got: %s", resp.Status)
-		}
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatal("read body error: %s", err)
-		}
-		if got, expect := string(body), "\"can't find service TestServer\"\n"; got != expect {
 			t.Errorf("expect: (%s), got: (%s)", expect, got)
 		}
 	}

@@ -5,15 +5,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-logger"
+	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 )
 
+type Response interface {
+	Header() http.Header
+	WriteHeader(int)
+}
+
+type HTTPMeta struct {
+	Request  *http.Request
+	Response Response
+	Log      *logger.SubLogger
+}
+
 type Server struct {
-	jsonServer *JSONServer
-	url        string
-	log        *logger.Logger
+	router *mux.Router
+	url    string
+	log    *logger.Logger
 }
 
 func NewServer(u string, l *logger.Logger) (*Server, error) {
@@ -21,26 +33,29 @@ func NewServer(u string, l *logger.Logger) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := NewJSONServer(l)
 	return &Server{
-		jsonServer: s,
-		url:        u_.Host,
-		log:        l,
+		router: mux.NewRouter(),
+		url:    u_.Host,
+		log:    l,
 	}, nil
 }
 
 func (s *Server) Register(service interface{}) (int, error) {
-	return s.jsonServer.Register(service)
+	server := newJSONServer(s.log, service)
+	s.router.Handle(fmt.Sprintf("/%s", server.Name()), server)
+	return server.MethodCount(), nil
 }
 
 func (s *Server) RegisterName(name string, service interface{}) (int, error) {
-	return s.jsonServer.RegisterName(name, service)
+	server := newJSONServer(s.log, service)
+	s.router.Handle(fmt.Sprintf("/%s", name), server)
+	return server.MethodCount(), nil
 }
 
 func (s *Server) ListenAndServe() error {
 	h := &http.Server{
 		Addr:    s.url,
-		Handler: s.jsonServer,
+		Handler: s.router,
 	}
 	return h.ListenAndServe()
 }

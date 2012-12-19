@@ -6,36 +6,39 @@ import (
 	"github.com/googollee/go-logger"
 	"net/http"
 	"reflect"
-	"strings"
 )
 
-type JSONServer struct {
-	services map[string]*serviceType
-	log      *logger.Logger
+type jsonServer struct {
+	name    string
+	service *serviceType
+	log     *logger.Logger
 }
 
-func NewJSONServer(l *logger.Logger) *JSONServer {
-	return &JSONServer{
-		services: make(map[string]*serviceType),
-		log:      l,
-	}
-}
-
-func (s *JSONServer) Register(arg interface{}) (int, error) {
-	t := reflect.TypeOf(arg)
+func newJSONServer(log *logger.Logger, server interface{}) *jsonServer {
+	t := reflect.TypeOf(server)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
-	return s.RegisterName(t.Name(), arg)
+	name := t.Name()
+
+	service := newServiceType(server)
+	return &jsonServer{
+		service: service,
+		name:    name,
+		log:     log,
+	}
 }
 
-func (s *JSONServer) RegisterName(name string, arg interface{}) (int, error) {
-	service := newServiceType(arg)
-	s.services[name] = service
-	return len(service.methods), nil
+func (s *jsonServer) Name() string {
+	return s.name
 }
 
-func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *jsonServer) MethodCount() int {
+	return len(s.service.methods)
+}
+
+func (s *jsonServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("enter serve http")
 	var ret interface{}
 	methodName := s.methodName(r)
 	subLogger := s.log.Sub(fmt.Sprintf("[%s|%s]", r.URL.Path, methodName))
@@ -55,10 +58,10 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ret = fmt.Sprintf("panic: %s", r)
 	}()
 
-	service, method, err := s.findMethod(r, methodName)
-	if err != nil {
+	method, ok := s.service.methods[methodName]
+	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		ret = err.Error()
+		ret = fmt.Errorf("can't find method %s in service %s", methodName, s.Name())
 		return
 	}
 
@@ -73,54 +76,22 @@ func (s *JSONServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if input.Kind() == reflect.Ptr {
 		inputElem = input.Elem().Interface()
 	}
-	subLogger.Debug("call with %s", inputElem)
-	output, err := method.call(service.service, &HTTPMeta{r, w, subLogger}, input)
+	subLogger.Debug("call with %+v", inputElem)
+	output, err := method.call(s.service.service, &HTTPMeta{r, w, subLogger}, input)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		subLogger.Err("%s, with input %s", err, inputElem)
+		subLogger.Err("%s, with input %+v", err, inputElem)
 		ret = err.Error()
 		return
 	}
 	ret = output.Elem().Interface()
-	subLogger.Debug("return %s", ret)
+	subLogger.Debug("return %+v", ret)
 }
 
-func (s *JSONServer) methodName(r *http.Request) string {
+func (s *jsonServer) methodName(r *http.Request) string {
 	methodName := r.URL.Query().Get("method")
 	if methodName == "" {
 		methodName = r.Method
 	}
 	return methodName
-}
-
-func (s *JSONServer) findMethod(r *http.Request, methodName string) (*serviceType, *methodType, error) {
-	paths := strings.Split(r.URL.Path, "/")
-
-	if len(paths) < 1 {
-		return nil, nil, fmt.Errorf("can't find service to handle %s", r.URL.Path)
-	}
-
-	serviceName := paths[len(paths)-1]
-	service, ok := s.services[serviceName]
-	if !ok {
-		return nil, nil, fmt.Errorf("can't find service %s", serviceName)
-	}
-
-	method, ok := service.methods[methodName]
-	if !ok {
-		return nil, nil, fmt.Errorf("can't find method %s in service %s", methodName, serviceName)
-	}
-
-	return service, method, nil
-}
-
-type Response interface {
-	Header() http.Header
-	WriteHeader(int)
-}
-
-type HTTPMeta struct {
-	Request  *http.Request
-	Response Response
-	Log      *logger.SubLogger
 }
