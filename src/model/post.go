@@ -6,12 +6,13 @@ import (
 )
 
 type Post struct {
-	ID        uint64   `json:"id"`
-	By        Identity `json:"by_identity"`
-	Content   string   `json:"content"`
-	Via       string   `json:"via"`
-	CreatedAt string   `json:"created_at"`
-	/*Relative map[string]string*/
+	ID           uint64         `json:"id"`
+	By           Identity       `json:"by_identity"`
+	Content      string         `json:"content"`
+	Via          string         `json:"via"`
+	CreatedAt    string         `json:"created_at"`
+	Relationship []Relationship `json:"relationship"`
+	ExfeeID      uint64         `json:"exfee_id"`
 }
 
 func (p *Post) CreatedAtInZone(timezone string) (string, error) {
