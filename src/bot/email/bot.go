@@ -54,7 +54,7 @@ func NewEmailBot(config *model.Config, localTemplate *formatter.LocalTemplate, s
 	}
 	return &EmailBot{
 		config:        config,
-		crossId:       regexp.MustCompile(`^.*?\+([0-9]*)@.*$`),
+		crossId:       regexp.MustCompile(`^.*?\+c?([0-9]*)@.*$`),
 		retReplacer:   strings.NewReplacer("\r\n", "\n", "\r", "\n"),
 		remover:       remover,
 		replyLine:     reply,
