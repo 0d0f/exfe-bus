@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -9,9 +10,12 @@ type Relationship struct {
 	Relation string `json:"relation"`
 }
 
+func (r Relationship) String() string {
+	return fmt.Sprintf("{{%s:%s}}", r.Relation, r.URI)
+}
+
 type Meta struct {
-	ID           string         `json:"id"`
-	Type         string         `json:"type"`
+	URI          string         `json:"uri"`
 	CreatedAt    time.Time      `json:"created_at"`
 	By           Identity       `json:"by"`
 	Relationship []Relationship `json:"relationship"`

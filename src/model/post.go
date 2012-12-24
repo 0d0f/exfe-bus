@@ -13,6 +13,7 @@ type Post struct {
 	CreatedAt    string         `json:"created_at"`
 	Relationship []Relationship `json:"relationship"`
 	ExfeeID      uint64         `json:"exfee_id"`
+	RefID        string         `json:"ref_id"`
 }
 
 func (p *Post) CreatedAtInZone(timezone string) (string, error) {
