@@ -32,9 +32,9 @@ type Conversation struct {
 func New(repo Repo) *Conversation {
 	return &Conversation{
 		repo:       repo,
-		mentionRe:  regexp.MustCompile(`@([^@ ]*)(@([a-zA-Z0-9_]*))?`),
+		mentionRe:  regexp.MustCompile(`@([^@ ]*)(@[a-zA-Z0-9_.]*)?(@[a-zA-Z0-9_]*)?`),
 		urlRe:      regexp.MustCompile(`(http|https)://[a-zA-Z0-9%!\.#_/+\-\\]*`),
-		relationRe: regexp.MustCompile(`{{([a-zA-Z0-9_]):(.*?)}}`),
+		relationRe: regexp.MustCompile(`{{[a-zA-Z0-9_]:.*?}}`),
 	}
 }
 

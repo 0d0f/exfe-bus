@@ -53,5 +53,10 @@ func (e Exfee) FindInvitedUser(identity Identity) (Invitation, error) {
 			return inv, nil
 		}
 	}
+	for _, inv := range e.Invitations {
+		if inv.Identity.ExternalUsername == identity.ExternalUsername {
+			return inv, nil
+		}
+	}
 	return Invitation{}, fmt.Errorf("can't find %s", identity)
 }

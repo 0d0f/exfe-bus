@@ -338,3 +338,72 @@ func TestConversation(t *testing.T) {
 		assert.Equal(t, posts[0].ID, maxID)
 	}
 }
+
+func TestParse(t *testing.T) {
+	exfee := model.Exfee{
+		ID:   1,
+		Name: "abc",
+		Invitations: []model.Invitation{
+			model.Invitation{
+				ID:   1,
+				Host: true,
+				Identity: model.Identity{
+					ID:               1,
+					Name:             "exfe",
+					Nickname:         "exfe",
+					Timezone:         "+0800",
+					UserID:           10,
+					Provider:         "twitter",
+					ExternalID:       "234",
+					ExternalUsername: "exfe",
+				},
+			},
+			model.Invitation{
+				ID:   2,
+				Host: false,
+				Identity: model.Identity{
+					ID:               3,
+					Name:             "0d0f",
+					Timezone:         "+0800",
+					UserID:           11,
+					Provider:         "email",
+					ExternalID:       "abc@domain.com",
+					ExternalUsername: "abc@domain.com",
+				},
+			},
+		},
+	}
+	repo := newFakeRepo()
+	conv := New(repo)
+
+	{
+		content, relationships := conv.parseRelationship("@exfe@twitter blablabla", exfee)
+		assert.Equal(t, content, "@exfe@twitter blablabla")
+		assert.Contains(t, fmt.Sprintf("%v", relationships), "mention:identity://1")
+	}
+
+	{
+		content, relationships := conv.parseRelationship("@abc@domain.com@email blablabla", exfee)
+		assert.Equal(t, content, "@abc@domain.com@email blablabla")
+		assert.Contains(t, fmt.Sprintf("%v", relationships), "mention:identity://3")
+	}
+
+	{
+		content, relationships := conv.parseRelationship("@abc@domain.com blablabla", exfee)
+		assert.Equal(t, content, "@abc@domain.com blablabla")
+		assert.Contains(t, fmt.Sprintf("%v", relationships), "mention:identity://3")
+	}
+
+	{
+		content, relationships := conv.parseRelationship("@abc@domain.com blablabla http://instagr.am/xxxxx", exfee)
+		assert.Equal(t, content, "@abc@domain.com blablabla {{url:http://instagr.am/xxxxx}}")
+		assert.Contains(t, fmt.Sprintf("%v", relationships), "mention:identity://3")
+		assert.Contains(t, fmt.Sprintf("%v", relationships), "url:http://instagr.am/xxxxx")
+	}
+
+	{
+		content, relationships := conv.parseRelationship("@exfe blablabla", exfee)
+		assert.Equal(t, content, "@exfe blablabla")
+		assert.Contains(t, fmt.Sprintf("%v", relationships), "mention:identity://1")
+	}
+}

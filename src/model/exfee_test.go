@@ -158,6 +158,15 @@ func TestExfeeFind(t *testing.T) {
 	}
 
 	{
+		id := Identity{
+			ExternalUsername: "facebook4@domain.com",
+		}
+		inv, err := e.FindInvitedUser(id)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, inv.Identity.ID, 32)
+	}
+
+	{
 		id := facebook1
 		inv, err := e.FindInvitedUser(id)
 		assert.Equal(t, err, nil)
