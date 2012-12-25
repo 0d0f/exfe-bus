@@ -1,5 +1,9 @@
 package model
 
+import (
+	"fmt"
+)
+
 type Exfee struct {
 	ID          uint64       `json:"id"`
 	Name        string       `json:"name"`
@@ -41,4 +45,18 @@ func (e Exfee) CountPeople(invitations []Invitation) int {
 
 func (e Exfee) Equal(other *Exfee) bool {
 	return e.ID == other.ID
+}
+
+func (e Exfee) FindInvitedUser(identity Identity) (Invitation, error) {
+	for _, inv := range e.Invitations {
+		if inv.Identity.SameUser(identity) {
+			return inv, nil
+		}
+	}
+	for _, inv := range e.Invitations {
+		if inv.Identity.ExternalUsername == identity.ExternalUsername {
+			return inv, nil
+		}
+	}
+	return Invitation{}, fmt.Errorf("can't find %s", identity)
 }

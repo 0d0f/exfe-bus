@@ -47,9 +47,6 @@
     "tail": {"Tail10":600}
   },
 
-  "token_manager": {
-    "table_name": "tokens"
-  },
   "thirdpart": {
     "max_state_cache": 1000,
     "twitter": {

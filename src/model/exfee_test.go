@@ -124,3 +124,61 @@ func TestExfeeParse(t *testing.T) {
 	assert.Equal(t, e.Interested[0].ID, uint64(44))
 	assert.Equal(t, e.CountPeople(e.Accepted), 3)
 }
+
+func TestExfeeFind(t *testing.T) {
+	e := exfee
+
+	{
+		id := Identity{
+			ID: 32,
+		}
+		inv, err := e.FindInvitedUser(id)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, inv.Identity.ID, 32)
+	}
+
+	{
+		id := Identity{
+			ExternalID: "facebook4@domain.com",
+			Provider:   "facebook",
+		}
+		inv, err := e.FindInvitedUser(id)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, inv.Identity.ID, 32)
+	}
+
+	{
+		id := Identity{
+			ExternalUsername: "facebook4@domain.com",
+			Provider:         "facebook",
+		}
+		inv, err := e.FindInvitedUser(id)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, inv.Identity.ID, 32)
+	}
+
+	{
+		id := Identity{
+			ExternalUsername: "facebook4@domain.com",
+		}
+		inv, err := e.FindInvitedUser(id)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, inv.Identity.ID, 32)
+	}
+
+	{
+		id := facebook1
+		inv, err := e.FindInvitedUser(id)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, inv.Identity.ID, 11)
+	}
+
+	{
+		id := Identity{
+			ExternalID: "fa",
+			Provider:   "facebook",
+		}
+		_, err := e.FindInvitedUser(id)
+		assert.NotEqual(t, err, nil)
+	}
+}
