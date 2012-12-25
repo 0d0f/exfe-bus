@@ -12,7 +12,7 @@
     "port": 3306,
     "username": "root",
     "password": "",
-    "db_name": "exfe_dev"
+    "db_name": "exfe_services"
   },
   "redis": {
     "netaddr": "",
