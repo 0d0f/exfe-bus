@@ -13,4 +13,4 @@ then
 	PASS_ARG=""
 fi
 
-ls ${DIR}/mysql/*.sql | sort | while read l; do mysql -u"{DB_NAME}" "${PASS_ARG}" ${DB} < "$l"; done 
+ls mysql/*.sql | sort | while read l; do mysql -u"{DB_NAME}" "${PASS_ARG}" ${DB} < "$l"; done 
