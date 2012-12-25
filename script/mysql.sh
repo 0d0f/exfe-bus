@@ -13,4 +13,4 @@ then
 	PASS_ARG=""
 fi
 
-echo "DELETE FROM tokens WHERE expire_at < DATE_ADD(NOW(), INTERVAL \"-7\" DAY);" | mysql -u"${DB_NAME}" "${PASS_ARG}" ${DB}
+ls ${DIR}/mysql/*.sql | sort | while read l; do mysql -u"{DB_NAME}" "${PASS_ARG}" ${DB} < "$l"; done 

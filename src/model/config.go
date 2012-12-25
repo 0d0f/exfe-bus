@@ -56,9 +56,6 @@ type Config struct {
 		Tail map[string]uint `json:"tail"`
 	} `json:"exfe_queue"`
 
-	TokenManager struct {
-		TableName string `json:"table_name"`
-	} `json:"token_manager"`
 	Thirdpart struct {
 		MaxStateCache uint `json:"max_state_cache"`
 		Twitter       struct {
