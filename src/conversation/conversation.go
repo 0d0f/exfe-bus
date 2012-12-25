@@ -15,11 +15,11 @@ type Repo interface {
 	SendUpdate(tos []model.Recipient, cross model.Cross, post model.Post) error
 
 	SavePost(post convmodel.Post) (uint64, error)
-	FindPosts(exfeeID uint64, refID, sinceTime, untilTime string, minID, maxID uint64) ([]convmodel.Post, error)
+	FindPosts(exfeeID uint64, refURI, sinceTime, untilTime string, minID, maxID uint64) ([]convmodel.Post, error)
 	DeletePost(refID string, postID uint64) error
-	SetUnreadCount(refID string, userID int64, count int) error
-	AddUnreadCount(refID string, userID int64, count int) error
-	GetUnreadCount(refID string, userID int64) (int, error)
+	SetUnreadCount(uri string, userID int64, count int) error
+	AddUnreadCount(uri string, userID int64, count int) error
+	GetUnreadCount(uri string, userID int64) (int, error)
 }
 
 type Conversation struct {
@@ -66,7 +66,7 @@ func (c *Conversation) NewPost(crossID uint64, post model.Post, via string, crea
 		Content: content,
 		Via:     via,
 		ExfeeID: cross.Exfee.ID,
-		RefID:   fmt.Sprintf("cross://%d", cross.ID),
+		RefURI:  fmt.Sprintf("cross://%d", cross.ID),
 	}
 	id, err := c.repo.SavePost(p)
 	if err != nil {
@@ -75,7 +75,7 @@ func (c *Conversation) NewPost(crossID uint64, post model.Post, via string, crea
 	p.ID = id
 	p.URI = fmt.Sprintf("post://%d", id)
 	ret := p.ToPost()
-	c.repo.AddUnreadCount(p.RefID, by.Identity.UserID, 1)
+	c.repo.AddUnreadCount(p.RefURI, by.Identity.UserID, 1)
 	return ret, nil
 }
 

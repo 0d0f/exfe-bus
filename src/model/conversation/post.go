@@ -10,7 +10,7 @@ type Post struct {
 	Content string `json:"content"`
 	Via     string `json:"via"`
 	ExfeeID uint64 `json:"exfee_id"`
-	RefID   string `json:"ref_id"`
+	RefURI  string `json:"ref_uri"`
 }
 
 func (p *Post) ToPost() model.Post {
@@ -22,6 +22,6 @@ func (p *Post) ToPost() model.Post {
 		CreatedAt:    p.CreatedAt.UTC().Format("2006-01-02 15:04:05 -0700"),
 		Relationship: p.Relationship,
 		ExfeeID:      p.ExfeeID,
-		RefID:        p.RefID,
+		RefURI:       p.RefURI,
 	}
 }

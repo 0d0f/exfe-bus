@@ -156,7 +156,7 @@ func (r *FakeRepo) FindPosts(exfeeID uint64, refID, sinceTime, untilTime string,
 		if p.ExfeeID != exfeeID {
 			continue
 		}
-		if p.RefID != refID {
+		if p.RefURI != refID {
 			continue
 		}
 		if checkMin && p.ID < minID {
@@ -179,7 +179,7 @@ func (r *FakeRepo) FindPosts(exfeeID uint64, refID, sinceTime, untilTime string,
 func (r *FakeRepo) DeletePost(refID string, postID uint64) error {
 	index := -1
 	for i, p := range r.posts {
-		if p.RefID != refID {
+		if p.RefURI != refID {
 			continue
 		}
 		if p.ID == postID {
