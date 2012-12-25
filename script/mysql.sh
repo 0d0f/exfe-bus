@@ -10,7 +10,7 @@ DB_PASS=`./config.py '["db"]["password"]'`
 PASS_ARG="-p${DB_PASS}"
 if [ "${DB_PASS}" = "" ]
 then
-	PASS_ARG=""
+	PASS_ARG="-u\"${DB_NAME}\""
 fi
 
 ls mysql/*.sql | sort | while read l; do mysql -u"${DB_NAME}" "${PASS_ARG}" ${DB} < "$l"; done 
