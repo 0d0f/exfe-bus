@@ -14,11 +14,13 @@ type Config struct {
 
 	Test bool `json:"test"`
 	DB   struct {
-		Addr     string `json:"addr"`
-		Port     uint   `json:"port"`
-		Username string `json:"username"`
-		Password string `json:"password"`
-		DbName   string `json:"db_name"`
+		Addr              string `json:"addr"`
+		Port              uint   `json:"port"`
+		Username          string `json:"username"`
+		Password          string `json:"password"`
+		DbName            string `json:"db_name"`
+		MaxConnections    uint   `json:"max_connections"`
+		HeartBeatInSecond uint   `json:"heart_beat_in_second"`
 	} `json:"db"`
 	Redis struct {
 		Netaddr           string `json:"netaddr"`

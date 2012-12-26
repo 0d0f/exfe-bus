@@ -1,6 +1,9 @@
 package main
 
 import (
+	"broker"
+	"database/sql"
+	"github.com/googollee/go-multiplexer"
 	"model"
 	"time"
 	"tokenmanager"
@@ -18,30 +21,45 @@ const (
 )
 
 type TokenRepository struct {
-	DBRepository
+	db     *broker.DBMultiplexer
+	config *model.Config
 }
 
-func NewTokenRepository(config *model.Config) (*TokenRepository, error) {
-	ret := &TokenRepository{}
-	ret.Config = config
-	err := ret.Connect()
-	return ret, err
+func NewTokenRepository(config *model.Config, db *broker.DBMultiplexer) (*TokenRepository, error) {
+	ret := &TokenRepository{
+		db:     db,
+		config: config,
+	}
+	return ret, nil
 }
 
 // CREATE TABLE `tokens` (`id` SERIAL NOT NULL, `key` CHAR(32) NOT NULL, `rand` CHAR(32) NOT NULL, `created_at` DATETIME NOT NULL, `expire_at` DATETIME NOT NULL, `data` TEXT NOT NULL)
 
 func (r *TokenRepository) Create(token *tokenmanager.Token) error {
-	_, err := r.Exec(CREATE, token.Key, token.Rand, r.timeToString(&token.CreatedAt), r.timeToString(token.ExpireAt), token.Data)
+	var err error
+	r.db.Do(func(i multiplexer.Instance) {
+		db := i.(*broker.DBInstance)
+		_, err = db.Exec(CREATE, token.Key, token.Rand, r.timeToString(&token.CreatedAt), r.timeToString(token.ExpireAt), token.Data)
+	})
 	return err
 }
 
 func (r *TokenRepository) Store(token *tokenmanager.Token) error {
-	_, err := r.Exec(STORE, r.timeToString(token.ExpireAt), token.Data, token.Key, token.Rand)
+	var err error
+	r.db.Do(func(i multiplexer.Instance) {
+		db := i.(*broker.DBInstance)
+		_, err = db.Exec(STORE, r.timeToString(token.ExpireAt), token.Data, token.Key, token.Rand)
+	})
 	return err
 }
 
 func (r *TokenRepository) FindByKey(key string) ([]*tokenmanager.Token, error) {
-	rows, err := r.Query(FIND_BY_KEY, key)
+	var err error
+	var rows *sql.Rows
+	r.db.Do(func(i multiplexer.Instance) {
+		db := i.(*broker.DBInstance)
+		rows, err = db.Query(FIND_BY_KEY, key)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +92,12 @@ func (r *TokenRepository) FindByKey(key string) ([]*tokenmanager.Token, error) {
 }
 
 func (r *TokenRepository) FindByToken(key, rand string) (*tokenmanager.Token, error) {
-	rows, err := r.Query(FIND_BY_TOKEN, key, rand)
+	var err error
+	var rows *sql.Rows
+	r.db.Do(func(i multiplexer.Instance) {
+		db := i.(*broker.DBInstance)
+		rows, err = db.Query(FIND_BY_TOKEN, key, rand)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -106,22 +129,38 @@ func (r *TokenRepository) FindByToken(key, rand string) (*tokenmanager.Token, er
 }
 
 func (r *TokenRepository) UpdateDataByToken(key, rand, data string) error {
-	_, err := r.Exec(UPDATE_DATA_BY_TOKEN, data, key, rand)
+	var err error
+	r.db.Do(func(i multiplexer.Instance) {
+		db := i.(*broker.DBInstance)
+		_, err = db.Exec(UPDATE_DATA_BY_TOKEN, data, key, rand)
+	})
 	return err
 }
 
 func (r *TokenRepository) UpdateExpireAtByToken(key, rand string, expireAt *time.Time) error {
-	_, err := r.Exec(UPDATE_EXPIREAT_BY_TOKEN, r.timeToString(expireAt), key, rand)
+	var err error
+	r.db.Do(func(i multiplexer.Instance) {
+		db := i.(*broker.DBInstance)
+		_, err = db.Exec(UPDATE_EXPIREAT_BY_TOKEN, r.timeToString(expireAt), key, rand)
+	})
 	return err
 }
 
 func (r *TokenRepository) UpdateExpireAtByKey(key string, expireAt *time.Time) error {
-	_, err := r.Exec(UPDATE_EXPIREAT_BY_KEY, r.timeToString(expireAt), key)
+	var err error
+	r.db.Do(func(i multiplexer.Instance) {
+		db := i.(*broker.DBInstance)
+		_, err = db.Exec(UPDATE_EXPIREAT_BY_KEY, r.timeToString(expireAt), key)
+	})
 	return err
 }
 
 func (r *TokenRepository) DeleteByToken(key, rand string) error {
-	_, err := r.Exec(DELETE_BY_TOKEN, key, rand)
+	var err error
+	r.db.Do(func(i multiplexer.Instance) {
+		db := i.(*broker.DBInstance)
+		_, err = db.Exec(DELETE_BY_TOKEN, key, rand)
+	})
 	return err
 }
 

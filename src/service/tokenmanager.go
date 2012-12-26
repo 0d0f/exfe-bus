@@ -1,6 +1,7 @@
 package main
 
 import (
+	"broker"
 	"github.com/googollee/go-logger"
 	"gobus"
 	"model"
@@ -15,8 +16,8 @@ type TokenManager struct {
 	config    *model.Config
 }
 
-func NewTokenManager(config *model.Config) (*TokenManager, error) {
-	repo, err := NewTokenRepository(config)
+func NewTokenManager(config *model.Config, db *broker.DBMultiplexer) (*TokenManager, error) {
+	repo, err := NewTokenRepository(config, db)
 	if err != nil {
 		return nil, err
 	}

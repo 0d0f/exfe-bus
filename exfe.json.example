@@ -12,7 +12,9 @@
     "port": 3306,
     "username": "root",
     "password": "",
-    "db_name": "exfe_services"
+    "db_name": "exfe_services",
+    "max_connections": 5,
+    "heart_beat_in_second": 60
   },
   "redis": {
     "netaddr": "",

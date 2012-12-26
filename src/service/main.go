@@ -22,6 +22,7 @@ func main() {
 	}
 	config.Log = log
 
+	db := broker.NewDBMultiplexer(&config)
 	redis := broker.NewRedisMultiplexer(&config)
 	sender, err := broker.NewSender(&config)
 	if err != nil {
@@ -42,7 +43,7 @@ func main() {
 	var count int
 
 	if config.ExfeService.Services.TokenManager {
-		tkMng, err := NewTokenManager(&config)
+		tkMng, err := NewTokenManager(&config, db)
 		if err != nil {
 			log.Crit("create token manager failed: %s", err)
 			os.Exit(-1)

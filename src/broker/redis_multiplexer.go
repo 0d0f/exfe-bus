@@ -23,7 +23,7 @@ func (i *RedisInstance) Close() error {
 }
 
 func (i *RedisInstance) Error(err error) {
-	i.log.Debug("%s", err)
+	i.log.Err("%s", err)
 }
 
 type RedisMultiplexer struct {
