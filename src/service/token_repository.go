@@ -73,15 +73,19 @@ func (r *TokenRepository) FindByKey(key string) ([]*tokenmanager.Token, error) {
 			}
 			err := rows.Scan(&token.Rand, &createdAtStr, &expireAtStr, &token.Data)
 			if err != nil {
-				return ret, err
+				return
 			}
 			token.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
 			if expireAtStr != "0000-00-00 00:00:00" {
-				token.ExpireAt, _ = time.Parse("2006-01-02 15:04:05", expireAtStr)
+				time, _ := time.Parse("2006-01-02 15:04:05", expireAtStr)
+				token.ExpireAt = &time
 			}
 			ret = append(ret, &token)
 		}
 	})
+	if err != nil {
+		return nil, err
+	}
 	return ret, nil
 }
 
