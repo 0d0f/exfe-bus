@@ -17,6 +17,7 @@ type Repo interface {
 	SavePost(post convmodel.Post) (uint64, error)
 	FindPosts(exfeeID uint64, refURI, sinceTime, untilTime string, minID, maxID uint64) ([]convmodel.Post, error)
 	DeletePost(refID string, postID uint64) error
+
 	SetUnreadCount(uri string, userID int64, count int) error
 	AddUnreadCount(uri string, userID int64, count int) error
 	GetUnreadCount(uri string, userID int64) (int, error)
