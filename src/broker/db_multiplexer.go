@@ -58,7 +58,7 @@ func NewDBMultiplexer(config *model.Config) *DBMultiplexer {
 			if err != nil {
 				return nil, err
 			}
-			_, err = db.Query("SELECT 1")
+			_, err = db.Exec("SELECT 1")
 			if err != nil {
 				db.Close()
 				return nil, err
