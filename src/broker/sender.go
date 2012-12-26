@@ -9,10 +9,9 @@ type Sender struct {
 	dispatcher *gobus.Dispatcher
 }
 
-func NewSender(config *model.Config) (*Sender, error) {
-	table := gobus.NewTable(config.Dispatcher)
+func NewSender(config *model.Config, dispatcher *gobus.Dispatcher) (*Sender, error) {
 	return &Sender{
-		dispatcher: gobus.NewDispatcher(table),
+		dispatcher: dispatcher,
 	}, nil
 }
 

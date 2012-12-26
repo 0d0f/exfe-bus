@@ -6,6 +6,7 @@ import (
 	"daemon"
 	"formatter"
 	"github.com/googollee/go-logger"
+	"gobus"
 	"model"
 	"os"
 )
@@ -27,7 +28,7 @@ func main() {
 		os.Exit(-1)
 		return
 	}
-	sender, err := broker.NewSender(&config)
+	sender, err := broker.NewSender(&config, gobus.NewDispatcher(gobus.NewTable(config.Dispatcher)))
 	if err != nil {
 		log.Crit("create gobus client failed: %s", err)
 		os.Exit(-1)

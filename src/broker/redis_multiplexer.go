@@ -71,6 +71,14 @@ func (m *RedisMultiplexer) Set(key string, value interface{}) (err error) {
 	return
 }
 
+func (m *RedisMultiplexer) Incrby(key string, increment int64) (ret int64, err error) {
+	m.homo.Do(func(i multiplexer.Instance) {
+		redis := i.(*RedisInstance).redis
+		ret, err = redis.Incrby(key, increment)
+	})
+	return
+}
+
 func (m *RedisMultiplexer) Del(keys ...string) (ret int64, err error) {
 	m.homo.Do(func(i multiplexer.Instance) {
 		redis := i.(*RedisInstance).redis
