@@ -16,7 +16,7 @@ type DBInstance struct {
 }
 
 func (i *DBInstance) Ping() error {
-	_, err := i.db.Query("SELECT 1")
+	_, err := i.db.Exec("SELECT 1")
 	if err != nil {
 		return err
 	}
