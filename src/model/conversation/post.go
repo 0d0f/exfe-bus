@@ -6,7 +6,7 @@ import (
 
 type Post struct {
 	model.Meta
-	ID      uint64
+	ID      uint64 `json:"id"`
 	Content string `json:"content"`
 	Via     string `json:"via"`
 	ExfeeID uint64 `json:"exfee_id"`

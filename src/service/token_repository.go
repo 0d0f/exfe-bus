@@ -55,39 +55,33 @@ func (r *TokenRepository) Store(token *tokenmanager.Token) error {
 
 func (r *TokenRepository) FindByKey(key string) ([]*tokenmanager.Token, error) {
 	var err error
-	var rows *sql.Rows
+	ret := make([]*tokenmanager.Token, 0, 0)
 	r.db.Do(func(i multiplexer.Instance) {
 		db := i.(*broker.DBInstance)
+		var rows *sql.Rows
 		rows, err = db.Query(FIND_BY_KEY, key)
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	ret := make([]*tokenmanager.Token, 0, 0)
-	for rows.Next() {
-		var rand string
-		var createdAtStr string
-		var expireAtStr string
-		var data string
-		err := rows.Scan(&rand, &createdAtStr, &expireAtStr, &data)
 		if err != nil {
-			return ret, err
+			return
 		}
-		createdAt, _ := time.Parse("2006-01-02 15:04:05", createdAtStr)
-		token := tokenmanager.Token{
-			Key:       key,
-			Rand:      rand,
-			CreatedAt: createdAt,
-			Data:      data,
+		defer rows.Close()
+
+		for rows.Next() {
+			var createdAtStr string
+			var expireAtStr string
+			token := tokenmanager.Token{
+				Key: key,
+			}
+			err := rows.Scan(&token.Rand, &createdAtStr, &expireAtStr, &token.Data)
+			if err != nil {
+				return ret, err
+			}
+			token.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
+			if expireAtStr != "0000-00-00 00:00:00" {
+				token.ExpireAt, _ = time.Parse("2006-01-02 15:04:05", expireAtStr)
+			}
+			ret = append(ret, &token)
 		}
-		if expireAtStr != "0000-00-00 00:00:00" {
-			expireAt, _ := time.Parse("2006-01-02 15:04:05", expireAtStr)
-			token.ExpireAt = &expireAt
-		}
-		ret = append(ret, &token)
-	}
+	})
 	return ret, nil
 }
 
