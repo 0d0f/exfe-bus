@@ -124,16 +124,6 @@ func (mng *TokenManager) Verify(meta *gobus.HTTPMeta, args *TokenVerifyArg, repl
 	return err
 }
 
-// 删除token，如果成功返回0
-//
-// 例子：
-//
-//     > curl http://127.0.0.1:23333/TokenManager?method=Delete -d '"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a"'
-//     0
-func (mng *TokenManager) Delete(meta *gobus.HTTPMeta, token *string, reply *int) error {
-	return mng.manager.DeleteToken(*token)
-}
-
 type TokenRefreshArg struct {
 	Token              string `json:"token"`
 	ExpireAfterSeconds int    `json:"expire_after_seconds"`
@@ -160,15 +150,15 @@ func (mng *TokenManager) Refresh(meta *gobus.HTTPMeta, args *TokenRefreshArg, re
 //     > curl http://127.0.0.1:23333/TokenManager?method=Expire -d '"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a"'
 //     0
 func (mng *TokenManager) Expire(meta *gobus.HTTPMeta, token *string, reply *int) error {
-	return mng.manager.ExpireToken(*token)
+	return mng.manager.RefreshToken(*token, 0)
 }
 
-// 立刻使key对应的所有token过期。
+// 立刻使resource对应的所有token过期。
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=ExpireAll -d '"ab56b4d92b40713acc5af89985d4b786"'
+//     > curl http://127.0.0.1:23333/TokenManager?method=ExpireAll -d '"abc"'
 //     0
-func (mng *TokenManager) ExpireAll(meta *gobus.HTTPMeta, key *string, reply *int) error {
-	return mng.manager.ExpireTokensByKey(*key)
+func (mng *TokenManager) ExpireAll(meta *gobus.HTTPMeta, resource *string, reply *int) error {
+	return mng.manager.RefreshTokensByResource(*resource, 0)
 }

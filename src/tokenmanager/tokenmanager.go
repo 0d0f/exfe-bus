@@ -13,7 +13,6 @@ type TokenRepository interface {
 	UpdateDataByToken(key, rand, data string) error
 	UpdateExpireAtByToken(key, rand string, expireAt *time.Time) error
 	UpdateExpireAtByKey(key string, expireAt *time.Time) error
-	DeleteByToken(key, rand string) error
 }
 
 const TOKEN_KEY_LENGTH = 32
@@ -62,7 +61,7 @@ func (m *TokenManager) GetToken(token string) (*Token, error) {
 
 func (m *TokenManager) FindTokens(resource string) (tokens []*Token, err error) {
 	md5 := md5Resource(resource)
-	tokens, err = m.repo.FindByKey(md5[:])
+	tokens, err = m.repo.FindByKey(md5)
 	return
 }
 
@@ -84,14 +83,6 @@ func (m *TokenManager) VerifyToken(token, resource string) (bool, *Token, error)
 	return t.Key == key, t, nil
 }
 
-func (m *TokenManager) DeleteToken(token string) error {
-	if len(token) < TOKEN_KEY_LENGTH {
-		return fmt.Errorf("token(%s) invalid", token)
-	}
-
-	return m.repo.DeleteByToken(m.splitToken(token))
-}
-
 func (m *TokenManager) RefreshToken(token string, duration time.Duration) error {
 	if len(token) < TOKEN_KEY_LENGTH {
 		return fmt.Errorf("token(%s) invalid", token)
@@ -108,13 +99,17 @@ func (m *TokenManager) RefreshToken(token string, duration time.Duration) error 
 	return m.repo.UpdateExpireAtByToken(key, rand, expireAt)
 }
 
-func (m *TokenManager) ExpireToken(token string) error {
-	return m.RefreshToken(token, 0)
-}
+func (m *TokenManager) RefreshTokensByResource(resource string, duration time.Duration) error {
+	key := md5Resource(resource)
 
-func (m *TokenManager) ExpireTokensByKey(key string) error {
-	t := time.Now()
-	return m.repo.UpdateExpireAtByKey(key, &t)
+	var expireAt *time.Time
+	if duration < 0 {
+		expireAt = nil
+	} else {
+		t := time.Now().Add(duration)
+		expireAt = &t
+	}
+	return m.repo.UpdateExpireAtByKey(key, expireAt)
 }
 
 func (m *TokenManager) splitToken(token string) (key, rand string) {

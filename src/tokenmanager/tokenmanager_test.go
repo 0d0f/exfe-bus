@@ -72,11 +72,6 @@ func (r *TestTokenRepo) UpdateExpireAtByKey(key string, expireAt *time.Time) err
 	return nil
 }
 
-func (r *TestTokenRepo) DeleteByToken(key, rand string) error {
-	delete(r.store, fmt.Sprintf("%s%s", key, rand))
-	return nil
-}
-
 func TestTokenManager(t *testing.T) {
 	repo := &TestTokenRepo{
 		store: make(map[string]Token),
@@ -204,7 +199,7 @@ func TestTokenManager(t *testing.T) {
 		}
 	}
 
-	mgr.ExpireToken(tk)
+	mgr.RefreshToken(tk, 0)
 
 	{
 		token, _ := mgr.GetToken(tk)
@@ -238,7 +233,7 @@ func TestTokenManager(t *testing.T) {
 		}
 	}
 
-	mgr.ExpireTokensByKey(tk[:32])
+	mgr.RefreshTokensByResource(resource, 0)
 
 	{
 		token, _ := mgr.GetToken(tk)
@@ -287,10 +282,5 @@ func TestTokenManager(t *testing.T) {
 		if !ok {
 			t.Errorf("tk(%s) should verify with resource(%s), but not", tk, resource)
 		}
-	}
-
-	err = mgr.DeleteToken(tk)
-	if err != nil {
-		t.Errorf("delete fail: %s", err)
 	}
 }
