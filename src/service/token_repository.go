@@ -91,7 +91,7 @@ func (r *TokenRepository) FindByKey(key string) ([]*tokenmanager.Token, error) {
 
 func (r *TokenRepository) FindByToken(key, rand string) (*tokenmanager.Token, error) {
 	var err error
-	token := tokenmanager.Token{
+	ret := &tokenmanager.Token{
 		Key:  key,
 		Rand: rand,
 	}
@@ -105,25 +105,26 @@ func (r *TokenRepository) FindByToken(key, rand string) (*tokenmanager.Token, er
 		defer rows.Close()
 
 		if !rows.Next() {
+			ret = nil
 			return
 		}
 
 		var createdAtStr string
 		var expireAtStr string
-		err = rows.Scan(&createdAtStr, &expireAtStr, &token.Data)
+		err = rows.Scan(&createdAtStr, &expireAtStr, &ret.Data)
 		if err != nil {
 			return
 		}
-		token.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
+		ret.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
 		if expireAtStr != "0000-00-00 00:00:00" {
 			expireAt, _ := time.Parse("2006-01-02 15:04:05", expireAtStr)
-			token.ExpireAt = &expireAt
+			ret.ExpireAt = &expireAt
 		}
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &token, nil
+	return ret, nil
 }
 
 func (r *TokenRepository) UpdateDataByToken(key, rand, data string) error {
