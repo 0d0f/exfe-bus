@@ -125,6 +125,38 @@ func main() {
 		log.Info("register User %d methods.", count)
 	}
 
+	if config.ExfeService.Services.Conversation {
+		conversation, err := NewConversation_(&config, db, redis, dispatcher)
+		if err != nil {
+			log.Crit("conversation can't created: %s", err)
+			os.Exit(-1)
+		}
+
+		count, err = bus.RegisterPath("/cross/{cross_id}/Conversation", conversation)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register conversation %d methods.", count)
+
+		count, err = bus.RegisterPath("/cross/{cross_id}/Conversation/{post_id}", conversation)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register conversation/post %d methods.", count)
+
+		count, err = bus.RegisterPath("/cross/{cross_id}/user/{user_id}/unread_count", conversation)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register conversation/unread %d methods.", count)
+	}
+
 	go func() {
 		<-quit
 		log.Info("quit")
