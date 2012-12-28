@@ -121,6 +121,10 @@ func (r *PostRepository) DeletePost(refID string, postID uint64) error {
 
 func (r *PostRepository) SetUnreadCount(uri string, userID int64, count int) error {
 	key := fmt.Sprintf("unreadpost:u%d:%s", userID, uri)
+	if count == 0 {
+		_, err := r.redis.Del(key)
+		return err
+	}
 	return r.redis.Set(key, count)
 }
 
