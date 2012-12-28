@@ -86,6 +86,7 @@ func Daemon(config *model.Config, localTemplate *formatter.LocalTemplate, sender
 				if err == nil {
 					break
 				}
+				time.After(time.Duration(s.config.Bot.Email.TimeoutInSecond) * time.Second)
 				if i > 10 {
 					i = 0
 					config.Log.Crit("email connect error: %s", err)
