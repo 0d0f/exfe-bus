@@ -24,6 +24,36 @@ func NewConversation_(config *model.Config, db *broker.DBMultiplexer, redis *bro
 	}, nil
 }
 
+// 发一条新的Post到cross_id
+//
+// 例子：
+//
+//     > curl http://panda.0d0f.com:23333/cross/100354/Conversation?via=web&created_at=1293479544 -d '{"by_identity":{"id":572},"content":"@googollee@twitter blablabla"}'
+//
+// 返回：
+//
+//     {"id":11,"by_identity":{"id":572,"name":"Googol","connected_user_id":-572,"avatar_filename":"http://api.panda.0d0f.com/v2/avatar/default?name=Googol","provider":"email","external_id":"googollee@163.com","external_username":"googollee@163.com"},"content":"@googollee@twitter blablabla","via":"web","created_at":"2010-12-27 19:52:24 +0000","relationship":[{"uri":"identity://573","relation":"mention"}],"exfee_id":110220,"ref_uri":"cross://100354"}
+//
+// content解析方式： 
+//
+// 默认：
+//
+//     "@exfe@twitter look at this image http://instagr.am/xxxx\n cool!"
+//      =>
+//     "@exfe@twitter look at this image {{url:http://instagr.am/xxxx}}\n cool!"
+//     relationship: [{"mention": "identity://123"}, {"url":"http://instagr.am/xxxx"}]
+//
+//特殊格式解析：
+//
+//     "@exfe@twitter look at this image {{image:http://instagr.am/xxxx.jpg}}\n cool!"
+//      =>
+//     "@exfe@twitter look at this image {{image:http://instagr.am/xxxx.jpg}}\n cool!"
+//     relationship: [{"mention": "identity://123"}, {"image":"http://instagr.am/xxxx.jpg"}]
+//
+//     "@exfe@twitter look at this image {{webpage:http://instagr.am/xxxx}}\n cool!"
+//      =>
+//     "@exfe@twitter look at this image {{webpage:http://instagr.am/xxxx}}\n cool!"
+//     relationship: [{"mention": "identity://123"}, {"webpage":"http://instagr.am/xxxx"}]
 func (c *Conversation_) POST(meta *gobus.HTTPMeta, arg model.Post, reply *model.Post) error {
 	values := meta.Request.URL.Query()
 	via := values.Get("via")
@@ -44,6 +74,15 @@ func (c *Conversation_) POST(meta *gobus.HTTPMeta, arg model.Post, reply *model.
 	return err
 }
 
+// 查询Posts
+//
+// 例子：
+//
+//     > curl "http://panda.0d0f.com:23333/cross/100354/Conversation?method=GET&clear_user=378&since=2010-12-27+19:52:24&until=2010-12-27+19:52:24&min=11&max=11" -d '""'
+//
+// 返回：
+//
+//     [{"id":11,"by_identity":{"id":572,"name":"Googol","connected_user_id":-572,"avatar_filename":"http://api.panda.0d0f.com/v2/avatar/default?name=Googol","provider":"email","external_id":"googollee@163.com","external_username":"googollee@163.com"},"content":"@googollee@twitter blablabla","via":"web","created_at":"2010-12-27 19:52:24 +0000","relationship":[{"uri":"identity://573","relation":"mention"}],"exfee_id":110220,"ref_uri":"cross://100354"}]
 func (c *Conversation_) GET(meta *gobus.HTTPMeta, arg string, reply *[]model.Post) error {
 	values := meta.Request.URL.Query()
 	crossID, err := strconv.ParseUint(meta.Vars["cross_id"], 10, 64)
@@ -81,6 +120,15 @@ func (c *Conversation_) GET(meta *gobus.HTTPMeta, arg string, reply *[]model.Pos
 	return err
 }
 
+// 删除一条Post
+//
+// 例子：
+//
+//     > curl "http://panda.0d0f.com:23333/cross/100354/Conversation/11?method=DELETE" -d '""'
+//
+// 返回：
+//
+//     {"id":11,"by_identity":{"id":572,"name":"Googol","connected_user_id":-572,"avatar_filename":"http://api.panda.0d0f.com/v2/avatar/default?name=Googol","provider":"email","external_id":"googollee@163.com","external_username":"googollee@163.com"},"content":"@googollee@twitter blablabla","via":"web","created_at":"2010-12-27 19:52:24 +0000","relationship":[{"uri":"identity://573","relation":"mention"}],"exfee_id":110220,"ref_uri":"cross://100354"}
 func (c *Conversation_) DELETE(meta *gobus.HTTPMeta, arg string, reply *model.Post) error {
 	crossID, err := strconv.ParseUint(meta.Vars["cross_id"], 10, 64)
 	if err != nil {
@@ -106,6 +154,15 @@ func (c *Conversation_) DELETE(meta *gobus.HTTPMeta, arg string, reply *model.Po
 	return nil
 }
 
+// 取得用户user_id未读的post条数
+//
+// 例子：
+//
+//     > curl "http://panda.0d0f.com:23333/cross/100354/user/-572/unread_count?method=Unread" -d '""'
+//
+// 返回：
+//
+//     1
 func (c *Conversation_) Unread(meta *gobus.HTTPMeta, arg string, reply *int) error {
 	crossID, err := strconv.ParseInt(meta.Vars["cross_id"], 10, 64)
 	if err != nil {
