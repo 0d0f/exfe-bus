@@ -126,7 +126,8 @@ func (r *PostRepository) SetUnreadCount(uri string, userID int64, count int) err
 
 func (r *PostRepository) AddUnreadCount(uri string, userID int64, count int) error {
 	key := fmt.Sprintf("unreadpost:u%d:%s", userID, uri)
-	return r.redis.Set(key, count)
+	_, err := r.redis.Incrby(key, int64(count))
+	return err
 }
 
 func (r *PostRepository) GetUnreadCount(uri string, userID int64) (int, error) {
