@@ -54,9 +54,9 @@ func (c *Conversation_) GET(meta *gobus.HTTPMeta, arg string, reply *[]model.Pos
 	if clearUser == "" {
 		clearUser = "0"
 	}
-	clearUserID, err := strconv.ParseInt(values.Get("clear_user"), 10, 64)
+	clearUserID, err := strconv.ParseInt(clearUser, 10, 64)
 	if err != nil {
-		return fmt.Errorf("can't parse clear_user: %s", values.Get("clear_user"))
+		return fmt.Errorf("can't parse clear_user: %s", clearUser)
 	}
 	sinceTime := values.Get("since")
 	untilTime := values.Get("until")
