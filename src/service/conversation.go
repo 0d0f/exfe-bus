@@ -50,23 +50,31 @@ func (c *Conversation_) GET(meta *gobus.HTTPMeta, arg string, reply *[]model.Pos
 	if err != nil {
 		return fmt.Errorf("can't parse cross_id: %s", meta.Vars["cross_id"])
 	}
-	clearUser := values.Get("clear_user")
-	if clearUser == "" {
-		clearUser = "0"
-	}
-	clearUserID, err := strconv.ParseInt(clearUser, 10, 64)
+	clearUserID, err := strconv.ParseInt(values.Get("clear_user"), 10, 64)
 	if err != nil {
-		return fmt.Errorf("can't parse clear_user: %s", clearUser)
+		if values.Get("clear_user") == "" {
+			clearUserID = 0
+		} else {
+			return fmt.Errorf("can't parse clear_user: %s", values.Get("clear_user"))
+		}
 	}
 	sinceTime := values.Get("since")
 	untilTime := values.Get("until")
 	minID, err := strconv.ParseUint(values.Get("min"), 10, 64)
 	if err != nil {
-		return fmt.Errorf("can't parse min: %s", values.Get("min"))
+		if values.Get("min") == "" {
+			minID = 0
+		} else {
+			return fmt.Errorf("can't parse min: %s", values.Get("min"))
+		}
 	}
 	maxID, err := strconv.ParseUint(values.Get("max"), 10, 64)
 	if err != nil {
-		return fmt.Errorf("can't parse max: %s", values.Get("max"))
+		if values.Get("max") == "" {
+			maxID = 0
+		} else {
+			return fmt.Errorf("can't parse max: %s", values.Get("max"))
+		}
 	}
 
 	*reply, err = c.conversation.FindPosts(crossID, clearUserID, sinceTime, untilTime, minID, maxID)

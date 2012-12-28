@@ -87,12 +87,16 @@ func (r *PostRepository) FindPosts(exfeeID uint64, refURI, sinceTime, untilTime 
 			post := convmodel.Post{}
 			var createdAt string
 			var relationship []byte
-			err = rows.Scan(&post.ID, &createdAt, &relationship, &post.Content, &post.Via, &post.ExfeeID, &post.RefURI)
+			err = rows.Scan(&post.ID, &post.By.ID, &createdAt, &relationship, &post.Content, &post.Via, &post.ExfeeID, &post.RefURI)
 			if err != nil {
 				return
 			}
 			post.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
 			err = json.Unmarshal(relationship, &post.Relationship)
+			if err != nil {
+				return
+			}
+			post.By, err = r.FindIdentity(post.By)
 			if err != nil {
 				return
 			}
