@@ -71,7 +71,7 @@ func (r *PostRepository) FindPosts(exfeeID uint64, refURI, sinceTime, untilTime 
 	if maxID != 0 {
 		query = fmt.Sprintf("%s AND id<=%d", query, maxID)
 	}
-	query = fmt.Sprintf("%s ORDER BY created_at ASC")
+	query = fmt.Sprintf("%s ORDER BY created_at ASC", query)
 
 	var err error
 	ret := make([]convmodel.Post, 0)
