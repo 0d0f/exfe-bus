@@ -29,19 +29,19 @@ func New(repo Repo, length int) *ShortToken {
 	}
 }
 
-func (t *ShortToken) Create(resource, data string, after time.Duration) (Token, error) {
+func (t *ShortToken) Create(resource, data string, after time.Duration) (model.Token, error) {
 	key := ""
 	for i := 0; i < 3; i++ {
 		key = fmt.Sprintf("%d", t.random.Int31n(t.max))
 		_, exist, err := t.repo.Find(key, "")
 		if err != nil {
-			return Token{}, err
+			return model.Token{}, err
 		}
 		if !exist {
 			goto NEXIST
 		}
 	}
-	return Token{}, fmt.Errorf("key collided")
+	return model.Token{}, fmt.Errorf("key collided")
 NEXIST:
 	token := Token{
 		Key:       key,
@@ -51,7 +51,11 @@ NEXIST:
 		CreatedAt: time.Now(),
 	}
 	t.repo.Store(token)
-	return token, nil
+	return model.Token{
+		Key:       key,
+		Data:      data,
+		IsExpired: false,
+	}, nil
 }
 
 func (t *ShortToken) Get(key, resource string) (model.Token, error) {
