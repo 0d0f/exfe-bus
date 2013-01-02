@@ -60,6 +60,30 @@ func main() {
 		log.Info("register TokenManager %d methods.", count)
 	}
 
+	if config.ExfeService.Services.ShortToken {
+		shorttoken, err := NewShortToken(&config, db)
+		if err != nil {
+			log.Crit("shorttoken can't created: %s", err)
+			os.Exit(-1)
+		}
+
+		count, err = bus.RegisterPath("shorttoken", shorttoken)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register shorttoken %d methods.", count)
+
+		count, err = bus.RegisterPath("shorttoken/{key}", shorttoken)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register shorttoken/key %d methods.", count)
+	}
+
 	if config.ExfeService.Services.Iom {
 		iom := NewIom(&config, redis)
 

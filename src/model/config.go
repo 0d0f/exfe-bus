@@ -46,6 +46,7 @@ type Config struct {
 		Port     uint   `json:"port"`
 		Services struct {
 			TokenManager bool `json:"tokenmanager"`
+			ShortToken   bool `json:"shorttoken"`
 			Iom          bool `json:"iom"`
 			Thirdpart    bool `json:"thirdpart"`
 			Notifier     bool `json:"notifier"`

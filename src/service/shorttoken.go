@@ -1,6 +1,7 @@
 package main
 
 import (
+	"broker"
 	"gobus"
 	"model"
 	"shorttoken"
@@ -11,10 +12,14 @@ type ShortToken struct {
 	short *shorttoken.ShortToken
 }
 
-func NewShortToken(repo shorttoken.Repo) *ShortToken {
+func NewShortToken(config *model.Config, db *broker.DBMultiplexer) (*ShortToken, error) {
+	repo, err := NewShortTokenRepository(config, db)
+	if err != nil {
+		return nil, err
+	}
 	return &ShortToken{
 		short: shorttoken.New(repo, 4),
-	}
+	}, nil
 }
 
 type PostArg struct {
@@ -49,7 +54,7 @@ type UpdateArg struct {
 	ExpireAfterSecond *int    `json:"expire_after_second"`
 }
 
-func (s *ShortToken) Update(meta *gobus.HTTPMeta, arg UpdateArg, reply *int) error {
+func (s *ShortToken) PUT(meta *gobus.HTTPMeta, arg UpdateArg, reply *int) error {
 	key := meta.Vars["key"]
 	if arg.Data != nil {
 		err := s.short.UpdateData(key, *arg.Data)
