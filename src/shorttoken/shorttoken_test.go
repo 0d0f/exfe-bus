@@ -50,10 +50,14 @@ func (r *TestTokenRepo) UpdateExpireAt(key, resource string, expireAt time.Time)
 
 func (r *TestTokenRepo) Find(key string, resource string) (Token, bool, error) {
 	for _, token := range r.store {
-		if token.Key == key {
-			return token, true, nil
+		find := true
+		if key != "" && token.Key != key {
+			find = false
 		}
-		if token.Resource == resource {
+		if resource != "" && token.Resource != resource {
+			find = false
+		}
+		if find {
 			return token, true, nil
 		}
 	}
@@ -71,10 +75,6 @@ func TestShortToken(t *testing.T) {
 	{
 		_, err := mgr.Get(tk, resource)
 		assert.NotEqual(t, err, nil)
-
-		ok, _, err := mgr.Verify(tk, resource)
-		assert.Equal(t, err, nil)
-		assert.Equal(t, ok, false)
 	}
 
 	token, err := mgr.Create(resource, "data", time.Second)
@@ -98,9 +98,8 @@ func TestShortToken(t *testing.T) {
 	}
 
 	{
-		ok, token, err := mgr.Verify(tk, resource)
+		token, err := mgr.Get(tk, resource)
 		assert.Equal(t, err, nil)
-		assert.Equal(t, ok, true)
 		assert.Equal(t, token.Key, tk)
 		assert.Equal(t, token.Data, "data")
 		assert.Equal(t, token.IsExpired, false)
@@ -112,9 +111,8 @@ func TestShortToken(t *testing.T) {
 	}
 
 	{
-		ok, token, err := mgr.Verify(tk, resource)
+		token, err := mgr.Get(tk, resource)
 		assert.Equal(t, err, nil)
-		assert.Equal(t, ok, true)
 		assert.Equal(t, token.Key, tk)
 		assert.Equal(t, token.Data, "abc")
 		assert.Equal(t, token.IsExpired, false)

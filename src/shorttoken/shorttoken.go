@@ -59,7 +59,12 @@ NEXIST:
 }
 
 func (t *ShortToken) Get(key, resource string) (model.Token, error) {
-	resource = hashResource(resource)
+	if key == "" && resource == "" {
+		return model.Token{}, fmt.Errorf("key and resource should not both empty")
+	}
+	if resource != "" {
+		resource = hashResource(resource)
+	}
 	token, ok, err := t.repo.Find(key, resource)
 	if err != nil {
 		return model.Token{}, err
@@ -73,22 +78,6 @@ func (t *ShortToken) Get(key, resource string) (model.Token, error) {
 		IsExpired: !time.Now().Before(token.ExpireAt),
 	}
 	return ret, nil
-}
-
-func (t *ShortToken) Verify(key, resource string) (bool, model.Token, error) {
-	resource = hashResource(resource)
-	token, ok, err := t.repo.Find(key, resource)
-	if err != nil {
-		return false, model.Token{}, err
-	}
-	if !ok {
-		return false, model.Token{}, nil
-	}
-	return token.Resource == resource, model.Token{
-		Key:       token.Key,
-		Data:      token.Data,
-		IsExpired: !time.Now().Before(token.ExpireAt),
-	}, nil
 }
 
 func (t *ShortToken) UpdateData(key, data string) error {

@@ -44,13 +44,6 @@ type VerifyReply struct {
 	Matched bool        `json:"matched"`
 }
 
-func (s *ShortToken) Verify(meta *gobus.HTTPMeta, arg string, reply *VerifyReply) error {
-	key := meta.Vars["key"]
-	var err error
-	reply.Matched, reply.Token, err = s.short.Verify(key, arg)
-	return err
-}
-
 type UpdateArg struct {
 	Data              *string `json:"data"`
 	ExpireAfterSecond *int    `json:"expire_after_second"`
