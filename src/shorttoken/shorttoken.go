@@ -86,6 +86,8 @@ func (t *ShortToken) UpdateData(key, data string) error {
 }
 
 func (t *ShortToken) Refresh(key, resource string, after time.Duration) error {
-	resource = hashResource(resource)
+	if resource != "" {
+		resource = hashResource(resource)
+	}
 	return t.repo.UpdateExpireAt(key, resource, time.Now().Add(after))
 }

@@ -76,9 +76,9 @@ func (r *ShortTokenRepository) Find(key, resource string) (shorttoken.Token, boo
 func (r *ShortTokenRepository) UpdateData(key, resource, data string) error {
 	sql := SHORTTOKEN_UPDATE_DATA
 	if key != "" {
-		sql = fmt.Sprintf("%s AND key='%s'", sql, key)
+		sql = fmt.Sprintf("%s AND `key`='%s'", sql, key)
 	}
-	if key != "" {
+	if resource != "" {
 		sql = fmt.Sprintf("%s AND resource='%s'", sql, resource)
 	}
 	var err error
@@ -92,9 +92,9 @@ func (r *ShortTokenRepository) UpdateData(key, resource, data string) error {
 func (r *ShortTokenRepository) UpdateExpireAt(key, resource string, expireAt time.Time) error {
 	sql := SHORTTOKEN_UPDATE_EXPIREAT
 	if key != "" {
-		sql = fmt.Sprintf("%s AND key='%s'", sql, key)
+		sql = fmt.Sprintf("%s AND `key`='%s'", sql, key)
 	}
-	if key != "" {
+	if resource != "" {
 		sql = fmt.Sprintf("%s AND resource='%s'", sql, resource)
 	}
 	var err error
