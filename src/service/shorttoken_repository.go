@@ -12,9 +12,9 @@ import (
 
 const (
 	SHORTTOKEN_STORE           = "INSERT INTO `shorttokens` (`key`, `resource`, `data`, `expire_at`, `created_at`) VALUES (?, ?, ?, ?, ?)"
-	SHORTTOKEN_FIND            = "SELECT `key`, resource, data, expire_at FROM `shorttokens` WHERE expire_at>NOW()"
-	SHORTTOKEN_UPDATE_DATA     = "UPDATE `shorttokens` SET data=? WHERE expire_at>NOW()"
-	SHORTTOKEN_UPDATE_EXPIREAT = "UPDATE `shorttokens` SET expire_at=? WHERE expire_at>NOW()"
+	SHORTTOKEN_FIND            = "SELECT `key`, resource, data, expire_at FROM `shorttokens` WHERE expire_at>UTC_TIMESTAMP()"
+	SHORTTOKEN_UPDATE_DATA     = "UPDATE `shorttokens` SET data=? WHERE expire_at>UTC_TIMESTAMP()"
+	SHORTTOKEN_UPDATE_EXPIREAT = "UPDATE `shorttokens` SET expire_at=? WHERE expire_at>UTC_TIMESTAMP()"
 )
 
 type ShortTokenRepository struct {

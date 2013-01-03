@@ -64,7 +64,7 @@ func (t *ShortToken) Get(key, resource string) (model.Token, error) {
 		return model.Token{}, fmt.Errorf("key and resource should not both empty")
 	}
 	md5 := hashResource(resource)
-	if resource != "" {
+	if resource == "" {
 		md5 = ""
 	}
 	token, ok, err := t.repo.Find(key, md5)

@@ -67,7 +67,7 @@ func main() {
 			os.Exit(-1)
 		}
 
-		count, err = bus.RegisterPath("shorttoken", shorttoken)
+		count, err = bus.RegisterPath("/shorttoken", shorttoken)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)
 			os.Exit(-1)
@@ -75,7 +75,7 @@ func main() {
 		}
 		log.Info("register shorttoken %d methods.", count)
 
-		count, err = bus.RegisterPath("shorttoken/{key}", shorttoken)
+		count, err = bus.RegisterPath("/shorttoken/{key}", shorttoken)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)
 			os.Exit(-1)
