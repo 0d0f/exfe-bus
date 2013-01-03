@@ -18,6 +18,7 @@ type Repo interface {
 type ShortToken struct {
 	repo   Repo
 	max    int32
+	fmt    string
 	random *rand.Rand
 }
 
@@ -25,6 +26,7 @@ func New(repo Repo, length int) *ShortToken {
 	return &ShortToken{
 		repo:   repo,
 		max:    int32(math.Pow10(length)),
+		fmt:    fmt.Sprintf("%%0%dd", length),
 		random: rand.New(rand.NewSource(time.Now().Unix())),
 	}
 }
@@ -32,7 +34,7 @@ func New(repo Repo, length int) *ShortToken {
 func (t *ShortToken) Create(resource, data string, after time.Duration) (model.Token, error) {
 	key := ""
 	for i := 0; i < 3; i++ {
-		key = fmt.Sprintf("%d", t.random.Int31n(t.max))
+		key = fmt.Sprintf(t.fmt, t.random.Int31n(t.max))
 		_, exist, err := t.repo.Find(key, "")
 		if err != nil {
 			return model.Token{}, err
@@ -52,9 +54,8 @@ NEXIST:
 	}
 	t.repo.Store(token)
 	return model.Token{
-		Key:       key,
-		Data:      data,
-		IsExpired: false,
+		Key:  key,
+		Data: data,
 	}, nil
 }
 
@@ -62,10 +63,11 @@ func (t *ShortToken) Get(key, resource string) (model.Token, error) {
 	if key == "" && resource == "" {
 		return model.Token{}, fmt.Errorf("key and resource should not both empty")
 	}
+	md5 := hashResource(resource)
 	if resource != "" {
-		resource = hashResource(resource)
+		md5 = ""
 	}
-	token, ok, err := t.repo.Find(key, resource)
+	token, ok, err := t.repo.Find(key, md5)
 	if err != nil {
 		return model.Token{}, err
 	}
@@ -73,9 +75,8 @@ func (t *ShortToken) Get(key, resource string) (model.Token, error) {
 		return model.Token{}, fmt.Errorf("can't find token with key(%s) or resource(%s)", key, resource)
 	}
 	ret := model.Token{
-		Key:       token.Key,
-		Data:      token.Data,
-		IsExpired: !time.Now().Before(token.ExpireAt),
+		Key:  token.Key,
+		Data: token.Data,
 	}
 	return ret, nil
 }

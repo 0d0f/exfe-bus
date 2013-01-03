@@ -12,9 +12,9 @@ import (
 
 const (
 	SHORTTOKEN_STORE           = "INSERT INTO `shorttokens` (`key`, `resource`, `data`, `expire_at`, `created_at`) VALUES (?, ?, ?, ?, ?)"
-	SHORTTOKEN_FIND            = "SELECT key, resource, data, expire_at FROM `shorttokens` WHERE 1==1"
-	SHORTTOKEN_UPDATE_DATA     = "UPDATE `shorttokens` SET data=? WHERE 1==1"
-	SHORTTOKEN_UPDATE_EXPIREAT = "UPDATE `shorttokens` SET tokens.expire_at=? WHERE 1==1"
+	SHORTTOKEN_FIND            = "SELECT `key`, resource, data, expire_at FROM `shorttokens` WHERE expire_at>NOW()"
+	SHORTTOKEN_UPDATE_DATA     = "UPDATE `shorttokens` SET data=? WHERE expire_at>NOW()"
+	SHORTTOKEN_UPDATE_EXPIREAT = "UPDATE `shorttokens` SET expire_at=? WHERE expire_at>NOW()"
 )
 
 type ShortTokenRepository struct {
@@ -44,9 +44,9 @@ func (r *ShortTokenRepository) Store(token shorttoken.Token) error {
 func (r *ShortTokenRepository) Find(key, resource string) (shorttoken.Token, bool, error) {
 	query := SHORTTOKEN_FIND
 	if key != "" {
-		query = fmt.Sprintf("%s AND key='%s'", query, key)
+		query = fmt.Sprintf("%s AND `key`='%s'", query, key)
 	}
-	if key != "" {
+	if resource != "" {
 		query = fmt.Sprintf("%s AND resource='%s'", query, resource)
 	}
 	var err error
@@ -55,7 +55,7 @@ func (r *ShortTokenRepository) Find(key, resource string) (shorttoken.Token, boo
 	r.db.Do(func(i multiplexer.Instance) {
 		db := i.(*broker.DBInstance)
 		var rows *sql.Rows
-		rows, err = db.Query(query, key)
+		rows, err = db.Query(query)
 		if err != nil {
 			return
 		}
