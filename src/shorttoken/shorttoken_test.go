@@ -58,6 +58,9 @@ func (r *TestTokenRepo) Find(key string, resource string) (Token, bool, error) {
 			find = false
 		}
 		if find {
+			if time.Now().After(token.ExpireAt) {
+				return Token{}, false, nil
+			}
 			return token, true, nil
 		}
 	}
@@ -86,7 +89,6 @@ func TestShortToken(t *testing.T) {
 		assert.Equal(t, err, nil)
 		assert.Equal(t, token.Key, tk)
 		assert.Equal(t, token.Data, "data")
-		assert.Equal(t, token.IsExpired, false)
 	}
 
 	{
@@ -94,7 +96,6 @@ func TestShortToken(t *testing.T) {
 		assert.Equal(t, err, nil)
 		assert.Equal(t, token.Key, tk)
 		assert.Equal(t, token.Data, "data")
-		assert.Equal(t, token.IsExpired, false)
 	}
 
 	{
@@ -102,7 +103,6 @@ func TestShortToken(t *testing.T) {
 		assert.Equal(t, err, nil)
 		assert.Equal(t, token.Key, tk)
 		assert.Equal(t, token.Data, "data")
-		assert.Equal(t, token.IsExpired, false)
 	}
 
 	{
@@ -115,18 +115,18 @@ func TestShortToken(t *testing.T) {
 		assert.Equal(t, err, nil)
 		assert.Equal(t, token.Key, tk)
 		assert.Equal(t, token.Data, "abc")
-		assert.Equal(t, token.IsExpired, false)
 	}
 
 	time.Sleep(time.Second * 2)
 
 	{
-		token, err := mgr.Get(tk, "")
-		assert.Equal(t, err, nil)
-		assert.Equal(t, token.Key, tk)
-		assert.Equal(t, token.Data, "abc")
-		assert.Equal(t, token.IsExpired, true)
+		_, err := mgr.Get(tk, "")
+		assert.NotEqual(t, err, nil)
 	}
+
+	token, err = mgr.Create(resource, "data", time.Second)
+	assert.Equal(t, err, nil)
+	tk = token.Key
 
 	err = mgr.Refresh(tk, "", time.Second)
 	assert.Equal(t, err, nil)
@@ -135,29 +135,14 @@ func TestShortToken(t *testing.T) {
 		token, err := mgr.Get(tk, "")
 		assert.Equal(t, err, nil)
 		assert.Equal(t, token.Key, tk)
-		assert.Equal(t, token.Data, "abc")
-		assert.Equal(t, token.IsExpired, false)
+		assert.Equal(t, token.Data, "data")
 	}
 
 	err = mgr.Refresh(tk, "", 0)
 	assert.Equal(t, err, nil)
 
 	{
-		token, err := mgr.Get(tk, "")
-		assert.Equal(t, err, nil)
-		assert.Equal(t, token.Key, tk)
-		assert.Equal(t, token.Data, "abc")
-		assert.Equal(t, token.IsExpired, true)
-	}
-
-	err = mgr.Refresh("", resource, time.Second)
-	assert.Equal(t, err, nil)
-
-	{
-		token, err := mgr.Get(tk, "")
-		assert.Equal(t, err, nil)
-		assert.Equal(t, token.Key, tk)
-		assert.Equal(t, token.Data, "abc")
-		assert.Equal(t, token.IsExpired, false)
+		_, err := mgr.Get(tk, "")
+		assert.NotEqual(t, err, nil)
 	}
 }

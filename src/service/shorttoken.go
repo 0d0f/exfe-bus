@@ -28,6 +28,15 @@ type PostArg struct {
 	ExpireAfterSecond int    `json:"expire_after_second"`
 }
 
+// 根据resource，data和expire after second创建一个token
+//
+// 例子：
+//
+//     > curl "http://127.0.0.1:23333/shorttoken" -d '{"data":"abc","resource":"123","expire_after_second":300}'
+//
+// 返回：
+//
+//     {"key":"0303","data":"abc"}
 func (s *ShortToken) POST(meta *gobus.HTTPMeta, arg PostArg, reply *model.Token) error {
 	after := time.Duration(arg.ExpireAfterSecond) * time.Second
 	var err error
@@ -35,6 +44,15 @@ func (s *ShortToken) POST(meta *gobus.HTTPMeta, arg PostArg, reply *model.Token)
 	return err
 }
 
+// 根据key或者resource获得一个token，如果token不存在，返回错误
+//
+// 例子：
+//
+//     > curl "http://127.0.0.1:23333/shorttoken?method=GET&key=0303&resource=123" -d '""'
+//
+// 返回：
+//
+//     {"key":"0303","data":"abc"}
 func (s *ShortToken) GET(meta *gobus.HTTPMeta, arg string, reply *model.Token) error {
 	params := meta.Request.URL.Query()
 	key := params.Get("key")
@@ -44,16 +62,20 @@ func (s *ShortToken) GET(meta *gobus.HTTPMeta, arg string, reply *model.Token) e
 	return err
 }
 
-type VerifyReply struct {
-	Token   model.Token `json:"token"`
-	Matched bool        `json:"matched"`
-}
-
 type UpdateArg struct {
 	Data              *string `json:"data"`
 	ExpireAfterSecond *int    `json:"expire_after_second"`
 }
 
+// 更新key对应的token的data信息或者expire after second
+//
+// 例子：
+//
+//     > curl "http://127.0.0.1:23333/shorttoken/0303?method=PUT" -d '{"data":"xyz","expire_after_second":13}'
+//
+// 返回：
+//
+//     0
 func (s *ShortToken) PUT(meta *gobus.HTTPMeta, arg UpdateArg, reply *int) error {
 	key := meta.Vars["key"]
 	if arg.Data != nil {
