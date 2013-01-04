@@ -16,8 +16,8 @@ type AddArgs struct {
 
 func (t *gobusTest) SetRoute(route RouteCreater) {
 	json := new(JSON)
-	route().Methods("POST").Path("/add").HandlerFunc(Must(HandleMethod(json, t, "Add_")))
-	route().Methods("GET").Path("/key/{key}").HandlerFunc(Must(HandleMethod(json, t, "CheckKey_")))
+	route().Methods("POST").Path("/add").HandlerFunc(Must(Method(json, t, "Add_")))
+	route().Methods("GET").Path("/key/{key}").HandlerFunc(Must(Method(json, t, "CheckKey_")))
 }
 
 func (t *gobusTest) Add_(params map[string]string, arg AddArgs) (int, error) {

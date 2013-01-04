@@ -10,7 +10,7 @@ type TubeTest1 struct {
 
 func (t *TubeTest1) SetRoute(route RouteCreater) {
 	json := new(JSON)
-	route().Methods("GET").Path("/update").HandlerFunc(Must(HandleMethod(json, t, "Update")))
+	route().Methods("GET").Path("/update").HandlerFunc(Must(Method(json, t, "Update")))
 }
 
 func (t *TubeTest1) Update(params map[string]string) (int, error) {
@@ -24,7 +24,7 @@ type TubeTest2 struct {
 
 func (t *TubeTest2) SetRoute(route RouteCreater) {
 	json := new(JSON)
-	route().Methods("GET").Path("/stream").HandlerFunc(Must(HandleMethod(json, t, "Stream")))
+	route().Methods("GET").Path("/stream").HandlerFunc(Must(Method(json, t, "Stream")))
 }
 
 func (t *TubeTest2) Stream(params map[string]string) (int, error) {

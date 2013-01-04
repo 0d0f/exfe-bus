@@ -69,7 +69,7 @@ func callMethod(f reflect.Value, args []reflect.Value) (reflect.Value, error) {
 	return ret, nil
 }
 
-func HandleMethod(codec Codec, arg interface{}, method string) (http.HandlerFunc, error) {
+func Method(codec Codec, arg interface{}, method string) (http.HandlerFunc, error) {
 	t := reflect.TypeOf(arg)
 	v := reflect.ValueOf(arg)
 	m, ok := t.MethodByName(method)
@@ -104,7 +104,7 @@ func HandleMethod(codec Codec, arg interface{}, method string) (http.HandlerFunc
 			if !inputPtr {
 				input = input.Elem()
 			}
-			ret, err := callMethod(m.Func, []reflect.Value{v, reflect.ValueOf(Params(r)), input})
+			ret, err := callMethod(m.Func, []reflect.Value{v, reflect.ValueOf(params(r)), input})
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(err.Error()))
@@ -124,7 +124,7 @@ func HandleMethod(codec Codec, arg interface{}, method string) (http.HandlerFunc
 			return nil, fmt.Errorf("first input is not map[string]string")
 		}
 		return func(w http.ResponseWriter, r *http.Request) {
-			ret, err := callMethod(m.Func, []reflect.Value{v, reflect.ValueOf(Params(r))})
+			ret, err := callMethod(m.Func, []reflect.Value{v, reflect.ValueOf(params(r))})
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(err.Error()))
@@ -143,7 +143,7 @@ func HandleMethod(codec Codec, arg interface{}, method string) (http.HandlerFunc
 	return nil, fmt.Errorf("method must have 1 or 2 input arguments")
 }
 
-func Params(r *http.Request) map[string]string {
+func params(r *http.Request) map[string]string {
 	vars := mux.Vars(r)
 	q := r.URL.Query()
 	for k, _ := range q {
