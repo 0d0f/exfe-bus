@@ -69,9 +69,7 @@ func TestDispatcher(t *testing.T) {
 
 	var route map[string]map[string]string
 	err := json.Unmarshal([]byte(config), &route)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Equal(t, err, nil)
 
 	table := NewTable(route)
 	dispatcher := NewDispatcher(table)
@@ -79,22 +77,14 @@ func TestDispatcher(t *testing.T) {
 	{
 		var reply int
 		err = dispatcher.Do("bus://add", "POST", AddArgs{2, 4}, &reply)
-		if err != nil {
-			t.Fatalf("call Add error: %s", err)
-		}
-		if expect, got := 6, reply; got != expect {
-			t.Error("expect: %d, got: %d", expect, got)
-		}
+		assert.Equal(t, err, nil)
+		assert.Equal(t, reply, 6)
 	}
 
 	{
 		var reply int
 		err = dispatcher.DoWithIdentity("abc", "bus://add", "POST", AddArgs{2, 4}, &reply)
-		if err != nil {
-			t.Fatalf("call Add error: %s", err)
-		}
-		if expect, got := 6, reply; got != expect {
-			t.Error("expect: %d, got: %d", expect, got)
-		}
+		assert.Equal(t, err, nil)
+		assert.Equal(t, reply, 6)
 	}
 }

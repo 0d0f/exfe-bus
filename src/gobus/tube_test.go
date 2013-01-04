@@ -1,6 +1,8 @@
 package gobus
 
 import (
+	"encoding/json"
+	"github.com/stretchrcom/testify/assert"
 	"testing"
 )
 
@@ -40,37 +42,40 @@ func TestTube(t *testing.T) {
 	tester1 := new(TubeTest1)
 	tester2 := new(TubeTest2)
 	err = bus.Register(tester1)
-	if err != nil {
-		t.Fatalf("register failed: %s", err)
-	}
+	assert.Equal(t, err, nil)
 	err = bus.Register(tester2)
-	if err != nil {
-		t.Fatalf("register failed: %s", err)
-	}
+	assert.Equal(t, err, nil)
 
 	go bus.ListenAndServe()
 
-	tube := NewTubeClient("TubeTest")
-	if got, expect := tube.Name(), "TubeTest"; got != expect {
-		t.Errorf("expect: %s, got: %s", expect, got)
-	}
-	err = tube.AddService("http://127.0.0.1:23333/update", "GET")
+	config := `
+	{
+	    "bus://update": {"_default": "http://127.0.0.1:23333/update"},
+	    "bus://stream": {"_default": "http://127.0.0.1:23333/stream"}
+	}`
+
+	var route map[string]map[string]string
+	err = json.Unmarshal([]byte(config), &route)
 	if err != nil {
-		t.Fatalf("add service tester1 failed: %s", err)
-	}
-	err = tube.AddService("http://127.0.0.1:23333/stream", "GET")
-	if err != nil {
-		t.Fatalf("add service tester2 failed: %s", err)
-	}
-	err = tube.Send(1)
-	if err != nil {
-		t.Fatalf("send failed: %s", err)
+		t.Fatal(err)
 	}
 
-	if got, expect := tester1.updateCount, 1; got != expect {
-		t.Errorf("expect: %d, got: %d", expect, got)
-	}
-	if got, expect := tester2.streamCount, 1; got != expect {
-		t.Errorf("expect: %d, got: %d", expect, got)
-	}
+	table := NewTable(route)
+	dispatcher := NewDispatcher(table)
+
+	tube := NewTubeClient(dispatcher)
+	err = tube.AddService("bus://update", "GET")
+	assert.Equal(t, err, nil)
+	err = tube.AddService("bus://stream", "GET")
+	assert.Equal(t, err, nil)
+
+	err = tube.Send(1)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, tester1.updateCount, 1)
+	assert.Equal(t, tester2.streamCount, 1)
+
+	err = tube.SendWithIdentity("abc", 1)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, tester1.updateCount, 2)
+	assert.Equal(t, tester2.streamCount, 2)
 }
