@@ -27,26 +27,23 @@ func (d Table) Find(url, identity string) (string, error) {
 }
 
 type Dispatcher struct {
-	table Table
+	table  Table
+	client *Client
 }
 
 func NewDispatcher(table Table) *Dispatcher {
 	return &Dispatcher{
-		table: table,
+		table:  table,
+		client: NewClient(new(JSON)),
 	}
 }
 
 func (d *Dispatcher) DoWithIdentity(identity, addr, method string, arg, reply interface{}) error {
 	url, err := d.table.Find(addr, identity)
-	fmt.Println(url)
 	if err != nil {
 		return err
 	}
-	client, err := NewClient(url)
-	if err != nil {
-		return err
-	}
-	return client.Do(method, arg, reply)
+	return d.client.Do(url, method, arg, reply)
 }
 
 func (d *Dispatcher) Do(addr, method string, arg, reply interface{}) error {

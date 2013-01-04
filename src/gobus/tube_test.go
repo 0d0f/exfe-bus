@@ -1,7 +1,6 @@
 package gobus
 
 import (
-	"github.com/googollee/go-logger"
 	"testing"
 )
 
@@ -9,36 +8,42 @@ type TubeTest1 struct {
 	updateCount int
 }
 
-func (t *TubeTest1) Update(meta *HTTPMeta, arg *int, reply *int) error {
+func (t *TubeTest1) SetRoute(route RouteCreater) {
+	json := new(JSON)
+	route().Methods("GET").Path("/update").HandlerFunc(Must(HandleMethod(json, t, "Update")))
+}
+
+func (t *TubeTest1) Update(params map[string]string) (int, error) {
 	t.updateCount++
-	return nil
+	return 0, nil
 }
 
 type TubeTest2 struct {
 	streamCount int
 }
 
-func (t *TubeTest2) Stream(meta *HTTPMeta, arg *int, reply *int) error {
+func (t *TubeTest2) SetRoute(route RouteCreater) {
+	json := new(JSON)
+	route().Methods("GET").Path("/stream").HandlerFunc(Must(HandleMethod(json, t, "Stream")))
+}
+
+func (t *TubeTest2) Stream(params map[string]string) (int, error) {
 	t.streamCount++
-	return nil
+	return 0, nil
 }
 
 func TestTube(t *testing.T) {
-	l, err := logger.New(logger.Stderr, "test gobus")
-	if err != nil {
-		panic(err)
-	}
-	bus, err := NewServer("http://127.0.0.1:23333", l)
+	bus, err := NewServer("127.0.0.1:23333")
 	if err != nil {
 		t.Fatalf("create gobus server fail: %s", err)
 	}
 	tester1 := new(TubeTest1)
 	tester2 := new(TubeTest2)
-	_, err = bus.Register(tester1)
+	err = bus.Register(tester1)
 	if err != nil {
 		t.Fatalf("register failed: %s", err)
 	}
-	_, err = bus.Register(tester2)
+	err = bus.Register(tester2)
 	if err != nil {
 		t.Fatalf("register failed: %s", err)
 	}
@@ -49,11 +54,11 @@ func TestTube(t *testing.T) {
 	if got, expect := tube.Name(), "TubeTest"; got != expect {
 		t.Errorf("expect: %s, got: %s", expect, got)
 	}
-	err = tube.AddService("http://127.0.0.1:23333/TubeTest1", "Update")
+	err = tube.AddService("http://127.0.0.1:23333/update", "GET")
 	if err != nil {
 		t.Fatalf("add service tester1 failed: %s", err)
 	}
-	err = tube.AddService("http://127.0.0.1:23333/TubeTest2", "Stream")
+	err = tube.AddService("http://127.0.0.1:23333/stream", "GET")
 	if err != nil {
 		t.Fatalf("add service tester2 failed: %s", err)
 	}

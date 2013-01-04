@@ -2,7 +2,6 @@ package gobus
 
 import (
 	"encoding/json"
-	"github.com/googollee/go-logger"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
 )
@@ -56,12 +55,8 @@ func TestTable(t *testing.T) {
 }
 
 func TestDispatcher(t *testing.T) {
-	const gobusUrl = "http://127.0.0.1:12345"
-	l, err := logger.New(logger.Stderr, "test gobus")
-	if err != nil {
-		panic(err)
-	}
-	s, _ := NewServer(gobusUrl, l)
+	const gobusUrl = "127.0.0.1:12345"
+	s, _ := NewServer(gobusUrl)
 	test := new(gobusTest)
 	s.Register(test)
 
@@ -69,11 +64,11 @@ func TestDispatcher(t *testing.T) {
 
 	config := `
 	{
-	    "bus://test1": {"_default": "http://127.0.0.1:12345/gobusTest"}
+	    "bus://add": {"_default": "http://127.0.0.1:12345/add"}
 	}`
 
 	var route map[string]map[string]string
-	err = json.Unmarshal([]byte(config), &route)
+	err := json.Unmarshal([]byte(config), &route)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +78,7 @@ func TestDispatcher(t *testing.T) {
 
 	{
 		var reply int
-		err = dispatcher.Do("bus://test1", "Add", AddArgs{2, 4}, &reply)
+		err = dispatcher.Do("bus://add", "POST", AddArgs{2, 4}, &reply)
 		if err != nil {
 			t.Fatalf("call Add error: %s", err)
 		}
@@ -94,7 +89,7 @@ func TestDispatcher(t *testing.T) {
 
 	{
 		var reply int
-		err = dispatcher.DoWithIdentity("abc", "bus://test1", "Add", AddArgs{2, 4}, &reply)
+		err = dispatcher.DoWithIdentity("abc", "bus://add", "POST", AddArgs{2, 4}, &reply)
 		if err != nil {
 			t.Fatalf("call Add error: %s", err)
 		}
