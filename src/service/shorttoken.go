@@ -53,7 +53,7 @@ func (s *ShortToken) POST(meta *gobus.HTTPMeta, arg PostArg, reply *model.Token)
 // 返回：
 //
 //     {"key":"0303","data":"abc"}
-func (s *ShortToken) GET(meta *gobus.HTTPMeta, arg string, reply []model.Token) error {
+func (s *ShortToken) GET(meta *gobus.HTTPMeta, arg string, reply *[]model.Token) error {
 	params := meta.Request.URL.Query()
 	key := params.Get("key")
 	resource := params.Get("resource")
