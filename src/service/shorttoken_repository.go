@@ -41,7 +41,7 @@ func (r *ShortTokenRepository) Store(token shorttoken.Token) error {
 	return err
 }
 
-func (r *ShortTokenRepository) Find(key, resource string) (shorttoken.Token, bool, error) {
+func (r *ShortTokenRepository) Find(key, resource string) ([]shorttoken.Token, error) {
 	query := SHORTTOKEN_FIND
 	if key != "" {
 		query = fmt.Sprintf("%s AND `key`='%s'", query, key)
@@ -50,8 +50,7 @@ func (r *ShortTokenRepository) Find(key, resource string) (shorttoken.Token, boo
 		query = fmt.Sprintf("%s AND resource='%s'", query, resource)
 	}
 	var err error
-	isExist := true
-	token := shorttoken.Token{}
+	ret := make([]shorttoken.Token, 0)
 	r.db.Do(func(i multiplexer.Instance) {
 		db := i.(*broker.DBInstance)
 		var rows *sql.Rows
@@ -59,18 +58,21 @@ func (r *ShortTokenRepository) Find(key, resource string) (shorttoken.Token, boo
 		if err != nil {
 			return
 		}
-		if !rows.Next() {
-			isExist = false
-			return
+		for rows.Next() {
+			token := shorttoken.Token{}
+			var expireAt string
+			err := rows.Scan(&token.Key, &token.Resource, &token.Data, &expireAt)
+			if err != nil {
+				return
+			}
+			token.ExpireAt, _ = time.Parse("2006-01-02 15:04:05", expireAt)
+			ret = append(ret, token)
 		}
-		var expireAt string
-		err := rows.Scan(&token.Key, &token.Resource, &token.Data, &expireAt)
-		if err != nil {
-			return
-		}
-		token.ExpireAt, _ = time.Parse("2006-01-02 15:04:05", expireAt)
 	})
-	return token, isExist, err
+	if len(ret) == 0 {
+		return nil, nil
+	}
+	return ret, err
 }
 
 func (r *ShortTokenRepository) UpdateData(key, resource, data string) error {

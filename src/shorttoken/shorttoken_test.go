@@ -48,23 +48,24 @@ func (r *TestTokenRepo) UpdateExpireAt(key, resource string, expireAt time.Time)
 	return fmt.Errorf("can't find")
 }
 
-func (r *TestTokenRepo) Find(key string, resource string) (Token, bool, error) {
+func (r *TestTokenRepo) Find(key string, resource string) ([]Token, error) {
+	ret := make([]Token, 0)
 	for _, token := range r.store {
-		find := true
 		if key != "" && token.Key != key {
-			find = false
+			continue
 		}
 		if resource != "" && token.Resource != resource {
-			find = false
+			continue
 		}
-		if find {
-			if time.Now().After(token.ExpireAt) {
-				return Token{}, false, nil
-			}
-			return token, true, nil
+		if time.Now().After(token.ExpireAt) {
+			continue
 		}
+		ret = append(ret, token)
 	}
-	return Token{}, false, nil
+	if len(ret) == 0 {
+		return nil, nil
+	}
+	return ret, nil
 }
 
 func TestShortToken(t *testing.T) {
@@ -87,22 +88,25 @@ func TestShortToken(t *testing.T) {
 	{
 		token, err := mgr.Get(tk, "")
 		assert.Equal(t, err, nil)
-		assert.Equal(t, token.Key, tk)
-		assert.Equal(t, token.Data, "data")
+		assert.Equal(t, len(token), 1)
+		assert.Equal(t, token[0].Key, tk)
+		assert.Equal(t, token[0].Data, "data")
 	}
 
 	{
 		token, err := mgr.Get("", resource)
 		assert.Equal(t, err, nil)
-		assert.Equal(t, token.Key, tk)
-		assert.Equal(t, token.Data, "data")
+		assert.Equal(t, len(token), 1)
+		assert.Equal(t, token[0].Key, tk)
+		assert.Equal(t, token[0].Data, "data")
 	}
 
 	{
 		token, err := mgr.Get(tk, resource)
 		assert.Equal(t, err, nil)
-		assert.Equal(t, token.Key, tk)
-		assert.Equal(t, token.Data, "data")
+		assert.Equal(t, len(token), 1)
+		assert.Equal(t, token[0].Key, tk)
+		assert.Equal(t, token[0].Data, "data")
 	}
 
 	{
@@ -113,8 +117,9 @@ func TestShortToken(t *testing.T) {
 	{
 		token, err := mgr.Get(tk, resource)
 		assert.Equal(t, err, nil)
-		assert.Equal(t, token.Key, tk)
-		assert.Equal(t, token.Data, "abc")
+		assert.Equal(t, len(token), 1)
+		assert.Equal(t, token[0].Key, tk)
+		assert.Equal(t, token[0].Data, "abc")
 	}
 
 	time.Sleep(time.Second * 2)
@@ -134,8 +139,9 @@ func TestShortToken(t *testing.T) {
 	{
 		token, err := mgr.Get(tk, "")
 		assert.Equal(t, err, nil)
-		assert.Equal(t, token.Key, tk)
-		assert.Equal(t, token.Data, "data")
+		assert.Equal(t, len(token), 1)
+		assert.Equal(t, token[0].Key, tk)
+		assert.Equal(t, token[0].Data, "data")
 	}
 
 	err = mgr.Refresh(tk, "", 0)
