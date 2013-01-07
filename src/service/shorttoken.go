@@ -58,7 +58,7 @@ func (s *ShortToken) GET(meta *gobus.HTTPMeta, arg string, reply *[]model.Token)
 	key := params.Get("key")
 	resource := params.Get("resource")
 	var err error
-	reply, err = s.short.Get(key, resource)
+	*reply, err = s.short.Get(key, resource)
 	return err
 }
 
