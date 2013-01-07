@@ -93,3 +93,22 @@ func (s *ShortToken) PUT(meta *gobus.HTTPMeta, arg UpdateArg, reply *int) error 
 	}
 	return nil
 }
+
+type ExpireArg struct {
+	Resource          string `json:"resource"`
+	ExpireAfterSecond int    `json:"expire_after_second"`
+}
+
+// 更新resource对应的token的expire after second
+//
+// 例子：
+//
+//     > curl "http://127.0.0.1:23333/shorttoken?method=Expire" -d '{"resource":"123","expire_after_second":13}'
+//
+// 返回：
+//
+//     0
+func (s *ShortToken) Expire(meta *gobus.HTTPMeta, arg ExpireArg, reply *int) error {
+	after := time.Duration(arg.ExpireAfterSecond) * time.Second
+	return s.short.Refresh("", arg.Resource, after)
+}
