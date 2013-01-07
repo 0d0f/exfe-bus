@@ -22,9 +22,16 @@ func NewShortToken(config *model.Config, db *broker.DBMultiplexer) (*ShortToken,
 	}, nil
 }
 
-type PostArg struct {
-	Resource          string `json:"resource"`
+func (s *ShortToken) SetRoute(route gobus.RouteCreater) {
+	json := new(gobus.JSON)
+	route().Methods("POST").Path("/shorttoken").HandlerFunc(gobus.Must(gobus.Method(json, s, "Create")))
+	route().Methods("GET").Path("/shorttoken").HandlerFunc(gobus.Must(gobus.Method(json, s, "Get")))
+	route().Methods("POST").Path("/shorttoken/{key}").HandlerFunc(gobus.Must(gobus.Method(json, s, "Update")))
+}
+
+type CreateArg struct {
 	Data              string `json:"data"`
+	Resource          string `json:"resource"`
 	ExpireAfterSecond int    `json:"expire_after_second"`
 }
 
@@ -37,29 +44,26 @@ type PostArg struct {
 // 返回：
 //
 //     {"key":"0303","data":"abc"}
-func (s *ShortToken) POST(meta *gobus.HTTPMeta, arg PostArg, reply *model.Token) error {
+func (s *ShortToken) Create(params map[string]string, arg CreateArg) (model.Token, error) {
 	after := time.Duration(arg.ExpireAfterSecond) * time.Second
-	var err error
-	*reply, err = s.short.Create(arg.Resource, arg.Data, after)
-	return err
+	ret, err := s.short.Create(arg.Resource, arg.Data, after)
+	return ret, err
 }
 
 // 根据key或者resource获得一个token，如果token不存在，返回错误
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/shorttoken?method=GET&key=0303&resource=123" -d '""'
+//     > curl "http://127.0.0.1:23333/shorttoken?key=0303&resource=123"
 //
 // 返回：
 //
-//     {"key":"0303","data":"abc"}
-func (s *ShortToken) GET(meta *gobus.HTTPMeta, arg string, reply []model.Token) error {
-	params := meta.Request.URL.Query()
-	key := params.Get("key")
-	resource := params.Get("resource")
-	var err error
-	reply, err = s.short.Get(key, resource)
-	return err
+//     [{"key":"0303","data":"abc"}]
+func (s *ShortToken) Get(params map[string]string) ([]model.Token, error) {
+	key := params["key"]
+	resource := params["resource"]
+	ret, err := s.short.Get(key, resource)
+	return ret, err
 }
 
 type UpdateArg struct {
@@ -71,25 +75,25 @@ type UpdateArg struct {
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/shorttoken/0303?method=PUT" -d '{"data":"xyz","expire_after_second":13}'
+//     > curl "http://127.0.0.1:23333/shorttoken/0303" -d '{"data":"xyz","expire_after_second":13}'
 //
 // 返回：
 //
 //     0
-func (s *ShortToken) PUT(meta *gobus.HTTPMeta, arg UpdateArg, reply *int) error {
-	key := meta.Vars["key"]
+func (s *ShortToken) Update(params map[string]string, arg UpdateArg) (int, error) {
+	key := params["key"]
 	if arg.Data != nil {
 		err := s.short.UpdateData(key, *arg.Data)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 	if arg.ExpireAfterSecond != nil {
 		after := time.Duration(*arg.ExpireAfterSecond) * time.Second
 		err := s.short.Refresh(key, "", after)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
-	return nil
+	return 0, nil
 }

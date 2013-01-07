@@ -20,19 +20,22 @@ func NewIom(config *model.Config, redis broker.Redis) *Iom {
 	}
 }
 
-type IomGetArg struct {
-	UserID string `json:"user_id"`
-	Hash   string `json:"hash"`
+func (iom *Iom) SetRoute(route gobus.RouteCreater) {
+	json := new(gobus.JSON)
+	route().Methods("GET").Path("/iom/{user_id}/{hash}").HandlerFunc(gobus.Must(gobus.Method(json, iom, "Get")))
+	route().Methods("POST").Path("/iom/user/{user_id}").HandlerFunc(gobus.Must(gobus.Method(json, iom, "Create")))
 }
 
 // 获取用户user_id名下的hash对应的资源。
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/Iom?method=GET -d '{"user_id":"124","hash":"aa"}'
+//     > curl http://127.0.0.1:23333/iom/124/aa -d '{"user_id":"124","hash":"aa"}'
 //     "abc"
-func (iom *Iom) GET(meta *gobus.HTTPMeta, arg *IomGetArg, reply *string) (err error) {
-	*reply, err = iom.handler.Get(arg.UserID, arg.Hash)
+func (iom *Iom) Get(params map[string]string) (string, error) {
+	userID := params["user_id"]
+	hash := params["hash"]
+	ret, err := iom.handler.Get(userID, hash)
 	return
 }
 
@@ -45,12 +48,13 @@ type IomPostArg struct {
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/Iom?method=POST -d '{"user_id":"124","data":"abc"}'
+//     > curl http://127.0.0.1:23333/iom/user/124 -d '"abc"'
 //     "AA"
-func (iom *Iom) POST(meta *gobus.HTTPMeta, arg *IomPostArg, reply *string) (err error) {
-	*reply, err = iom.handler.FindByData(arg.UserID, arg.Data)
+func (iom *Iom) Create(params map[string]string, data string) (string, error) {
+	userID := params["user_id"]
+	ret, err := iom.handler.FindByData(userID, data)
 	if err != nil {
-		*reply, err = iom.handler.Create(arg.UserID, arg.Data)
+		ret, err = iom.handler.Create(userID, data)
 	}
-	return
+	return ret, err
 }

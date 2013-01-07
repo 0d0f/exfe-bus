@@ -24,11 +24,19 @@ func NewConversation_(config *model.Config, db *broker.DBMultiplexer, redis *bro
 	}, nil
 }
 
+func (c *Conversation_) SetRoute(route gobus.RouteCreater) {
+	json := new(gobus.JSON)
+	route().Methods("POST").Path("/cross/{cross_id}/conversation").HandlerFunc(gobus.Must(gobus.Method(json, c, "Create")))
+	route().Methods("GET").Path("/cross/{cross_id}/conversation").HandlerFunc(gobus.Must(gobus.Method(json, c, "Find")))
+	route().Methods("DELETE").Path("/cross/{cross_id}/conversation/{post_id}").HandlerFunc(gobus.Must(gobus.Method(json, c, "Delete")))
+	route().Methods("GET").Path("/cross/{cross_id}/user/{user_id}/unread_count").HandlerFunc(gobus.Must(gobus.Method(json, c, "Unread")))
+}
+
 // 发一条新的Post到cross_id
 //
 // 例子：
 //
-//     > curl http://panda.0d0f.com:23333/cross/100354/Conversation?via=web&created_at=1293479544 -d '{"by_identity":{"id":572},"content":"@googollee@twitter blablabla"}'
+//     > curl http://panda.0d0f.com:23333/cross/100354/conversation?via=web&created_at=1293479544 -d '{"by_identity":{"id":572},"content":"@googollee@twitter blablabla"}'
 //
 // 返回：
 //
@@ -54,125 +62,123 @@ func NewConversation_(config *model.Config, db *broker.DBMultiplexer, redis *bro
 //      =>
 //     "@exfe@twitter look at this image {{webpage:http://instagr.am/xxxx}}\n cool!"
 //     relationship: [{"mention": "identity://123"}, {"webpage":"http://instagr.am/xxxx"}]
-func (c *Conversation_) POST(meta *gobus.HTTPMeta, arg model.Post, reply *model.Post) error {
-	values := meta.Request.URL.Query()
-	via := values.Get("via")
-	createdAt_ := values.Get("created_at")
+func (c *Conversation_) Create(params map[string]string, arg model.Post) (model.Post, error) {
+	via := params["via"]
+	createdAt_ := params["created_at"]
 	createdAt := time.Now().Unix()
 	if createdAt_ != "" {
 		var err error
 		createdAt, err = strconv.ParseInt(createdAt_, 10, 64)
 		if err != nil {
-			return fmt.Errorf("can't pasrse created_at: %s", createdAt_)
+			return model.Post{}, fmt.Errorf("can't pasrse created_at: %s", createdAt_)
 		}
 	}
 	crossID, err := strconv.ParseUint(meta.Vars["cross_id"], 10, 64)
 	if err != nil {
-		return fmt.Errorf("can't parse cross_id: %s", meta.Vars["cross_id"])
+		return model.Post{}, fmt.Errorf("can't parse cross_id: %s", meta.Vars["cross_id"])
 	}
-	*reply, err = c.conversation.NewPost(crossID, arg, via, createdAt)
-	return err
+	ret, err := c.conversation.NewPost(crossID, arg, via, createdAt)
+	return ret, err
 }
 
 // 查询Posts
 //
 // 例子：
 //
-//     > curl "http://panda.0d0f.com:23333/cross/100354/Conversation?method=GET&clear_user=378&since=2010-12-27+19:52:24&until=2010-12-27+19:52:24&min=11&max=11" -d '""'
+//     > curl "http://panda.0d0f.com:23333/cross/100354/conversation?clear_user=378&since=2010-12-27+19:52:24&until=2010-12-27+19:52:24&min=11&max=11"
 //
 // 返回：
 //
 //     [{"id":11,"by_identity":{"id":572,"name":"Googol","connected_user_id":-572,"avatar_filename":"http://api.panda.0d0f.com/v2/avatar/default?name=Googol","provider":"email","external_id":"googollee@163.com","external_username":"googollee@163.com"},"content":"@googollee@twitter blablabla","via":"web","created_at":"2010-12-27 19:52:24 +0000","relationship":[{"uri":"identity://573","relation":"mention"}],"exfee_id":110220,"ref_uri":"cross://100354"}]
-func (c *Conversation_) GET(meta *gobus.HTTPMeta, arg string, reply *[]model.Post) error {
-	values := meta.Request.URL.Query()
-	crossID, err := strconv.ParseUint(meta.Vars["cross_id"], 10, 64)
+func (c *Conversation_) Find(params map[string]string) ([]model.Post, error) {
+	crossID, err := strconv.ParseUint(params["cross_id"], 10, 64)
 	if err != nil {
-		return fmt.Errorf("can't parse cross_id: %s", meta.Vars["cross_id"])
+		return nil, fmt.Errorf("can't parse cross_id: %s", params["cross_id"])
 	}
-	clearUserID, err := strconv.ParseInt(values.Get("clear_user"), 10, 64)
+	clearUserID, err := strconv.ParseInt(params["clear_user"], 10, 64)
 	if err != nil {
-		if values.Get("clear_user") == "" {
+		if params["clear_user"] == "" {
 			clearUserID = 0
 		} else {
-			return fmt.Errorf("can't parse clear_user: %s", values.Get("clear_user"))
+			return nil, fmt.Errorf("can't parse clear_user: %s", params["clear_user"])
 		}
 	}
-	sinceTime := values.Get("since")
-	untilTime := values.Get("until")
-	minID, err := strconv.ParseUint(values.Get("min"), 10, 64)
+	sinceTime := params["since"]
+	untilTime := params["until"]
+	minID, err := strconv.ParseUint(params["min"], 10, 64)
 	if err != nil {
-		if values.Get("min") == "" {
+		if params["min"] == "" {
 			minID = 0
 		} else {
-			return fmt.Errorf("can't parse min: %s", values.Get("min"))
+			return fmt.Errorf("can't parse min: %s", params["min"])
 		}
 	}
-	maxID, err := strconv.ParseUint(values.Get("max"), 10, 64)
+	maxID, err := strconv.ParseUint(params["max"], 10, 64)
 	if err != nil {
-		if values.Get("max") == "" {
+		if params["max"] == "" {
 			maxID = 0
 		} else {
-			return fmt.Errorf("can't parse max: %s", values.Get("max"))
+			return fmt.Errorf("can't parse max: %s", params["max"])
 		}
 	}
 
-	*reply, err = c.conversation.FindPosts(crossID, clearUserID, sinceTime, untilTime, minID, maxID)
-	return err
+	ret, err := c.conversation.FindPosts(crossID, clearUserID, sinceTime, untilTime, minID, maxID)
+	return ret, err
 }
 
 // 删除一条Post
 //
 // 例子：
 //
-//     > curl "http://panda.0d0f.com:23333/cross/100354/Conversation/11?method=DELETE" -d '""'
+//     > curl "http://panda.0d0f.com:23333/cross/100354/conversation/11" -X DELETE
 //
 // 返回：
 //
 //     {"id":11,"by_identity":{"id":572,"name":"Googol","connected_user_id":-572,"avatar_filename":"http://api.panda.0d0f.com/v2/avatar/default?name=Googol","provider":"email","external_id":"googollee@163.com","external_username":"googollee@163.com"},"content":"@googollee@twitter blablabla","via":"web","created_at":"2010-12-27 19:52:24 +0000","relationship":[{"uri":"identity://573","relation":"mention"}],"exfee_id":110220,"ref_uri":"cross://100354"}
-func (c *Conversation_) DELETE(meta *gobus.HTTPMeta, arg string, reply *model.Post) error {
-	crossID, err := strconv.ParseUint(meta.Vars["cross_id"], 10, 64)
+func (c *Conversation_) Delete(params map[string]string) (model.Post, error) {
+	crossID, err := strconv.ParseUint(params["cross_id"], 10, 64)
 	if err != nil {
-		return fmt.Errorf("can't parse cross_id: %s", meta.Vars["cross_id"])
+		return fmt.Errorf("can't parse cross_id: %s", params["cross_id"])
 	}
-	postID, err := strconv.ParseUint(meta.Vars["post_id"], 10, 64)
+	postID, err := strconv.ParseUint(params["post_id"], 10, 64)
 	if err != nil {
-		return fmt.Errorf("can't parse post_id: %s", meta.Vars["post_id"])
+		return fmt.Errorf("can't parse post_id: %s", params["post_id"])
 	}
 
 	posts, err := c.conversation.FindPosts(uint64(crossID), 0, "", "", postID, postID)
 	if err != nil {
-		return err
+		return model.Post{}, err
 	}
 	if len(posts) == 0 {
-		return fmt.Errorf("can't find post with id %d", postID)
+		return model.Post{}, fmt.Errorf("can't find post with id %d", postID)
 	}
 	err = c.conversation.DeletePost(crossID, postID)
 	if err != nil {
-		return err
+		return model.Post{}, err
 	}
-	*reply = posts[0]
-	return nil
+	ret := posts[0]
+	return ret, nil
 }
 
 // 取得用户user_id未读的post条数
 //
 // 例子：
 //
-//     > curl "http://panda.0d0f.com:23333/cross/100354/user/-572/unread_count?method=Unread" -d '""'
+//     > curl "http://panda.0d0f.com:23333/cross/100354/user/-572/unread_count"
 //
 // 返回：
 //
 //     1
-func (c *Conversation_) Unread(meta *gobus.HTTPMeta, arg string, reply *int) error {
-	crossID, err := strconv.ParseInt(meta.Vars["cross_id"], 10, 64)
+func (c *Conversation_) Unread(params map[string]string) (int, error) {
+	crossID, err := strconv.ParseInt(params["cross_id"], 10, 64)
 	if err != nil {
-		return fmt.Errorf("can't parse cross_id: %s", meta.Vars["cross_id"])
+		return 0, fmt.Errorf("can't parse cross_id: %s", params["cross_id"])
 	}
-	userID, err := strconv.ParseInt(meta.Vars["user_id"], 10, 64)
+	userID, err := strconv.ParseInt(params["user_id"], 10, 64)
 	if err != nil {
-		return fmt.Errorf("can't parse user_id: %s", meta.Vars["user_id"])
+		return 0, fmt.Errorf("can't parse user_id: %s", params["user_id"])
 	}
 
-	*reply, err = c.conversation.GetUnreadCount(crossID, userID)
-	return err
+	ret, err := c.conversation.GetUnreadCount(crossID, userID)
+	return ret, err
 }
