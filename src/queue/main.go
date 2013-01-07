@@ -21,11 +21,7 @@ func getCallback(log *logger.SubLogger, config *model.Config) func(string, [][]b
 		}
 		service, method, key := names[0], names[1], names[2]
 		url := fmt.Sprintf("http://%s:%d/%s", config.ExfeService.Addr, config.ExfeService.Port, service)
-		client, err := gobus.NewClient(url)
-		if err != nil {
-			log.Crit("can't create gobus client for service %s(%s): %s", service, url, err)
-			return
-		}
+		client := gobus.NewClient(new(gobus.JSON))
 
 		arg := make([]interface{}, 0)
 		for _, data := range datas {
@@ -39,7 +35,7 @@ func getCallback(log *logger.SubLogger, config *model.Config) func(string, [][]b
 				arg = append(arg, d)
 			} else {
 				var i int
-				err := client.Do(method, d, &i)
+				err := client.Do(url, method, d, &i)
 				if err != nil {
 					log.Err("call %s|%s failed(%s) with %s", service, method, err, string(data))
 				}
@@ -47,7 +43,7 @@ func getCallback(log *logger.SubLogger, config *model.Config) func(string, [][]b
 		}
 		if key != "" {
 			var i int
-			err := client.Do(method, arg, &i)
+			err := client.Do(url, method, arg, &i)
 			if err != nil {
 				j, _ := json.Marshal(arg)
 				log.Err("call %s|%s failed(%s) with %s", service, method, err, string(j))
@@ -68,10 +64,10 @@ func main() {
 	}
 	config.Log = log
 
-	url := fmt.Sprintf("http://%s:%d", config.ExfeQueue.Addr, config.ExfeQueue.Port)
-	log.Info("start at %s", url)
+	addr := fmt.Sprintf("%s:%d", config.ExfeQueue.Addr, config.ExfeQueue.Port)
+	log.Info("start at %s", addr)
 
-	bus, err := gobus.NewServer(url, log)
+	bus, err := gobus.NewServer(addr)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
@@ -80,7 +76,7 @@ func main() {
 
 	instant := NewInstant(&config)
 	var count int
-	count, err = bus.Register(instant)
+	err = bus.Register(instant)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
@@ -89,9 +85,9 @@ func main() {
 	log.Info("register Instant %d methods.", count)
 
 	for name, delayInSecond := range config.ExfeQueue.Head {
-		head, headTomb := NewHead(delayInSecond, &config)
+		head, headTomb := NewHead(delayInSecond, name, &config)
 		tombs = append(tombs, headTomb)
-		count, err = bus.RegisterName(name, head)
+		err = bus.Register(head)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)
 			os.Exit(-1)
@@ -101,9 +97,9 @@ func main() {
 	}
 
 	for name, delayInSecond := range config.ExfeQueue.Tail {
-		tail, tailTomb := NewTail(delayInSecond, &config)
+		tail, tailTomb := NewTail(delayInSecond, name, &config)
 		tombs = append(tombs, tailTomb)
-		count, err = bus.RegisterName(name, tail)
+		err = bus.Register(tail)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)
 			os.Exit(-1)
