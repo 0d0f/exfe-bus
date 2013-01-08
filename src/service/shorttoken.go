@@ -30,22 +30,22 @@ func (s *ShortToken) SetRoute(route gobus.RouteCreater) {
 }
 
 type CreateArg struct {
-	Data              string `json:"data"`
-	Resource          string `json:"resource"`
-	ExpireAfterSecond int    `json:"expire_after_second"`
+	Data               string `json:"data"`
+	Resource           string `json:"resource"`
+	ExpireAfterSeconds int    `json:"expire_after_seconds"`
 }
 
-// 根据resource，data和expire after second创建一个token
+// 根据resource，data和expire after seconds创建一个token
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/shorttoken" -d '{"data":"abc","resource":"123","expire_after_second":300}'
+//     > curl "http://127.0.0.1:23333/shorttoken" -d '{"data":"abc","resource":"123","expire_after_seconds":300}'
 //
 // 返回：
 //
 //     {"key":"0303","data":"abc"}
 func (s *ShortToken) Create(params map[string]string, arg CreateArg) (model.Token, error) {
-	after := time.Duration(arg.ExpireAfterSecond) * time.Second
+	after := time.Duration(arg.ExpireAfterSeconds) * time.Second
 	ret, err := s.short.Create(arg.Resource, arg.Data, after)
 	return ret, err
 }
@@ -67,30 +67,31 @@ func (s *ShortToken) Get(params map[string]string) ([]model.Token, error) {
 }
 
 type UpdateArg struct {
-	Data              *string `json:"data"`
-	ExpireAfterSecond *int    `json:"expire_after_second"`
+	Data               *string `json:"data"`
+	ExpireAfterSeconds *int    `json:"expire_after_seconds"`
 }
 
-// 更新key对应的token的data信息或者expire after second
+// 更新key对应的token的data信息或者expire after seconds
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/shorttoken/0303" -d '{"data":"xyz","expire_after_second":13}'
+//     > curl "http://127.0.0.1:23333/shorttoken/0303" -d '{"data":"xyz","expire_after_seconds":13}'
 //
 // 返回：
 //
 //     0
 func (s *ShortToken) Update(params map[string]string, arg UpdateArg) (int, error) {
 	key := params["key"]
-	if arg.Data != nil {
+	resource := params["resource"]
+	if arg.Data != nil && key != "" {
 		err := s.short.UpdateData(key, *arg.Data)
 		if err != nil {
 			return 0, err
 		}
 	}
-	if arg.ExpireAfterSecond != nil {
-		after := time.Duration(*arg.ExpireAfterSecond) * time.Second
-		err := s.short.Refresh(key, "", after)
+	if arg.ExpireAfterSeconds != nil {
+		after := time.Duration(*arg.ExpireAfterSeconds) * time.Second
+		err := s.short.Refresh(key, resource, after)
 		if err != nil {
 			return 0, err
 		}
