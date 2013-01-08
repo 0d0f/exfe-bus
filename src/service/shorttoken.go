@@ -27,6 +27,7 @@ func (s *ShortToken) SetRoute(route gobus.RouteCreater) {
 	route().Methods("POST").Path("/shorttoken").HandlerFunc(gobus.Must(gobus.Method(json, s, "Create")))
 	route().Methods("GET").Path("/shorttoken").HandlerFunc(gobus.Must(gobus.Method(json, s, "Get")))
 	route().Methods("POST").Path("/shorttoken/{key}").HandlerFunc(gobus.Must(gobus.Method(json, s, "Update")))
+	route().Methods("POST").Path("/shorttoken/resource").HandlerFunc(gobus.Must(gobus.Method(json, s, "UpdateResource")))
 }
 
 type CreateArg struct {
@@ -82,8 +83,7 @@ type UpdateArg struct {
 //     0
 func (s *ShortToken) Update(params map[string]string, arg UpdateArg) (int, error) {
 	key := params["key"]
-	resource := params["resource"]
-	if arg.Data != nil && key != "" {
+	if arg.Data != nil {
 		err := s.short.UpdateData(key, *arg.Data)
 		if err != nil {
 			return 0, err
@@ -91,10 +91,26 @@ func (s *ShortToken) Update(params map[string]string, arg UpdateArg) (int, error
 	}
 	if arg.ExpireAfterSeconds != nil {
 		after := time.Duration(*arg.ExpireAfterSeconds) * time.Second
-		err := s.short.Refresh(key, resource, after)
+		err := s.short.Refresh(key, "", after)
 		if err != nil {
 			return 0, err
 		}
 	}
 	return 0, nil
+}
+
+// 更新resource对应的token的data信息或者expire after seconds
+//
+// 例子：
+//
+//     > curl "http://127.0.0.1:23333/shorttoken/resource?resouce=123" -d '13'
+//
+// 返回：
+//
+//     0
+func (s *ShortToken) UpdateResource(params map[string]string, expire int) (int, error) {
+	resource := params["resource"]
+	after := time.Duration(expire) * time.Second
+	err := s.short.Refresh("", resource, after)
+	return 0, err
 }
