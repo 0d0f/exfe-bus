@@ -26,8 +26,11 @@ func (s *ShortToken) SetRoute(route gobus.RouteCreater) {
 	json := new(gobus.JSON)
 	route().Methods("POST").Path("/shorttoken").HandlerFunc(gobus.Must(gobus.Method(json, s, "Create")))
 	route().Methods("GET").Path("/shorttoken").HandlerFunc(gobus.Must(gobus.Method(json, s, "Get")))
-	route().Methods("POST").Path("/shorttoken/{key}").HandlerFunc(gobus.Must(gobus.Method(json, s, "Update")))
+	route().Methods("POST", "PUT").Path("/shorttoken/{key}").HandlerFunc(gobus.Must(gobus.Method(json, s, "Update")))
 	route().Methods("POST").Path("/shorttoken/resource").HandlerFunc(gobus.Must(gobus.Method(json, s, "UpdateResource")))
+
+	// old
+	route().Methods("POST").Path("/shorttoken").Queries("method", "GET").HandlerFunc(gobus.Must(gobus.Method(json, s, "Get")))
 }
 
 type CreateArg struct {

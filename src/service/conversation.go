@@ -10,21 +10,21 @@ import (
 	"time"
 )
 
-type Conversation_ struct {
+type Conversation struct {
 	conversation *conversation.Conversation
 }
 
-func NewConversation_(config *model.Config, db *broker.DBMultiplexer, redis *broker.RedisMultiplexer, dispatcher *gobus.Dispatcher) (*Conversation_, error) {
+func NewConversation_(config *model.Config, db *broker.DBMultiplexer, redis *broker.RedisMultiplexer, dispatcher *gobus.Dispatcher) (*Conversation, error) {
 	repo, err := NewPostRepository(config, db, redis, dispatcher)
 	if err != nil {
 		return nil, err
 	}
-	return &Conversation_{
+	return &Conversation{
 		conversation: conversation.New(repo),
 	}, nil
 }
 
-func (c *Conversation_) SetRoute(route gobus.RouteCreater) {
+func (c *Conversation) SetRoute(route gobus.RouteCreater) {
 	json := new(gobus.JSON)
 	route().Methods("POST").Path("/cross/{cross_id}/conversation").HandlerFunc(gobus.Must(gobus.Method(json, c, "Create")))
 	route().Methods("GET").Path("/cross/{cross_id}/conversation").HandlerFunc(gobus.Must(gobus.Method(json, c, "Find")))
@@ -62,7 +62,7 @@ func (c *Conversation_) SetRoute(route gobus.RouteCreater) {
 //      =>
 //     "@exfe@twitter look at this image {{webpage:http://instagr.am/xxxx}}\n cool!"
 //     relationship: [{"mention": "identity://123"}, {"webpage":"http://instagr.am/xxxx"}]
-func (c *Conversation_) Create(params map[string]string, arg model.Post) (model.Post, error) {
+func (c *Conversation) Create(params map[string]string, arg model.Post) (model.Post, error) {
 	via := params["via"]
 	createdAt_ := params["created_at"]
 	createdAt := time.Now().Unix()
@@ -90,7 +90,7 @@ func (c *Conversation_) Create(params map[string]string, arg model.Post) (model.
 // 返回：
 //
 //     [{"id":11,"by_identity":{"id":572,"name":"Googol","connected_user_id":-572,"avatar_filename":"http://api.panda.0d0f.com/v2/avatar/default?name=Googol","provider":"email","external_id":"googollee@163.com","external_username":"googollee@163.com"},"content":"@googollee@twitter blablabla","via":"web","created_at":"2010-12-27 19:52:24 +0000","relationship":[{"uri":"identity://573","relation":"mention"}],"exfee_id":110220,"ref_uri":"cross://100354"}]
-func (c *Conversation_) Find(params map[string]string) ([]model.Post, error) {
+func (c *Conversation) Find(params map[string]string) ([]model.Post, error) {
 	crossID, err := strconv.ParseUint(params["cross_id"], 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("can't parse cross_id: %s", params["cross_id"])
@@ -135,7 +135,7 @@ func (c *Conversation_) Find(params map[string]string) ([]model.Post, error) {
 // 返回：
 //
 //     {"id":11,"by_identity":{"id":572,"name":"Googol","connected_user_id":-572,"avatar_filename":"http://api.panda.0d0f.com/v2/avatar/default?name=Googol","provider":"email","external_id":"googollee@163.com","external_username":"googollee@163.com"},"content":"@googollee@twitter blablabla","via":"web","created_at":"2010-12-27 19:52:24 +0000","relationship":[{"uri":"identity://573","relation":"mention"}],"exfee_id":110220,"ref_uri":"cross://100354"}
-func (c *Conversation_) Delete(params map[string]string) (model.Post, error) {
+func (c *Conversation) Delete(params map[string]string) (model.Post, error) {
 	crossID, err := strconv.ParseUint(params["cross_id"], 10, 64)
 	if err != nil {
 		return model.Post{}, fmt.Errorf("can't parse cross_id: %s", params["cross_id"])
@@ -169,7 +169,7 @@ func (c *Conversation_) Delete(params map[string]string) (model.Post, error) {
 // 返回：
 //
 //     1
-func (c *Conversation_) Unread(params map[string]string) (int, error) {
+func (c *Conversation) Unread(params map[string]string) (int, error) {
 	crossID, err := strconv.ParseInt(params["cross_id"], 10, 64)
 	if err != nil {
 		return 0, fmt.Errorf("can't parse cross_id: %s", params["cross_id"])

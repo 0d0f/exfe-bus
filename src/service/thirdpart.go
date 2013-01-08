@@ -91,6 +91,11 @@ func (t *Thirdpart) SetRoute(route gobus.RouteCreater) {
 	route().Methods("POST").Path("/thirdpart/message").HandlerFunc(gobus.Must(gobus.Method(json, t, "Send")))
 	route().Methods("POST").Path("/thirdpart/identity").HandlerFunc(gobus.Must(gobus.Method(json, t, "UpdateIdentity")))
 	route().Methods("POST").Path("/thirdpart/friends").HandlerFunc(gobus.Must(gobus.Method(json, t, "UpdateFriends")))
+
+	// old
+	route().Methods("POST").Path("/Thirdpart").Queries("method", "Send").HandlerFunc(gobus.Must(gobus.Method(json, t, "Send")))
+	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateIdentity").HandlerFunc(gobus.Must(gobus.Method(json, t, "UpdateIdentity")))
+	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateFriends").HandlerFunc(gobus.Must(gobus.Method(json, t, "UpdateFriends")))
 }
 
 // 发信息给to，如果是私人信息，就发送private的内容，如果是公开信息，就发送public的内容。info内是相关的应用信息。

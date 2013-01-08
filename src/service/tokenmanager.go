@@ -36,9 +36,18 @@ func (mng *TokenManager) SetRoute(r gobus.RouteCreater) {
 	r().Methods("POST").Path("/tokenmanager/token/{token}").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Update")))
 	r().Methods("POST").Path("/tokenmanager/token/{token}/verify").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Verify")))
 	r().Methods("POST").Path("/tokenmanager/token/{token}/refresh").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Refresh")))
-	r().Methods("GET").Path("/tokenmanager/token/{token}/expire").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Expire")))
+	r().Methods("POST").Path("/tokenmanager/token/{token}/expire").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Expire")))
 	r().Methods("POST").Path("/tokenmanager/resource").HandlerFunc(gobus.Must(gobus.Method(json, mng, "ResourceFind")))
 	r().Methods("POST").Path("/tokenmanager/resource/expire").HandlerFunc(gobus.Must(gobus.Method(json, mng, "ExpireAll")))
+
+	r().Queries("method", "Generate").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Generate")))
+	r().Queries("method", "Get").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Get_")))
+	r().Queries("method", "Find").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "ResourceFind")))
+	r().Queries("method", "Refresh").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Refresh_")))
+	r().Queries("method", "Update").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Update_")))
+	r().Queries("method", "Verify").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Verify_")))
+	r().Queries("method", "Expire").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Expire_")))
+	r().Queries("method", "ExpireAll").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "ExpireAll")))
 }
 
 type TokenGenerateArgs struct {
@@ -76,6 +85,10 @@ func (mng *TokenManager) Get(params map[string]string) (*tokenmanager.Token, err
 	return mng.manager.GetToken(token)
 }
 
+func (mng *TokenManager) Get_(params map[string]string, token string) (*tokenmanager.Token, error) {
+	return mng.manager.GetToken(token)
+}
+
 // 根据resource，查找对应的所有Token对象
 //
 // 例子：
@@ -95,6 +108,15 @@ func (mng *TokenManager) ResourceFind(params map[string]string, resource string)
 func (mng *TokenManager) Update(params map[string]string, data string) (int, error) {
 	token := params["token"]
 	return 0, mng.manager.UpdateData(token, data)
+}
+
+type TokenUpdateArg struct {
+	Token string `json:"token"`
+	Data  string `json:"data"`
+}
+
+func (mng *TokenManager) Update_(params map[string]string, arg TokenUpdateArg) (int, error) {
+	return 0, mng.manager.UpdateData(arg.Token, arg.Data)
 }
 
 type TokenVerifyReply struct {
@@ -117,9 +139,17 @@ func (mng *TokenManager) Verify(params map[string]string, resource string) (Toke
 	return TokenVerifyReply{matched, tk}, err
 }
 
-type TokenRefreshArg struct {
-	Token              string `json:"token"`
-	ExpireAfterSeconds int    `json:"expire_after_seconds"`
+type TokenVerifyArg struct {
+	Token    string `json:"token"`
+	Resource string `json:"resource"`
+}
+
+func (mng *TokenManager) Verify_(params map[string]string, arg TokenVerifyArg) (TokenVerifyReply, error) {
+	matched, tk, err := mng.manager.VerifyToken(arg.Token, arg.Resource)
+	if !matched {
+		return TokenVerifyReply{matched, nil}, err
+	}
+	return TokenVerifyReply{matched, tk}, err
 }
 
 // 将token的过期时间设为expire_after_seconds秒之后过期。如果expire_after_seconds为-1，则token永不过期。
@@ -137,6 +167,19 @@ func (mng *TokenManager) Refresh(params map[string]string, expireAfterSeconds in
 	return 0, mng.manager.RefreshToken(token, expire)
 }
 
+type TokenRefreshArg struct {
+	Token              string `json:"token"`
+	ExpireAfterSeconds int    `json:"expire_after_seconds"`
+}
+
+func (mng *TokenManager) Refresh_(params map[string]string, arg TokenRefreshArg) (int, error) {
+	expire := time.Duration(arg.ExpireAfterSeconds) * time.Second
+	if arg.ExpireAfterSeconds < 0 {
+		expire = tokenmanager.NeverExpire
+	}
+	return 0, mng.manager.RefreshToken(arg.Token, expire)
+}
+
 // 立刻使token过期。
 //
 // 例子：
@@ -145,6 +188,10 @@ func (mng *TokenManager) Refresh(params map[string]string, expireAfterSeconds in
 //     0
 func (mng *TokenManager) Expire(params map[string]string) (int, error) {
 	token := params["token"]
+	return 0, mng.manager.RefreshToken(token, 0)
+}
+
+func (mng *TokenManager) Expire_(params map[string]string, token string) (int, error) {
 	return 0, mng.manager.RefreshToken(token, 0)
 }
 
