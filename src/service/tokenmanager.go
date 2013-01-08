@@ -71,7 +71,7 @@ func (mng *TokenManager) Generate(params map[string]string, arg TokenGenerateArg
 //
 //     > curl http://127.0.0.1:23333/tokenmanager/token/ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a
 //     {"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","data":"","is_expire":true}
-func (mng *TokenManager) Get(params map[string]string) (tokenmanager.Token, error) {
+func (mng *TokenManager) Get(params map[string]string) (*tokenmanager.Token, error) {
 	token := params["token"]
 	return mng.manager.GetToken(token)
 }
@@ -110,11 +110,11 @@ type TokenVerifyReply struct {
 //     {"matched":true,{"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","data":"","is_expire":true}}
 func (mng *TokenManager) Verify(params map[string]string, resource string) (TokenVerifyReply, error) {
 	token := params["token"]
-	matched, token, err := mng.manager.VerifyToken(token, resource)
+	matched, tk, err := mng.manager.VerifyToken(token, resource)
 	if !matched {
-		return TokenVerifyReply{matched}, err
+		return TokenVerifyReply{matched, nil}, err
 	}
-	return TokenVerifyReply{matched, token}, err
+	return TokenVerifyReply{matched, tk}, err
 }
 
 type TokenRefreshArg struct {
@@ -129,8 +129,9 @@ type TokenRefreshArg struct {
 //     > curl http://127.0.0.1:23333/tokenmanager/token/ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a/refresh -d '-1'
 //     0
 func (mng *TokenManager) Refresh(params map[string]string, expireAfterSeconds int) (int, error) {
+	token := params["token"]
 	expire := time.Duration(expireAfterSeconds) * time.Second
-	if args.ExpireAfterSeconds < 0 {
+	if expireAfterSeconds < 0 {
 		expire = tokenmanager.NeverExpire
 	}
 	return 0, mng.manager.RefreshToken(token, expire)

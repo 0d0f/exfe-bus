@@ -35,13 +35,12 @@ func main() {
 	url := fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
 
-	bus, err := gobus.NewServer(url, log)
+	bus, err := gobus.NewServer(url)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
 		return
 	}
-	var count int
 
 	if config.ExfeService.Services.TokenManager {
 		tkMng, err := NewTokenManager(&config, db)
@@ -51,13 +50,13 @@ func main() {
 			return
 		}
 
-		count, err = bus.Register(tkMng)
+		err = bus.Register(tkMng)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)
 			os.Exit(-1)
 			return
 		}
-		log.Info("register TokenManager %d methods.", count)
+		log.Info("register TokenManager")
 	}
 
 	if config.ExfeService.Services.ShortToken {
@@ -67,33 +66,25 @@ func main() {
 			os.Exit(-1)
 		}
 
-		count, err = bus.RegisterPath("/shorttoken", shorttoken)
+		err = bus.Register(shorttoken)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)
 			os.Exit(-1)
 			return
 		}
-		log.Info("register shorttoken %d methods.", count)
-
-		count, err = bus.RegisterPath("/shorttoken/{key}", shorttoken)
-		if err != nil {
-			log.Crit("gobus launch failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register shorttoken/key %d methods.", count)
+		log.Info("register shorttoken")
 	}
 
 	if config.ExfeService.Services.Iom {
 		iom := NewIom(&config, redis)
 
-		count, err = bus.Register(iom)
+		err = bus.Register(iom)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)
 			os.Exit(-1)
 			return
 		}
-		log.Info("register IOM %d methods.", count)
+		log.Info("register IOM")
 	}
 
 	if config.ExfeService.Services.Thirdpart {
@@ -104,13 +95,13 @@ func main() {
 			return
 		}
 
-		count, err = bus.Register(thirdpart)
+		err = bus.Register(thirdpart)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)
 			os.Exit(-1)
 			return
 		}
-		log.Info("register Thirdpart %d methods.", count)
+		log.Info("register Thirdpart")
 	}
 
 	if config.ExfeService.Services.Notifier {
@@ -121,32 +112,14 @@ func main() {
 			return
 		}
 
-		conversation := NewConversation(localTemplate, &config, sender)
-		count, err = bus.Register(conversation)
+		notifier := NewNotifier(localTemplate, &config, sender)
+		err = bus.Register(notifier)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)
 			os.Exit(-1)
 			return
 		}
-		log.Info("register Conversation %d methods.", count)
-
-		cross := NewCross(localTemplate, &config, sender)
-		count, err = bus.Register(cross)
-		if err != nil {
-			log.Crit("gobus launch failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register Cross %d methods.", count)
-
-		user := NewUser(localTemplate, &config, sender)
-		count, err = bus.Register(user)
-		if err != nil {
-			log.Crit("gobus launch failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register User %d methods.", count)
+		log.Info("register Notifier")
 	}
 
 	if config.ExfeService.Services.Conversation {
@@ -156,29 +129,13 @@ func main() {
 			os.Exit(-1)
 		}
 
-		count, err = bus.RegisterPath("/cross/{cross_id}/Conversation", conversation)
+		err = bus.Register(conversation)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)
 			os.Exit(-1)
 			return
 		}
-		log.Info("register conversation %d methods.", count)
-
-		count, err = bus.RegisterPath("/cross/{cross_id}/Conversation/{post_id}", conversation)
-		if err != nil {
-			log.Crit("gobus launch failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register conversation/post %d methods.", count)
-
-		count, err = bus.RegisterPath("/cross/{cross_id}/user/{user_id}/unread_count", conversation)
-		if err != nil {
-			log.Crit("gobus launch failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register conversation/unread %d methods.", count)
+		log.Info("register conversation")
 	}
 
 	go func() {
