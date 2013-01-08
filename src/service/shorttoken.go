@@ -38,7 +38,7 @@ type PostArg struct {
 //
 //     {"key":"0303","data":"abc"}
 func (s *ShortToken) POST(meta *gobus.HTTPMeta, arg PostArg, reply *model.Token) error {
-	after := time.Duration(arg.ExpireAfterSecond) * time.Second
+	after := time.Duration(arg.ExpireAfterSeconds) * time.Second
 	var err error
 	*reply, err = s.short.Create(arg.Resource, arg.Data, after)
 	return err
