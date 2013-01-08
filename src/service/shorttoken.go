@@ -23,16 +23,16 @@ func NewShortToken(config *model.Config, db *broker.DBMultiplexer) (*ShortToken,
 }
 
 type PostArg struct {
-	Resource          string `json:"resource"`
-	Data              string `json:"data"`
-	ExpireAfterSecond int    `json:"expire_after_second"`
+	Resource           string `json:"resource"`
+	Data               string `json:"data"`
+	ExpireAfterSeconds int    `json:"expire_after_seconds"`
 }
 
-// 根据resource，data和expire after second创建一个token
+// 根据resource，data和expire after seconds创建一个token
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/shorttoken" -d '{"data":"abc","resource":"123","expire_after_second":300}'
+//     > curl "http://127.0.0.1:23333/shorttoken" -d '{"data":"abc","resource":"123","expire_after_seconds":300}'
 //
 // 返回：
 //
