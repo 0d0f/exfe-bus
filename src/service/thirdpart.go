@@ -86,14 +86,20 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 	}, nil
 }
 
+func (t *Thirdpart) SetRoute(route gobus.RouteCreater) {
+	json := new(gobus.JSON)
+	route().Methods("POST").Path("/thirdpart/message").HandlerFunc(gobus.Must(gobus.Method(json, t, "Send")))
+	route().Methods("POST").Path("/thirdpart/identity").HandlerFunc(gobus.Must(gobus.Method(json, t, "UpdateIdentity")))
+	route().Methods("POST").Path("/thirdpart/friends").HandlerFunc(gobus.Must(gobus.Method(json, t, "UpdateFriends")))
+}
+
 // 发信息给to，如果是私人信息，就发送private的内容，如果是公开信息，就发送public的内容。info内是相关的应用信息。
 //
 // 例子：
 //
-//   > curl http://127.0.0.1:23333/Thirdpart?method=Send -d '{"to":{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1},"private":"private","public":"public","info":null}'
+//   > curl http://127.0.0.1:23333/thirdpart/message -d '{"to":{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1},"private":"private","public":"public","info":null}'
 //
-func (t *Thirdpart) Send(meta *gobus.HTTPMeta, arg model.ThirdpartSend, id *string) error {
-	var err error
+func (t *Thirdpart) Send(params map[string]string, arg model.ThirdpartSend) (string, error) {
 	if arg.To.ExternalID == "" {
 		go func() {
 			err := t.thirdpart.UpdateIdentity(&arg.To)
@@ -102,7 +108,7 @@ func (t *Thirdpart) Send(meta *gobus.HTTPMeta, arg model.ThirdpartSend, id *stri
 			}
 		}()
 	}
-	*id, err = t.thirdpart.Send(&arg.To, arg.PrivateMessage, arg.PublicMessage, arg.Info)
+	id, err := t.thirdpart.Send(&arg.To, arg.PrivateMessage, arg.PublicMessage, arg.Info)
 
 	key := fmt.Sprintf("%s(%s)@%s", arg.To.ExternalID, arg.To.ExternalUsername, arg.To.Provider)
 	lastErr := t.sendCache.Get(key)
@@ -120,27 +126,27 @@ func (t *Thirdpart) Send(meta *gobus.HTTPMeta, arg model.ThirdpartSend, id *stri
 	} else {
 		t.sendCache.Push(key, "")
 	}
-	return err
+	return id, err
 }
 
 // 同步更新to在第三方网站的个人信息（头像，bio之类）
 //
 // 例子：
 //
-//   > curl http://127.0.0.1:23333/Thirdpart?method=UpdateIdentity -d '{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1}'
+//   > curl http://127.0.0.1:23333/thirdpart/identity -d '{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1}'
 //
-func (t *Thirdpart) UpdateIdentity(meta *gobus.HTTPMeta, to model.ThirdpartTo, i *int) error {
-	return t.thirdpart.UpdateIdentity(&to.To)
+func (t *Thirdpart) UpdateIdentity(params map[string]string, to model.ThirdpartTo) (int, error) {
+	return 0, t.thirdpart.UpdateIdentity(&to.To)
 }
 
 // 同步更新to在第三方网站的好友信息
 //
 // 例子：
 //
-//   > curl http://127.0.0.1:23333/Thirdpart?method=UpdateFriends -d '{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1}'
+//   > curl http://127.0.0.1:23333/thirdpart/friends -d '{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1}'
 //
-func (t *Thirdpart) UpdateFriends(meta *gobus.HTTPMeta, to model.ThirdpartTo, i *int) error {
-	return t.thirdpart.UpdateFriends(&to.To)
+func (t *Thirdpart) UpdateFriends(params map[string]string, to model.ThirdpartTo) (int, error) {
+	return 0, t.thirdpart.UpdateFriends(&to.To)
 }
 
 func (t *Thirdpart) sendCallback(recipient model.Recipient, err error) {

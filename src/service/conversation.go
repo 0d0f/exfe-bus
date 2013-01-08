@@ -73,9 +73,9 @@ func (c *Conversation_) Create(params map[string]string, arg model.Post) (model.
 			return model.Post{}, fmt.Errorf("can't pasrse created_at: %s", createdAt_)
 		}
 	}
-	crossID, err := strconv.ParseUint(meta.Vars["cross_id"], 10, 64)
+	crossID, err := strconv.ParseUint(params["cross_id"], 10, 64)
 	if err != nil {
-		return model.Post{}, fmt.Errorf("can't parse cross_id: %s", meta.Vars["cross_id"])
+		return model.Post{}, fmt.Errorf("can't parse cross_id: %s", params["cross_id"])
 	}
 	ret, err := c.conversation.NewPost(crossID, arg, via, createdAt)
 	return ret, err
@@ -110,7 +110,7 @@ func (c *Conversation_) Find(params map[string]string) ([]model.Post, error) {
 		if params["min"] == "" {
 			minID = 0
 		} else {
-			return fmt.Errorf("can't parse min: %s", params["min"])
+			return nil, fmt.Errorf("can't parse min: %s", params["min"])
 		}
 	}
 	maxID, err := strconv.ParseUint(params["max"], 10, 64)
@@ -118,7 +118,7 @@ func (c *Conversation_) Find(params map[string]string) ([]model.Post, error) {
 		if params["max"] == "" {
 			maxID = 0
 		} else {
-			return fmt.Errorf("can't parse max: %s", params["max"])
+			return nil, fmt.Errorf("can't parse max: %s", params["max"])
 		}
 	}
 
@@ -138,11 +138,11 @@ func (c *Conversation_) Find(params map[string]string) ([]model.Post, error) {
 func (c *Conversation_) Delete(params map[string]string) (model.Post, error) {
 	crossID, err := strconv.ParseUint(params["cross_id"], 10, 64)
 	if err != nil {
-		return fmt.Errorf("can't parse cross_id: %s", params["cross_id"])
+		return model.Post{}, fmt.Errorf("can't parse cross_id: %s", params["cross_id"])
 	}
 	postID, err := strconv.ParseUint(params["post_id"], 10, 64)
 	if err != nil {
-		return fmt.Errorf("can't parse post_id: %s", params["post_id"])
+		return model.Post{}, fmt.Errorf("can't parse post_id: %s", params["post_id"])
 	}
 
 	posts, err := c.conversation.FindPosts(uint64(crossID), 0, "", "", postID, postID)

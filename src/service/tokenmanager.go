@@ -29,6 +29,18 @@ func NewTokenManager(config *model.Config, db *broker.DBMultiplexer) (*TokenMana
 	}, nil
 }
 
+func (mng *TokenManager) SetRoute(r gobus.RouteCreater) {
+	json := new(gobus.JSON)
+	r().Methods("POST").Path("/tokenmanager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Generate")))
+	r().Methods("GET").Path("/tokenmanager/token/{token}").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Get")))
+	r().Methods("POST").Path("/tokenmanager/token/{token}").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Update")))
+	r().Methods("POST").Path("/tokenmanager/token/{token}/verify").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Verify")))
+	r().Methods("POST").Path("/tokenmanager/token/{token}/refresh").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Refresh")))
+	r().Methods("GET").Path("/tokenmanager/token/{token}/expire").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Expire")))
+	r().Methods("POST").Path("/tokenmanager/resource").HandlerFunc(gobus.Must(gobus.Method(json, mng, "ResourceFind")))
+	r().Methods("POST").Path("/tokenmanager/resource/expire").HandlerFunc(gobus.Must(gobus.Method(json, mng, "ExpireAll")))
+}
+
 type TokenGenerateArgs struct {
 	Resource           string `json:"resource"`
 	Data               string `json:"data"`
@@ -39,69 +51,50 @@ type TokenGenerateArgs struct {
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=Generate -d '{"resource":"abcde","data":"","expire_after_seconds":12}'
+//     > curl http://127.0.0.1:23333/tokenmanager -d '{"resource":"abcde","data":"","expire_after_seconds":12}'
 //     "ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a"
-func (mng *TokenManager) Generate(meta *gobus.HTTPMeta, arg *TokenGenerateArgs, reply *string) error {
+func (mng *TokenManager) Generate(params map[string]string, arg TokenGenerateArgs) (string, error) {
 	expire := time.Duration(arg.ExpireAfterSeconds) * time.Second
 	if arg.ExpireAfterSeconds < 0 {
 		expire = tokenmanager.NeverExpire
 	}
 	token, err := mng.manager.GenerateToken(arg.Resource, arg.Data, expire)
 	if err != nil {
-		return err
+		return "", err
 	}
-	*reply = token.String()
-	return nil
+	return token.String(), nil
 }
 
 // 根据token返回Token对象
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=Get -d '"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a"'
+//     > curl http://127.0.0.1:23333/tokenmanager/token/ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a
 //     {"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","data":"","is_expire":true}
-func (mng *TokenManager) Get(meta *gobus.HTTPMeta, token *string, reply *tokenmanager.Token) error {
-	tk, err := mng.manager.GetToken(*token)
-	if err != nil {
-		return err
-	}
-	*reply = *tk
-	return nil
+func (mng *TokenManager) Get(params map[string]string) (tokenmanager.Token, error) {
+	token := params["token"]
+	return mng.manager.GetToken(token)
 }
 
 // 根据resource，查找对应的所有Token对象
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=Find -d '"abcde"'
+//     > curl http://127.0.0.1:23333/tokenmanager/resource -d '"abcde"'
 //     [{"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","data":"","is_expire":true},{"token":"ab56b4d92b40713acc5af89985d4b786aa354d0a4f80c96c85c728e67a73b795","data":"","is_expire":true}]
-func (mng *TokenManager) Find(meta *gobus.HTTPMeta, resource *string, reply *[]*tokenmanager.Token) error {
-	tks, err := mng.manager.FindTokens(*resource)
-	if err != nil {
-		return err
-	}
-	*reply = tks
-	return err
-}
-
-type TokenUpdateArg struct {
-	Token string `json:"token"`
-	Data  string `json:"data"`
+func (mng *TokenManager) ResourceFind(params map[string]string, resource string) ([]*tokenmanager.Token, error) {
+	return mng.manager.FindTokens(resource)
 }
 
 // 更新token对应的数据data
 //
 // 例子：
 //
-// > curl http://127.0.0.1:23333/TokenManager?method=Update -d '{"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","data":"123"}'
+// > curl http://127.0.0.1:23333/tokenmanager/token/ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a -d '"123"'
 // 0
-func (mng *TokenManager) Update(meta *gobus.HTTPMeta, arg *TokenUpdateArg, reply *int) error {
-	return mng.manager.UpdateData(arg.Token, arg.Data)
-}
-
-type TokenVerifyArg struct {
-	Token    string `json:"token"`
-	Resource string `json:"resource"`
+func (mng *TokenManager) Update(params map[string]string, data string) (int, error) {
+	token := params["token"]
+	return 0, mng.manager.UpdateData(token, data)
 }
 
 type TokenVerifyReply struct {
@@ -113,15 +106,15 @@ type TokenVerifyReply struct {
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=Verify -d '{"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","resource":"abcde"}'
+//     > curl http://127.0.0.1:23333/tokenmanager/token/ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a/verify -d '"abcde"'
 //     {"matched":true,{"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","data":"","is_expire":true}}
-func (mng *TokenManager) Verify(meta *gobus.HTTPMeta, args *TokenVerifyArg, reply *TokenVerifyReply) error {
-	var err error
-	reply.Matched, reply.Token, err = mng.manager.VerifyToken(args.Token, args.Resource)
-	if !reply.Matched {
-		reply.Token = nil
+func (mng *TokenManager) Verify(params map[string]string, resource string) (TokenVerifyReply, error) {
+	token := params["token"]
+	matched, token, err := mng.manager.VerifyToken(token, resource)
+	if !matched {
+		return TokenVerifyReply{matched}, err
 	}
-	return err
+	return TokenVerifyReply{matched, token}, err
 }
 
 type TokenRefreshArg struct {
@@ -133,32 +126,33 @@ type TokenRefreshArg struct {
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=Refresh -d '{"token":"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a","expire_after_seconds":-1}'
+//     > curl http://127.0.0.1:23333/tokenmanager/token/ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a/refresh -d '-1'
 //     0
-func (mng *TokenManager) Refresh(meta *gobus.HTTPMeta, args *TokenRefreshArg, reply *int) error {
-	expire := time.Duration(args.ExpireAfterSeconds) * time.Second
+func (mng *TokenManager) Refresh(params map[string]string, expireAfterSeconds int) (int, error) {
+	expire := time.Duration(expireAfterSeconds) * time.Second
 	if args.ExpireAfterSeconds < 0 {
 		expire = tokenmanager.NeverExpire
 	}
-	return mng.manager.RefreshToken(args.Token, expire)
+	return 0, mng.manager.RefreshToken(token, expire)
 }
 
 // 立刻使token过期。
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=Expire -d '"ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a"'
+//     > curl http://127.0.0.1:23333/tokenmanager/token/ab56b4d92b40713acc5af89985d4b786c027b1ee301059618fb364abafd43f4a/expire
 //     0
-func (mng *TokenManager) Expire(meta *gobus.HTTPMeta, token *string, reply *int) error {
-	return mng.manager.RefreshToken(*token, 0)
+func (mng *TokenManager) Expire(params map[string]string) (int, error) {
+	token := params["token"]
+	return 0, mng.manager.RefreshToken(token, 0)
 }
 
 // 立刻使resource对应的所有token过期。
 //
 // 例子：
 //
-//     > curl http://127.0.0.1:23333/TokenManager?method=ExpireAll -d '"abc"'
+//     > curl http://127.0.0.1:23333/tokenmanager/resource/expire -d '"abc"'
 //     0
-func (mng *TokenManager) ExpireAll(meta *gobus.HTTPMeta, resource *string, reply *int) error {
-	return mng.manager.RefreshTokensByResource(*resource, 0)
+func (mng *TokenManager) ExpireAll(params map[string]string, resource string) (int, error) {
+	return 0, mng.manager.RefreshTokensByResource(resource, 0)
 }

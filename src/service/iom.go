@@ -35,8 +35,7 @@ func (iom *Iom) SetRoute(route gobus.RouteCreater) {
 func (iom *Iom) Get(params map[string]string) (string, error) {
 	userID := params["user_id"]
 	hash := params["hash"]
-	ret, err := iom.handler.Get(userID, hash)
-	return
+	return iom.handler.Get(userID, hash)
 }
 
 type IomPostArg struct {
