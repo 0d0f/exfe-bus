@@ -30,6 +30,13 @@ func (n *Notifier) SetRoute(route gobus.RouteCreater) {
 	route().Methods("POST").Path("/user/welcome").HandlerFunc(gobus.Must(gobus.Method(json, n, "UserWelcome")))
 	route().Methods("POST").Path("/user/verify").HandlerFunc(gobus.Must(gobus.Method(json, n, "UserVerify")))
 	route().Methods("POST").Path("/user/password").HandlerFunc(gobus.Must(gobus.Method(json, n, "UserPassword")))
+
+	route().Queries("method", "Update").Path("/Conversation").HandlerFunc(gobus.Must(gobus.Method(json, n, "PostUpdate")))
+	route().Queries("method", "Invite").Path("/Cross").HandlerFunc(gobus.Must(gobus.Method(json, n, "CrossInvite")))
+	route().Queries("method", "Summary").Path("/Cross").HandlerFunc(gobus.Must(gobus.Method(json, n, "CrossSummary")))
+	route().Queries("method", "Welcome").Path("/User").HandlerFunc(gobus.Must(gobus.Method(json, n, "UserWelcome")))
+	route().Queries("method", "Verify").Path("/User").HandlerFunc(gobus.Must(gobus.Method(json, n, "UserVerify")))
+	route().Queries("method", "ResetPassword").Path("/User").HandlerFunc(gobus.Must(gobus.Method(json, n, "UserPassword")))
 }
 
 // 发送Conversation的更新消息updates
