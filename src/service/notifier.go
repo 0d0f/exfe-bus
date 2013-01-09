@@ -22,21 +22,23 @@ func NewNotifier(local *formatter.LocalTemplate, config *model.Config, sender *b
 	}
 }
 
-func (n *Notifier) SetRoute(route gobus.RouteCreater) {
+func (n *Notifier) SetRoute(r gobus.RouteCreater) error {
 	json := new(gobus.JSON)
-	route().Methods("POST").Path("/conversation").HandlerFunc(gobus.Must(gobus.Method(json, n, "PostUpdate")))
-	route().Methods("POST").Path("/cross/invitation").HandlerFunc(gobus.Must(gobus.Method(json, n, "CrossInvite")))
-	route().Methods("POST").Path("/cross/summary").HandlerFunc(gobus.Must(gobus.Method(json, n, "CrossSummary")))
-	route().Methods("POST").Path("/user/welcome").HandlerFunc(gobus.Must(gobus.Method(json, n, "UserWelcome")))
-	route().Methods("POST").Path("/user/verify").HandlerFunc(gobus.Must(gobus.Method(json, n, "UserVerify")))
-	route().Methods("POST").Path("/user/password").HandlerFunc(gobus.Must(gobus.Method(json, n, "UserPassword")))
+	r().Methods("POST").Path("/conversation").HandlerMethod(json, n, "PostUpdate")
+	r().Methods("POST").Path("/cross/invitation").HandlerMethod(json, n, "CrossInvite")
+	r().Methods("POST").Path("/cross/summary").HandlerMethod(json, n, "CrossSummary")
+	r().Methods("POST").Path("/user/welcome").HandlerMethod(json, n, "UserWelcome")
+	r().Methods("POST").Path("/user/verify").HandlerMethod(json, n, "UserVerify")
+	r().Methods("POST").Path("/user/password").HandlerMethod(json, n, "UserPassword")
 
-	route().Queries("method", "Update").Path("/Conversation").HandlerFunc(gobus.Must(gobus.Method(json, n, "PostUpdate")))
-	route().Queries("method", "Invite").Path("/Cross").HandlerFunc(gobus.Must(gobus.Method(json, n, "CrossInvite")))
-	route().Queries("method", "Summary").Path("/Cross").HandlerFunc(gobus.Must(gobus.Method(json, n, "CrossSummary")))
-	route().Queries("method", "Welcome").Path("/User").HandlerFunc(gobus.Must(gobus.Method(json, n, "UserWelcome")))
-	route().Queries("method", "Verify").Path("/User").HandlerFunc(gobus.Must(gobus.Method(json, n, "UserVerify")))
-	route().Queries("method", "ResetPassword").Path("/User").HandlerFunc(gobus.Must(gobus.Method(json, n, "UserPassword")))
+	r().Queries("method", "Update").Path("/Conversation").HandlerMethod(json, n, "PostUpdate")
+	r().Queries("method", "Invite").Path("/Cross").HandlerMethod(json, n, "CrossInvite")
+	r().Queries("method", "Summary").Path("/Cross").HandlerMethod(json, n, "CrossSummary")
+	r().Queries("method", "Welcome").Path("/User").HandlerMethod(json, n, "UserWelcome")
+	r().Queries("method", "Verify").Path("/User").HandlerMethod(json, n, "UserVerify")
+	r().Queries("method", "ResetPassword").Path("/User").HandlerMethod(json, n, "UserPassword")
+
+	return nil
 }
 
 // 发送Conversation的更新消息updates

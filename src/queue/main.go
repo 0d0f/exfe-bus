@@ -20,7 +20,7 @@ func getCallback(log *logger.SubLogger, config *model.Config) func(string, [][]b
 			return
 		}
 		service, method, key := names[0], names[1], names[2]
-		url := fmt.Sprintf("http://%s:%d/%s", config.ExfeService.Addr, config.ExfeService.Port, service)
+		url := fmt.Sprintf("http://%s:%d/%s?method=%s", config.ExfeService.Addr, config.ExfeService.Port, service, method)
 		client := gobus.NewClient(new(gobus.JSON))
 
 		arg := make([]interface{}, 0)
@@ -35,7 +35,7 @@ func getCallback(log *logger.SubLogger, config *model.Config) func(string, [][]b
 				arg = append(arg, d)
 			} else {
 				var i int
-				err := client.Do(url, method, d, &i)
+				err := client.Do(url, "POST", d, &i)
 				if err != nil {
 					log.Err("call %s|%s failed(%s) with %s", service, method, err, string(data))
 				}
@@ -43,7 +43,7 @@ func getCallback(log *logger.SubLogger, config *model.Config) func(string, [][]b
 		}
 		if key != "" {
 			var i int
-			err := client.Do(url, method, arg, &i)
+			err := client.Do(url, "POST", arg, &i)
 			if err != nil {
 				j, _ := json.Marshal(arg)
 				log.Err("call %s|%s failed(%s) with %s", service, method, err, string(j))
@@ -67,7 +67,7 @@ func main() {
 	addr := fmt.Sprintf("%s:%d", config.ExfeQueue.Addr, config.ExfeQueue.Port)
 	log.Info("start at %s", addr)
 
-	bus, err := gobus.NewServer(addr)
+	bus, err := gobus.NewServer(addr, log)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)

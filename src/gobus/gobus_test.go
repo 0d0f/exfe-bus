@@ -2,6 +2,7 @@ package gobus
 
 import (
 	"fmt"
+	"github.com/googollee/go-logger"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
 )
@@ -14,24 +15,43 @@ type AddArgs struct {
 	B int
 }
 
-func (t *gobusTest) SetRoute(route RouteCreater) {
+func (t *gobusTest) SetRoute(route RouteCreater) error {
 	json := new(JSON)
-	route().Methods("POST").Path("/add").HandlerFunc(Must(Method(json, t, "Add_")))
-	route().Methods("GET").Path("/key/{key}").HandlerFunc(Must(Method(json, t, "CheckKey_")))
+	err := route().Methods("POST").Path("/add").HandlerMethod(json, t, "Add")
+	if err != nil {
+		return err
+	}
+	err = route().Methods("GET").Path("/key/{key}").HandlerMethod(json, t, "CheckKey")
+	if err != nil {
+		return err
+	}
+	err = route().Queries("method", "Check").Path("/key").HandlerMethod(json, t, "Check")
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (t *gobusTest) Add_(params map[string]string, arg AddArgs) (int, error) {
+func (t *gobusTest) Add(params map[string]string, arg AddArgs) (int, error) {
 	return (arg.A + arg.B), nil
 }
 
-func (t *gobusTest) CheckKey_(params map[string]string) (string, error) {
+func (t *gobusTest) CheckKey(params map[string]string) (string, error) {
 	return params["key"], nil
+}
+
+func (t *gobusTest) Check(params map[string]string, key string) (string, error) {
+	return fmt.Sprintf("method:%s", key), nil
 }
 
 func TestGobus(t *testing.T) {
 	addr := "127.0.0.1:1111"
+	l, err := logger.New(logger.Stderr, "test")
+	if err != nil {
+		panic(err)
+	}
 
-	s, err := NewServer(addr)
+	s, err := NewServer(addr, l)
 	assert.Equal(t, err, nil)
 
 	test := new(gobusTest)
@@ -55,5 +75,12 @@ func TestGobus(t *testing.T) {
 		err := client.Do(fmt.Sprintf("http://%s/key/abcdefg", addr), "GET", nil, &reply)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, reply, "abcdefg")
+	}
+
+	{
+		var reply string
+		err := client.Do(fmt.Sprintf("http://%s/key?method=Check", addr), "POST", "abcde", &reply)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, reply, "method:abcde")
 	}
 }

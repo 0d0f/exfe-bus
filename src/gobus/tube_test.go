@@ -2,6 +2,7 @@ package gobus
 
 import (
 	"encoding/json"
+	"github.com/googollee/go-logger"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
 )
@@ -10,9 +11,9 @@ type TubeTest1 struct {
 	updateCount int
 }
 
-func (t *TubeTest1) SetRoute(route RouteCreater) {
+func (t *TubeTest1) SetRoute(route RouteCreater) error {
 	json := new(JSON)
-	route().Methods("GET").Path("/update").HandlerFunc(Must(Method(json, t, "Update")))
+	return route().Methods("GET").Path("/update").HandlerMethod(json, t, "Update")
 }
 
 func (t *TubeTest1) Update(params map[string]string) (int, error) {
@@ -24,9 +25,9 @@ type TubeTest2 struct {
 	streamCount int
 }
 
-func (t *TubeTest2) SetRoute(route RouteCreater) {
+func (t *TubeTest2) SetRoute(route RouteCreater) error {
 	json := new(JSON)
-	route().Methods("GET").Path("/stream").HandlerFunc(Must(Method(json, t, "Stream")))
+	return route().Methods("GET").Path("/stream").HandlerMethod(json, t, "Stream")
 }
 
 func (t *TubeTest2) Stream(params map[string]string) (int, error) {
@@ -35,7 +36,12 @@ func (t *TubeTest2) Stream(params map[string]string) (int, error) {
 }
 
 func TestTube(t *testing.T) {
-	bus, err := NewServer("127.0.0.1:23333")
+	l, err := logger.New(logger.Stderr, "test tube")
+	if err != nil {
+		panic(err)
+	}
+
+	bus, err := NewServer("127.0.0.1:23333", l)
 	if err != nil {
 		t.Fatalf("create gobus server fail: %s", err)
 	}

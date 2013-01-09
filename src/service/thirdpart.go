@@ -86,16 +86,18 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 	}, nil
 }
 
-func (t *Thirdpart) SetRoute(route gobus.RouteCreater) {
+func (t *Thirdpart) SetRoute(route gobus.RouteCreater) error {
 	json := new(gobus.JSON)
-	route().Methods("POST").Path("/thirdpart/message").HandlerFunc(gobus.Must(gobus.Method(json, t, "Send")))
-	route().Methods("POST").Path("/thirdpart/identity").HandlerFunc(gobus.Must(gobus.Method(json, t, "UpdateIdentity")))
-	route().Methods("POST").Path("/thirdpart/friends").HandlerFunc(gobus.Must(gobus.Method(json, t, "UpdateFriends")))
+	route().Methods("POST").Path("/thirdpart/message").HandlerMethod(json, t, "Send")
+	route().Methods("POST").Path("/thirdpart/identity").HandlerMethod(json, t, "UpdateIdentity")
+	route().Methods("POST").Path("/thirdpart/friends").HandlerMethod(json, t, "UpdateFriends")
 
 	// old
-	route().Methods("POST").Path("/Thirdpart").Queries("method", "Send").HandlerFunc(gobus.Must(gobus.Method(json, t, "Send")))
-	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateIdentity").HandlerFunc(gobus.Must(gobus.Method(json, t, "UpdateIdentity")))
-	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateFriends").HandlerFunc(gobus.Must(gobus.Method(json, t, "UpdateFriends")))
+	route().Methods("POST").Path("/Thirdpart").Queries("method", "Send").HandlerMethod(json, t, "Send")
+	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateIdentity").HandlerMethod(json, t, "UpdateIdentity")
+	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateFriends").HandlerMethod(json, t, "UpdateFriends")
+
+	return nil
 }
 
 // 发信息给to，如果是私人信息，就发送private的内容，如果是公开信息，就发送public的内容。info内是相关的应用信息。

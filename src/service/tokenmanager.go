@@ -29,25 +29,27 @@ func NewTokenManager(config *model.Config, db *broker.DBMultiplexer) (*TokenMana
 	}, nil
 }
 
-func (mng *TokenManager) SetRoute(r gobus.RouteCreater) {
+func (mng *TokenManager) SetRoute(r gobus.RouteCreater) error {
 	json := new(gobus.JSON)
-	r().Methods("POST").Path("/tokenmanager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Generate")))
-	r().Methods("GET").Path("/tokenmanager/token/{token}").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Get")))
-	r().Methods("POST").Path("/tokenmanager/token/{token}").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Update")))
-	r().Methods("POST").Path("/tokenmanager/token/{token}/verify").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Verify")))
-	r().Methods("POST").Path("/tokenmanager/token/{token}/refresh").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Refresh")))
-	r().Methods("POST").Path("/tokenmanager/token/{token}/expire").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Expire")))
-	r().Methods("POST").Path("/tokenmanager/resource").HandlerFunc(gobus.Must(gobus.Method(json, mng, "ResourceFind")))
-	r().Methods("POST").Path("/tokenmanager/resource/expire").HandlerFunc(gobus.Must(gobus.Method(json, mng, "ExpireAll")))
+	r().Methods("POST").Path("/tokenmanager").HandlerMethod(json, mng, "Generate")
+	r().Methods("GET").Path("/tokenmanager/token/{token}").HandlerMethod(json, mng, "Get")
+	r().Methods("POST").Path("/tokenmanager/token/{token}").HandlerMethod(json, mng, "Update")
+	r().Methods("POST").Path("/tokenmanager/token/{token}/verify").HandlerMethod(json, mng, "Verify")
+	r().Methods("POST").Path("/tokenmanager/token/{token}/refresh").HandlerMethod(json, mng, "Refresh")
+	r().Methods("POST").Path("/tokenmanager/token/{token}/expire").HandlerMethod(json, mng, "Expire")
+	r().Methods("POST").Path("/tokenmanager/resource").HandlerMethod(json, mng, "ResourceFind")
+	r().Methods("POST").Path("/tokenmanager/resource/expire").HandlerMethod(json, mng, "ExpireAll")
 
-	r().Queries("method", "Generate").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Generate")))
-	r().Queries("method", "Get").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Get_")))
-	r().Queries("method", "Find").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "ResourceFind")))
-	r().Queries("method", "Refresh").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Refresh_")))
-	r().Queries("method", "Update").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Update_")))
-	r().Queries("method", "Verify").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Verify_")))
-	r().Queries("method", "Expire").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "Expire_")))
-	r().Queries("method", "ExpireAll").Path("/TokenManager").HandlerFunc(gobus.Must(gobus.Method(json, mng, "ExpireAll")))
+	r().Queries("method", "Generate").Path("/TokenManager").HandlerMethod(json, mng, "Generate")
+	r().Queries("method", "Get").Path("/TokenManager").HandlerMethod(json, mng, "Get_")
+	r().Queries("method", "Find").Path("/TokenManager").HandlerMethod(json, mng, "ResourceFind")
+	r().Queries("method", "Refresh").Path("/TokenManager").HandlerMethod(json, mng, "Refresh_")
+	r().Queries("method", "Update").Path("/TokenManager").HandlerMethod(json, mng, "Update_")
+	r().Queries("method", "Verify").Path("/TokenManager").HandlerMethod(json, mng, "Verify_")
+	r().Queries("method", "Expire").Path("/TokenManager").HandlerMethod(json, mng, "Expire_")
+	r().Queries("method", "ExpireAll").Path("/TokenManager").HandlerMethod(json, mng, "ExpireAll")
+
+	return nil
 }
 
 type TokenGenerateArgs struct {

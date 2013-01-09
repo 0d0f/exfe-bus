@@ -20,10 +20,17 @@ func NewIom(config *model.Config, redis broker.Redis) *Iom {
 	}
 }
 
-func (iom *Iom) SetRoute(route gobus.RouteCreater) {
+func (iom *Iom) SetRoute(route gobus.RouteCreater) error {
 	json := new(gobus.JSON)
-	route().Methods("GET").Path("/iom/{user_id}/{hash}").HandlerFunc(gobus.Must(gobus.Method(json, iom, "Get")))
-	route().Methods("POST").Path("/iom/user/{user_id}").HandlerFunc(gobus.Must(gobus.Method(json, iom, "Create")))
+	err := route().Methods("GET").Path("/iom/{user_id}/{hash}").HandlerMethod(json, iom, "Get")
+	if err != nil {
+		return err
+	}
+	err = route().Methods("POST").Path("/iom/user/{user_id}").HandlerMethod(json, iom, "Create")
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // 获取用户user_id名下的hash对应的资源。

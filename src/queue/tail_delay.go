@@ -33,9 +33,10 @@ func NewTail(delayInSecond uint, url string, config *model.Config) (*Tail, *tomb
 	}, tomb
 }
 
-func (i *Tail) SetRoute(route gobus.RouteCreater) {
+func (i *Tail) SetRoute(route gobus.RouteCreater) error {
 	json := new(gobus.JSON)
-	route().Methods("POST").Path(i.url).HandlerFunc(gobus.Must(gobus.Method(json, i, "Push")))
+	route().Methods("POST").Path("/"+i.url).HandlerMethod(json, i, "Push")
+	return nil
 }
 
 // 尾延迟发送队列

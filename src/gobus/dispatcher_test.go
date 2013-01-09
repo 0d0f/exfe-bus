@@ -2,6 +2,7 @@ package gobus
 
 import (
 	"encoding/json"
+	"github.com/googollee/go-logger"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
 )
@@ -55,8 +56,13 @@ func TestTable(t *testing.T) {
 }
 
 func TestDispatcher(t *testing.T) {
+	l, err := logger.New(logger.Stderr, "test dispatcher")
+	if err != nil {
+		panic(err)
+	}
+
 	const gobusUrl = "127.0.0.1:12345"
-	s, _ := NewServer(gobusUrl)
+	s, _ := NewServer(gobusUrl, l)
 	test := new(gobusTest)
 	s.Register(test)
 
@@ -68,7 +74,7 @@ func TestDispatcher(t *testing.T) {
 	}`
 
 	var route map[string]map[string]string
-	err := json.Unmarshal([]byte(config), &route)
+	err = json.Unmarshal([]byte(config), &route)
 	assert.Equal(t, err, nil)
 
 	table := NewTable(route)

@@ -24,12 +24,25 @@ func NewConversation_(config *model.Config, db *broker.DBMultiplexer, redis *bro
 	}, nil
 }
 
-func (c *Conversation) SetRoute(route gobus.RouteCreater) {
+func (c *Conversation) SetRoute(route gobus.RouteCreater) error {
 	json := new(gobus.JSON)
-	route().Methods("POST").Path("/cross/{cross_id}/conversation").HandlerFunc(gobus.Must(gobus.Method(json, c, "Create")))
-	route().Methods("GET").Path("/cross/{cross_id}/conversation").HandlerFunc(gobus.Must(gobus.Method(json, c, "Find")))
-	route().Methods("DELETE").Path("/cross/{cross_id}/conversation/{post_id}").HandlerFunc(gobus.Must(gobus.Method(json, c, "Delete")))
-	route().Methods("GET").Path("/cross/{cross_id}/user/{user_id}/unread_count").HandlerFunc(gobus.Must(gobus.Method(json, c, "Unread")))
+	err := route().Methods("POST").Path("/cross/{cross_id}/conversation").HandlerMethod(json, c, "Create")
+	if err != nil {
+		return err
+	}
+	err = route().Methods("GET").Path("/cross/{cross_id}/conversation").HandlerMethod(json, c, "Find")
+	if err != nil {
+		return err
+	}
+	err = route().Methods("DELETE").Path("/cross/{cross_id}/conversation/{post_id}").HandlerMethod(json, c, "Delete")
+	if err != nil {
+		return err
+	}
+	err = route().Methods("GET").Path("/cross/{cross_id}/user/{user_id}/unread_count").HandlerMethod(json, c, "Unread")
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // 发一条新的Post到cross_id

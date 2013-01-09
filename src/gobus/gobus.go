@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/googollee/go-logger"
 	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
@@ -11,7 +12,7 @@ import (
 	"reflect"
 )
 
-type RouteCreater func() *mux.Route
+type RouteCreater func() *Route
 
 type Codec interface {
 	Mime() string
@@ -20,26 +21,29 @@ type Codec interface {
 }
 
 type Service interface {
-	SetRoute(route RouteCreater)
+	SetRoute(route RouteCreater) error
 }
 
 type Server struct {
 	router *mux.Router
 	addr   string
+	log    *logger.Logger
 }
 
-func NewServer(addr string) (*Server, error) {
+func NewServer(addr string, log *logger.Logger) (*Server, error) {
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 	return &Server{
 		router: router,
 		addr:   addr,
+		log:    log,
 	}, nil
 }
 
 func (s *Server) Register(service Service) error {
-	service.SetRoute(func() *mux.Route { return s.router.NewRoute() })
-	return nil
+	return service.SetRoute(func() *Route {
+		return &Route{s.router.NewRoute(), s}
+	})
 }
 
 func (s *Server) ListenAndServe() error {
@@ -50,107 +54,8 @@ func (s *Server) ListenAndServe() error {
 	return h.ListenAndServe()
 }
 
-func Must(f http.HandlerFunc, err error) http.HandlerFunc {
-	if err != nil {
-		panic(err)
-	}
-	return f
-}
-
 var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 var typeOfMap = reflect.TypeOf((map[string]string)(nil))
-
-func callMethod(f reflect.Value, args []reflect.Value) (reflect.Value, error) {
-	rets := f.Call(args)
-	ret, e := rets[0], rets[1].Interface()
-	if e != nil {
-		return ret, e.(error)
-	}
-	return ret, nil
-}
-
-func Method(codec Codec, arg interface{}, method string) (http.HandlerFunc, error) {
-	t := reflect.TypeOf(arg)
-	v := reflect.ValueOf(arg)
-	m, ok := t.MethodByName(method)
-	if !ok {
-		return nil, fmt.Errorf("can't find method")
-	}
-	if m.Type.NumOut() != 2 {
-		return nil, fmt.Errorf("output arg is not 2")
-	}
-	if m.Type.Out(1) != typeOfError {
-		return nil, fmt.Errorf("second output is not error")
-	}
-
-	switch m.Type.NumIn() {
-	case 3:
-		if m.Type.In(1) != typeOfMap {
-			return nil, fmt.Errorf("first input is not map[string]string")
-		}
-		inputType := m.Type.In(2)
-		inputPtr := false
-		if inputType.Kind() == reflect.Ptr {
-			inputType = inputType.Elem()
-			inputPtr = true
-		}
-		return func(w http.ResponseWriter, r *http.Request) {
-			input, err := codec.Decode(r.Body, inputType)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(err.Error()))
-				return
-			}
-			if !inputPtr {
-				input = input.Elem()
-			}
-			ret, err := callMethod(m.Func, []reflect.Value{v, reflect.ValueOf(params(r)), input})
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
-				return
-			}
-			w.Header().Add("Content-Type", fmt.Sprintf("%s; charset=utf-8", codec.Mime()))
-			err = codec.Encode(w, ret)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
-				return
-			}
-			return
-		}, nil
-	case 2:
-		if m.Type.In(1) != typeOfMap {
-			return nil, fmt.Errorf("first input is not map[string]string")
-		}
-		return func(w http.ResponseWriter, r *http.Request) {
-			ret, err := callMethod(m.Func, []reflect.Value{v, reflect.ValueOf(params(r))})
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
-				return
-			}
-			w.Header().Add("Content-Type", fmt.Sprintf("%s; charset=utf-8", codec.Mime()))
-			err = codec.Encode(w, ret)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
-				return
-			}
-			return
-		}, nil
-	}
-	return nil, fmt.Errorf("method must have 1 or 2 input arguments")
-}
-
-func params(r *http.Request) map[string]string {
-	vars := mux.Vars(r)
-	q := r.URL.Query()
-	for k, _ := range q {
-		vars[k] = q.Get(k)
-	}
-	return vars
-}
 
 type Client struct {
 	codec      Codec
