@@ -2,28 +2,58 @@ package gobus
 
 import (
 	"fmt"
+	"regexp"
 )
 
-type Table map[string]map[string]string
-
-func NewTable(route map[string]map[string]string) Table {
-	return Table(route)
+type urls struct {
+	matches  map[*regexp.Regexp]string
+	default_ string
 }
 
-func (d Table) Find(url, identity string) (string, error) {
+type Table map[string]urls
+
+func NewTable(route map[string]map[string]string) (Table, error) {
+	ret := make(Table)
+	for bus, v := range route {
+		u := urls{
+			matches:  make(map[*regexp.Regexp]string),
+			default_: "",
+		}
+		for pattern, dst := range v {
+			if pattern == "_default" {
+				u.default_ = dst
+				continue
+			}
+			reg, err := regexp.Compile(pattern)
+			if err != nil {
+				return nil, fmt.Errorf("%s is not valid regexp: %s", pattern, err)
+			}
+			u.matches[reg] = dst
+		}
+		ret[bus] = u
+	}
+	return ret, nil
+}
+
+func (d Table) Find(url, ticket string) (string, error) {
 	urls, ok := d[url]
 	if !ok {
 		return "", fmt.Errorf("can't find %s in table", url)
 	}
-	ret, ok := urls[identity]
-	if !ok {
-		ret, ok = urls["_default"]
+	matched := ""
+	for re, dst := range urls.matches {
+		if re.MatchString(ticket) {
+			matched = dst
+		}
 	}
-	if !ok {
-		return "", fmt.Errorf("can't find identity(%s) or default", identity)
+	if matched == "" {
+		matched = urls.default_
+	}
+	if matched == "" {
+		return "", fmt.Errorf("can't match ticket(%s) or default", ticket)
 	}
 
-	return ret, nil
+	return matched, nil
 }
 
 type Dispatcher struct {
@@ -38,8 +68,8 @@ func NewDispatcher(table Table) *Dispatcher {
 	}
 }
 
-func (d *Dispatcher) DoWithIdentity(identity, addr, method string, arg, reply interface{}) error {
-	url, err := d.table.Find(addr, identity)
+func (d *Dispatcher) DoWithTicket(ticket, addr, method string, arg, reply interface{}) error {
+	url, err := d.table.Find(addr, ticket)
 	if err != nil {
 		return err
 	}
@@ -47,5 +77,5 @@ func (d *Dispatcher) DoWithIdentity(identity, addr, method string, arg, reply in
 }
 
 func (d *Dispatcher) Do(addr, method string, arg, reply interface{}) error {
-	return d.DoWithIdentity("_default", addr, method, arg, reply)
+	return d.DoWithTicket("_default", addr, method, arg, reply)
 }

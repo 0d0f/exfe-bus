@@ -37,10 +37,10 @@ func (c *TubeClient) Send(arg interface{}) error {
 	return nil
 }
 
-func (c *TubeClient) SendWithIdentity(identity string, arg interface{}) error {
+func (c *TubeClient) SendWithTicket(ticket string, arg interface{}) error {
 	for _, p := range c.services {
 		var reply interface{}
-		err := c.dispatcher.DoWithIdentity(identity, p.url, p.method, arg, &reply)
+		err := c.dispatcher.DoWithTicket(ticket, p.url, p.method, arg, &reply)
 		if err != nil {
 			return err
 		}

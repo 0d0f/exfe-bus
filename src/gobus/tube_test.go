@@ -66,7 +66,7 @@ func TestTube(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	table := NewTable(route)
+	table, _ := NewTable(route)
 	dispatcher := NewDispatcher(table)
 
 	tube := NewTubeClient(dispatcher)
@@ -80,7 +80,7 @@ func TestTube(t *testing.T) {
 	assert.Equal(t, tester1.updateCount, 1)
 	assert.Equal(t, tester2.streamCount, 1)
 
-	err = tube.SendWithIdentity("abc", 1)
+	err = tube.SendWithTicket("abc", 1)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, tester1.updateCount, 2)
 	assert.Equal(t, tester2.streamCount, 2)

@@ -13,7 +13,8 @@ func TestTable(t *testing.T) {
 	    "bus://test1": {"_default": "http://127.0.0.1/test1"},
 	    "bus://test2/sub": {
 	    	"_default": "http://127.0.0.1/test2",
-	    	"twitter": "http://127.0.0.2/test2"
+	    	"twitter": "http://127.0.0.2/test2",
+	    	".*?u123": "http://127.0.0.3/test2"
 	    }
 	}`
 
@@ -23,7 +24,8 @@ func TestTable(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	table := NewTable(route)
+	table, err := NewTable(route)
+	assert.Equal(t, err, nil)
 
 	{
 		_, err := table.Find("bus://not_exist", "abc")
@@ -53,6 +55,12 @@ func TestTable(t *testing.T) {
 		assert.Equal(t, err, nil)
 		assert.Equal(t, url, "http://127.0.0.2/test2")
 	}
+
+	{
+		url, err := table.Find("bus://test2/sub", "c123,u123")
+		assert.Equal(t, err, nil)
+		assert.Equal(t, url, "http://127.0.0.3/test2")
+	}
 }
 
 func TestDispatcher(t *testing.T) {
@@ -77,7 +85,7 @@ func TestDispatcher(t *testing.T) {
 	err = json.Unmarshal([]byte(config), &route)
 	assert.Equal(t, err, nil)
 
-	table := NewTable(route)
+	table, _ := NewTable(route)
 	dispatcher := NewDispatcher(table)
 
 	{
@@ -89,7 +97,7 @@ func TestDispatcher(t *testing.T) {
 
 	{
 		var reply int
-		err = dispatcher.DoWithIdentity("abc", "bus://add", "POST", AddArgs{2, 4}, &reply)
+		err = dispatcher.DoWithTicket("abc", "bus://add", "POST", AddArgs{2, 4}, &reply)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, reply, 6)
 	}
