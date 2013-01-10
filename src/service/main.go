@@ -122,22 +122,6 @@ func main() {
 		log.Info("register Notifier")
 	}
 
-	if config.ExfeService.Services.Conversation {
-		conversation, err := NewConversation_(&config, db, redis, dispatcher)
-		if err != nil {
-			log.Crit("conversation can't created: %s", err)
-			os.Exit(-1)
-		}
-
-		err = bus.Register(conversation)
-		if err != nil {
-			log.Crit("gobus launch failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register conversation")
-	}
-
 	go func() {
 		<-quit
 		log.Info("quit")
