@@ -24,7 +24,7 @@ func (s Sender) Send(to model.Recipient, private, public string, info *model.Inf
 	arg.To = to
 
 	var ids string
-	err := s.dispatcher.DoWithIdentity(to.Provider, "bus://exfe_service/thirdpart/message", "POST", &arg, &ids)
+	err := s.dispatcher.DoWithTicket(to.Provider, "bus://exfe_service/thirdpart/message", "POST", &arg, &ids)
 
 	if err != nil {
 		return "", err

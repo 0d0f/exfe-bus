@@ -28,7 +28,12 @@ func main() {
 		os.Exit(-1)
 		return
 	}
-	sender, err := broker.NewSender(&config, gobus.NewDispatcher(gobus.NewTable(config.Dispatcher)))
+	table, err := gobus.NewTable(config.Dispatcher)
+	if err != nil {
+		panic(err)
+		return
+	}
+	sender, err := broker.NewSender(&config, gobus.NewDispatcher(table))
 	if err != nil {
 		log.Crit("create gobus client failed: %s", err)
 		os.Exit(-1)

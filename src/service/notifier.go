@@ -24,12 +24,12 @@ func NewNotifier(local *formatter.LocalTemplate, config *model.Config, sender *b
 
 func (n *Notifier) SetRoute(r gobus.RouteCreater) error {
 	json := new(gobus.JSON)
-	r().Methods("POST").Path("/conversation").HandlerMethod(json, n, "PostUpdate")
-	r().Methods("POST").Path("/cross/invitation").HandlerMethod(json, n, "CrossInvite")
-	r().Methods("POST").Path("/cross/summary").HandlerMethod(json, n, "CrossSummary")
-	r().Methods("POST").Path("/user/welcome").HandlerMethod(json, n, "UserWelcome")
-	r().Methods("POST").Path("/user/verify").HandlerMethod(json, n, "UserVerify")
-	r().Methods("POST").Path("/user/password").HandlerMethod(json, n, "UserPassword")
+	r().Methods("POST").Path("/notifier/conversation").HandlerMethod(json, n, "PostUpdate")
+	r().Methods("POST").Path("/notifier/cross/invitation").HandlerMethod(json, n, "CrossInvite")
+	r().Methods("POST").Path("/notifier/cross/summary").HandlerMethod(json, n, "CrossSummary")
+	r().Methods("POST").Path("/notifier/user/welcome").HandlerMethod(json, n, "UserWelcome")
+	r().Methods("POST").Path("/notifier/user/verify").HandlerMethod(json, n, "UserVerify")
+	r().Methods("POST").Path("/notifier/user/password").HandlerMethod(json, n, "UserPassword")
 
 	r().Queries("method", "Update").Path("/Conversation").HandlerMethod(json, n, "PostUpdate")
 	r().Queries("method", "Invite").Path("/Cross").HandlerMethod(json, n, "CrossInvite")

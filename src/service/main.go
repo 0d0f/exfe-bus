@@ -24,7 +24,12 @@ func main() {
 
 	db := broker.NewDBMultiplexer(&config)
 	redis := broker.NewRedisMultiplexer(&config)
-	dispatcher := gobus.NewDispatcher(gobus.NewTable(config.Dispatcher))
+	table, err := gobus.NewTable(config.Dispatcher)
+	if err != nil {
+		panic(err)
+		return
+	}
+	dispatcher := gobus.NewDispatcher(table)
 	sender, err := broker.NewSender(&config, dispatcher)
 	if err != nil {
 		log.Crit("can't create sender: %s", err)
