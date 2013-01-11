@@ -171,14 +171,15 @@ func (t *Thirdpart) sendCallback(recipient model.Recipient, err error) {
 		t.log.Crit("encoding json error: %s", err)
 		return
 	}
+	bufString := buf.String()
 
 	url := fmt.Sprintf("%s/v2/gobus/NotificationCallback", t.config.SiteApi)
 	resp, err := http.Post(url, "application/json", buf)
 	if err != nil {
-		t.log.Crit("send callback(%s) to %s error: %s", buf.String(), url, err)
+		t.log.Crit("send callback(%s) to %s error: %s", bufString, url, err)
 	}
 	if resp.StatusCode != 200 {
-		t.log.Crit("send callback(%s) to %s failed: %s", buf.String(), url, resp.Status)
+		t.log.Crit("send callback(%s) to %s failed: %s", bufString, url, resp.Status)
 	}
 }
 
