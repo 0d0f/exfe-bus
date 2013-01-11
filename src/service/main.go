@@ -36,6 +36,12 @@ func main() {
 		os.Exit(-1)
 		return
 	}
+	platform, err := NewPlatform(&config)
+	if err != nil {
+		log.Crit("can't create platform: %s", err)
+		os.Exit(-1)
+		return
+	}
 
 	url := fmt.Sprintf("%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
@@ -128,7 +134,7 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Message {
-		message, err := NewMessage(&config, dispatcher)
+		message, err := NewMessage(&config, dispatcher, platform)
 		if err != nil {
 			log.Crit("create message failed: %s", err)
 			os.Exit(-1)

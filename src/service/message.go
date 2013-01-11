@@ -10,8 +10,8 @@ type Message struct {
 	message *message.Message
 }
 
-func NewMessage(config *model.Config, dispatcher *gobus.Dispatcher) (*Message, error) {
-	msg, err := message.New(config, dispatcher)
+func NewMessage(config *model.Config, dispatcher *gobus.Dispatcher, platform message.Platform) (*Message, error) {
+	msg, err := message.New(config, dispatcher, platform)
 	if err != nil {
 		return nil, err
 	}
