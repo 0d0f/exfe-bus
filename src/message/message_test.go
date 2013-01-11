@@ -43,6 +43,12 @@ func (f *FakeDispatcher) DoWithTicket(ticket, url, method string, arg, reply int
 	return nil
 }
 
+type FakePlatform struct{}
+
+func (p *FakePlatform) GetHotRecipient(userID int64) ([]model.Recipient, error) {
+	return nil, nil
+}
+
 func TestMessage(t *testing.T) {
 	config := new(model.Config)
 	log, err := logger.New(logger.Stderr, "message test")
@@ -51,7 +57,8 @@ func TestMessage(t *testing.T) {
 	}
 	config.Log = log
 	dispatcher := NewFakeDispatcher()
-	msg, err := New(config, dispatcher)
+	platform := new(FakePlatform)
+	msg, err := New(config, dispatcher, platform)
 	if err != nil {
 		t.Fatal(err)
 	}
