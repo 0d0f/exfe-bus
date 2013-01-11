@@ -8,6 +8,7 @@ import (
 	"gobus"
 	"launchpad.net/tomb"
 	"model"
+	"strings"
 )
 
 type Tail struct {
@@ -35,6 +36,7 @@ func NewTail(delayInSecond uint, url string, config *model.Config) (*Tail, *tomb
 
 func (i *Tail) SetRoute(route gobus.RouteCreater) error {
 	json := new(gobus.JSON)
+	route().Methods("POST").Path("/"+strings.ToLower(i.url)).HandlerMethod(json, i, "Push")
 	route().Methods("POST").Path("/"+i.url).HandlerMethod(json, i, "Push")
 	return nil
 }

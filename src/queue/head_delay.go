@@ -8,6 +8,7 @@ import (
 	"gobus"
 	"launchpad.net/tomb"
 	"model"
+	"strings"
 )
 
 type Head struct {
@@ -35,6 +36,7 @@ func NewHead(delayInSecond uint, url string, config *model.Config) (*Head, *tomb
 
 func (i *Head) SetRoute(route gobus.RouteCreater) error {
 	json := new(gobus.JSON)
+	route().Methods("POST").Path("/"+strings.ToLower(i.url)).HandlerMethod(json, i, "Push")
 	route().Methods("POST").Path("/"+i.url).HandlerMethod(json, i, "Push")
 	return nil
 }
