@@ -50,6 +50,7 @@ type Config struct {
 			Iom          bool `json:"iom"`
 			Thirdpart    bool `json:"thirdpart"`
 			Notifier     bool `json:"notifier"`
+			Message      bool `json:"message"`
 		} `json:"services"`
 	} `json:"exfe_service"`
 	ExfeQueue struct {

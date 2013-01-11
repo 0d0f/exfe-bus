@@ -127,6 +127,23 @@ func main() {
 		log.Info("register Notifier")
 	}
 
+	if config.ExfeService.Services.Message {
+		message, err := NewMessage(&config, dispatcher)
+		if err != nil {
+			log.Crit("create message failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+
+		err = bus.Register(message)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register Message")
+	}
+
 	go func() {
 		<-quit
 		log.Info("quit")
