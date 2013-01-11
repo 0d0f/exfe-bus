@@ -19,6 +19,8 @@ func NewPlatform(config *model.Config) (*Platform, error) {
 }
 
 func (p *Platform) GetHotRecipient(userID int64) ([]model.Recipient, error) {
+	return nil, nil
+
 	resp, err := http.Get(fmt.Sprintf("%s/v2/Gobus/HotRecipient?user=%d", p.config.SiteApi, userID))
 	if err != nil {
 		return nil, err
