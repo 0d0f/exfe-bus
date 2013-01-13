@@ -1,6 +1,7 @@
 package main
 
 import (
+	"broker"
 	"daemon"
 	"encoding/json"
 	"fmt"
@@ -106,6 +107,20 @@ func main() {
 			return
 		}
 		log.Info("register %s %d methods.", name, count)
+	}
+
+	redis := broker.NewRedisImp(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
+	queue, err := NewQueue(&config, redis)
+	if err == nil {
+		log.Crit("queue launch failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	err = bus.Register(queue)
+	if err == nil {
+		log.Crit("register queue failed: %s", err)
+		os.Exit(-1)
+		return
 	}
 
 	go func() {

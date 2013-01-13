@@ -54,10 +54,11 @@ type Config struct {
 		} `json:"services"`
 	} `json:"exfe_service"`
 	ExfeQueue struct {
-		Addr string          `json:"addr"`
-		Port uint            `json:"port"`
-		Head map[string]uint `json:"head"`
-		Tail map[string]uint `json:"tail"`
+		Addr     string          `json:"addr"`
+		Port     uint            `json:"port"`
+		Priority map[string]uint `json:"priority"`
+		Head     map[string]uint `json:"head"`
+		Tail     map[string]uint `json:"tail"`
 	} `json:"exfe_queue"`
 
 	Thirdpart struct {
