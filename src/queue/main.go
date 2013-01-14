@@ -111,17 +111,18 @@ func main() {
 
 	redis := broker.NewRedisImp(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
 	queue, err := NewQueue(&config, redis)
-	if err == nil {
+	if err != nil {
 		log.Crit("queue launch failed: %s", err)
 		os.Exit(-1)
 		return
 	}
 	err = bus.Register(queue)
-	if err == nil {
+	if err != nil {
 		log.Crit("register queue failed: %s", err)
 		os.Exit(-1)
 		return
 	}
+	log.Info("register queue methods.")
 
 	go func() {
 		<-quit
