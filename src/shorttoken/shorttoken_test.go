@@ -68,6 +68,18 @@ func (r *TestTokenRepo) Find(key string, resource string) ([]Token, error) {
 	return ret, nil
 }
 
+func (r *TestTokenRepo) Touch(key, resource string) error {
+	for _, token := range r.store {
+		if token.Key == key && token.Resource == resource {
+			fmt.Println(token.TouchedAt)
+			token.TouchedAt = time.Now()
+			r.store[token.Key] = token
+			fmt.Println(token.TouchedAt)
+		}
+	}
+	return nil
+}
+
 func TestShortToken(t *testing.T) {
 	repo := &TestTokenRepo{
 		store: make(map[string]Token),
@@ -120,6 +132,30 @@ func TestShortToken(t *testing.T) {
 		assert.Equal(t, len(token), 1)
 		assert.Equal(t, token[0].Key, tk)
 		assert.Equal(t, token[0].Data, "abc")
+	}
+
+	{
+		err := mgr.Refresh(tk, resource, 3*time.Second)
+		assert.Equal(t, err, nil)
+
+		fmt.Println("touch")
+		mgr.Get(tk, resource)
+
+		time.Sleep(2 * time.Second)
+
+		token, err := mgr.Get(tk, resource)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, len(token), 1)
+		touch1 := token[0].TouchedAt
+
+		token, err = mgr.Get(tk, resource)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, len(token), 1)
+		touch2 := token[0].TouchedAt
+
+		fmt.Println(touch1, touch2)
+		assert.NotEqual(t, touch1, touch2)
+		fmt.Println("touched")
 	}
 
 	time.Sleep(time.Second * 2)

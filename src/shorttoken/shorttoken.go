@@ -75,13 +75,14 @@ func (t *ShortToken) Get(key, resource string) ([]model.Token, error) {
 	if tokens == nil || len(tokens) == 0 {
 		return nil, fmt.Errorf("can't find token with key(%s) or resource(%s)", key, resource)
 	}
-	if key != "" && resource != "" {
+	if key != "" && md5 != "" {
 		t.repo.Touch(key, md5)
 	}
 	ret := make([]model.Token, len(tokens))
 	for i, token := range tokens {
 		ret[i].Key = token.Key
 		ret[i].Data = token.Data
+		ret[i].TouchedAt = token.TouchedAt.UTC().Format("2006-01-02 15:04:05")
 	}
 	return ret, nil
 }
