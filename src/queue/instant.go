@@ -22,6 +22,7 @@ func NewInstant(config *model.Config) *Instant {
 func (i *Instant) SetRoute(route gobus.RouteCreater) error {
 	json := new(gobus.JSON)
 	route().Methods("POST").Path("/instant").HandlerMethod(json, i, "Push")
+	route().Methods("POST").Path("/Instant").HandlerMethod(json, i, "Push")
 	return nil
 }
 
