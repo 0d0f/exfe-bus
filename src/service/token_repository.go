@@ -10,14 +10,15 @@ import (
 )
 
 const (
-	CREATE                   = "INSERT INTO `tokens` VALUES (null, ?, ?, ?, ?, ?)"
+	CREATE                   = "INSERT INTO `tokens` VALUES (null, ?, ?, ?, ?, ?, ?)"
 	STORE                    = "UPDATE `tokens` SET expire_at=?, data=? WHERE tokens.key=? AND tokens.rand=?"
-	FIND_BY_KEY              = "SELECT rand, created_at, expire_at, data FROM `tokens` WHERE tokens.key=?"
-	FIND_BY_TOKEN            = "SELECT created_at, expire_at, data FROM `tokens` WHERE tokens.key=? AND tokens.rand=?"
+	FIND_BY_KEY              = "SELECT rand, touched_at, created_at, expire_at, data FROM `tokens` WHERE tokens.key=?"
+	FIND_BY_TOKEN            = "SELECT touched_at, created_at, expire_at, data FROM `tokens` WHERE tokens.key=? AND tokens.rand=?"
 	UPDATE_DATA_BY_TOKEN     = "UPDATE `tokens` SET tokens.data=? WHERE tokens.key=? AND tokens.rand=?"
 	UPDATE_EXPIREAT_BY_TOKEN = "UPDATE `tokens` SET tokens.expire_at=? WHERE tokens.key=? AND tokens.rand=?"
 	UPDATE_EXPIREAT_BY_KEY   = "UPDATE `tokens` SET tokens.expire_at=? WHERE tokens.key=?"
 	DELETE_BY_TOKEN          = "DELETE FROM `tokens` WHERE tokens.key=? AND tokens.rand=?"
+	TOUCH                    = "UPDATE `tokens` SET touched_at=? WHERE tokens.key=? AND tokens.rand=?"
 )
 
 type TokenRepository struct {
@@ -39,7 +40,7 @@ func (r *TokenRepository) Create(token *tokenmanager.Token) error {
 	var err error
 	r.db.Do(func(i multiplexer.Instance) {
 		db := i.(*broker.DBInstance)
-		_, err = db.Exec(CREATE, token.Key, token.Rand, r.timeToString(&token.CreatedAt), r.timeToString(token.ExpireAt), token.Data)
+		_, err = db.Exec(CREATE, token.Key, token.Rand, r.timeToString(&token.TouchedAt), r.timeToString(&token.CreatedAt), r.timeToString(token.ExpireAt), token.Data)
 	})
 	return err
 }
@@ -66,15 +67,17 @@ func (r *TokenRepository) FindByKey(key string) ([]*tokenmanager.Token, error) {
 		defer rows.Close()
 
 		for rows.Next() {
+			var touchedAtStr string
 			var createdAtStr string
 			var expireAtStr string
 			token := tokenmanager.Token{
 				Key: key,
 			}
-			err := rows.Scan(&token.Rand, &createdAtStr, &expireAtStr, &token.Data)
+			err := rows.Scan(&token.Rand, &touchedAtStr, &createdAtStr, &expireAtStr, &token.Data)
 			if err != nil {
 				return
 			}
+			token.TouchedAt, _ = time.Parse("2006-01-02 15:04:05", touchedAtStr)
 			token.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
 			if expireAtStr != "0000-00-00 00:00:00" {
 				time, _ := time.Parse("2006-01-02 15:04:05", expireAtStr)
@@ -109,12 +112,14 @@ func (r *TokenRepository) FindByToken(key, rand string) (*tokenmanager.Token, er
 			return
 		}
 
+		var touchedAtStr string
 		var createdAtStr string
 		var expireAtStr string
-		err = rows.Scan(&createdAtStr, &expireAtStr, &ret.Data)
+		err = rows.Scan(&touchedAtStr, &createdAtStr, &expireAtStr, &ret.Data)
 		if err != nil {
 			return
 		}
+		ret.TouchedAt, _ = time.Parse("2006-01-02 15:04:05", touchedAtStr)
 		ret.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
 		if expireAtStr != "0000-00-00 00:00:00" {
 			expireAt, _ := time.Parse("2006-01-02 15:04:05", expireAtStr)

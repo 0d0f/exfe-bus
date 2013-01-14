@@ -15,13 +15,15 @@ type Token struct {
 	Rand      string
 	Data      string
 	ExpireAt  *time.Time
+	TouchedAt time.Time
 	CreatedAt time.Time
 }
 
 type tokenJson struct {
-	Token    string `json:"token"`
-	Data     string `json:"data"`
-	IsExpire bool   `json:"is_expire"`
+	Token     string `json:"token"`
+	Data      string `json:"data"`
+	TouchedAt string `json:"touched_at"`
+	IsExpire  bool   `json:"is_expire"`
 }
 
 // expireAt == nil for never expire.
@@ -31,6 +33,7 @@ func NewToken(resource, data string, expireAt *time.Time) *Token {
 		Rand:      md5Resource(fmt.Sprintf("%s%x", time.Now().String(), randBytes())),
 		Data:      data,
 		ExpireAt:  expireAt,
+		TouchedAt: time.Now(),
 		CreatedAt: time.Now(),
 	}
 }
@@ -48,9 +51,10 @@ func (t *Token) String() string {
 
 func (t Token) MarshalJSON() ([]byte, error) {
 	j := tokenJson{
-		Token:    (&t).String(),
-		Data:     t.Data,
-		IsExpire: (&t).IsExpired(),
+		Token:     (&t).String(),
+		Data:      t.Data,
+		TouchedAt: t.TouchedAt.UTC().Format("2006-01-02 15:04:05"),
+		IsExpire:  (&t).IsExpired(),
 	}
 	return json.Marshal(j)
 }
