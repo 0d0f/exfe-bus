@@ -18,7 +18,7 @@ const (
 	UPDATE_EXPIREAT_BY_TOKEN = "UPDATE `tokens` SET tokens.expire_at=? WHERE tokens.key=? AND tokens.rand=?"
 	UPDATE_EXPIREAT_BY_KEY   = "UPDATE `tokens` SET tokens.expire_at=? WHERE tokens.key=?"
 	DELETE_BY_TOKEN          = "DELETE FROM `tokens` WHERE tokens.key=? AND tokens.rand=?"
-	TOUCH                    = "UPDATE `tokens` SET touched_at=? WHERE tokens.key=? AND tokens.rand=?"
+	TOUCH                    = "UPDATE `tokens` SET touched_at=NOW() WHERE tokens.key=? AND tokens.rand=?"
 )
 
 type TokenRepository struct {

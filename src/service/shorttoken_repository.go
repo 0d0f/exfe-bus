@@ -15,7 +15,7 @@ const (
 	SHORTTOKEN_FIND            = "SELECT `key`, resource, data, touched_at, expire_at FROM `shorttokens` WHERE expire_at>UTC_TIMESTAMP()"
 	SHORTTOKEN_UPDATE_DATA     = "UPDATE `shorttokens` SET data=? WHERE expire_at>UTC_TIMESTAMP()"
 	SHORTTOKEN_UPDATE_EXPIREAT = "UPDATE `shorttokens` SET expire_at=? WHERE expire_at>UTC_TIMESTAMP()"
-	SHORTTOKEN_TOUCH           = "UPDATE `shorttokens` SET touched_at=? WHERE expire_at>UTC_TIMESTAMP() AND `key`=? AND resource=?"
+	SHORTTOKEN_TOUCH           = "UPDATE `shorttokens` SET touched_at=NOW() WHERE expire_at>UTC_TIMESTAMP() AND `key`=? AND resource=?"
 )
 
 type ShortTokenRepository struct {
