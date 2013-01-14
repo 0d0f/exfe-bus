@@ -125,6 +125,8 @@ func (r *TokenRepository) FindByToken(key, rand string) (*tokenmanager.Token, er
 			expireAt, _ := time.Parse("2006-01-02 15:04:05", expireAtStr)
 			ret.ExpireAt = &expireAt
 		}
+
+		db.Exec(TOUCH, key, rand)
 	})
 	if err != nil {
 		return nil, err
