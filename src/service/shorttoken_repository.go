@@ -42,6 +42,15 @@ func (r *ShortTokenRepository) Store(token shorttoken.Token) error {
 	return err
 }
 
+func (r *ShortTokenRepository) Touch(key, resource string) error {
+	var err error
+	r.db.Do(func(i multiplexer.Instance) {
+		db := i.(*broker.DBInstance)
+		_, err = db.Exec(SHORTTOKEN_TOUCH, key, resource)
+	})
+	return err
+}
+
 func (r *ShortTokenRepository) Find(key, resource string) ([]shorttoken.Token, error) {
 	query := SHORTTOKEN_FIND
 	if key != "" {
@@ -72,9 +81,6 @@ func (r *ShortTokenRepository) Find(key, resource string) ([]shorttoken.Token, e
 			token.TouchedAt, _ = time.Parse("2006-01-02 15:04:05", touchedAt)
 			token.ExpireAt, _ = time.Parse("2006-01-02 15:04:05", expireAt)
 			ret = append(ret, token)
-		}
-		if key != "" && resource != "" {
-			db.Exec(SHORTTOKEN_TOUCH, key, resource)
 		}
 	})
 	if len(ret) == 0 {

@@ -13,6 +13,7 @@ type Repo interface {
 	UpdateData(key, resource, data string) error
 	UpdateExpireAt(key, resource string, expireAt time.Time) error
 	Find(key string, resource string) ([]Token, error)
+	Touch(key, resource string) error
 }
 
 type ShortToken struct {
@@ -73,6 +74,9 @@ func (t *ShortToken) Get(key, resource string) ([]model.Token, error) {
 	}
 	if tokens == nil || len(tokens) == 0 {
 		return nil, fmt.Errorf("can't find token with key(%s) or resource(%s)", key, resource)
+	}
+	if key != "" && resource != "" {
+		t.repo.Touch(key, md5)
 	}
 	ret := make([]model.Token, len(tokens))
 	for i, token := range tokens {
