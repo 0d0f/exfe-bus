@@ -11,6 +11,7 @@ type Token struct {
 	Key       string
 	Resource  string
 	Data      string
+	TouchedAt time.Time
 	ExpireAt  time.Time
 	CreatedAt time.Time
 }

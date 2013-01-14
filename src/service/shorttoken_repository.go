@@ -12,9 +12,10 @@ import (
 
 const (
 	SHORTTOKEN_STORE           = "INSERT INTO `shorttokens` (`key`, `resource`, `data`, `expire_at`, `created_at`) VALUES (?, ?, ?, ?, ?)"
-	SHORTTOKEN_FIND            = "SELECT `key`, resource, data, expire_at FROM `shorttokens` WHERE expire_at>UTC_TIMESTAMP()"
+	SHORTTOKEN_FIND            = "SELECT `key`, resource, data, touched_at, expire_at FROM `shorttokens` WHERE expire_at>UTC_TIMESTAMP()"
 	SHORTTOKEN_UPDATE_DATA     = "UPDATE `shorttokens` SET data=? WHERE expire_at>UTC_TIMESTAMP()"
 	SHORTTOKEN_UPDATE_EXPIREAT = "UPDATE `shorttokens` SET expire_at=? WHERE expire_at>UTC_TIMESTAMP()"
+	SHORTTOKEN_TOUCH           = "UPDATE `shorttokens` SET touched_at=? WHERE expire_at>UTC_TIMESTAMP() AND `key`=? AND resource=?"
 )
 
 type ShortTokenRepository struct {
@@ -58,15 +59,22 @@ func (r *ShortTokenRepository) Find(key, resource string) ([]shorttoken.Token, e
 		if err != nil {
 			return
 		}
+		defer rows.Close()
+
 		for rows.Next() {
 			token := shorttoken.Token{}
+			var touchedAt string
 			var expireAt string
-			err := rows.Scan(&token.Key, &token.Resource, &token.Data, &expireAt)
+			err := rows.Scan(&token.Key, &token.Resource, &token.Data, &touchedAt, &expireAt)
 			if err != nil {
 				return
 			}
+			token.TouchedAt, _ = time.Parse("2006-01-02 15:04:05", touchedAt)
 			token.ExpireAt, _ = time.Parse("2006-01-02 15:04:05", expireAt)
 			ret = append(ret, token)
+		}
+		if key != "" && resource != "" {
+			db.Exec(SHORTTOKEN_TOUCH, key, resource)
 		}
 	})
 	if len(ret) == 0 {
