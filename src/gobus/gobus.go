@@ -8,7 +8,9 @@ import (
 	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"net/http/fcgi"
 	"reflect"
 )
 
@@ -52,6 +54,14 @@ func (s *Server) ListenAndServe() error {
 		Handler: s.router,
 	}
 	return h.ListenAndServe()
+}
+
+func (s *Server) ListenFCGI() error {
+	l, err := net.Listen("tcp", s.addr)
+	if err != nil {
+		return err
+	}
+	return fcgi.Serve(l, s.router)
 }
 
 var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
