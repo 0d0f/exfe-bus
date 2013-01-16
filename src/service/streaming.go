@@ -44,5 +44,8 @@ func (s *Streaming) Provider() string {
 
 func (s *Streaming) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
 	err := s.streaming.Feed(fmt.Sprintf("%d", to.UserID), privateMessage)
+	if err != nil {
+		s.log.Err("send error: %s", err)
+	}
 	return "1", err
 }
