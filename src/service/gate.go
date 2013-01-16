@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/googollee/go-logger"
 	"gobus"
 	"model"
 )
@@ -10,6 +11,7 @@ import (
 type Gate struct {
 	client *gobus.Client
 	url    string
+	log    *logger.SubLogger
 }
 
 func NewGate(config *model.Config) (*Gate, error) {
@@ -17,6 +19,7 @@ func NewGate(config *model.Config) (*Gate, error) {
 	return &Gate{
 		client: gobus.NewClient(json),
 		url:    fmt.Sprintf("http://%s:%d/tokenmanager/token/%%s", config.ExfeService.Addr, config.ExfeService.Port),
+		log:    config.Log.SubPrefix("gate"),
 	}, nil
 }
 
