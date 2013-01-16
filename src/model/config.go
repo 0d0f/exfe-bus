@@ -62,7 +62,7 @@ type Config struct {
 	ExfeGate struct {
 		Addr string `json:"addr"`
 		Port uint   `json:"port"`
-	}
+	} `json:"exfe_gate"`
 
 	Thirdpart struct {
 		MaxStateCache uint `json:"max_state_cache"`
