@@ -8,8 +8,7 @@ import (
 	"github.com/googollee/go-logger"
 	"gobus"
 	"model"
-	"net"
-	"net/http/fcgi"
+	"net/http"
 	"os"
 )
 
@@ -64,13 +63,11 @@ func main() {
 	// }
 
 	gateAddr := fmt.Sprintf("%s:%d", config.ExfeGate.Addr, config.ExfeGate.Port)
-	gateListener, err := net.Listen("tcp", gateAddr)
-	if err != nil {
-		log.Crit("gobus can't listen %s: %s", gateAddr, err)
-		os.Exit(-1)
-		return
+	gateServer := &http.Server{
+		Addr:    gateAddr,
+		Handler: streaming,
 	}
-	go fcgi.Serve(gateListener, streaming)
+	go gateServer.ListenAndServe()
 	log.Info("launch gate at %s", gateAddr)
 
 	url := fmt.Sprintf("%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
