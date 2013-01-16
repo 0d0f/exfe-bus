@@ -53,6 +53,11 @@
     "tail": {"Tail10":600}
   },
 
+  "exfe_gate": {
+    "addr": "127.0.0.1",
+    "port": 23335
+  },
+
   "thirdpart": {
     "max_state_cache": 1000,
     "twitter": {
