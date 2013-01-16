@@ -34,7 +34,8 @@ func (s *Streaming) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Info("connect to %d", userID)
-	s.streaming.Connect(fmt.Sprintf("%d", userID), w)
+	err = s.streaming.Connect(fmt.Sprintf("%d", userID), w)
+	log.Info("disconnect: %s", err)
 }
 
 func (s *Streaming) Provider() string {
