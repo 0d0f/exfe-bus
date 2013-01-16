@@ -29,7 +29,7 @@ func (s *Streaming) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	userID, err := s.gate.Verify(token)
 	if err != nil {
-		log.Info("connect to %d", userID)
+		log.Debug("refuse to %d", userID)
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
