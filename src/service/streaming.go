@@ -17,7 +17,7 @@ type Streaming struct {
 
 func NewStreaming(config *model.Config, gate *Gate) (*Streaming, error) {
 	return &Streaming{
-		streaming: streaming.New(),
+		streaming: streaming.New(config.Log.SubPrefix("streaming kern")),
 		config:    config,
 		gate:      gate,
 		log:       config.Log.SubPrefix("streaming"),

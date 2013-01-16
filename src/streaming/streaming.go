@@ -2,6 +2,7 @@ package streaming
 
 import (
 	"fmt"
+	"github.com/googollee/go-logger"
 	"io"
 	"sync"
 )
@@ -9,12 +10,14 @@ import (
 type Streaming struct {
 	channels map[string]chan string
 	locker   sync.Locker
+	log      *logger.SubLogger
 }
 
-func New() *Streaming {
+func New(log *logger.SubLogger) *Streaming {
 	return &Streaming{
 		channels: make(map[string]chan string),
 		locker:   new(sync.Mutex),
+		log:      log,
 	}
 }
 
