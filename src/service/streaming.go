@@ -47,7 +47,7 @@ func (s *Streaming) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	log.Info("connect to %d", userID)
-	defer log.Info("disconnect: %s", err)
+	defer func() { log.Info("disconnect: %s", err) }()
 
 	err = s.streaming.Connect(fmt.Sprintf("%d", userID), buf)
 }

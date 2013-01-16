@@ -47,7 +47,6 @@ func (s *Streaming) Connect(id string, w BufWriter) error {
 		if err != nil {
 			return err
 		}
-
 	}
 	return nil
 }
