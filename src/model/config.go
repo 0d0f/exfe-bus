@@ -59,6 +59,10 @@ type Config struct {
 		Head     map[string]uint `json:"head"`
 		Tail     map[string]uint `json:"tail"`
 	} `json:"exfe_queue"`
+	ExfeGate struct {
+		Addr string `json:"addr"`
+		Port uint   `json:"port"`
+	}
 
 	Thirdpart struct {
 		MaxStateCache uint `json:"max_state_cache"`
