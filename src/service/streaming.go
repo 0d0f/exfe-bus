@@ -49,7 +49,7 @@ func (s *Streaming) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Info("connect to %d", userID)
 	defer log.Info("disconnect: %s", err)
 
-	s.streaming.Connect(fmt.Sprintf("%d", userID), buf)
+	err = s.streaming.Connect(fmt.Sprintf("%d", userID), buf)
 }
 
 func (s *Streaming) Provider() string {
