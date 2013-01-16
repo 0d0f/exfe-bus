@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/googollee/go-logger"
 	"model"
 	"net/http"
 	"streaming"
@@ -11,6 +12,7 @@ type Streaming struct {
 	streaming *streaming.Streaming
 	config    *model.Config
 	gate      *Gate
+	log       *logger.SubLogger
 }
 
 func NewStreaming(config *model.Config, gate *Gate) (*Streaming, error) {
@@ -18,16 +20,20 @@ func NewStreaming(config *model.Config, gate *Gate) (*Streaming, error) {
 		streaming: streaming.New(),
 		config:    config,
 		gate:      gate,
+		log:       config.Log.SubPrefix("streaming"),
 	}, nil
 }
 
 func (s *Streaming) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log := s.log.SubCode()
 	token := r.URL.Query().Get("token")
 	userID, err := s.gate.Verify(token)
 	if err != nil {
+		log.Info("connect to %d", userID)
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
+	log.Info("connect to %d", userID)
 	s.streaming.Connect(fmt.Sprintf("%d", userID), w)
 }
 
