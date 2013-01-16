@@ -7,6 +7,11 @@ import (
 	"sync"
 )
 
+type BufWriter interface {
+	io.Writer
+	Flush() error
+}
+
 type Streaming struct {
 	channels map[string]chan string
 	locker   sync.Locker
@@ -21,7 +26,7 @@ func New(log *logger.SubLogger) *Streaming {
 	}
 }
 
-func (s *Streaming) Connect(id string, w io.Writer) error {
+func (s *Streaming) Connect(id string, w BufWriter) error {
 	c, err := s.connecting(id)
 	if err != nil {
 		return err
@@ -38,6 +43,11 @@ func (s *Streaming) Connect(id string, w io.Writer) error {
 		if err != nil {
 			return err
 		}
+		err = w.Flush()
+		if err != nil {
+			return err
+		}
+
 	}
 	return nil
 }

@@ -29,13 +29,27 @@ func (s *Streaming) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	userID, err := s.gate.Verify(token)
 	if err != nil {
-		log.Debug("refuse to %d", userID)
-		w.WriteHeader(http.StatusForbidden)
+		log.Debug("invalid token: %s", token)
+		http.Error(w, fmt.Sprintf("token(%s) invalid", token), http.StatusForbidden)
 		return
 	}
+
+	hj, ok := w.(http.Hijacker)
+	if !ok {
+		http.Error(w, "webserver doesn't support streaming", http.StatusInternalServerError)
+		return
+	}
+
+	conn, buf, err := hj.Hijack()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	defer conn.Close()
+
 	log.Info("connect to %d", userID)
-	err = s.streaming.Connect(fmt.Sprintf("%d", userID), w)
-	log.Info("disconnect: %s", err)
+	defer log.Info("disconnect: %s", err)
+
+	s.streaming.Connect(fmt.Sprintf("%d", userID), buf)
 }
 
 func (s *Streaming) Provider() string {
