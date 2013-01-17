@@ -76,6 +76,14 @@ type receiveArg struct {
 	To *model.Recipient `json:"to"`
 }
 
+// 将data发给已经建立的streaming连接。streaming的用户通过data.to.user_id确定。
+// streaming通过23335接口建立，需要提供user type的token做身份验证。
+//
+// 例子：
+//
+// > curl "http://127.0.0.1:23335?token=c50afa33ffbffc6335134e0d4558ce2c3ca6c0833ccc396dc902963d6de9d8c1"
+// > curl http://127.0.0.1:23333/streaming -d '{"to":{"external_id":"123","external_username":"name","auth_data":"","provider":"streaming","identity_id":789,"user_id":375},"private":"private","public":"public","info":null}'
+//
 func (s *Streaming) Receive(params map[string]string, data map[string]interface{}) (int, error) {
 	content, err := json.Marshal(data)
 	if err != nil {
