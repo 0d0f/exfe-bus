@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/stretchrcom/testify/assert"
+	"net"
 	"testing"
 	"time"
 )
 
 type FakeWriter struct {
-	isClosed bool
-	buf      *bytes.Buffer
+	isClosed    bool
+	buf         *bytes.Buffer
+	readTimeout time.Time
 }
 
 func NewFakeWriter() *FakeWriter {
@@ -32,6 +34,36 @@ func (w *FakeWriter) Write(p []byte) (int, error) {
 	return w.buf.Write(p)
 }
 
+func (w *FakeWriter) Flush() error {
+	return nil
+}
+
+func (w *FakeWriter) Read(b []byte) (n int, err error) {
+	time.Sleep(w.readTimeout.Sub(time.Now()))
+	return 0, nil
+}
+
+func (w *FakeWriter) SetReadDeadline(t time.Time) error {
+	w.readTimeout = t
+	return nil
+}
+
+func (w *FakeWriter) SetWriteDeadline(t time.Time) error {
+	return nil
+}
+
+func (w *FakeWriter) SetDeadline(t time.Time) error {
+	return nil
+}
+
+func (w *FakeWriter) LocalAddr() net.Addr {
+	return new(net.IPAddr)
+}
+
+func (w *FakeWriter) RemoteAddr() net.Addr {
+	return new(net.IPAddr)
+}
+
 func TestStreaming(t *testing.T) {
 	streaming := New()
 	id := "user123"
@@ -39,7 +71,7 @@ func TestStreaming(t *testing.T) {
 	buf := NewFakeWriter()
 
 	go func() {
-		streaming.Connect(id, buf)
+		streaming.Connect(id, buf, buf)
 	}()
 
 	time.Sleep(time.Second)

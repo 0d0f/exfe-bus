@@ -2,9 +2,10 @@ package streaming
 
 import (
 	"fmt"
-	"github.com/googollee/go-logger"
 	"io"
+	"net"
 	"sync"
+	"time"
 )
 
 type BufWriter interface {
@@ -15,37 +16,48 @@ type BufWriter interface {
 type Streaming struct {
 	channels map[string]chan string
 	locker   sync.Locker
-	log      *logger.SubLogger
+	timeout  time.Duration
 }
 
-func New(log *logger.SubLogger) *Streaming {
+func New() *Streaming {
 	return &Streaming{
 		channels: make(map[string]chan string),
 		locker:   new(sync.Mutex),
-		log:      log,
+		timeout:  time.Second,
 	}
 }
 
-func (s *Streaming) Connect(id string, w BufWriter) error {
+func (s *Streaming) Connect(id string, conn net.Conn, w BufWriter) error {
 	c, err := s.connecting(id)
 	if err != nil {
 		return err
 	}
 	defer s.shutdown(id)
 
+	p := make([]byte, 512)
 	for {
-		input := <-c
-		_, err := w.Write([]byte(input))
-		if err != nil {
-			return err
-		}
-		_, err = w.Write([]byte("\n"))
-		if err != nil {
-			return err
-		}
-		err = w.Flush()
-		if err != nil {
-			return err
+		select {
+		case input := <-c:
+			_, err := w.Write([]byte(input))
+			if err != nil {
+				return err
+			}
+			_, err = w.Write([]byte("\n"))
+			if err != nil {
+				return err
+			}
+			err = w.Flush()
+			if err != nil {
+				return err
+			}
+		case <-time.After(s.timeout):
+			conn.SetReadDeadline(time.Now())
+			_, err := conn.Read(p)
+			if err != nil {
+				if netErr, ok := err.(net.Error); !(ok && netErr.Timeout()) {
+					return err
+				}
+			}
 		}
 	}
 	return nil

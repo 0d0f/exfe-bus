@@ -17,7 +17,7 @@ type Streaming struct {
 
 func NewStreaming(config *model.Config, gate *Gate) (*Streaming, error) {
 	return &Streaming{
-		streaming: streaming.New(config.Log.SubPrefix("streaming kern")),
+		streaming: streaming.New(),
 		config:    config,
 		gate:      gate,
 		log:       config.Log.SubPrefix("streaming"),
@@ -49,7 +49,7 @@ func (s *Streaming) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Info("connect to %d", userID)
 	defer func() { log.Info("disconnect: %s", err) }()
 
-	err = s.streaming.Connect(fmt.Sprintf("%d", userID), buf)
+	err = s.streaming.Connect(fmt.Sprintf("%d", userID), conn, buf)
 }
 
 func (s *Streaming) Provider() string {
