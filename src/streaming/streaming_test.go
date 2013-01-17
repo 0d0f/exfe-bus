@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/stretchrcom/testify/assert"
+	"io"
 	"net"
 	"testing"
 	"time"
@@ -39,6 +40,9 @@ func (w *FakeWriter) Flush() error {
 }
 
 func (w *FakeWriter) Read(b []byte) (n int, err error) {
+	if w.isClosed {
+		return -1, io.EOF
+	}
 	time.Sleep(w.readTimeout.Sub(time.Now()))
 	return 0, nil
 }
@@ -65,19 +69,26 @@ func (w *FakeWriter) RemoteAddr() net.Addr {
 }
 
 func TestStreaming(t *testing.T) {
-	streaming := New()
+	streaming := New(time.Second / 2)
 	id := "user123"
 
-	buf := NewFakeWriter()
-
+	buf1 := NewFakeWriter()
 	go func() {
-		streaming.Connect(id, buf, buf)
+		streaming.Connect(id, buf1, buf1)
 	}()
 
 	time.Sleep(time.Second)
 
 	err := streaming.Feed(id, "abcde")
 	assert.Equal(t, err, nil)
+
+	buf2 := NewFakeWriter()
+	go func() {
+		streaming.Connect(id, buf2, buf2)
+	}()
+
+	time.Sleep(time.Second)
+
 	err = streaming.Feed(id, "123")
 	assert.Equal(t, err, nil)
 	err = streaming.Feed("user789", "123")
@@ -87,10 +98,14 @@ func TestStreaming(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	buf.Close()
-	streaming.Feed(id, "")
+	buf1.Close()
+	buf2.Close()
+
+	time.Sleep(time.Second)
+
 	err = streaming.Feed(id, "")
 	assert.NotEqual(t, err, nil)
 
-	assert.Equal(t, buf.buf.String(), "abcde\n123\nxyz\n")
+	assert.Equal(t, buf1.buf.String(), "abcde\n123\nxyz\n")
+	assert.Equal(t, buf2.buf.String(), "123\nxyz\n")
 }

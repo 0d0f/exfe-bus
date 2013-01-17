@@ -6,6 +6,7 @@ import (
 	"model"
 	"net/http"
 	"streaming"
+	"time"
 )
 
 type Streaming struct {
@@ -17,7 +18,7 @@ type Streaming struct {
 
 func NewStreaming(config *model.Config, gate *Gate) (*Streaming, error) {
 	return &Streaming{
-		streaming: streaming.New(),
+		streaming: streaming.New(time.Second),
 		config:    config,
 		gate:      gate,
 		log:       config.Log.SubPrefix("streaming"),
