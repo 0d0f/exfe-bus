@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-logger"
+	"gobus"
 	"model"
 	"net/http"
 	"streaming"
@@ -63,4 +65,27 @@ func (s *Streaming) Send(to *model.Recipient, privateMessage string, publicMessa
 		s.log.Err("send error: %s", err)
 	}
 	return "1", err
+}
+
+func (s *Streaming) SetRoute(r gobus.RouteCreater) error {
+	json := new(gobus.JSON)
+	return r().Methods("POST").Path("/streaming").HandlerMethod(json, s, "Receive")
+}
+
+type receiveArg struct {
+	To *model.Recipient `json:"to"`
+}
+
+func (s *Streaming) Receive(params map[string]string, data map[string]interface{}) (int, error) {
+	content, err := json.Marshal(data)
+	if err != nil {
+		return -1, err
+	}
+	var to receiveArg
+	err = json.Unmarshal(content, &to)
+	if err != nil || to.To == nil {
+		return -1, fmt.Errorf("field 'to' invalid")
+	}
+	_, err = s.Send(to.To, string(content), "", nil)
+	return 1, err
 }
