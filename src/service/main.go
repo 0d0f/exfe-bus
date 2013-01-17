@@ -83,14 +83,6 @@ func main() {
 		return
 	}
 
-	err = bus.Register(streaming)
-	if err != nil {
-		log.Crit("streaming register failed: %s", err)
-		os.Exit(-1)
-		return
-	}
-	log.Info("register streaming")
-
 	if config.ExfeService.Services.TokenManager {
 		tkMng, err := NewTokenManager(&config, db)
 		if err != nil {
