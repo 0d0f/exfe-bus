@@ -38,7 +38,7 @@ func (s *EmailBotServer) Conn() error {
 		return err
 	}
 	host := s.config.Bot.Email.IMAPHost[:strings.Index(s.config.Bot.Email.IMAPHost, ":")]
-	conn.SetDeadline(time.Now().Add(time.Second))
+	conn.SetDeadline(time.Now().Add(time.Second * 10))
 	client, err := imap.NewClient(conn, host)
 	if err != nil {
 		return err
