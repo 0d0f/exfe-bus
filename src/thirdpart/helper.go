@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type updateFriendsArg struct {
@@ -107,9 +108,14 @@ func (h *HelperImp) SendEmail(to string, content string) (string, error) {
 	if len(mx) == 0 {
 		return "", fmt.Errorf("can't find mail exchange of %s", host)
 	}
-	s, err := smtp.Dial(fmt.Sprintf("%s:25", mx[0].Host))
+	addr := fmt.Sprintf("%s:25", mx[0].Host)
+	conn, err := net.DialTimeout("tcp", addr, time.Second)
 	if err != nil {
-		return "", fmt.Errorf("dial to mail exchange %s fail: %s", mx[0].Host, err)
+		return "", fmt.Errorf("conn %s fail: %s", addr, err)
+	}
+	s, err := smtp.NewClient(conn, host)
+	if err != nil {
+		return "", fmt.Errorf("new smtp client %s fail: %s", mx[0].Host, err)
 	}
 	err = s.Mail(h.emailFrom)
 	if err != nil {
