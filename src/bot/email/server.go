@@ -53,19 +53,19 @@ func (s *EmailBotServer) Conn() error {
 }
 
 func (s *EmailBotServer) Close() error {
-	s.conn.SetDeadline(time.Now().Add(time.Second))
+	s.conn.SetDeadline(time.Now().Add(time.Second * 10))
 	return s.client.Close()
 }
 
 func (s *EmailBotServer) Serve() error {
-	s.conn.SetDeadline(time.Now().Add(time.Second))
+	s.conn.SetDeadline(time.Now().Add(time.Second * 10))
 	s.client.Select(imap.Inbox)
 	ids, err := s.client.Search("unseen")
 	if err != nil {
 		return err
 	}
 	for _, id := range ids {
-		s.conn.SetDeadline(time.Now().Add(time.Second))
+		s.conn.SetDeadline(time.Now().Add(time.Second * 10))
 		s.config.Log.Debug("get mail id: %s\n", id)
 		msg, err := s.client.GetMessage(id)
 		if err != nil {
