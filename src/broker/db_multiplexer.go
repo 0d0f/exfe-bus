@@ -1,9 +1,9 @@
 package broker
 
 import (
-	_ "code.google.com/p/go-mysql-driver/mysql"
 	"database/sql"
 	"fmt"
+	_ "github.com/Go-SQL-Driver/MySQL"
 	"github.com/googollee/go-logger"
 	"github.com/googollee/go-multiplexer"
 	"model"
