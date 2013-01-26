@@ -48,7 +48,7 @@
   "exfe_queue": {
     "addr": "127.0.0.1",
     "port": 23334,
-    "priority": {"urgent":233, "normal":600},
+    "priority": {"instant":0, "urgent":233, "normal":600},
     "head": {"Head2":233, "Head10":600},
     "tail": {"Tail10":600}
   },
