@@ -39,9 +39,9 @@ func NewQueue(config *model.Config, redis broker.Redis) (*Queue, error) {
 		log:             config.Log.SubPrefix("queue"),
 		tombs:           make([]*tomb.Tomb, 0),
 	}
-	for name, delay := range ret.priority {
+	for _, delay := range ret.priority {
 		if delay == 0 {
-			panic(fmt.Sprintf("queue %s delay should not be zero", name))
+			continue
 		}
 
 		{
