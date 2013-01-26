@@ -176,9 +176,13 @@ func (o *OAuthClient) GetRequest(method, path string, params url.Values) (*http.
 		header.Add(k, o.Headers.Get(k))
 	}
 	uri := strings.TrimRight(o.ApiBaseUri, "/") + "/" + strings.TrimLeft(path, "/")
-	header.Add("Authorization", o.getClient().AuthorizationHeader(&o.AccessToken, method, uri, params))
+	u, err := url.Parse(uri)
+	if err != nil {
+		return nil, err
+	}
+	header.Add("Authorization", o.getClient().AuthorizationHeader(&o.AccessToken, method, u, params))
 
-	u, err := url.Parse(uri + "?" + params.Encode())
+	u, err = url.Parse(uri + "?" + params.Encode())
 	if err != nil {
 		return nil, err
 	}

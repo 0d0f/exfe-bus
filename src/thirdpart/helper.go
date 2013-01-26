@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type updateFriendsArg struct {
@@ -107,20 +108,29 @@ func (h *HelperImp) SendEmail(to string, content string) (string, error) {
 	if len(mx) == 0 {
 		return "", fmt.Errorf("can't find mail exchange of %s", host)
 	}
-	s, err := smtp.Dial(fmt.Sprintf("%s:25", mx[0].Host))
+	addr := fmt.Sprintf("%s:25", mx[0].Host)
+	conn, err := net.DialTimeout("tcp", addr, time.Second)
 	if err != nil {
-		return "", fmt.Errorf("dial to mail exchange %s fail: %s", mx[0].Host, err)
+		return "", fmt.Errorf("conn %s fail: %s", addr, err)
 	}
+	conn.SetDeadline(time.Now().Add(time.Second))
+	s, err := smtp.NewClient(conn, host)
+	if err != nil {
+		return "", fmt.Errorf("new smtp client %s fail: %s", mx[0].Host, err)
+	}
+	conn.SetDeadline(time.Now().Add(time.Second))
 	err = s.Mail(h.emailFrom)
 	if err != nil {
 		return "", fmt.Errorf("mail smtp %s command mail fail: %s", host, err)
 	}
+	conn.SetDeadline(time.Now().Add(time.Second))
 	err = s.Rcpt(to)
 	if err != nil {
 		return "", fmt.Errorf("mail smtp %s command rcpt fail: %s", host, err)
 	}
+	conn.SetDeadline(time.Now().Add(time.Second))
 	s.Quit()
 
-	id, err := smtp.SendMail(h.emailHost+":25", h.auth, h.emailFrom, []string{to}, []byte(content))
+	id, err := smtp.SendMailTimeout(h.emailHost+":25", h.auth, h.emailFrom, []string{to}, []byte(content), time.Second)
 	return id, err
 }

@@ -8,12 +8,15 @@ import (
 	"gobot"
 	"launchpad.net/tomb"
 	"model"
+	"net"
+	"strings"
 	"time"
 )
 
 type EmailBotServer struct {
 	bot    *bot.Bot
-	conn   *imap.IMAPClient
+	conn   net.Conn
+	client *imap.IMAPClient
 	config *model.Config
 }
 
@@ -24,50 +27,61 @@ func NewEmailBotServer(c *model.Config, localTemplate *formatter.LocalTemplate, 
 	return &EmailBotServer{
 		bot:    b,
 		conn:   nil,
+		client: nil,
 		config: c,
 	}
 }
 
 func (s *EmailBotServer) Conn() error {
-	conn, err := imap.NewClient(s.config.Bot.Email.IMAPHost)
+	conn, err := net.DialTimeout("tcp", s.config.Bot.Email.IMAPHost, time.Second)
 	if err != nil {
 		return err
 	}
-	err = conn.Login(s.config.Bot.Email.IMAPUser, s.config.Bot.Email.IMAPPassword)
+	host := s.config.Bot.Email.IMAPHost[:strings.Index(s.config.Bot.Email.IMAPHost, ":")]
+	conn.SetDeadline(time.Now().Add(time.Second * 10))
+	client, err := imap.NewClient(conn, host)
+	if err != nil {
+		return err
+	}
+	err = client.Login(s.config.Bot.Email.IMAPUser, s.config.Bot.Email.IMAPPassword)
 	if err != nil {
 		return err
 	}
 	s.conn = conn
+	s.client = client
 	return nil
 }
 
 func (s *EmailBotServer) Close() error {
-	return s.conn.Close()
+	s.conn.SetDeadline(time.Now().Add(time.Second * 10))
+	return s.client.Close()
 }
 
 func (s *EmailBotServer) Serve() error {
-	s.conn.Select(imap.Inbox)
-	ids, err := s.conn.Search("unseen")
+	s.conn.SetDeadline(time.Now().Add(time.Second * 10))
+	s.client.Select(imap.Inbox)
+	ids, err := s.client.Search("unseen")
 	if err != nil {
 		return err
 	}
 	for _, id := range ids {
+		s.conn.SetDeadline(time.Now().Add(time.Second * 10))
 		s.config.Log.Debug("get mail id: %s\n", id)
-		msg, err := s.conn.GetMessage(id)
+		msg, err := s.client.GetMessage(id)
 		if err != nil {
 			return fmt.Errorf("Get message(%v) error: %s", id, err)
 		}
 		err = s.bot.Feed(msg)
 		switch err {
 		case nil:
-			s.conn.Do(fmt.Sprintf("copy %s posted", id))
+			s.client.Do(fmt.Sprintf("copy %s posted", id))
 		default:
-			s.conn.Do(fmt.Sprintf("copy %s error", id))
+			s.client.Do(fmt.Sprintf("copy %s error", id))
 			if err != badrequest {
 				return fmt.Errorf("Process message(%v) error: %s", id, err)
 			}
 		}
-		s.conn.StoreFlag(id, imap.Deleted)
+		s.client.StoreFlag(id, imap.Deleted)
 	}
 	return nil
 }

@@ -31,7 +31,7 @@ type Thirdpart struct {
 	sendCache *ringcache.RingCache
 }
 
-func NewThirdpart(config *model.Config) (*Thirdpart, error) {
+func NewThirdpart(config *model.Config, streaming *Streaming) (*Thirdpart, error) {
 	if config.Thirdpart.MaxStateCache == 0 {
 		return nil, fmt.Errorf("config.Thirdpart.MaxStateCache should be bigger than 0")
 	}
@@ -77,6 +77,10 @@ func NewThirdpart(config *model.Config) (*Thirdpart, error) {
 		return nil, fmt.Errorf("can't connect imessage: %s", err)
 	}
 	t.AddSender(imsg_)
+
+	if streaming != nil {
+		t.AddSender(streaming)
+	}
 
 	return &Thirdpart{
 		thirdpart: t,

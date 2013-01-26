@@ -5,6 +5,7 @@ import (
 	"github.com/googollee/go-aws/smtp"
 	"github.com/googollee/go-logger"
 	"net"
+	"time"
 )
 
 type SmtpInstance struct {
@@ -13,7 +14,12 @@ type SmtpInstance struct {
 }
 
 func NewSmtpSenderInstance(log *logger.Logger, host string, a smtp.Auth) (*SmtpInstance, error) {
-	s, err := smtp.Dial(fmt.Sprintf("%s:25", host))
+	addr := fmt.Sprintf("%s:25", host)
+	conn, err := net.DialTimeout("tcp", addr, time.Second)
+	if err != nil {
+		return nil, err
+	}
+	s, err := smtp.NewClient(conn, host)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +48,12 @@ func NewSmtpCheckerInstance(host string, log *logger.Logger) (*SmtpInstance, err
 	if len(mx) == 0 {
 		return nil, fmt.Errorf("can't find mail exchange of %s", host)
 	}
-	s, err := smtp.Dial(fmt.Sprintf("%s:25", mx[0].Host))
+	addr := fmt.Sprintf("%s:25", mx[0].Host)
+	conn, err := net.DialTimeout("tcp", addr, time.Second)
+	if err != nil {
+		return nil, err
+	}
+	s, err := smtp.NewClient(conn, host)
 	if err != nil {
 		return nil, fmt.Errorf("dial to mail exchange %s fail: %s", mx[0].Host, err)
 	}

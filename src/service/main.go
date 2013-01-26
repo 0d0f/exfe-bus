@@ -8,6 +8,7 @@ import (
 	"github.com/googollee/go-logger"
 	"gobus"
 	"model"
+	"net/http"
 	"os"
 )
 
@@ -36,12 +37,37 @@ func main() {
 		os.Exit(-1)
 		return
 	}
+	localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
+	if err != nil {
+		log.Crit("load local template failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	gate, err := NewGate(&config)
+	if err != nil {
+		log.Crit("can't create gate: %s", err)
+		os.Exit(-1)
+		return
+	}
+	streaming, err := NewStreaming(&config, gate)
+	if err != nil {
+		log.Crit("create streaming failed: %s", err)
+		os.Exit(-1)
+		return
+	}
 	// platform, err := NewPlatform(&config)
 	// if err != nil {
 	// 	log.Crit("can't create platform: %s", err)
 	// 	os.Exit(-1)
 	// 	return
 	// }
+
+	gateAddr := fmt.Sprintf("%s:%d", config.ExfeGate.Addr, config.ExfeGate.Port)
+	go func() {
+		log.Info("launch gate at %s", gateAddr)
+		err := http.ListenAndServe(gateAddr, streaming)
+		log.Crit("launch gate failed: %s", err)
+	}()
 
 	url := fmt.Sprintf("%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
@@ -52,6 +78,14 @@ func main() {
 		os.Exit(-1)
 		return
 	}
+
+	err = bus.Register(streaming)
+	if err != nil {
+		log.Crit("streaming register failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	log.Info("register streaming")
 
 	if config.ExfeService.Services.TokenManager {
 		tkMng, err := NewTokenManager(&config, db)
@@ -99,7 +133,7 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Thirdpart {
-		thirdpart, err := NewThirdpart(&config)
+		thirdpart, err := NewThirdpart(&config, streaming)
 		if err != nil {
 			log.Crit("create thirdpart failed: %s", err)
 			os.Exit(-1)
@@ -116,13 +150,6 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Notifier {
-		localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
-		if err != nil {
-			log.Crit("load local template failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-
 		notifier := NewNotifier(localTemplate, &config, sender)
 		err = bus.Register(notifier)
 		if err != nil {
