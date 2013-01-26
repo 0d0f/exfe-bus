@@ -40,6 +40,10 @@ func NewQueue(config *model.Config, redis broker.Redis) (*Queue, error) {
 		tombs:           make([]*tomb.Tomb, 0),
 	}
 	for _, delay := range ret.priority {
+		if delay == 0 {
+			continue
+		}
+
 		{
 			name := fmt.Sprintf("delayrepo:head_%ds", delay)
 			repo := delayrepo.NewHead(name, delay, redis)
