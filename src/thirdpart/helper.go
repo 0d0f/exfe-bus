@@ -113,22 +113,19 @@ func (h *HelperImp) SendEmail(to string, content string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("conn %s fail: %s", addr, err)
 	}
-	conn.SetDeadline(time.Now().Add(time.Second))
+	conn.SetDeadline(time.Now().Add(time.Second * 10))
 	s, err := smtp.NewClient(conn, host)
 	if err != nil {
 		return "", fmt.Errorf("new smtp client %s fail: %s", mx[0].Host, err)
 	}
-	conn.SetDeadline(time.Now().Add(time.Second))
 	err = s.Mail(h.emailFrom)
 	if err != nil {
 		return "", fmt.Errorf("mail smtp %s command mail fail: %s", host, err)
 	}
-	conn.SetDeadline(time.Now().Add(time.Second))
 	err = s.Rcpt(to)
 	if err != nil {
 		return "", fmt.Errorf("mail smtp %s command rcpt fail: %s", host, err)
 	}
-	conn.SetDeadline(time.Now().Add(time.Second))
 	s.Quit()
 
 	id, err := smtp.SendMailTimeout(h.emailHost+":25", h.auth, h.emailFrom, []string{to}, []byte(content), time.Second)
