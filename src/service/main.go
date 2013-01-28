@@ -79,6 +79,15 @@ func main() {
 		return
 	}
 
+	status := NewStatus()
+	err = bus.Register(status)
+	if err != nil {
+		log.Crit("status register failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	log.Info("register status")
+
 	err = bus.Register(streaming)
 	if err != nil {
 		log.Crit("streaming register failed: %s", err)
