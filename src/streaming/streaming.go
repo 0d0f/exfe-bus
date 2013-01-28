@@ -14,25 +14,25 @@ type BufWriter interface {
 }
 
 type Streaming struct {
-	channels map[string][]chan string
+	channels map[string]map[string]chan string
 	locker   sync.Locker
 	timeout  time.Duration
 }
 
 func New(timeout time.Duration) *Streaming {
 	return &Streaming{
-		channels: make(map[string][]chan string),
+		channels: make(map[string]map[string]chan string),
 		locker:   new(sync.Mutex),
 		timeout:  timeout,
 	}
 }
 
-func (s *Streaming) Connect(id string, conn net.Conn, w BufWriter) error {
-	c, err := s.connecting(id)
+func (s *Streaming) Connect(id, key string, conn net.Conn, w BufWriter) error {
+	c, err := s.connecting(id, key)
 	if err != nil {
 		return err
 	}
-	defer s.shutdown(id, c)
+	defer s.shutdown(id, key)
 
 	p := make([]byte, 512)
 	for {
@@ -63,57 +63,63 @@ func (s *Streaming) Connect(id string, conn net.Conn, w BufWriter) error {
 	return nil
 }
 
-func (s *Streaming) Feed(id, content string) (err error) {
+func (s *Streaming) Feed(id, content string) error {
 	conns := s.getConns(id)
 	if conns == nil {
-		return fmt.Errorf("%s not connected", id)
+		return fmt.Errorf("id(%s) not connected", id)
 	}
 
 	for _, c := range conns {
 		s.send(c, content)
 	}
-	return
+	return nil
 }
 
-func (s *Streaming) connecting(id string) (chan string, error) {
+func (s *Streaming) Send(id, key, content string) error {
+	c := s.getConn(id, key)
+	if c == nil {
+		return fmt.Errorf("id(%s)/key(%s) not connected", id, key)
+	}
+	s.send(c, content)
+	return nil
+}
+
+func (s *Streaming) connecting(id, key string) (chan string, error) {
 	s.locker.Lock()
 	defer s.locker.Unlock()
 
 	ret := make(chan string)
-	if _, ok := s.channels[id]; ok {
-		s.channels[id] = append(s.channels[id], ret)
-	} else {
-		s.channels[id] = []chan string{ret}
+	if _, ok := s.channels[id]; !ok {
+		s.channels[id] = make(map[string]chan string)
 	}
+	if _, ok := s.channels[id][key]; ok {
+		close(ret)
+		return nil, fmt.Errorf("connection id(%s)/key(%s) has connected", id, key)
+	}
+	s.channels[id][key] = ret
 	return ret, nil
 }
 
-func (s *Streaming) shutdown(id string, c chan string) error {
+func (s *Streaming) shutdown(id, key string) error {
 	s.locker.Lock()
 	defer s.locker.Unlock()
 
-	conns, ok := s.channels[id]
+	_, ok := s.channels[id]
+	if !ok {
+		return fmt.Errorf("no connection")
+	}
+	c, ok := s.channels[id][key]
 	if !ok {
 		return fmt.Errorf("no connection")
 	}
 
-	var i int = -1
-	for i = range conns {
-		if conns[i] == c {
-			break
-		}
-	}
 	close(c)
 
-	if i == len(conns) {
-		return fmt.Errorf("no connection")
-	}
-	conns = append(conns[:i], conns[i+1:]...)
-	if len(conns) == 0 {
+	delete(s.channels[id], key)
+	if len(s.channels[id]) == 0 {
 		delete(s.channels, id)
-	} else {
-		s.channels[id] = conns
 	}
+
 	return nil
 }
 
@@ -126,10 +132,28 @@ func (s *Streaming) getConns(id string) []chan string {
 		return nil
 	}
 	ret := make([]chan string, len(conns))
-	for i := range conns {
-		ret[i] = conns[i]
+	i := 0
+	for _, c := range conns {
+		ret[i] = c
+		i++
 	}
 	return ret
+}
+
+func (s *Streaming) getConn(id, key string) chan string {
+	s.locker.Lock()
+	defer s.locker.Unlock()
+
+	conns, ok := s.channels[id]
+	if !ok {
+		return nil
+	}
+	c, ok := conns[key]
+	if !ok {
+		return nil
+	}
+
+	return c
 }
 
 func (s *Streaming) send(c chan string, content string) {

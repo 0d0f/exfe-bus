@@ -74,7 +74,7 @@ func TestStreaming(t *testing.T) {
 
 	buf1 := NewFakeWriter()
 	go func() {
-		streaming.Connect(id, buf1, buf1)
+		streaming.Connect(id, "key1", buf1, buf1)
 	}()
 
 	time.Sleep(time.Second)
@@ -84,7 +84,7 @@ func TestStreaming(t *testing.T) {
 
 	buf2 := NewFakeWriter()
 	go func() {
-		streaming.Connect(id, buf2, buf2)
+		streaming.Connect(id, "key2", buf2, buf2)
 	}()
 
 	time.Sleep(time.Second)
@@ -94,6 +94,10 @@ func TestStreaming(t *testing.T) {
 	err = streaming.Feed("user789", "123")
 	assert.NotEqual(t, err, nil)
 	err = streaming.Feed(id, "xyz")
+	assert.Equal(t, err, nil)
+	err = streaming.Send(id, "key1", "only1")
+	assert.Equal(t, err, nil)
+	err = streaming.Send(id, "key2", "only2")
 	assert.Equal(t, err, nil)
 
 	time.Sleep(time.Second)
@@ -106,6 +110,6 @@ func TestStreaming(t *testing.T) {
 	err = streaming.Feed(id, "")
 	assert.NotEqual(t, err, nil)
 
-	assert.Equal(t, buf1.buf.String(), "abcde\n123\nxyz\n")
-	assert.Equal(t, buf2.buf.String(), "123\nxyz\n")
+	assert.Equal(t, buf1.buf.String(), "abcde\n123\nxyz\nonly1\n")
+	assert.Equal(t, buf2.buf.String(), "123\nxyz\nonly2\n")
 }
