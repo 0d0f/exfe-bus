@@ -128,6 +128,6 @@ func (h *HelperImp) SendEmail(to string, content string) (string, error) {
 	}
 	s.Quit()
 
-	id, err := smtp.SendMailTimeout(h.emailHost+":25", h.auth, h.emailFrom, []string{to}, []byte(content), time.Second)
+	id, err := smtp.SendMailTimeout(h.emailHost+":25", h.auth, h.emailFrom, []string{to}, []byte(content), time.Second*10)
 	return id, err
 }
