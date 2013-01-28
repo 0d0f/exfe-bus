@@ -52,7 +52,7 @@ func (s *Streaming) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Info("connect to %d", userID)
 	defer func() { log.Info("disconnect: %s", err) }()
 
-	err = s.streaming.Connect(fmt.Sprintf("%d", userID), conn, buf)
+	err = s.streaming.Connect(fmt.Sprintf("%d", userID), token, conn, buf)
 }
 
 func (s *Streaming) Provider() string {
@@ -60,7 +60,7 @@ func (s *Streaming) Provider() string {
 }
 
 func (s *Streaming) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
-	err := s.streaming.Feed(fmt.Sprintf("%d", to.UserID), privateMessage)
+	err := s.streaming.Send(fmt.Sprintf("%d", to.UserID), to.ExternalID, privateMessage)
 	if err != nil {
 		s.log.Err("send error: %s", err)
 	}
