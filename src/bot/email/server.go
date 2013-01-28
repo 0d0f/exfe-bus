@@ -76,9 +76,12 @@ func (s *EmailBotServer) Serve() error {
 		case nil:
 			s.client.Do(fmt.Sprintf("copy %s posted", id))
 		default:
-			s.client.Do(fmt.Sprintf("copy %s error", id))
 			if err != badrequest {
+				s.config.Log.Err("Process message(%v) error: %s", id, err)
 				return fmt.Errorf("Process message(%v) error: %s", id, err)
+			} else {
+				s.config.Log.Err("message(%v) process error: %s", id, err)
+				s.client.Do(fmt.Sprintf("copy %s error", id))
 			}
 		}
 		s.client.StoreFlag(id, imap.Deleted)
