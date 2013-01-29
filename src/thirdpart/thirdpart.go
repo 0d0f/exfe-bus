@@ -5,6 +5,8 @@ import (
 	"model"
 )
 
+var Unreachable = fmt.Errorf("Unreachable")
+
 type Thirdpart struct {
 	senders  map[string]Sender
 	updaters map[string]Updater

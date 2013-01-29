@@ -106,7 +106,7 @@ func (h *HelperImp) SendEmail(to string, content string) (string, error) {
 		return "", fmt.Errorf("lookup mail exchange fail: %s", err)
 	}
 	if len(mx) == 0 {
-		return "", fmt.Errorf("can't find mail exchange of %s", host)
+		return "", Unreachable
 	}
 	addr := fmt.Sprintf("%s:25", mx[0].Host)
 	conn, err := net.DialTimeout("tcp", addr, time.Second)
@@ -124,7 +124,7 @@ func (h *HelperImp) SendEmail(to string, content string) (string, error) {
 	}
 	err = s.Rcpt(to)
 	if err != nil {
-		return "", fmt.Errorf("mail smtp %s command rcpt fail: %s", host, err)
+		return "", Unreachable
 	}
 	s.Quit()
 
