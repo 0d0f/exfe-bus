@@ -52,3 +52,7 @@ func (t *Thirdpart) UpdateIdentity(to *model.Recipient) error {
 	}
 	return updater.UpdateIdentity(to)
 }
+
+func (t *Thirdpart) GrabPhotos(to model.Recipient, crossID int, albumID string) error {
+	return nil
+}

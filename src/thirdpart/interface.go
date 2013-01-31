@@ -59,6 +59,11 @@ type Updater interface {
 	UpdateIdentity(to *model.Recipient) error
 }
 
+type Photographer interface {
+	Provider() string
+	Grab(to model.Recipient, albumID string) ([]model.Photo, error)
+}
+
 type Helper interface {
 	UpdateIdentity(to *model.Recipient, externalUser ExternalUser) error
 	UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error

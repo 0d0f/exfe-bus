@@ -67,6 +67,8 @@ func (o *OAuthRequest) getClient() (client oauth.Client) {
 }
 
 func (o *OAuthRequest) AuthorizeUrl(callback string, request_params url.Values, auth_params url.Values) (token *oauth.Credentials, url string, err error) {
+	fmt.Println(auth_params)
+
 	o.init()
 	client := o.getClient()
 	token, err = client.RequestTemporaryCredentials(o.client, callback, request_params)
@@ -74,6 +76,7 @@ func (o *OAuthRequest) AuthorizeUrl(callback string, request_params url.Values, 
 		return
 	}
 
+	fmt.Println(auth_params)
 	url = client.AuthorizationURL(token, auth_params)
 	return
 }

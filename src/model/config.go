@@ -38,6 +38,13 @@ type Config struct {
 		IdleTimeoutInSec uint   `json:"idle_timeout_in_sec"`
 		IntervalInSec    uint   `json:"interval_in_sec"`
 	} `json:"email"`
+	AWS struct {
+		S3 struct {
+			Key    string `json:"key"`
+			Secret string `json:"secret"`
+			Domain string `json:"domain"`
+		} `json:"s3"`
+	}
 
 	Dispatcher map[string]map[string]string `json:"dispatcher"`
 
@@ -92,6 +99,10 @@ type Config struct {
 				Url string `json:"url"`
 			} `json:"duancaiwang"`
 		}
+		Dropbox struct {
+			Key    string `json:"key"`
+			Secret string `json:"secret"`
+		} `json:"dropbox"`
 	} `json:"thirdpart"`
 	Bot struct {
 		Email struct {

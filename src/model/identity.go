@@ -73,3 +73,8 @@ func (i *Invitation) String() string {
 func (i *Invitation) IsAccepted() bool {
 	return i.RsvpStatus == RsvpAccepted
 }
+
+type OAuthToken struct {
+	Token  string `json:"oauth_token"`
+	Secret string `json:"oauth_token_secret"`
+}
