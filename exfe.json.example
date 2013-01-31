@@ -32,6 +32,13 @@
     "idle_timeout_in_sec": 30,
     "interval_in_sec": 10
   },
+  "aws": {
+    "s3": {
+      "key": "",
+      "secret": "",
+      "domain": "s3.amazonaws.com"
+    }
+  }
 
   "dispatcher": {
     "bus://exfe_service/notifier/conversation": {"_default": "http://127.0.0.1:23333/notifier/conversation"},
@@ -85,6 +92,11 @@
       "duancaiwang": {
         "url": "http://6956-24f8e.sms-api.63810.com/api/SmsSend/user/{user}/hash/{hash}/encode/utf-8/smstype/notify"
       }
+    },
+    "dropbox": {
+      "key": "",
+      "secret": "",
+      "bucket_prefix": "exfe"
     }
   },
   "bot": {

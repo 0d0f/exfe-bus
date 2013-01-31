@@ -100,8 +100,9 @@ type Config struct {
 			} `json:"duancaiwang"`
 		}
 		Dropbox struct {
-			Key    string `json:"key"`
-			Secret string `json:"secret"`
+			Key          string `json:"key"`
+			Secret       string `json:"secret"`
+			BucketPrefix string `json:"bucket_prefix"`
 		} `json:"dropbox"`
 	} `json:"thirdpart"`
 	Bot struct {

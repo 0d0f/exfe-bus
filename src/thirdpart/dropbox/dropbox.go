@@ -25,7 +25,7 @@ func New(config *model.Config) (*Dropbox, error) {
 	}
 	consumer := oauth.NewConsumer(config.Thirdpart.Dropbox.Key, config.Thirdpart.Dropbox.Secret, provider)
 	aws := s3.New(config.AWS.S3.Domain, config.AWS.S3.Key, config.AWS.S3.Secret)
-	bucket, err := aws.GetBucket("exfe-3rdpart-dropbox")
+	bucket, err := aws.GetBucket(fmt.Sprintf("%s-3rdpart-dropbox", config.Thirdpart.Dropbox.BucketPrefix))
 	if err != nil {
 		return nil, err
 	}
