@@ -176,7 +176,7 @@ func (t *Thirdpart) UpdateFriends(params map[string]string, to model.ThirdpartTo
 //
 // 例子：
 //
-//   > curl
+//   > curl "http://127.0.0.1:23333/thirdpart/photographers?album_id=/Photos/underwater&cross_id=100354" -d '{"external_id":"123","external_username":"name","auth_data":"{\"oauth_token\":\"key\",\"oauth_token_secret\":\"secret\"}","provider":"dropbox","identity_id":789,"user_id":1}'
 //
 func (t *Thirdpart) GrabPhotos(params map[string]string, to model.Recipient) (int, error) {
 	albumID := params["album_id"]
