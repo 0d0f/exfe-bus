@@ -155,8 +155,14 @@ func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToke
 		return "", "", err
 	}
 
-	thumbObj.Save(thumb.Body)
+	err = thumbObj.Save(thumb.Body)
+	if err != nil {
+		return "", "", err
+	}
 	bigObj.Save(big.Body)
+	if err != nil {
+		return "", "", err
+	}
 
 	return thumbObj.URL(), bigObj.URL(), nil
 }
