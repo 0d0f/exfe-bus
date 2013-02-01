@@ -38,7 +38,7 @@
       "secret": "",
       "domain": "s3.amazonaws.com"
     }
-  }
+  },
 
   "dispatcher": {
     "bus://exfe_service/notifier/conversation": {"_default": "http://127.0.0.1:23333/notifier/conversation"},
