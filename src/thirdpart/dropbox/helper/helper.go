@@ -63,7 +63,7 @@ func main() {
 		panic(err)
 	}
 	fmt.Println("grabbing...")
-	photos, err := dropbox.Grab(to, "/Photos/underwater")
+	photos, err := dropbox.Grab(to, "/Photos/under water")
 	if err != nil {
 		panic(err)
 	}

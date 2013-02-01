@@ -53,9 +53,11 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 		Token:  data.Token,
 		Secret: data.Secret,
 	}
-	id := url.QueryEscape(albumID)
-	id = strings.Replace(id, "%2F", "/", -1)
-	resp, err := d.consumer.Get(fmt.Sprintf("https://api.dropbox.com/1/metadata/dropbox%s", id), nil, &token)
+	path := url.QueryEscape(albumID)
+	path = strings.Replace(path, "%2F", "/", -1)
+	path = strings.Replace(path, "+", "%20", -1)
+	path = fmt.Sprintf("https://api.dropbox.com/1/metadata/dropbox%s", path)
+	resp, err := d.consumer.Get(path, nil, &token)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +120,6 @@ func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToke
 	path = strings.Replace(path, "%2F", "/", -1)
 	path = strings.Replace(path, "+", "%20", -1)
 	path = fmt.Sprintf("https://api-content.dropbox.com/1/thumbnails/dropbox%s", path)
-	fmt.Println(path)
 	thumb, err := d.consumer.Get(path, map[string]string{"size": "l"}, token)
 	if err != nil {
 		return "", "", err
