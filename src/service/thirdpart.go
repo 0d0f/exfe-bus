@@ -172,7 +172,7 @@ func (t *Thirdpart) UpdateFriends(params map[string]string, to model.ThirdpartTo
 	return 0, t.thirdpart.UpdateFriends(&to.To)
 }
 
-// 抓取渠道to上图片库albumID里的图片，并加入crossID里
+// 抓取渠道to上图片库albumID里的图片，并加入crossID里。bus地质：bus://exfe_service/thirdpart/photographers
 //
 // 例子：
 //
