@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"model"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -52,7 +53,9 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 		Token:  data.Token,
 		Secret: data.Secret,
 	}
-	resp, err := d.consumer.Get(fmt.Sprintf("https://api.dropbox.com/1/metadata/dropbox%s", albumID), nil, &token)
+	id := url.QueryEscape(albumID)
+	id = strings.Replace(id, "%2F", "/", -1)
+	resp, err := d.consumer.Get(fmt.Sprintf("https://api.dropbox.com/1/metadata/dropbox%s", id), nil, &token)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +114,12 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 }
 
 func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToken) (string, string, error) {
-	thumb, err := d.consumer.Get(fmt.Sprintf("https://api-content.dropbox.com/1/thumbnails/dropbox%s", c.Path), map[string]string{"size": "l"}, token)
+	path := url.QueryEscape(c.Path)
+	path = strings.Replace(path, "%2F", "/", -1)
+	path = strings.Replace(path, "+", "%20", -1)
+	path = fmt.Sprintf("https://api-content.dropbox.com/1/thumbnails/dropbox%s", path)
+	fmt.Println(path)
+	thumb, err := d.consumer.Get(path, map[string]string{"size": "l"}, token)
 	if err != nil {
 		return "", "", err
 	}
@@ -124,7 +132,7 @@ func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToke
 		return "", "", fmt.Errorf("%s: %s", thumb.Status, body)
 	}
 
-	big, err := d.consumer.Get(fmt.Sprintf("https://api-content.dropbox.com/1/thumbnails/dropbox%s", c.Path), map[string]string{"size": "xl"}, token)
+	big, err := d.consumer.Get(path, map[string]string{"size": "xl"}, token)
 	if err != nil {
 		return "", "", err
 	}
