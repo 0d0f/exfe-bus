@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-aws/s3"
+	"github.com/googollee/go-logger"
 	"github.com/mrjones/oauth"
 	"io/ioutil"
 	"model"
@@ -15,6 +16,7 @@ import (
 type Dropbox struct {
 	consumer *oauth.Consumer
 	bucket   *s3.Bucket
+	log      *logger.SubLogger
 }
 
 func New(config *model.Config) (*Dropbox, error) {
@@ -32,6 +34,7 @@ func New(config *model.Config) (*Dropbox, error) {
 	return &Dropbox{
 		consumer: consumer,
 		bucket:   bucket,
+		log:      config.Log.SubPrefix("dropbox"),
 	}, nil
 }
 
@@ -66,9 +69,12 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("get meta")
 	ret := make([]model.Photo, 0)
 	for _, c := range list.Contents {
+		fmt.Println("process", c.Path)
 		if !c.ThumbExists {
+			d.log.Info("%s %s is not picture.", to, c.Path)
 			continue
 		}
 		caption := c.Path[strings.LastIndex(c.Path, "/"):]
@@ -90,14 +96,16 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 
 		thumb, big, err := d.savePic(c, to, &token)
 		if err != nil {
+			d.log.Info("%s %s can't save: %s", to, c.Path, err)
 			continue
 		}
 		photo.Images.Thumbnail.Url = thumb
 		photo.Images.Thumbnail.Height = 480
 		photo.Images.Thumbnail.Width = 640
 		photo.Images.Fullsize.Url = big
-		photo.Images.Thumbnail.Height = 768
-		photo.Images.Thumbnail.Width = 1024
+		photo.Images.Fullsize.Height = 768
+		photo.Images.Fullsize.Width = 1024
+		ret = append(ret, photo)
 	}
 	return ret, nil
 }
@@ -137,12 +145,12 @@ func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToke
 	} else {
 		thumbName = fmt.Sprintf("%s-thumb%s", c.Path[:extIndex], c.Path[extIndex:])
 	}
-	thumbObj, err := d.bucket.CreateObject(fmt.Sprintf("i%d/%s", to.IdentityID, thumbName), c.MimeType)
+	thumbObj, err := d.bucket.CreateObject(fmt.Sprintf("i%d%s", to.IdentityID, thumbName), c.MimeType)
 	if err != nil {
 		return "", "", err
 	}
 
-	bigObj, err := d.bucket.CreateObject(fmt.Sprintf("i%d/%s", to.IdentityID, c.Path), c.MimeType)
+	bigObj, err := d.bucket.CreateObject(fmt.Sprintf("i%d%s", to.IdentityID, c.Path), c.MimeType)
 	if err != nil {
 		return "", "", err
 	}
