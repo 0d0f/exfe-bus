@@ -55,12 +55,12 @@ func main() {
 		os.Exit(-1)
 		return
 	}
-	// platform, err := NewPlatform(&config)
-	// if err != nil {
-	// 	log.Crit("can't create platform: %s", err)
-	// 	os.Exit(-1)
-	// 	return
-	// }
+	platform, err := NewPlatform(&config)
+	if err != nil {
+		log.Crit("can't create platform: %s", err)
+		os.Exit(-1)
+		return
+	}
 
 	gateAddr := fmt.Sprintf("%s:%d", config.ExfeGate.Addr, config.ExfeGate.Port)
 	go func() {
@@ -142,7 +142,7 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Thirdpart {
-		thirdpart, err := NewThirdpart(&config, streaming)
+		thirdpart, err := NewThirdpart(&config, streaming, platform)
 		if err != nil {
 			log.Crit("create thirdpart failed: %s", err)
 			os.Exit(-1)

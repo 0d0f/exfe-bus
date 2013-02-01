@@ -15,6 +15,7 @@ import (
 	"thirdpart"
 	"thirdpart/_performance"
 	"thirdpart/apn"
+	"thirdpart/dropbox"
 	"thirdpart/email"
 	"thirdpart/facebook"
 	"thirdpart/gcm"
@@ -28,10 +29,11 @@ type Thirdpart struct {
 	thirdpart *thirdpart.Thirdpart
 	log       *logger.SubLogger
 	config    *model.Config
+	platform  *Platform
 	sendCache *ringcache.RingCache
 }
 
-func NewThirdpart(config *model.Config, streaming *Streaming) (*Thirdpart, error) {
+func NewThirdpart(config *model.Config, streaming *Streaming, platform *Platform) (*Thirdpart, error) {
 	if config.Thirdpart.MaxStateCache == 0 {
 		return nil, fmt.Errorf("config.Thirdpart.MaxStateCache should be bigger than 0")
 	}
@@ -82,10 +84,17 @@ func NewThirdpart(config *model.Config, streaming *Streaming) (*Thirdpart, error
 		t.AddSender(streaming)
 	}
 
+	dropbox_, err := dropbox.New(config)
+	if err != nil {
+		return nil, fmt.Errorf("can't create dropbox: %s", err)
+	}
+	t.AddPhotographer(dropbox_)
+
 	return &Thirdpart{
 		thirdpart: t,
 		log:       config.Log.SubPrefix("thirdpart"),
 		config:    config,
+		platform:  platform,
 		sendCache: ringcache.New(int(config.Thirdpart.MaxStateCache)),
 	}, nil
 }
@@ -160,6 +169,29 @@ func (t *Thirdpart) UpdateIdentity(params map[string]string, to model.ThirdpartT
 //
 func (t *Thirdpart) UpdateFriends(params map[string]string, to model.ThirdpartTo) (int, error) {
 	return 0, t.thirdpart.UpdateFriends(&to.To)
+}
+
+// 抓取渠道to上图片库albumID里的图片，并加入crossID里
+//
+// 例子：
+//
+//   > curl
+//
+func (t *Thirdpart) GrabPhotos(params map[string]string, to model.Recipient) (int, error) {
+	albumID := params["album_id"]
+	crossID := params["cross_id"]
+	if albumID == "" || crossID == "" {
+		return 0, fmt.Errorf("must give album_id and cross_id")
+	}
+	photos, err := t.thirdpart.GrabPhotos(to, albumID)
+	if err != nil {
+		return 0, err
+	}
+	err = t.platform.UploadPhoto(crossID, photos)
+	if err != nil {
+		return 0, err
+	}
+	return len(photos), nil
 }
 
 func (t *Thirdpart) sendCallback(recipient model.Recipient, err error) {

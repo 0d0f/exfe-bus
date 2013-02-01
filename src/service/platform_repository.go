@@ -25,6 +25,8 @@ func (p *Platform) GetHotRecipient(userID int64) ([]model.Recipient, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("find identity failed: %s", resp.Status)
 	}
@@ -48,6 +50,8 @@ func (p *Platform) FindIdentity(identity model.Identity) (model.Identity, error)
 	if err != nil {
 		return identity, err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		return identity, fmt.Errorf("find identity failed: %s", resp.Status)
 	}
@@ -65,6 +69,8 @@ func (p *Platform) FindCross(id uint64) (model.Cross, error) {
 	if err != nil {
 		return ret, err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		return ret, fmt.Errorf("find cross failed: %s", resp.Status)
 	}
@@ -74,4 +80,23 @@ func (p *Platform) FindCross(id uint64) (model.Cross, error) {
 		return ret, err
 	}
 	return ret, nil
+}
+
+func (p *Platform) UploadPhoto(crossID string, photos []model.Photo) error {
+	buf := bytes.NewBuffer(nil)
+	encoder := json.NewEncoder(buf)
+	err := encoder.Encode(photos)
+	if err != nil {
+		return err
+	}
+	resp, err := http.Post(fmt.Sprintf("%s/v2/Gobus/AddPhotosToCross/%s", p.config.SiteApi, crossID), "application/json", buf)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("upload photo fail: %s", resp.Status)
+	}
+	return nil
 }
