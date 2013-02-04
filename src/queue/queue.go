@@ -73,7 +73,7 @@ func (q *Queue) SetRoute(r gobus.RouteCreater) error {
 type Push struct {
 	Service    string            `json:"service"`
 	Priority   string            `json:"priority"`
-	DelayType  string            `json:"delay_type"`
+	Delay      string            `json:"delay"`
 	GroupKey   string            `json:"group_key"`
 	Recipients []model.Recipient `json:"recipients"`
 	Data       interface{}       `json:"data"`
