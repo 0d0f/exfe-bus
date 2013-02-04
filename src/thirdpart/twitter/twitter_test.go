@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"model"
-	"net/url"
 	"testing"
 	"thirdpart"
 )
@@ -14,27 +13,27 @@ import (
 type FakeBroker struct {
 	cmds   []string
 	paths  []string
-	params []url.Values
+	params []map[string]string
 	id     int
 }
 
 func (b *FakeBroker) Reset() {
 	b.cmds = make([]string, 0, 0)
 	b.paths = make([]string, 0, 0)
-	b.params = make([]url.Values, 0, 0)
+	b.params = make([]map[string]string, 0, 0)
 	b.id = 0
 }
 
-func copyValues(value url.Values) url.Values {
-	ret := make(url.Values)
+func copyValues(value map[string]string) map[string]string {
+	ret := make(map[string]string)
 	for k, v := range value {
 		ret[k] = v
 	}
 	return ret
 }
 
-func (b *FakeBroker) Do(accessToken *thirdpart.Token, cmd, path string, params url.Values) (io.ReadCloser, error) {
-	if path == "direct_messages/new.json" && params.Get("user_id") == "12345" {
+func (b *FakeBroker) Do(accessToken model.OAuthToken, cmd, path string, params map[string]string) (io.ReadCloser, error) {
+	if path == "direct_messages/new.json" && params["user_id"] == "12345" {
 		return nil, fmt.Errorf(`{"code":150}`)
 	}
 	b.cmds = append(b.cmds, cmd)
@@ -91,7 +90,7 @@ func TestSend(t *testing.T) {
 		if got, expect := broker.paths[0], "statuses/update.json"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
-		if got, expect := broker.params[0].Get("status"), "@publicer public message"; got != expect {
+		if got, expect := broker.params[0]["status"], "@publicer public message"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 	}
@@ -111,10 +110,10 @@ func TestSend(t *testing.T) {
 		if got, expect := broker.paths[0], "direct_messages/new.json"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
-		if got, expect := broker.params[0].Get("text"), "private message"; got != expect {
+		if got, expect := broker.params[0]["text"], "private message"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
-		if got, expect := broker.params[0].Get("user_id"), "54321"; got != expect {
+		if got, expect := broker.params[0]["user_id"], "54321"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 	}
@@ -143,10 +142,10 @@ func TestSend(t *testing.T) {
 			`https://exfe.com/#!token=932ce5324321433253 (3/3)`,
 		}
 		for i := 0; i < 3; i++ {
-			if got, expect := broker.params[i].Get("user_id"), "54321"; got != expect {
+			if got, expect := broker.params[i]["user_id"], "54321"; got != expect {
 				t.Errorf("got: %s, expect: %s", got, expect)
 			}
-			if got, expect := broker.params[i].Get("text"), results[i]; got != expect {
+			if got, expect := broker.params[i]["text"], results[i]; got != expect {
 				t.Errorf("got: %s, expect: %s", got, expect)
 			}
 		}
@@ -176,7 +175,7 @@ func TestSend(t *testing.T) {
 			`@publicer pending. 3 of 10 accepted. https://exfe.com/#!token=932ce5324321433253 (3/3)`,
 		}
 		for i := 0; i < 3; i++ {
-			if got, expect := broker.params[i].Get("status"), results[i]; got != expect {
+			if got, expect := broker.params[i]["status"], results[i]; got != expect {
 				t.Errorf("got: %s, expect: %s", got, expect)
 			}
 		}
@@ -205,10 +204,10 @@ func TestSend(t *testing.T) {
 			`post line2`,
 		}
 		for i := 0; i < 2; i++ {
-			if got, expect := broker.params[i].Get("user_id"), "54321"; got != expect {
+			if got, expect := broker.params[i]["user_id"], "54321"; got != expect {
 				t.Errorf("got: %s, expect: %s", got, expect)
 			}
-			if got, expect := broker.params[i].Get("text"), results[i]; got != expect {
+			if got, expect := broker.params[i]["text"], results[i]; got != expect {
 				t.Errorf("got: %s, expect: %s", got, expect)
 			}
 		}
@@ -237,7 +236,7 @@ func TestSend(t *testing.T) {
 			`@publicer post line2`,
 		}
 		for i := 0; i < 2; i++ {
-			if got, expect := broker.params[i].Get("status"), results[i]; got != expect {
+			if got, expect := broker.params[i]["status"], results[i]; got != expect {
 				t.Errorf("got: %s, expect: %s", got, expect)
 			}
 		}

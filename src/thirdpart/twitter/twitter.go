@@ -1,25 +1,21 @@
 package twitter
 
 import (
+	"broker"
 	"encoding/json"
 	"fmt"
 	"formatter"
 	"io"
 	"model"
-	"net/url"
 	"regexp"
 	"strings"
 	"thirdpart"
 	"unicode/utf8"
 )
 
-type Broker interface {
-	Do(accessToken *thirdpart.Token, cmd, path string, params url.Values) (io.ReadCloser, error)
-}
-
 type Twitter struct {
-	broker      Broker
-	accessToken *thirdpart.Token
+	broker      broker.Twitter
+	accessToken model.OAuthToken
 	helper      thirdpart.Helper
 	config      *model.Config
 }
@@ -27,10 +23,10 @@ type Twitter struct {
 const twitterApiBase = "https://api.twitter.com/1.1/"
 const provider = "twitter"
 
-func New(config *model.Config, broker Broker, helper thirdpart.Helper) *Twitter {
+func New(config *model.Config, broker broker.Twitter, helper thirdpart.Helper) *Twitter {
 	return &Twitter{
 		broker: broker,
-		accessToken: &thirdpart.Token{
+		accessToken: model.OAuthToken{
 			Token:  config.Thirdpart.Twitter.AccessToken,
 			Secret: config.Thirdpart.Twitter.AccessSecret,
 		},
@@ -65,8 +61,8 @@ func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage
 }
 
 func (t *Twitter) sendPrivate(to *model.Recipient, message string) (string, error) {
-	params := make(url.Values)
-	params.Set(t.identity(to))
+	k, v := t.identity(to)
+	params := map[string]string{k: v}
 	var resp io.ReadCloser
 	ids := ""
 	for _, line := range strings.Split(message, "\n") {
@@ -79,7 +75,7 @@ func (t *Twitter) sendPrivate(to *model.Recipient, message string) (string, erro
 			return "", fmt.Errorf("parse %s private message failed: %s", to, err)
 		}
 		for i, content := range cutter.Limit(140) {
-			params.Set("text", content)
+			params["text"] = content
 			resp, err = t.broker.Do(t.accessToken, "POST", "direct_messages/new.json", params)
 			if err != nil {
 				return "", err
@@ -106,7 +102,7 @@ func (t *Twitter) sendPrivate(to *model.Recipient, message string) (string, erro
 
 func (t *Twitter) sendPublic(to *model.Recipient, message string) (string, error) {
 	ids := ""
-	params := make(url.Values)
+	params := make(map[string]string)
 	var resp io.ReadCloser
 	for _, line := range strings.Split(message, "\n") {
 		line = strings.Trim(line, " \r\n\t")
@@ -118,7 +114,7 @@ func (t *Twitter) sendPublic(to *model.Recipient, message string) (string, error
 			return "", fmt.Errorf("parse %s public message failed: %s", to, err)
 		}
 		for _, content := range cutter.Limit(140 - len(to.ExternalUsername) - 2) {
-			params.Set("status", fmt.Sprintf("@%s %s", to.ExternalUsername, content))
+			params["status"] = fmt.Sprintf("@%s %s", to.ExternalUsername, content)
 			resp, err = t.broker.Do(t.accessToken, "POST", "statuses/update.json", params)
 			if err != nil {
 				return "", fmt.Errorf("send to %s fail: %s", to, err)
@@ -136,8 +132,8 @@ func (t *Twitter) sendPublic(to *model.Recipient, message string) (string, error
 }
 
 func (t *Twitter) UpdateIdentity(to *model.Recipient) error {
-	params := make(url.Values)
-	params.Set(t.identity(to))
+	k, v := t.identity(to)
+	params := map[string]string{k: v}
 	resp, err := t.broker.Do(t.accessToken, "GET", "users/show.json", params)
 	if err != nil {
 		return fmt.Errorf("get %s users/show(%v) failed: %s", to, params, err)
@@ -156,15 +152,14 @@ func (t *Twitter) UpdateIdentity(to *model.Recipient) error {
 }
 
 func (t *Twitter) UpdateFriends(to *model.Recipient) error {
-	var idToken twitterIdentityToken
-	err := json.Unmarshal([]byte(to.AuthData), &idToken)
+	var access model.OAuthToken
+	err := json.Unmarshal([]byte(to.AuthData), &access)
 	if err != nil {
 		return fmt.Errorf("can't convert %s's AuthData: %s", to, err)
 	}
-	access := idToken.ToToken()
 
-	params := make(url.Values)
-	params.Set(t.identity(to))
+	k, v := t.identity(to)
+	params := map[string]string{k: v}
 	resp, err := t.broker.Do(access, "GET", "friends/ids.json", params)
 	if err != nil {
 		return fmt.Errorf("get %s friends/ids(%v) failed: %s", to, params, err)
@@ -184,8 +179,7 @@ func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 			friendIDs = friendIDs[100:]
 		}
 
-		params := make(url.Values)
-		params.Set("user_id", join(ids, ","))
+		params := map[string]string{"user_id": join(ids, ",")}
 		resp, err := t.broker.Do(access, "GET", "users/lookup.json", params)
 		if err != nil {
 			return fmt.Errorf("get %s users/lookup.json(%v) fail: %s", to, params, err)
