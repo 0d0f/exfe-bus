@@ -102,9 +102,9 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 			d.log.Info("%s %s can't save: %s", to, c.Path, err)
 			continue
 		}
-		photo.Images.Thumbnail.Url = thumb
-		photo.Images.Thumbnail.Height = 480
-		photo.Images.Thumbnail.Width = 640
+		photo.Images.Preview.Url = thumb
+		photo.Images.Preview.Height = 480
+		photo.Images.Preview.Width = 640
 		photo.Images.Fullsize.Url = big
 		photo.Images.Fullsize.Height = 768
 		photo.Images.Fullsize.Width = 1024

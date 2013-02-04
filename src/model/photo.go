@@ -17,7 +17,7 @@ type Photo struct {
 	ExternalID      string   `json:"external_id"`
 	Location        Place    `json:"location"`
 	Images          struct {
-		Fullsize  Image `json:"fullsize"`
-		Thumbnail Image `json:"thumbnail"`
+		Fullsize Image `json:"fullsize"`
+		Preview  Image `json:"preview"`
 	} `json:"images"`
 }
