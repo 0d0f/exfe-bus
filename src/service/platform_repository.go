@@ -82,14 +82,14 @@ func (p *Platform) FindCross(id uint64) (model.Cross, error) {
 	return ret, nil
 }
 
-func (p *Platform) UploadPhoto(crossID string, photos []model.Photo) error {
+func (p *Platform) UploadPhoto(photoxID string, photos []model.Photo) error {
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
 	err := encoder.Encode(photos)
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(fmt.Sprintf("%s/v2/Gobus/AddPhotosToCross/%s", p.config.SiteApi, crossID), "application/json", buf)
+	resp, err := http.Post(fmt.Sprintf("%s/v2/Gobus/AddPhotos/%s", p.config.SiteApi, photoxID), "application/json", buf)
 	if err != nil {
 		return err
 	}

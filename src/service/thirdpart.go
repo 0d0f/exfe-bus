@@ -180,15 +180,15 @@ func (t *Thirdpart) UpdateFriends(params map[string]string, to model.ThirdpartTo
 //
 func (t *Thirdpart) GrabPhotos(params map[string]string, to model.Recipient) (int, error) {
 	albumID := params["album_id"]
-	crossID := params["cross_id"]
+	photoxID := params["photox_id"]
 	if albumID == "" || crossID == "" {
-		return 0, fmt.Errorf("must give album_id and cross_id")
+		return 0, fmt.Errorf("must give album_id and photox_id")
 	}
 	photos, err := t.thirdpart.GrabPhotos(to, albumID)
 	if err != nil {
 		return 0, err
 	}
-	err = t.platform.UploadPhoto(crossID, photos)
+	err = t.platform.UploadPhoto(photoxID, photos)
 	if err != nil {
 		return 0, err
 	}
