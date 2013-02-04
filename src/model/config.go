@@ -40,9 +40,10 @@ type Config struct {
 	} `json:"email"`
 	AWS struct {
 		S3 struct {
-			Key    string `json:"key"`
-			Secret string `json:"secret"`
-			Domain string `json:"domain"`
+			Key          string `json:"key"`
+			Secret       string `json:"secret"`
+			Domain       string `json:"domain"`
+			BucketPrefix string `json:"bucket_prefix"`
 		} `json:"s3"`
 	}
 
@@ -100,9 +101,8 @@ type Config struct {
 			} `json:"duancaiwang"`
 		}
 		Dropbox struct {
-			Key          string `json:"key"`
-			Secret       string `json:"secret"`
-			BucketPrefix string `json:"bucket_prefix"`
+			Key    string `json:"key"`
+			Secret string `json:"secret"`
 		} `json:"dropbox"`
 		Photostreaming struct {
 			Domain string `json:"domain"`

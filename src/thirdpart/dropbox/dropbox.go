@@ -28,7 +28,7 @@ func New(config *model.Config) (*Dropbox, error) {
 	}
 	consumer := oauth.NewConsumer(config.Thirdpart.Dropbox.Key, config.Thirdpart.Dropbox.Secret, provider)
 	aws := s3.New(config.AWS.S3.Domain, config.AWS.S3.Key, config.AWS.S3.Secret)
-	bucket, err := aws.GetBucket(fmt.Sprintf("%s-3rdpart-dropbox", config.Thirdpart.Dropbox.BucketPrefix))
+	bucket, err := aws.GetBucket(fmt.Sprintf("%s-3rdpart-photos", config.AWS.S3.BucketPrefix))
 	if err != nil {
 		return nil, err
 	}
@@ -173,6 +173,11 @@ func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToke
 }
 
 func (d *Dropbox) escapePath(path string) string {
+	if path[0] == '/' {
+		path = "/dropbox" + path
+	} else {
+		path = "/dropbox/" + path
+	}
 	path = url.QueryEscape(path)
 	path = strings.Replace(path, "%2F", "/", -1)
 	path = strings.Replace(path, "+", "%20", -1)

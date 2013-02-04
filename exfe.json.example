@@ -36,7 +36,8 @@
     "s3": {
       "key": "",
       "secret": "",
-      "domain": "s3.amazonaws.com"
+      "domain": "s3.amazonaws.com",
+      "bucket_prefix": "exfe"
     }
   },
 
@@ -96,8 +97,7 @@
     },
     "dropbox": {
       "key": "",
-      "secret": "",
-      "bucket_prefix": "exfe"
+      "secret": ""
     },
     "photostreaming": {
       "domain": "p04-sharedstreams.icloud.com"
