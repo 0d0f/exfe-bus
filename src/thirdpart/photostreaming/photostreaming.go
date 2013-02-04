@@ -26,7 +26,7 @@ func (d Derivative) URL(urls UrlList) (string, error) {
 		return "", fmt.Errorf("can't find checksum: %s", d.Checksum)
 	}
 	location := urls.Locations[urlMeta.UrlLocation]
-	return fmt.Sprintf("%s://%s/%s", location.Scheme, location.Hosts[0], urlMeta.UrlPath), nil
+	return fmt.Sprintf("%s://%s%s", location.Scheme, location.Hosts[0], urlMeta.UrlPath), nil
 }
 
 type Derivatives map[string]Derivative
@@ -136,7 +136,7 @@ func (p *Photostreaming) Grab(to model.Recipient, albumID string) ([]model.Photo
 		}
 		previewReader, err := p.request(url, nil)
 		if err != nil {
-			p.log.Err("can't grab preview of %s: %s", photo.PhotoGuid, err)
+			p.log.Err("can't grab preview of %s from %s: %s", photo.PhotoGuid, url, err)
 			continue
 		}
 		defer previewReader.Close()
