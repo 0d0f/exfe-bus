@@ -53,9 +53,7 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 		Token:  data.Token,
 		Secret: data.Secret,
 	}
-	path := url.QueryEscape(albumID)
-	path = strings.Replace(path, "%2F", "/", -1)
-	path = strings.Replace(path, "+", "%20", -1)
+	path := d.escapePath(albumID)
 	path = fmt.Sprintf("https://api.dropbox.com/1/metadata/dropbox%s", path)
 	resp, err := d.consumer.Get(path, nil, &token)
 	if err != nil {
@@ -116,9 +114,7 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 }
 
 func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToken) (string, string, error) {
-	path := url.QueryEscape(c.Path)
-	path = strings.Replace(path, "%2F", "/", -1)
-	path = strings.Replace(path, "+", "%20", -1)
+	path := d.escapePath(c.Path)
 	path = fmt.Sprintf("https://api-content.dropbox.com/1/thumbnails/dropbox%s", path)
 	thumb, err := d.consumer.Get(path, map[string]string{"size": "l"}, token)
 	if err != nil {
@@ -174,6 +170,13 @@ func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToke
 	}
 
 	return thumbObj.URL(), bigObj.URL(), nil
+}
+
+func (d *Dropbox) escapePath(path string) string {
+	path = url.QueryEscape(path)
+	path = strings.Replace(path, "%2F", "/", -1)
+	path = strings.Replace(path, "+", "%20", -1)
+	return path
 }
 
 type content struct {
