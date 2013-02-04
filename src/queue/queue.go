@@ -80,7 +80,7 @@ type Push struct {
 }
 
 func (a Push) String() string {
-	return fmt.Sprintf("{service:%s priority:%s type:%s key:%s recipients:%s}", a.Service, a.Priority, a.DelayType, a.GroupKey, a.Recipients)
+	return fmt.Sprintf("{service:%s priority:%s type:%s key:%s recipients:%s}", a.Service, a.Priority, a.Delay, a.GroupKey, a.Recipients)
 }
 
 // 将data以delay type的合并方式，放入priority队列，之后发送给service服务。合并关键字group key，接收者recipients
@@ -118,14 +118,14 @@ func (q *Queue) Push(param map[string]string, arg Push) (int, error) {
 		return q.instant(arg.Service, arg.GroupKey, arg.Recipients, arg.Data)
 	}
 	var repo delayrepo.Repository = nil
-	switch arg.DelayType {
+	switch arg.Delay {
 	case "head":
 		repo = q.heads[delay]
 	case "tail":
 		repo = q.tails[delay]
 	}
 	if repo == nil {
-		return -1, fmt.Errorf("invalid delay type: %s", arg.DelayType)
+		return -1, fmt.Errorf("invalid delay type: %s", arg.Delay)
 	}
 	return q.delay(repo, arg.Service, arg.GroupKey, arg.Recipients, arg.Data)
 }
