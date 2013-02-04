@@ -201,13 +201,24 @@ func (q *Queue) callback(name string) func(string, [][]byte) {
 				log.Err("can't unmarshal %s(%+v)", err, data)
 				continue
 			}
-			arg = append(arg, d)
+			if key != "" {
+				arg = append(arg, d)
+			} else {
+				var i interface{}
+				err := q.dispatcher.Do(service, "POST", arg, &i)
+				if err != nil {
+					j, _ := json.Marshal(arg)
+					log.Err("call %s failed(%s) with %s", service, err, string(j))
+				}
+			}
 		}
-		var i int
-		err := q.dispatcher.Do(service, "POST", arg, &i)
-		if err != nil {
-			j, _ := json.Marshal(arg)
-			log.Err("call %s failed(%s) with %s", service, err, string(j))
+		if key != "" {
+			var i interface{}
+			err := q.dispatcher.Do(service, "POST", arg, &i)
+			if err != nil {
+				j, _ := json.Marshal(arg)
+				log.Err("call %s failed(%s) with %s", service, err, string(j))
+			}
 		}
 	}
 }
