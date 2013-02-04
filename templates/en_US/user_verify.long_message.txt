@@ -4,6 +4,6 @@ Your email {{.To.ExternalID}} has been requested for verification{{if .UserName}
 
 Please click here to verify: {{.Link}}
 
-EXFE is a utility for hanging out with friends. We save you from calling up every one RSVP, losing in endless emails and messages off the point.
+EXFE is a utility for gathering with friends. We save you from calling up every one RSVP, losing in endless emails and messages off the point.
 
 This email is sent to {{.To.ExternalID}} per identity verification request on EXFE( {{.Config.SiteUrl}} ).
