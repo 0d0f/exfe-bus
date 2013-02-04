@@ -98,6 +98,9 @@
       "key": "",
       "secret": "",
       "bucket_prefix": "exfe"
+    },
+    "photostreaming": {
+      "domain": "p04-sharedstreams.icloud.com"
     }
   },
   "bot": {

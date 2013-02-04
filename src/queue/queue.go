@@ -30,15 +30,15 @@ func NewQueue(config *model.Config, redis broker.Redis) (*Queue, error) {
 		return nil, err
 	}
 	ret := &Queue{
-		instantCallback: getCallback(config.Log.SubPrefix("instant"), config),
-		heads:           make(map[uint]*delayrepo.Head),
-		tails:           make(map[uint]*delayrepo.Tail),
-		config:          config,
-		priority:        config.ExfeQueue.Priority,
-		dispatcher:      gobus.NewDispatcher(table),
-		log:             config.Log.SubPrefix("queue"),
-		tombs:           make([]*tomb.Tomb, 0),
+		heads:      make(map[uint]*delayrepo.Head),
+		tails:      make(map[uint]*delayrepo.Tail),
+		config:     config,
+		priority:   config.ExfeQueue.Priority,
+		dispatcher: gobus.NewDispatcher(table),
+		log:        config.Log.SubPrefix("queue"),
+		tombs:      make([]*tomb.Tomb, 0),
 	}
+	ret.instantCallback = ret.callback("instant")
 	for _, delay := range ret.priority {
 		if delay == 0 {
 			continue
@@ -48,7 +48,7 @@ func NewQueue(config *model.Config, redis broker.Redis) (*Queue, error) {
 			name := fmt.Sprintf("delayrepo:head_%ds", delay)
 			repo := delayrepo.NewHead(name, delay, redis)
 			log := config.Log.SubPrefix(name)
-			tomb := delayrepo.ServRepository(log, repo, getCallback(log, config))
+			tomb := delayrepo.ServRepository(log, repo, ret.callback(name))
 			ret.tombs = append(ret.tombs, tomb)
 			ret.heads[delay] = repo
 		}
@@ -57,7 +57,7 @@ func NewQueue(config *model.Config, redis broker.Redis) (*Queue, error) {
 			name := fmt.Sprintf("delayrepo:tail_%ds", delay)
 			repo := delayrepo.NewTail(name, delay, redis)
 			log := config.Log.SubPrefix(name)
-			tomb := delayrepo.ServRepository(log, repo, getCallback(log, config))
+			tomb := delayrepo.ServRepository(log, repo, ret.callback(name))
 			ret.tombs = append(ret.tombs, tomb)
 			ret.tails[delay] = repo
 		}

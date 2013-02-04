@@ -104,6 +104,9 @@ type Config struct {
 			Secret       string `json:"secret"`
 			BucketPrefix string `json:"bucket_prefix"`
 		} `json:"dropbox"`
+		Photostreaming struct {
+			Domain string `json:"domain"`
+		} `json:"photostreaming"`
 	} `json:"thirdpart"`
 	Bot struct {
 		Email struct {

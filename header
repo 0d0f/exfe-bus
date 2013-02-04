@@ -1,0 +1,9 @@
+HTTP/1.1 200 OK
+Date: Mon, 04 Feb 2013 06:58:29 GMT
+X-Apple-Request-UUID: 9da791c4-2eda-4247-8070-543b79de6a00
+X-Responding-Instance: sharedstreams:20400101:nk11p04me-sharedstreams001:8001:1N46:72554
+Content-Type: application/json
+Content-Length: 4005
+x-apple-mme-sharedstreams-config-version: 1.4
+x-apple-mme-sharedstreams-version: 1.0
+
