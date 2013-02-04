@@ -45,6 +45,12 @@ func TestTable(t *testing.T) {
 	}
 
 	{
+		url, err := table.Find("bus://test1/sub", "abc")
+		assert.Equal(t, err, nil)
+		assert.Equal(t, url, "http://127.0.0.1/test1/sub")
+	}
+
+	{
 		url, err := table.Find("bus://test2/sub", "abc")
 		assert.Equal(t, err, nil)
 		assert.Equal(t, url, "http://127.0.0.1/test2")
@@ -61,6 +67,7 @@ func TestTable(t *testing.T) {
 		assert.Equal(t, err, nil)
 		assert.Equal(t, url, "http://127.0.0.3/test2")
 	}
+
 }
 
 func TestDispatcher(t *testing.T) {

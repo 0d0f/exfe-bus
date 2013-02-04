@@ -37,8 +37,19 @@ func NewTable(route map[string]map[string]string) (Table, error) {
 
 func (d Table) Find(url, ticket string) (string, error) {
 	urls, ok := d[url]
+	path := ""
 	if !ok {
-		return "", fmt.Errorf("can't find %s in table", url)
+		for prefix, u := range d {
+			if url[:len(prefix)] == prefix {
+				ok = true
+				urls = u
+				path = url[len(prefix):]
+				break
+			}
+		}
+		if !ok {
+			return "", fmt.Errorf("can't find %s in table", url)
+		}
 	}
 	matched := ""
 	for re, dst := range urls.matches {
@@ -53,7 +64,7 @@ func (d Table) Find(url, ticket string) (string, error) {
 		return "", fmt.Errorf("can't match ticket(%s) or default", ticket)
 	}
 
-	return matched, nil
+	return matched + path, nil
 }
 
 type Dispatcher struct {
