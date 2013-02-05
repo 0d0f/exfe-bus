@@ -93,8 +93,10 @@ type Photostream struct {
 }
 
 func New(config *model.Config) (*Photostream, error) {
-	client := s3.New(config.AWS.S3.Domain, config.AWS.S3.Key, config.AWS.S3.Secret)
-	bucket, err := client.GetBucket(fmt.Sprintf("%s-3rdpart-photos", config.AWS.S3.BucketPrefix))
+	aws := s3.New(config.AWS.S3.Domain, config.AWS.S3.Key, config.AWS.S3.Secret)
+	aws.SetACL(s3.ACLPublicRead)
+	aws.SetLocationConstraint(s3.LC_AP_SINGAPORE)
+	bucket, err := aws.GetBucket(fmt.Sprintf("%s-3rdpart-photos", config.AWS.S3.BucketPrefix))
 	if err != nil {
 		return nil, err
 	}
