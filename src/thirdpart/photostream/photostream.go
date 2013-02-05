@@ -2,8 +2,6 @@ package photostream
 
 import (
 	"bytes"
-	"crypto/md5"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-aws/s3"
@@ -153,9 +151,6 @@ func (p *Photostream) Grab(to model.Recipient, albumID string) ([]model.Photo, e
 		content, err := ioutil.ReadAll(resp.Body)
 		object.SetDateString(resp.Header.Get("Date"))
 		object.SetLength(uint(len(content)))
-		hash := md5.New()
-		hash.Write(content)
-		object.SetMD5(base64.StdEncoding.EncodeToString(hash.Sum(nil)))
 		buf := bytes.NewBuffer(content)
 		object.Save(buf)
 

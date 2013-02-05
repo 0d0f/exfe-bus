@@ -1,6 +1,7 @@
 package dropbox
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-aws/s3"
@@ -162,13 +163,27 @@ func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToke
 		return "", "", err
 	}
 
-	err = thumbObj.Save(thumb.Body)
-	if err != nil {
-		return "", "", err
+	{
+		content, err := ioutil.ReadAll(thumb.Body)
+		thumbObj.SetDateString(thumb.Header.Get("Date"))
+		thumbObj.SetLength(uint(len(content)))
+		buf := bytes.NewBuffer(content)
+		thumbObj.Save(buf)
+		err = thumbObj.Save(buf)
+		if err != nil {
+			return "", "", err
+		}
 	}
-	bigObj.Save(big.Body)
-	if err != nil {
-		return "", "", err
+	{
+		content, err := ioutil.ReadAll(big.Body)
+		bigObj.SetDateString(big.Header.Get("Date"))
+		bigObj.SetLength(uint(len(content)))
+		buf := bytes.NewBuffer(content)
+		bigObj.Save(buf)
+		err = bigObj.Save(buf)
+		if err != nil {
+			return "", "", err
+		}
 	}
 
 	return thumbObj.URL(), bigObj.URL(), nil
