@@ -1,4 +1,4 @@
-package photostreaming
+package photostream
 
 import (
 	"bytes"
@@ -86,30 +86,30 @@ type UrlList struct {
 	Items     map[string]UrlMeta      `json:"items"`
 }
 
-type Photostreaming struct {
+type Photostream struct {
 	domain string
 	bucket *s3.Bucket
 	log    *logger.SubLogger
 }
 
-func New(config *model.Config) (*Photostreaming, error) {
+func New(config *model.Config) (*Photostream, error) {
 	client := s3.New(config.AWS.S3.Domain, config.AWS.S3.Key, config.AWS.S3.Secret)
 	bucket, err := client.GetBucket(fmt.Sprintf("%s-3rdpart-photos", config.AWS.S3.BucketPrefix))
 	if err != nil {
 		return nil, err
 	}
-	return &Photostreaming{
-		domain: config.Thirdpart.Photostreaming.Domain,
+	return &Photostream{
+		domain: config.Thirdpart.Photostream.Domain,
 		bucket: bucket,
-		log:    config.Log.SubPrefix("photostreaming"),
+		log:    config.Log.SubPrefix("photostream"),
 	}, nil
 }
 
-func (p *Photostreaming) Provider() string {
-	return "photostreaming"
+func (p *Photostream) Provider() string {
+	return "photostream"
 }
 
-func (p *Photostreaming) Grab(to model.Recipient, albumID string) ([]model.Photo, error) {
+func (p *Photostream) Grab(to model.Recipient, albumID string) ([]model.Photo, error) {
 	list, err := p.getList(albumID)
 	if err != nil {
 		return nil, fmt.Errorf("get streaming failed: %s", err)
@@ -165,7 +165,7 @@ func (p *Photostreaming) Grab(to model.Recipient, albumID string) ([]model.Photo
 		}
 		photo_.Images.Fullsize.Height, _ = strconv.Atoi(fullsize.Height)
 		photo_.Images.Fullsize.Width, _ = strconv.Atoi(fullsize.Width)
-		photo_.Images.Fullsize.Url = fmt.Sprintf("photostreaming://%s/%s/%s", albumID, photo.PhotoGuid, fullsize.Checksum)
+		photo_.Images.Fullsize.Url = fmt.Sprintf("photostream://%s/%s/%s", albumID, photo.PhotoGuid, fullsize.Checksum)
 		photo_.Images.Preview.Height, _ = strconv.Atoi(preview.Height)
 		photo_.Images.Preview.Width, _ = strconv.Atoi(preview.Width)
 		photo_.Images.Preview.Url = object.URL()
@@ -175,7 +175,7 @@ func (p *Photostreaming) Grab(to model.Recipient, albumID string) ([]model.Photo
 	return ret, nil
 }
 
-func (p *Photostreaming) getList(albumID string) (list StreamingList, err error) {
+func (p *Photostream) getList(albumID string) (list StreamingList, err error) {
 	url := fmt.Sprintf("https://%s/%s/sharedstreams/webstream", p.domain, albumID)
 	buf := bytes.NewBufferString(`{"streamCtag":null}`)
 	var body io.ReadCloser
@@ -190,7 +190,7 @@ func (p *Photostreaming) getList(albumID string) (list StreamingList, err error)
 	return
 }
 
-func (p *Photostreaming) getUrls(albumID string, guids []string) (list UrlList, err error) {
+func (p *Photostream) getUrls(albumID string, guids []string) (list UrlList, err error) {
 	req := UrlRequest{
 		PhotoGuids: guids,
 	}
@@ -210,7 +210,7 @@ func (p *Photostreaming) getUrls(albumID string, guids []string) (list UrlList, 
 	return
 }
 
-func (p *Photostreaming) request(url string, reader io.Reader) (io.ReadCloser, error) {
+func (p *Photostream) request(url string, reader io.Reader) (io.ReadCloser, error) {
 	var resp *http.Response
 	var err error
 	if reader != nil {

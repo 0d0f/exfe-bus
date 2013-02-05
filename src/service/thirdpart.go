@@ -20,7 +20,7 @@ import (
 	"thirdpart/facebook"
 	"thirdpart/gcm"
 	"thirdpart/imsg"
-	"thirdpart/photostreaming"
+	"thirdpart/photostream"
 	"thirdpart/sms"
 	"thirdpart/twitter"
 	"time"
@@ -91,11 +91,11 @@ func NewThirdpart(config *model.Config, streaming *Streaming, platform *Platform
 	}
 	t.AddPhotographer(dropbox_)
 
-	photostreaming_, err := photostreaming.New(config)
+	photostream_, err := photostream.New(config)
 	if err != nil {
-		return nil, fmt.Errorf("can't create photostreaming: %s", err)
+		return nil, fmt.Errorf("can't create photostream: %s", err)
 	}
-	t.AddPhotographer(photostreaming_)
+	t.AddPhotographer(photostream_)
 
 	return &Thirdpart{
 		thirdpart: t,

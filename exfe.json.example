@@ -99,7 +99,7 @@
       "key": "",
       "secret": ""
     },
-    "photostreaming": {
+    "photostream": {
       "domain": "p04-sharedstreams.icloud.com"
     }
   },
