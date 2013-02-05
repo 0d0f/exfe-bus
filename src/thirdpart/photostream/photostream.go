@@ -136,19 +136,22 @@ func (p *Photostream) Grab(to model.Recipient, albumID string) ([]model.Photo, e
 		if err != nil {
 			continue
 		}
-		previewReader, err := p.request(url, nil)
+		resp, err := p.request(url, nil)
 		if err != nil {
 			p.log.Err("can't grab preview of %s from %s: %s", photo.PhotoGuid, url, err)
 			continue
 		}
-		defer previewReader.Close()
+		defer resp.Body.Close()
 
-		object, err := p.bucket.CreateObject(photo.PhotoGuid+".jpg", "image/jpeg")
+		object, err := p.bucket.CreateObject("/photostream/"+photo.PhotoGuid+".jpg", "image/jpeg")
 		if err != nil {
 			p.log.Err("can't save %s to s3: %s", photo.PhotoGuid, err)
 			continue
 		}
-		object.Save(previewReader)
+		object.SetDateString(resp.Header.Get("Date"))
+		length, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
+		object.SetLength(uint(length))
+		object.Save(resp.Body)
 
 		t, err := time.Parse(photo.DateCreated, "2006-01-02T15:04:05Z")
 		if err != nil {
@@ -180,14 +183,14 @@ func (p *Photostream) Grab(to model.Recipient, albumID string) ([]model.Photo, e
 func (p *Photostream) getList(albumID string) (list StreamingList, err error) {
 	url := fmt.Sprintf("https://%s/%s/sharedstreams/webstream", p.domain, albumID)
 	buf := bytes.NewBufferString(`{"streamCtag":null}`)
-	var body io.ReadCloser
-	body, err = p.request(url, buf)
+	var resp *http.Response
+	resp, err = p.request(url, buf)
 	if err != nil {
 		return
 	}
-	defer body.Close()
+	defer resp.Body.Close()
 
-	decoder := json.NewDecoder(body)
+	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&list)
 	return
 }
@@ -200,19 +203,19 @@ func (p *Photostream) getUrls(albumID string, guids []string) (list UrlList, err
 	encoder := json.NewEncoder(buf)
 	err = encoder.Encode(req)
 	url := fmt.Sprintf("https://%s/%s/sharedstreams/webasseturls", p.domain, albumID)
-	var body io.ReadCloser
-	body, err = p.request(url, buf)
+	var resp *http.Response
+	resp, err = p.request(url, buf)
 	if err != nil {
 		return
 	}
-	defer body.Close()
+	defer resp.Body.Close()
 
-	decoder := json.NewDecoder(body)
+	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&list)
 	return
 }
 
-func (p *Photostream) request(url string, reader io.Reader) (io.ReadCloser, error) {
+func (p *Photostream) request(url string, reader io.Reader) (*http.Response, error) {
 	var resp *http.Response
 	var err error
 	if reader != nil {
@@ -231,5 +234,5 @@ func (p *Photostream) request(url string, reader io.Reader) (io.ReadCloser, erro
 		}
 		return nil, fmt.Errorf("%s: %s", resp.Status, content)
 	}
-	return resp.Body, nil
+	return resp, nil
 }

@@ -152,12 +152,12 @@ func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToke
 	} else {
 		thumbName = fmt.Sprintf("%s-thumb%s", c.Path[:extIndex], c.Path[extIndex:])
 	}
-	thumbObj, err := d.bucket.CreateObject(fmt.Sprintf("i%d%s", to.IdentityID, thumbName), c.MimeType)
+	thumbObj, err := d.bucket.CreateObject(fmt.Sprintf("/dropbox/i%d%s", to.IdentityID, thumbName), c.MimeType)
 	if err != nil {
 		return "", "", err
 	}
 
-	bigObj, err := d.bucket.CreateObject(fmt.Sprintf("i%d%s", to.IdentityID, c.Path), c.MimeType)
+	bigObj, err := d.bucket.CreateObject(fmt.Sprintf("/dropbox/i%d%s", to.IdentityID, c.Path), c.MimeType)
 	if err != nil {
 		return "", "", err
 	}
