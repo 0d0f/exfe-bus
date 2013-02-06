@@ -136,7 +136,9 @@ func main() {
 	}()
 	defer func() {
 		re := recover()
-		log.Crit("crash: %s", re)
+		if re != nil {
+			log.Crit("crash: %s", re)
+		}
 	}()
 	err = bus.ListenAndServe()
 	if err != nil {
