@@ -116,8 +116,8 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 
 func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToken) (string, string, error) {
 	path := fmt.Sprintf("https://api-content.dropbox.com/1/thumbnails/dropbox%s", escapePath(c.Path))
-	thumbPath := fmt.Sprintf("/dropbox/i%d%s", to.IdentityID, getThumbName(c.Path))
-	bigPath := fmt.Sprintf("/dropbox/i%d%s", to.IdentityID, c.Path)
+	thumbPath := fmt.Sprintf("/i%d/dropbox%s", to.IdentityID, getThumbName(c.Path))
+	bigPath := fmt.Sprintf("/i%d/dropbox%s", to.IdentityID, c.Path)
 	thumb, err := d.saveFile(path, "l", thumbPath, c.MimeType, token)
 	if err != nil {
 		return "", "", err
