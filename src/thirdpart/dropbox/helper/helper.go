@@ -52,8 +52,8 @@ func main() {
 	var config model.Config
 	config.Thirdpart.Dropbox.Key = clientToken
 	config.Thirdpart.Dropbox.Secret = clientSecret
-	config.Thirdpart.Dropbox.BucketPrefix = "test"
 	config.AWS.S3.Domain = "127.0.0.1:1234"
+	config.AWS.S3.BucketPrefix = "test"
 	config.Log, err = logger.New(logger.Stderr, "test")
 	if err != nil {
 		panic(err)

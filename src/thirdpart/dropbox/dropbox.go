@@ -75,10 +75,8 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("get meta")
 	ret := make([]model.Photo, 0)
 	for _, c := range list.Contents {
-		fmt.Println("process", c.Path)
 		if !c.ThumbExists {
 			d.log.Info("%s %s is not picture.", to, c.Path)
 			continue
@@ -173,11 +171,6 @@ func getThumbName(path string) string {
 }
 
 func escapePath(path string) string {
-	if path[0] == '/' {
-		path = "/dropbox" + path
-	} else {
-		path = "/dropbox/" + path
-	}
 	path = url.QueryEscape(path)
 	path = strings.Replace(path, "%2F", "/", -1)
 	path = strings.Replace(path, "+", "%20", -1)
