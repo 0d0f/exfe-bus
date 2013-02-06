@@ -40,7 +40,7 @@ func (d Table) Find(url, ticket string) (string, error) {
 	path := ""
 	if !ok {
 		for prefix, u := range d {
-			if url[:len(prefix)] == prefix {
+			if lp, lu := len(prefix), len(url); lp >= lu && url[:lp] == prefix {
 				ok = true
 				urls = u
 				path = url[len(prefix):]
