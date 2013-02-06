@@ -134,6 +134,10 @@ func main() {
 		os.Exit(-1)
 		return
 	}()
+	defer func() {
+		re := recover()
+		log.Crit("crash: %s", re)
+	}()
 	err = bus.ListenAndServe()
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)

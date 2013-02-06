@@ -41,6 +41,10 @@ func main() {
 	}
 
 	log.Info("start")
+	defer func() {
+		re := recover()
+		log.Crit("crashed: %s", re)
+	}()
 
 	tomb := email.Daemon(&config, localTemplate, sender)
 
