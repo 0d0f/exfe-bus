@@ -45,7 +45,7 @@ func NewQueue(config *model.Config, redis broker.Redis) (*Queue, error) {
 		}
 
 		{
-			name := fmt.Sprintf("delayrepo:head_%ds", delay)
+			name := fmt.Sprintf("v3:delayrepo:head_%ds", delay)
 			repo := delayrepo.NewHead(name, delay, redis)
 			log := config.Log.SubPrefix(name)
 			tomb := delayrepo.ServRepository(log, repo, ret.callback(name))
@@ -54,7 +54,7 @@ func NewQueue(config *model.Config, redis broker.Redis) (*Queue, error) {
 		}
 
 		{
-			name := fmt.Sprintf("delayrepo:tail_%ds", delay)
+			name := fmt.Sprintf("v3:delayrepo:tail_%ds", delay)
 			repo := delayrepo.NewTail(name, delay, redis)
 			log := config.Log.SubPrefix(name)
 			tomb := delayrepo.ServRepository(log, repo, ret.callback(name))
