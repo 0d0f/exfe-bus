@@ -152,7 +152,7 @@ func (p *Photostream) Grab(to model.Recipient, albumID string) ([]model.Photo, e
 			continue
 		}
 
-		object, err := p.bucket.CreateObject("/photostream/"+photo.PhotoGuid+".jpg", "image/jpeg")
+		object, err := p.bucket.CreateObject(fmt.Sprintf("/i%d/photostream/%s.jpg", to.IdentityID, photo.PhotoGuid), "image/jpeg")
 		if err != nil {
 			p.log.Err("can't save %s to s3: %s", photo.PhotoGuid, err)
 			continue
