@@ -154,6 +154,7 @@ func (d *Dropbox) saveFile(from, size, to, mime string, token *oauth.AccessToken
 	if err != nil {
 		return "", err
 	}
+	object.SetDate(time.Now())
 	err = object.SaveReader(resp.Body, int64(length))
 	if err != nil {
 		return "", err

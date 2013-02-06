@@ -132,6 +132,10 @@ func (p *Photostream) Grab(to model.Recipient, albumID string) ([]model.Photo, e
 			p.log.Err("can't find derivative of %s", photo.PhotoGuid)
 			continue
 		}
+		t, err := time.Parse(photo.DateCreated, "2006-01-02T15:04:05Z")
+		if err != nil {
+			t = time.Now()
+		}
 		url, err := preview.URL(urls)
 		if err != nil {
 			continue
@@ -153,16 +157,13 @@ func (p *Photostream) Grab(to model.Recipient, albumID string) ([]model.Photo, e
 			p.log.Err("can't save %s to s3: %s", photo.PhotoGuid, err)
 			continue
 		}
+		object.SetDate(time.Now())
 		err = object.SaveReader(resp.Body, int64(length))
 		if err != nil {
 			p.log.Err("save %s to s3 failed: %s", photo.PhotoGuid, err)
 			continue
 		}
 
-		t, err := time.Parse(photo.DateCreated, "2006-01-02T15:04:05Z")
-		if err != nil {
-			t = time.Now()
-		}
 		photo_ := model.Photo{
 			Caption: photo.Caption,
 			By: model.Identity{
