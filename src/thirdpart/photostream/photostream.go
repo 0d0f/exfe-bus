@@ -142,17 +142,22 @@ func (p *Photostream) Grab(to model.Recipient, albumID string) ([]model.Photo, e
 			continue
 		}
 		defer resp.Body.Close()
+		length, err := strconv.Atoi(resp.Header.Get("Content-Length"))
+		if err != nil {
+			p.log.Err("can't parse %s length(%s): %s", photo.PhotoGuid, resp.Header.Get("Content-Length"), err)
+			continue
+		}
 
 		object, err := p.bucket.CreateObject("/photostream/"+photo.PhotoGuid+".jpg", "image/jpeg")
 		if err != nil {
 			p.log.Err("can't save %s to s3: %s", photo.PhotoGuid, err)
 			continue
 		}
-		content, err := ioutil.ReadAll(resp.Body)
-		object.SetDateString(resp.Header.Get("Date"))
-		object.SetLength(uint(len(content)))
-		buf := bytes.NewBuffer(content)
-		object.Save(buf)
+		err = object.SaveReader(resp.Body, int64(length))
+		if err != nil {
+			p.log.Err("save %s to s3 failed: %s", photo.PhotoGuid, err)
+			continue
+		}
 
 		t, err := time.Parse(photo.DateCreated, "2006-01-02T15:04:05Z")
 		if err != nil {

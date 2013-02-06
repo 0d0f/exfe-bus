@@ -1,7 +1,6 @@
 package dropbox
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-aws/s3"
@@ -11,6 +10,7 @@ import (
 	"model"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -56,7 +56,7 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 		Token:  data.Token,
 		Secret: data.Secret,
 	}
-	path := d.escapePath(albumID)
+	path := escapePath(albumID)
 	path = fmt.Sprintf("https://api.dropbox.com/1/metadata/dropbox%s", path)
 	resp, err := d.consumer.Get(path, nil, &token)
 	if err != nil {
@@ -117,79 +117,61 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 }
 
 func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToken) (string, string, error) {
-	path := d.escapePath(c.Path)
-	path = fmt.Sprintf("https://api-content.dropbox.com/1/thumbnails/dropbox%s", path)
-	thumb, err := d.consumer.Get(path, map[string]string{"size": "l"}, token)
+	path := fmt.Sprintf("https://api-content.dropbox.com/1/thumbnails/dropbox%s", escapePath(c.Path))
+	thumbPath := fmt.Sprintf("/dropbox/i%d%s", to.IdentityID, getThumbName(c.Path))
+	bigPath := fmt.Sprintf("/dropbox/i%d%s", to.IdentityID, c.Path)
+	thumb, err := d.saveFile(path, "l", thumbPath, c.MimeType, token)
 	if err != nil {
 		return "", "", err
 	}
-	defer thumb.Body.Close()
-	if thumb.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(thumb.Body)
-		if err != nil {
-			return "", "", err
-		}
-		return "", "", fmt.Errorf("%s: %s", thumb.Status, body)
-	}
-
-	big, err := d.consumer.Get(path, map[string]string{"size": "xl"}, token)
-	if err != nil {
-		return "", "", err
-	}
-	defer big.Body.Close()
-	if big.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(big.Body)
-		if err != nil {
-			return "", "", err
-		}
-		return "", "", fmt.Errorf("%s: %s", big.Status, body)
-	}
-
-	extIndex := strings.LastIndex(c.Path, ".")
-	pathIndex := strings.LastIndex(c.Path, "/")
-	thumbName := c.Path
-	if extIndex < pathIndex {
-		thumbName += "-thumb"
-	} else {
-		thumbName = fmt.Sprintf("%s-thumb%s", c.Path[:extIndex], c.Path[extIndex:])
-	}
-	thumbObj, err := d.bucket.CreateObject(fmt.Sprintf("/dropbox/i%d%s", to.IdentityID, thumbName), c.MimeType)
+	big, err := d.saveFile(path, "xl", bigPath, c.MimeType, token)
 	if err != nil {
 		return "", "", err
 	}
 
-	bigObj, err := d.bucket.CreateObject(fmt.Sprintf("/dropbox/i%d%s", to.IdentityID, c.Path), c.MimeType)
-	if err != nil {
-		return "", "", err
-	}
-
-	{
-		content, err := ioutil.ReadAll(thumb.Body)
-		thumbObj.SetDateString(thumb.Header.Get("Date"))
-		thumbObj.SetLength(uint(len(content)))
-		buf := bytes.NewBuffer(content)
-		thumbObj.Save(buf)
-		err = thumbObj.Save(buf)
-		if err != nil {
-			return "", "", err
-		}
-	}
-	{
-		content, err := ioutil.ReadAll(big.Body)
-		bigObj.SetDateString(big.Header.Get("Date"))
-		bigObj.SetLength(uint(len(content)))
-		buf := bytes.NewBuffer(content)
-		bigObj.Save(buf)
-		err = bigObj.Save(buf)
-		if err != nil {
-			return "", "", err
-		}
-	}
-
-	return thumbObj.URL(), bigObj.URL(), nil
+	return thumb, big, nil
 }
 
-func (d *Dropbox) escapePath(path string) string {
+func (d *Dropbox) saveFile(from, size, to, mime string, token *oauth.AccessToken) (string, error) {
+	resp, err := d.consumer.Get(from, map[string]string{"size": size}, token)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+		return "", fmt.Errorf("%s: %s", resp.Status, body)
+	}
+	length, err := strconv.Atoi(resp.Header.Get("Content-Length"))
+	if err != nil {
+		return "", err
+	}
+
+	object, err := d.bucket.CreateObject(to, mime)
+	if err != nil {
+		return "", err
+	}
+	err = object.SaveReader(resp.Body, int64(length))
+	if err != nil {
+		return "", err
+	}
+	return object.URL(), nil
+}
+
+func getThumbName(path string) string {
+	extIndex := strings.LastIndex(path, ".")
+	pathIndex := strings.LastIndex(path, "/")
+	thumbName := path
+	if extIndex < pathIndex {
+		return thumbName + "-thumb"
+	}
+	return fmt.Sprintf("%s-thumb%s", path[:extIndex], path[extIndex:])
+}
+
+func escapePath(path string) string {
 	if path[0] == '/' {
 		path = "/dropbox" + path
 	} else {
