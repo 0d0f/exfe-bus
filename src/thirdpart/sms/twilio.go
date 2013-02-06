@@ -43,6 +43,7 @@ func (t *Twilio) Send(phone string, contents []string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("send to %s failed: %s", phone, err)
 		}
+		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {

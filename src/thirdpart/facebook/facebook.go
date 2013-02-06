@@ -47,6 +47,7 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 		if err != nil {
 			return fmt.Errorf("facebook get friends from %s error: %s", url, err)
 		}
+		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("facebook get body from %s fail: %s", url, err)
@@ -106,6 +107,7 @@ func (f Facebook) getInfo(idToken *facebookIdentityToken, id string) (*facebookU
 	if err != nil {
 		return nil, fmt.Errorf("facebook get %s info from %s error: %s", id, url, err)
 	}
+	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("facebook get %s info body from %s fail: %s", id, url, err)

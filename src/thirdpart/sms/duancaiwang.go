@@ -44,6 +44,7 @@ func (t *DuanCaiWang) Send(phone string, contents []string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("send to %s failed: %s", phone, err)
 		}
+		defer resp.Body.Close()
 		decoder := json.NewDecoder(resp.Body)
 		var reply duancaiwangReply
 		err = decoder.Decode(&reply)

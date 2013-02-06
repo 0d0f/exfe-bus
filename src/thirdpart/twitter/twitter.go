@@ -80,6 +80,7 @@ func (t *Twitter) sendPrivate(to *model.Recipient, message string) (string, erro
 			if err != nil {
 				return "", err
 			}
+			defer resp.Close()
 			decoder := json.NewDecoder(resp)
 			var reply twitterReply
 			err = decoder.Decode(&reply)
@@ -119,6 +120,7 @@ func (t *Twitter) sendPublic(to *model.Recipient, message string) (string, error
 			if err != nil {
 				return "", fmt.Errorf("send to %s fail: %s", to, err)
 			}
+			defer resp.Close()
 			decoder := json.NewDecoder(resp)
 			var reply twitterReply
 			err = decoder.Decode(&reply)
@@ -138,6 +140,7 @@ func (t *Twitter) UpdateIdentity(to *model.Recipient) error {
 	if err != nil {
 		return fmt.Errorf("get %s users/show(%v) failed: %s", to, params, err)
 	}
+	defer resp.Close()
 	var info twitterInfo
 	decoder := json.NewDecoder(resp)
 	err = decoder.Decode(&info)
@@ -164,6 +167,7 @@ func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 	if err != nil {
 		return fmt.Errorf("get %s friends/ids(%v) failed: %s", to, params, err)
 	}
+	defer resp.Close()
 	var twitterIDs_ twitterIDs
 	decoder := json.NewDecoder(resp)
 	err = decoder.Decode(&twitterIDs_)
@@ -184,6 +188,7 @@ func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 		if err != nil {
 			return fmt.Errorf("get %s users/lookup.json(%v) fail: %s", to, params, err)
 		}
+		defer resp.Close()
 		var users []twitterInfo
 		decoder := json.NewDecoder(resp)
 		err = decoder.Decode(&users)

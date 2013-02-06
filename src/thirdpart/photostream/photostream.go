@@ -233,6 +233,7 @@ func (p *Photostream) request(url string, reader io.Reader) (*http.Response, err
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		content, err := ioutil.ReadAll(resp.Body)
 		resp.Body.Close()

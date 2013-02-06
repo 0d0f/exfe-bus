@@ -224,6 +224,7 @@ func (t *Thirdpart) sendCallback(recipient model.Recipient, err error) {
 	if err != nil {
 		t.log.Crit("send callback(%s) to %s error: %s", bufString, url, err)
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		t.log.Crit("send callback(%s) to %s failed: %s", bufString, url, resp.Status)
 	}

@@ -45,4 +45,8 @@ func (c Contact) Identities() []Identity {
 
 func (c *Client) GetFriends() {
 	resp, err := c.http.Get("https://www.google.com/m8/feeds/contacts/default/full?max-results=100")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 }

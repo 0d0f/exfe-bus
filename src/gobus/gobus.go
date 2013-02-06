@@ -101,6 +101,7 @@ func (c *Client) Do(urlStr, method string, arg interface{}, reply interface{}) e
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {

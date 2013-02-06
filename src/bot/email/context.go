@@ -55,6 +55,7 @@ func (c *EmailContext) EmailWithCrossID(input *Email) error {
 	if err != nil {
 		return fmt.Errorf("message(%s) send to server error: %s", input.MessageID, err)
 	}
+	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("message(%s) get response body error: %s", input.MessageID, err)

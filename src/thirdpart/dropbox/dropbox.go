@@ -62,6 +62,7 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {

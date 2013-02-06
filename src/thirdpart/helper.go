@@ -67,6 +67,7 @@ func (h *HelperImp) UpdateFriends(to *model.Recipient, externalUsers []ExternalU
 	if err != nil {
 		return fmt.Errorf("update %s friends fail: %s", to, err)
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("update %s friends fail: %s", to, resp.Status)
 	}
@@ -88,6 +89,7 @@ func (h *HelperImp) UpdateIdentity(to *model.Recipient, externalUser ExternalUse
 	if err != nil {
 		return fmt.Errorf("update with %v failed: %s", params, err)
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("update with %v failed: %s", params, resp.Status)
 	}
