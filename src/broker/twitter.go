@@ -36,6 +36,11 @@ func (t *TwitterImpl) Do(accessToken model.OAuthToken, cmd, url string, params m
 		Token:  accessToken.Token,
 		Secret: accessToken.Secret,
 	}
+	if url[0] == '/' {
+		url = twitterApiBase + url[1:]
+	} else {
+		url = twitterApiBase + url
+	}
 	var err error
 	var resp *http.Response
 	switch cmd {
