@@ -234,11 +234,11 @@ type twitterIDs struct {
 }
 
 type twitterInfo struct {
-	ID              uint64 `json:"id"`
-	ScreenName      string `json:"screen_name"`
-	ProfileImageUrl string `json:"profile_image_url"`
-	Description     string `json:"description"`
-	Name_           string `json:"name"`
+	ID              uint64  `json:"id"`
+	ScreenName      string  `json:"screen_name"`
+	ProfileImageUrl string  `json:"profile_image_url"`
+	Description     *string `json:"description"`
+	Name_           string  `json:"name"`
 }
 
 func (i twitterInfo) ExternalID() string {
@@ -258,7 +258,10 @@ func (i twitterInfo) Name() string {
 }
 
 func (i twitterInfo) Bio() string {
-	return i.Description
+	if i.Description == nil {
+		return ""
+	}
+	return *i.Description
 }
 
 func (i twitterInfo) Avatar() string {
