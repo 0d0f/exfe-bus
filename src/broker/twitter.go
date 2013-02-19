@@ -56,7 +56,6 @@ func (t *TwitterImpl) Do(accessToken model.OAuthToken, cmd, url string, params m
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		content, err := ioutil.ReadAll(resp.Body)
