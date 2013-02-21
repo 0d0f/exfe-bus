@@ -20,8 +20,8 @@ import (
 	"thirdpart/facebook"
 	"thirdpart/gcm"
 	"thirdpart/imsg"
+	"thirdpart/phone"
 	"thirdpart/photostream"
-	"thirdpart/sms"
 	"thirdpart/twitter"
 	"time"
 )
