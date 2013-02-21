@@ -30,7 +30,7 @@ func New(config *model.Config) *Sms {
 }
 
 func (s *Sms) Provider() string {
-	return "sms"
+	return "phone"
 }
 
 func (s *Sms) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (id string, err error) {
