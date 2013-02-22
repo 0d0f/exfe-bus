@@ -68,7 +68,7 @@ func (a CrossInvitation) Link() string {
 }
 
 func (a CrossInvitation) PublicLink() string {
-	return fmt.Sprintf("%s/#!%d/%s", a.Config.SiteUrl, a.Cross.ID, a.To.Token[1:4])
+	return fmt.Sprintf("%s/#!%d/%s", a.Config.SiteUrl, a.Cross.ID, a.To.Token[1:5])
 }
 
 func (a CrossInvitation) Timezone() string {
