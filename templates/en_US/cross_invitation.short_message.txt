@@ -3,5 +3,5 @@
 {{$place := .Cross.Place.Title | limit 30| replace `\` `\\`}}
 {{$link := .PublicLink | replace `\` `\\`}}
 {{if .IsCreator}}Successfully gathering \("{{$title}}"\). {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} invited: {{.ListInvitations}} {{$link}}{{else}}
-{{if .ToIn .Cross.Exfee.Invitations}}Gathering with \({{.Cross.By.Name}}\) \("{{$title}}"\). {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} people invited. {{$link}}{{end}}
+{{if .ToIn .Cross.Exfee.Invitations}}EXFE by \({{.Cross.By.Name}}\) \("{{$title}}"\). {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} people invited. {{$link}}{{end}}
 {{end}}
