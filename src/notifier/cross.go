@@ -347,7 +347,7 @@ func (a SummaryArg) Link() string {
 }
 
 func (a SummaryArg) PublicLink() string {
-	return fmt.Sprintf("%s/#!%d/%s", a.Config.SiteUrl, a.Cross.ID, a.To.Token[2:6])
+	return fmt.Sprintf("%s/#!%d/%s", a.Config.SiteUrl, a.Cross.ID, a.To.Token[1:5])
 }
 
 func (a *SummaryArg) ListBy(limit int, join string) string {
