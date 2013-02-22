@@ -35,14 +35,16 @@ const (
 func MessageTypeFromProvider(provider string) (MessageType, error) {
 	switch provider {
 	case "email":
-		return EmailMessage, nil
+		fallthrough
 	case "facebook":
 		return EmailMessage, nil
 	case "iOS":
-		return ShortMessage, nil
+		fallthrough
 	case "Android":
-		return ShortMessage, nil
+		fallthrough
 	case "twitter":
+		fallthrough
+	case "phone":
 		return ShortMessage, nil
 	}
 	return "", fmt.Errorf("unknow provider: %s", provider)
