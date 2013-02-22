@@ -87,6 +87,7 @@
       "key": ""
     },
     "sms": {
+      "all_to_imsg": false,
       "twilio": {
         "url": "https://{sid}:{token}@api.twilio.com/2010-04-01/Accounts/{sid}/SMS/Messages.json",
         "from_phone": "+123"

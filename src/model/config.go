@@ -92,7 +92,8 @@ type Config struct {
 			Key string `json:"key"`
 		} `json:"gcm"`
 		Sms struct {
-			Twilio struct {
+			AllToiMsg bool `json:"all_to_imsg"`
+			Twilio    struct {
 				Url       string `json:"url"`
 				FromPhone string `json:"from_phone"`
 			} `json:"twilio"`

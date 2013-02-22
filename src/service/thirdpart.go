@@ -128,6 +128,9 @@ func (t *Thirdpart) SetRoute(route gobus.RouteCreater) error {
 //   > curl http://127.0.0.1:23333/thirdpart/message -d '{"to":{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1},"private":"private","public":"public","info":null}'
 //
 func (t *Thirdpart) Send(params map[string]string, arg model.ThirdpartSend) (string, error) {
+	if t.config.Thirdpart.Sms.AllToiMsg && arg.To.Provider == "phone" {
+		arg.To.Provider = "imessage"
+	}
 	if arg.To.ExternalID == "" {
 		go func() {
 			err := t.thirdpart.UpdateIdentity(&arg.To)
