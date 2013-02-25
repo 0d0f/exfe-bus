@@ -7,8 +7,10 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
+	"formatter"
 	"github.com/googollee/go-encoding-ex"
 	"github.com/googollee/go-logger"
+	"gobus"
 	"io/ioutil"
 	"launchpad.net/tomb"
 	"mime/multipart"
@@ -28,6 +30,18 @@ func Daemon(config model.Config) (*tomb.Tomb, error) {
 	if err != nil {
 		return nil, err
 	}
+	templ, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
+	if err != nil {
+		return nil, err
+	}
+	table, err := gobus.NewTable(config.Dispatcher)
+	if err != nil {
+		return nil, err
+	}
+	sender, err := broker.NewSender(&config, gobus.NewDispatcher(table))
+	if err != nil {
+		return nil, err
+	}
 
 	go func() {
 		defer tomb.Done()
@@ -37,14 +51,14 @@ func Daemon(config model.Config) (*tomb.Tomb, error) {
 			case <-tomb.Dying():
 				log.Debug("quit")
 			case <-time.After(timeout):
-				ProcessMail(config, platform, log)
+				ProcessMail(sender, templ, config, platform, log)
 			}
 		}
 	}()
 	return &tomb, nil
 }
 
-func ProcessMail(config model.Config, platform *broker.Platform, log *logger.SubLogger) {
+func ProcessMail(sender *broker.Sender, templ *formatter.LocalTemplate, config model.Config, platform *broker.Platform, log *logger.SubLogger) {
 	conn, err := imap.DialTLS(config.Bot.Email.IMAPHost, new(tls.Config))
 	if err != nil {
 		log.Err("can't connect to %s: %s", config.Bot.Email.IMAPHost, err)
@@ -111,6 +125,14 @@ func ProcessMail(config model.Config, platform *broker.Platform, log *logger.Sub
 		addrList := append(toList, ccList...)
 		addrList = append(addrList, fromList...)
 
+		title := parseTitle(msg.Header.Get("Subject"))
+		froms, err := msg.Header.AddressList("From")
+		if err != nil || len(froms) == 0 {
+			log.Err("invalid from address(%s): %s", msg.Header.Get("From"), err)
+			errorIds = append(errorIds, id)
+			continue
+		}
+		from := froms[0]
 		content, err := getContent(msg)
 		if err != nil {
 			errorIds = append(errorIds, id)
@@ -149,15 +171,8 @@ func ProcessMail(config model.Config, platform *broker.Platform, log *logger.Sub
 			}
 			okIds = append(okIds, id)
 		} else if ok, _ := findAddress(fmt.Sprintf("x@%s", config.Email.Domain), addrList); ok {
-			froms, err := msg.Header.AddressList("From")
-			if err != nil || len(froms) == 0 {
-				log.Err("invalid from address(%s): %s", msg.Header.Get("From"), err)
-				errorIds = append(errorIds, id)
-				continue
-			}
-			from := froms[0]
 			cross := model.Cross{
-				Title:       parseTitle(msg.Header.Get("Subject")),
+				Title:       title,
 				Description: content,
 				By: model.Identity{
 					Provider:   "email",
@@ -187,6 +202,45 @@ func ProcessMail(config model.Config, platform *broker.Platform, log *logger.Sub
 			okIds = append(okIds, id)
 		} else {
 			errorIds = append(errorIds, id)
+			buf := bytes.NewBuffer(nil)
+			type Email struct {
+				From      *mail.Address
+				Subject   string
+				CrossID   string
+				Date      time.Time
+				MessageID string
+				Text      string
+
+				Config *model.Config
+			}
+			email := Email{
+				From:      from,
+				Subject:   title,
+				MessageID: msg.Header.Get("Message-ID"),
+				Text:      content,
+			}
+			err := templ.Execute(buf, "en_US", "conversation_reply.email", email)
+			if err != nil {
+				log.Crit("template(conversation_reply.email) failed: %s", err)
+				errorIds = append(errorIds, id)
+				continue
+			}
+
+			info := &model.InfoData{
+				CrossID: 0,
+				Type:    model.TypeCrossInvitation,
+			}
+			to := model.Recipient{
+				Provider:         "email",
+				ExternalID:       from.Address,
+				ExternalUsername: from.Name,
+			}
+			_, err = sender.Send(to, buf.String(), "", info)
+			if err != nil {
+				log.Crit("send error: %s", err)
+				errorIds = append(errorIds, id)
+				continue
+			}
 		}
 	}
 	{

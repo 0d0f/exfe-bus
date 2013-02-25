@@ -1,8 +1,8 @@
 Content-Type: multipart/alternative; boundary="bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60"
-References: <{{.MessageID}}>, <x+{{.CrossID}}@{{.Config.Email.Domain}}>
-Reply-To: <{{.MessageID}}>
+References: {{.MessageID}}
+Reply-To: {{.MessageID}}
 To: =?utf-8?B?{{.From.Name | base64}}?= <{{.From.Address}}>
-From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <x{{if .CrossID}}+c{{.CrossID}}{{end}}@{{.Config.Email.Domain}}>
+From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <x@{{.Config.Email.Domain}}>
 Subject: =?utf-8?B?{{append "Re: ".Subject | base64}}?=
 
 --bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60
