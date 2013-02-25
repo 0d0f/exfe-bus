@@ -43,3 +43,7 @@ func (c *UserVerify) Parse(config *Config) (err error) {
 func (c UserVerify) Link() string {
 	return fmt.Sprintf("%s/#token=%s", c.Config.SiteUrl, c.To.Token)
 }
+
+func (c UserVerify) ShortLink() string {
+	return fmt.Sprintf("%s/?t=%s", c.Config.SiteUrl, c.To.Token)
+}
