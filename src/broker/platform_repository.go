@@ -1,4 +1,4 @@
-package main
+package broker
 
 import (
 	"bytes"
@@ -98,5 +98,21 @@ func (p *Platform) UploadPhoto(photoxID string, photos []model.Photo) error {
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("upload photo fail: %s", resp.Status)
 	}
+	return nil
+}
+
+func (p *Platform) BotCreateCross(cross model.Cross) error {
+	buf := bytes.NewBuffer(nil)
+	encoder := json.NewEncoder(buf)
+	err := encoder.Encode(cross)
+	if err != nil {
+		return err
+	}
+	p.config.Log.Debug("create cross: %s", buf.String())
+	return nil
+}
+
+func (p *Platform) BotPostConversation(post, to, id string) error {
+	p.config.Log.Debug("post (%s) to %s(%s)", post, to, id)
 	return nil
 }

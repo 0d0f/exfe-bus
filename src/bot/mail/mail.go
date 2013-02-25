@@ -170,14 +170,75 @@ func getContent(msg *mail.Message) (string, error) {
 	if encoder := msg.Header.Get("Content-Transfer-Encoding"); encoder != "base64" {
 		return "", fmt.Errorf("can't decode %s", encoder)
 	}
-	decoder := base64.NewDecoder(base64.StdEncoding, msg.Body)
+	b, err := ioutil.ReadAll(msg.Body)
+	if err != nil {
+		return "", err
+	}
+	b, _ = base64.StdEncoding.DecodeString(string(b))
 	if charset := strings.ToLower(pairs["charset"]); charset != "utf-8" {
-		var err error
-		decoder, err = encodingex.NewIconvReadCloser(decoder, "utf-8", charset)
+		buf := bytes.NewBuffer(b)
+		reader, err := encodingex.NewIconvReadCloser(buf, "utf-8", charset)
 		if err != nil {
-			return "", fmt.Errorf("can't convert from charset %s", charset)
+			return "", err
+		}
+		b, err = ioutil.ReadAll(reader)
+		if err != nil {
+			return "", err
 		}
 	}
-	content, err := ioutil.ReadAll(decoder)
-	return string(content), err
+
+	replacer := strings.NewReplacer("\r\n", "\n", "\r", "\n")
+	content := replacer.Replace(string(b))
+
+	if mime == "text/html" {
+		content = parseHtml(content)
+	}
+	content = parsePlain(content)
+
+	return content, nil
+}
+
+func parseHtml(content string) string {
+	var removeLine = [...]string{
+		`(?iU)<script\b.*>.*</script>`,
+		`(?iU)<style\b.*>.*</style>`,
+		`(?U)<.*>`,
+		`(?iU)<div class="gmail_quote".*`,
+	}
+	for _, remove := range removeLine {
+		re := regexp.MustCompile(remove)
+		content = re.ReplaceAllString(content, "\n")
+	}
+	return content
+}
+
+func parsePlain(content string) string {
+	var replyLine = [...]string{
+		"^--",
+		"-*Original Message-*",
+		"_____*",
+		"Sent from",
+		"Sent from",
+		`^From:`,
+		`^On (.*) wrote:`,
+		"发自我的 iPhone",
+		`EXFE ·X· <x\+[a-zA-Z0-9]*@exfe.com>`,
+		`^>+`,
+	}
+
+	lines := make([]string, 0)
+LINE:
+	for _, l := range strings.Split(content, "\n") {
+		l = strings.Trim(l, " \n\t")
+		for _, reply := range replyLine {
+			if ok, err := regexp.MatchString(reply, l); ok || err != nil {
+				if err != nil {
+					panic(err)
+				}
+				break LINE
+			}
+		}
+		lines = append(lines, l)
+	}
+	return strings.Trim(strings.Join(lines, "\n"), "\n ")
 }
