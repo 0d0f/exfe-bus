@@ -1,6 +1,7 @@
 package mail
 
 import (
+	"broker"
 	"bytes"
 	"code.google.com/p/go-imap/go1/imap"
 	"crypto/tls"
@@ -23,6 +24,10 @@ func Daemon(config model.Config) (*tomb.Tomb, error) {
 
 	log := config.Log.SubPrefix("mail")
 	timeout := time.Duration(config.Bot.Email.TimeoutInSecond) * time.Second
+	platform, err := broker.NewPlatform(&config)
+	if err != nil {
+		return nil, err
+	}
 
 	go func() {
 		defer tomb.Done()
@@ -32,14 +37,14 @@ func Daemon(config model.Config) (*tomb.Tomb, error) {
 			case <-tomb.Dying():
 				log.Debug("quit")
 			case <-time.After(timeout):
-
+				ProcessMail(config, platform, log)
 			}
 		}
 	}()
 	return &tomb, nil
 }
 
-func ProcessMail(config model.Config, log *logger.SubLogger) {
+func ProcessMail(config model.Config, platform *broker.Platform, log *logger.SubLogger) {
 	conn, err := imap.DialTLS(config.Bot.Email.IMAPHost, new(tls.Config))
 	if err != nil {
 		log.Err("can't connect to %s: %s", config.Bot.Email.IMAPHost, err)
@@ -68,7 +73,7 @@ func ProcessMail(config model.Config, log *logger.SubLogger) {
 	}
 
 	var errorIds []uint32
-	// var okIds []uint32
+	var okIds []uint32
 	for _, id := range ids {
 		buf := bytes.NewBuffer(nil)
 		set := new(imap.SeqSet)
@@ -106,9 +111,82 @@ func ProcessMail(config model.Config, log *logger.SubLogger) {
 		addrList := append(toList, ccList...)
 		addrList = append(addrList, fromList...)
 
-		if ok, _ := findAddress(fmt.Sprintf("x+c[0-9]*?@%s", config.Email.Domain), addrList); ok {
+		content, err := getContent(msg)
+		if err != nil {
+			errorIds = append(errorIds, id)
+			continue
+		}
+		if ok, args := findAddress(fmt.Sprintf("x+([0-9a-zA-Z]*)@%s", config.Email.Domain), addrList); ok {
+			post := content
+			addr := args[0]
+			to := "cross"
+			toId := addr
+			typeId := map[uint8]string{
+				'c': "cross",
+				'e': "exfee",
+			}
+			if t := addr[0]; !('0' <= t && t <= '9') {
+				if len(toId) < 2 {
+					log.Err("invalid address %s", t)
+					errorIds = append(errorIds, id)
+					continue
+				}
+				var ok bool
+				to, ok = typeId[t]
+				if !ok {
+					log.Err("invalid address %s", t)
+					errorIds = append(errorIds, id)
+					continue
+				}
+				toId = toId[1:]
+			}
+
+			err := platform.BotPostConversation(post, to, toId)
+			if err != nil {
+				log.Err("platform BotPostConversation call failed: %s", err)
+				errorIds = append(errorIds, id)
+				continue
+			}
+			okIds = append(okIds, id)
 		} else if ok, _ := findAddress(fmt.Sprintf("x@%s", config.Email.Domain), addrList); ok {
+			froms, err := msg.Header.AddressList("From")
+			if err != nil || len(froms) == 0 {
+				log.Err("invalid from address(%s): %s", msg.Header.Get("From"), err)
+				errorIds = append(errorIds, id)
+				continue
+			}
+			from := froms[0]
+			cross := model.Cross{
+				Title:       parseTitle(msg.Header.Get("Subject")),
+				Description: content,
+				By: model.Identity{
+					Provider:   "email",
+					Name:       from.Name,
+					ExternalID: from.Address,
+				},
+			}
+			invite := make([]model.Invitation, len(addrList))
+			for i, addr := range addrList {
+				invite[i] = model.Invitation{
+					Host: addr.Address == from.Address,
+					Via:  "email",
+					Identity: model.Identity{
+						Name:       addr.Name,
+						ExternalID: addr.Address,
+						Provider:   "email",
+					},
+				}
+			}
+			cross.Exfee.Invitations = invite
+			err = platform.BotCreateCross(cross)
+			if err != nil {
+				log.Err("platform BotCreateCross call failed: %s", err)
+				errorIds = append(errorIds, id)
+				continue
+			}
+			okIds = append(okIds, id)
 		} else {
+			errorIds = append(errorIds, id)
 		}
 	}
 }
@@ -241,4 +319,16 @@ LINE:
 		lines = append(lines, l)
 	}
 	return strings.Trim(strings.Join(lines, "\n"), "\n ")
+}
+
+func parseTitle(title string) string {
+	got, charset, err := encodingex.DecodeEncodedWord(title)
+	if err != nil {
+		return title
+	}
+	got, err = encodingex.Conv(got, "UTF-8", charset)
+	if err != nil {
+		return title
+	}
+	return got
 }
