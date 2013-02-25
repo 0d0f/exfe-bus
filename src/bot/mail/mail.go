@@ -189,6 +189,30 @@ func ProcessMail(config model.Config, platform *broker.Platform, log *logger.Sub
 			errorIds = append(errorIds, id)
 		}
 	}
+	{
+		set := new(imap.SeqSet)
+		set.AddNum(errorIds...)
+		_, err := imap.Wait(conn.Copy(set, "error"))
+		if err != nil {
+			log.Err("can't copy to error: %s", err)
+		}
+	}
+	{
+		set := new(imap.SeqSet)
+		set.AddNum(okIds...)
+		_, err := imap.Wait(conn.Copy(set, "error"))
+		if err != nil {
+			log.Err("can't copy to error: %s", err)
+		}
+	}
+	{
+		set := new(imap.SeqSet)
+		set.AddNum(ids...)
+		_, err := imap.Wait(conn.Store(set, "FLAGS", "\\Deleted"))
+		if err != nil {
+			log.Err("can't remove from inbox: %s", err)
+		}
+	}
 }
 
 func findAddress(pattern string, list []*mail.Address) (bool, []string) {
