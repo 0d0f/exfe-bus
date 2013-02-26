@@ -7,6 +7,7 @@ import (
 	"gobus"
 	"io/ioutil"
 	"model"
+	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -16,6 +17,33 @@ const (
 	ProcessTimeout = 60 * time.Second
 	NetworkTimeout = 30 * time.Second
 )
+
+var client *http.Client
+
+func init() {
+	tran := &http.Transport{
+		Proxy:               nil,
+		Dial:                dial,
+		TLSClientConfig:     nil,
+		DisableKeepAlives:   true,
+		DisableCompression:  false,
+		MaxIdleConnsPerHost: 0,
+	}
+	client = &http.Client{
+		Transport:     tran,
+		CheckRedirect: nil,
+		Jar:           nil,
+	}
+}
+
+func dial(net_, addr string) (net.Conn, error) {
+	conn, err := net.Dial(net_, addr)
+	if err != nil {
+		return nil, err
+	}
+	conn.SetDeadline(time.Now().Add(NetworkTimeout))
+	return conn, nil
+}
 
 type Platform struct {
 	dispatcher *gobus.Dispatcher
@@ -154,7 +182,7 @@ func (p *Platform) BotPostConversation(from, post, to, id string) (int, error) {
 	params.Add("provider", "email")
 	p.config.Log.Debug("bot post to: %s, post content: %s\n", u, params.Encode())
 
-	resp, err := http.PostForm(u, params)
+	resp, err := client.PostForm(u, params)
 	if err != nil {
 		return 500, fmt.Errorf("message(%s) send to server error: %s", params.Encode(), err)
 	}
