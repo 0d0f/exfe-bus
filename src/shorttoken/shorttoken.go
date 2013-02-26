@@ -53,7 +53,10 @@ NEXIST:
 		ExpireAt:  time.Now().Add(after),
 		CreatedAt: time.Now(),
 	}
-	t.repo.Store(token)
+	err := t.repo.Store(token)
+	if err != nil {
+		return model.Token{}, err
+	}
 	return model.Token{
 		Key:  key,
 		Data: data,
@@ -76,7 +79,10 @@ func (t *ShortToken) Get(key, resource string) ([]model.Token, error) {
 		return nil, fmt.Errorf("can't find token with key(%s) or resource(%s)", key, resource)
 	}
 	if key != "" && md5 != "" {
-		t.repo.Touch(key, md5)
+		err := t.repo.Touch(key, md5)
+		if err != nil {
+			return nil, err
+		}
 	}
 	ret := make([]model.Token, len(tokens))
 	for i, token := range tokens {
