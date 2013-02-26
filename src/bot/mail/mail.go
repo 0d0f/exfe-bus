@@ -21,6 +21,16 @@ import (
 	"time"
 )
 
+const (
+	processTimeout = 60 * time.Second
+	networkTimeout = 30 * time.Second
+)
+
+var typeId = map[uint8]string{
+	'c': "cross",
+	'e': "exfee",
+}
+
 type Worker struct {
 	Tomb tomb.Tomb
 
@@ -93,11 +103,6 @@ func (w *Worker) Daemon() {
 		}
 	}
 }
-
-const (
-	processTimeout = 60 * time.Second
-	networkTimeout = 30 * time.Second
-)
 
 func (w *Worker) process() {
 	w.log.Debug("process...")
@@ -245,7 +250,10 @@ func (w *Worker) parseMail(msg *mail.Message) error {
 	}
 
 	msgID := msg.Header.Get("Message-ID")
-	subject := parseTitle(msg.Header.Get("Subject"))
+	subject := msg.Header.Get("Subject")
+	if s, err := encodingex.DecodeEncodedWord(subject); err == nil {
+		subject = s
+	}
 	content, err := w.getContent(msg)
 	if err != nil {
 		return err
@@ -263,11 +271,6 @@ func (w *Worker) parseMail(msg *mail.Message) error {
 		return err
 	}
 	return nil
-}
-
-var typeId = map[uint8]string{
-	'c': "cross",
-	'e': "exfee",
 }
 
 func (w *Worker) sendPost(arg string, post string) error {
@@ -351,39 +354,6 @@ func (w *Worker) sendHelp(msgID string, from *mail.Address, subject, content str
 	return err
 }
 
-func findAddress(pattern string, list []*mail.Address) (bool, []string) {
-	r := regexp.MustCompile(pattern)
-	for _, addr := range list {
-		match := r.FindAllStringSubmatch(addr.Address, -1)
-		if len(match) == 0 {
-			continue
-		}
-		return true, match[0][1:]
-	}
-	return false, nil
-}
-
-func parseContentType(contentType string) (string, map[string]string) {
-	parts := strings.Split(contentType, ";")
-	if len(parts) == 0 {
-		return "", nil
-	}
-	mime := ""
-	if strings.Index(parts[0], "=") == -1 {
-		mime = parts[0]
-	}
-	if len(parts) == 1 {
-		return mime, nil
-	}
-	pairs := make(map[string]string)
-	for _, part := range parts[1:] {
-		part = strings.Trim(part, " \n\t")
-		p := strings.Split(part, "=")
-		pairs[p[0]] = p[1]
-	}
-	return mime, pairs
-}
-
 func (w *Worker) getContent(msg *mail.Message) (string, error) {
 	mime, pairs := parseContentType(msg.Header.Get("Content-Type"))
 	if mime == "multipart/alternative" {
@@ -458,14 +428,35 @@ LINE:
 	return strings.Trim(strings.Join(lines, "\n"), "\n ")
 }
 
-func parseTitle(title string) string {
-	got, charset, err := encodingex.DecodeEncodedWord(title)
-	if err != nil {
-		return title
+func findAddress(pattern string, list []*mail.Address) (bool, []string) {
+	r := regexp.MustCompile(pattern)
+	for _, addr := range list {
+		match := r.FindAllStringSubmatch(addr.Address, -1)
+		if len(match) == 0 {
+			continue
+		}
+		return true, match[0][1:]
 	}
-	got, err = encodingex.Conv(got, "UTF-8", charset)
-	if err != nil {
-		return title
+	return false, nil
+}
+
+func parseContentType(contentType string) (string, map[string]string) {
+	parts := strings.Split(contentType, ";")
+	if len(parts) == 0 {
+		return "", nil
 	}
-	return got
+	mime := ""
+	if strings.Index(parts[0], "=") == -1 {
+		mime = parts[0]
+	}
+	if len(parts) == 1 {
+		return mime, nil
+	}
+	pairs := make(map[string]string)
+	for _, part := range parts[1:] {
+		part = strings.Trim(part, " \n\t")
+		p := strings.Split(part, "=")
+		pairs[p[0]] = p[1]
+	}
+	return mime, pairs
 }

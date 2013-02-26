@@ -183,18 +183,3 @@ r+WboOS4uuS4gOS7o+S6uueahOmAneWOu+OAgg0KPC9kaXY+DQo=
 		assert.Equal(t, content, test.content, fmt.Sprintf("test %d", i))
 	}
 }
-
-func TestGetTitle(t *testing.T) {
-	type Test struct {
-		input  string
-		output string
-	}
-	var tests = []Test{
-		{"title", "title"},
-		{"=?utf-8?B?TWVldCBHb29nb2w=?=", "Meet Googol"},
-	}
-	for i, test := range tests {
-		out := parseTitle(test.input)
-		assert.Equal(t, out, test.output, fmt.Sprintf("test %d", i))
-	}
-}
