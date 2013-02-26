@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"gobus"
+	"io/ioutil"
 	"model"
 	"net/http"
+	"net/url"
 )
 
 type Platform struct {
@@ -126,18 +128,38 @@ func (p *Platform) UploadPhoto(photoxID string, photos []model.Photo) error {
 	return nil
 }
 
-func (p *Platform) BotCreateCross(cross model.Cross) error {
+func (p *Platform) BotCreateCross(cross model.Cross) (int, error) {
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
 	err := encoder.Encode(cross)
 	if err != nil {
-		return err
+		return 500, err
 	}
 	p.config.Log.Debug("create cross: %s", buf.String())
-	return nil
+	return 200, nil
 }
 
-func (p *Platform) BotPostConversation(post, to, id string) error {
-	p.config.Log.Debug("post (%s) to %s(%s)", post, to, id)
-	return nil
+func (p *Platform) BotPostConversation(from, post, to, id string) (int, error) {
+	u := fmt.Sprintf("%s/v2/gobus/PostConversation", p.config.SiteApi)
+	params := make(url.Values)
+	params.Add(to, id)
+	params.Add("content", post)
+	params.Add("external_id", from)
+	params.Add("provider", "email")
+	p.config.Log.Debug("bot post to: %s, post content: %s\n", u, params.Encode())
+
+	resp, err := http.PostForm(u, params)
+	if err != nil {
+		return 500, fmt.Errorf("message(%s) send to server error: %s", params.Encode(), err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return 500, fmt.Errorf("message(%s) get response body error: %s", params.Encode(), err)
+	}
+	if resp.StatusCode != 200 {
+		return resp.StatusCode, fmt.Errorf("message(%s) send error(%s): %s", params.Encode(), resp.Status, string(body))
+	}
+	return 200, nil
 }

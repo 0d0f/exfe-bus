@@ -15,6 +15,7 @@ import (
 	"mime/multipart"
 	"model"
 	"net"
+	"net/http"
 	"net/mail"
 	"regexp"
 	"strings"
@@ -27,8 +28,8 @@ const (
 )
 
 var typeId = map[uint8]string{
-	'c': "cross",
-	'e': "exfee",
+	'c': "cross_id",
+	'e': "exfee_id",
 }
 
 type Worker struct {
@@ -259,22 +260,24 @@ func (w *Worker) parseMail(msg *mail.Message) error {
 		return err
 	}
 
+	code := 500
 	if ok, args := findAddress(fmt.Sprintf("x\\+([0-9a-zA-Z]+)@%s", w.config.Email.Domain), addrList); ok {
-		err = w.sendPost(args[0], content)
+		code, err = w.sendPost(args[0], from, content)
 	} else if ok, _ := findAddress(fmt.Sprintf("x@%s", w.config.Email.Domain), addrList); ok {
-		err = w.createCross(from, addrList, subject, content)
+		code, err = w.createCross(from, addrList, subject, content)
 	} else {
+		code = http.StatusBadRequest
 		err = fmt.Errorf("can't parse mail list: %v", addrList)
 	}
 	if err != nil {
-		w.sendHelp(msgID, from, subject, content)
+		w.sendHelp(code, err, msgID, from, subject, content)
 		return err
 	}
 	return nil
 }
 
-func (w *Worker) sendPost(arg string, post string) error {
-	w.log.Debug("send post(%s) to x+%s", post, arg)
+func (w *Worker) sendPost(arg string, from *mail.Address, post string) (int, error) {
+	w.log.Debug("send post(%s) from(%s) to x+%s", post, from.Address, arg)
 	to := "cross"
 	toId := arg
 
@@ -283,11 +286,11 @@ func (w *Worker) sendPost(arg string, post string) error {
 		toId = arg[1:]
 	}
 
-	err := w.platform.BotPostConversation(post, to, toId)
-	return err
+	code, err := w.platform.BotPostConversation(from.Address, post, to, toId)
+	return code, err
 }
 
-func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, desc string) error {
+func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, desc string) (int, error) {
 	w.log.Debug("create x(%s) for %v", title, list)
 	cross := model.Cross{
 		Title:       title,
@@ -316,7 +319,7 @@ func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, de
 	return w.platform.BotCreateCross(cross)
 }
 
-func (w *Worker) sendHelp(msgID string, from *mail.Address, subject, content string) error {
+func (w *Worker) sendHelp(code int, err error, msgID string, from *mail.Address, subject, content string) error {
 	w.log.Debug("send help to %v", from)
 	buf := bytes.NewBuffer(nil)
 	type Email struct {
@@ -335,7 +338,7 @@ func (w *Worker) sendHelp(msgID string, from *mail.Address, subject, content str
 		MessageID: msgID,
 		Text:      content,
 	}
-	err := w.templ.Execute(buf, "en_US", "conversation_reply.email", email)
+	err = w.templ.Execute(buf, "en_US", "conversation_reply.email", email)
 	if err != nil {
 		w.log.Crit("template(conversation_reply.email) failed: %s", err)
 	}
