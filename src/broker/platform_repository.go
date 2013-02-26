@@ -1,21 +1,46 @@
-package main
+package broker
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"gobus"
 	"model"
 	"net/http"
 )
 
 type Platform struct {
-	config *model.Config
+	dispatcher *gobus.Dispatcher
+	config     *model.Config
 }
 
 func NewPlatform(config *model.Config) (*Platform, error) {
+	table, err := gobus.NewTable(config.Dispatcher)
+	if err != nil {
+		return nil, err
+	}
+	dispatcher := gobus.NewDispatcher(table)
 	return &Platform{
-		config: config,
+		dispatcher: dispatcher,
+		config:     config,
 	}, nil
+}
+
+func (p *Platform) Send(to model.Recipient, private, public string, info *model.InfoData) (string, error) {
+	arg := model.ThirdpartSend{
+		PrivateMessage: private,
+		PublicMessage:  public,
+		Info:           info,
+	}
+	arg.To = to
+
+	var ids string
+	err := p.dispatcher.DoWithTicket(to.Provider, "bus://exfe_service/thirdpart/message", "POST", &arg, &ids)
+
+	if err != nil {
+		return "", err
+	}
+	return ids, nil
 }
 
 func (p *Platform) GetHotRecipient(userID int64) ([]model.Recipient, error) {
@@ -98,5 +123,21 @@ func (p *Platform) UploadPhoto(photoxID string, photos []model.Photo) error {
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("upload photo fail: %s", resp.Status)
 	}
+	return nil
+}
+
+func (p *Platform) BotCreateCross(cross model.Cross) error {
+	buf := bytes.NewBuffer(nil)
+	encoder := json.NewEncoder(buf)
+	err := encoder.Encode(cross)
+	if err != nil {
+		return err
+	}
+	p.config.Log.Debug("create cross: %s", buf.String())
+	return nil
+}
+
+func (p *Platform) BotPostConversation(post, to, id string) error {
+	p.config.Log.Debug("post (%s) to %s(%s)", post, to, id)
 	return nil
 }

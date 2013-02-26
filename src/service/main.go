@@ -55,7 +55,7 @@ func main() {
 		os.Exit(-1)
 		return
 	}
-	platform, err := NewPlatform(&config)
+	platform, err := broker.NewPlatform(&config)
 	if err != nil {
 		log.Crit("can't create platform: %s", err)
 		os.Exit(-1)

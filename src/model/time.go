@@ -10,11 +10,11 @@ var nowFunc = func() time.Time {
 }
 
 type EFTime struct {
-	DateWord string `json:"date_word"`
-	Date     string `json:"date"`
-	TimeWord string `json:"time_word"`
-	Time     string `json:"time"`
-	Timezone string `json:"timezone"`
+	DateWord string `json:"date_word,omitempty"`
+	Date     string `json:"date,omitempty"`
+	TimeWord string `json:"time_word,omitempty"`
+	Time     string `json:"time,omitempty"`
+	Timezone string `json:"timezone,omitempty"`
 }
 
 func (t EFTime) UTCTime(layout string) (string, error) {
@@ -121,9 +121,9 @@ const (
 )
 
 type CrossTime struct {
-	BeginAt      EFTime       `json:"begin_at"`
-	Origin       string       `json:"origin"`
-	OutputFormat OutputFormat `json:"output_format"`
+	BeginAt      EFTime       `json:"begin_at,omitempty"`
+	Origin       string       `json:"origin,omitempty"`
+	OutputFormat OutputFormat `json:"output_format,omitempty"`
 }
 
 func (t CrossTime) StringInZone(targetZone string) (string, error) {

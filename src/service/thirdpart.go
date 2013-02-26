@@ -30,11 +30,11 @@ type Thirdpart struct {
 	thirdpart *thirdpart.Thirdpart
 	log       *logger.SubLogger
 	config    *model.Config
-	platform  *Platform
+	platform  *broker.Platform
 	sendCache *ringcache.RingCache
 }
 
-func NewThirdpart(config *model.Config, streaming *Streaming, platform *Platform) (*Thirdpart, error) {
+func NewThirdpart(config *model.Config, streaming *Streaming, platform *broker.Platform) (*Thirdpart, error) {
 	if config.Thirdpart.MaxStateCache == 0 {
 		return nil, fmt.Errorf("config.Thirdpart.MaxStateCache should be bigger than 0")
 	}

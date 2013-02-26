@@ -1,14 +1,13 @@
 package main
 
 import (
-	"bot/email"
+	"bot/mail"
 	"broker"
 	"daemon"
 	"formatter"
 	"github.com/googollee/go-logger"
-	"gobus"
+	"launchpad.net/tomb"
 	"model"
-	"os"
 )
 
 func main() {
@@ -18,41 +17,34 @@ func main() {
 	log, err := logger.New(output, "bot")
 	if err != nil {
 		panic(err)
-		return
 	}
+	log.Notice("start")
 	config.Log = log
-
-	localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
+	platform, err := broker.NewPlatform(&config)
 	if err != nil {
-		log.Crit("load local template failed: %s", err)
-		os.Exit(-1)
+		log.Crit("create platform failed: %s", err)
 		return
 	}
-	table, err := gobus.NewTable(config.Dispatcher)
+	templ, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
 	if err != nil {
-		panic(err)
-		return
-	}
-	sender, err := broker.NewSender(&config, gobus.NewDispatcher(table))
-	if err != nil {
-		log.Crit("create gobus client failed: %s", err)
-		os.Exit(-1)
+		log.Crit("create local template failed: %s", err)
 		return
 	}
 
-	log.Info("start")
-	defer func() {
-		re := recover()
-		if re != nil {
-			log.Crit("crashed: %s", re)
-		}
-	}()
-
-	tomb := email.Daemon(&config, localTemplate, sender)
+	var tombs []*tomb.Tomb
+	mail, err := mail.New(&config, templ, platform)
+	if err != nil {
+		log.Crit("create mail bot failed: %s", err)
+		return
+	}
+	tombs = append(tombs, &mail.Tomb)
+	go mail.Daemon()
 
 	<-quit
-	tomb.Kill(nil)
-	tomb.Wait()
+	log.Notice("quiting...")
 
-	log.Info("quit")
+	for _, tomb := range tombs {
+		tomb.Wait()
+	}
+	log.Notice("quit")
 }

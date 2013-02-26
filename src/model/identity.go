@@ -57,13 +57,13 @@ const (
 )
 
 type Invitation struct {
-	ID         uint64   `json:"id"`
-	Host       bool     `json:"host"`
-	Mates      uint64   `json:"mates"`
-	Identity   Identity `json:"identity"`
-	RsvpStatus RsvpType `json:"rsvp_status"`
-	By         Identity `json:"by_identity"`
-	Via        string   `json:"via"`
+	ID         uint64   `json:"id,omitempty"`
+	Host       bool     `json:"host,omitempty"`
+	Mates      uint64   `json:"mates,omitempty"`
+	Identity   Identity `json:"identity,omitempty"`
+	RsvpStatus RsvpType `json:"rsvp_status,omitempty"`
+	By         Identity `json:"by_identity,omitempty"`
+	Via        string   `json:"via,omitempty"`
 }
 
 func (i *Invitation) String() string {
