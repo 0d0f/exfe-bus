@@ -9,6 +9,12 @@ import (
 	"model"
 	"net/http"
 	"net/url"
+	"time"
+)
+
+const (
+	ProcessTimeout = 60 * time.Second
+	NetworkTimeout = 30 * time.Second
 )
 
 type Platform struct {

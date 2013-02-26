@@ -22,11 +22,6 @@ import (
 	"time"
 )
 
-const (
-	processTimeout = 60 * time.Second
-	networkTimeout = 30 * time.Second
-)
-
 var typeId = map[uint8]string{
 	'c': "cross_id",
 	'e': "exfee_id",
@@ -113,7 +108,7 @@ func (w *Worker) process() {
 		w.log.Err("can't connect to %s: %s", w.config.Bot.Email.IMAPHost, err)
 		return
 	}
-	defer imapConn.Logout(networkTimeout)
+	defer imapConn.Logout(broker.NetworkTimeout)
 
 	_, err = imapConn.Select("INBOX", false)
 	if err != nil {
@@ -134,7 +129,7 @@ func (w *Worker) process() {
 	var errorIds []uint32
 	var okIds []uint32
 	for _, id := range ids {
-		conn.SetDeadline(time.Now().Add(processTimeout))
+		conn.SetDeadline(time.Now().Add(broker.ProcessTimeout))
 
 		msg, err := w.getMail(imapConn, id)
 		if err != nil {
@@ -183,13 +178,13 @@ func (w *Worker) delete(conn *imap.Client, ids []uint32) error {
 }
 
 func (w *Worker) login() (net.Conn, *imap.Client, error) {
-	c, err := net.DialTimeout("tcp", w.config.Bot.Email.IMAPHost, networkTimeout)
+	c, err := net.DialTimeout("tcp", w.config.Bot.Email.IMAPHost, broker.NetworkTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
 	tlsConn := tls.Client(c, nil)
 
-	conn, err := imap.NewClient(tlsConn, strings.Split(w.config.Bot.Email.IMAPHost, ":")[0], networkTimeout)
+	conn, err := imap.NewClient(tlsConn, strings.Split(w.config.Bot.Email.IMAPHost, ":")[0], broker.NetworkTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
