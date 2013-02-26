@@ -5,8 +5,8 @@ import (
 )
 
 type Exfee struct {
-	ID          uint64       `json:"id"`
-	Name        string       `json:"name"`
+	ID          uint64       `json:"id,omitempty"`
+	Name        string       `json:"name,omitempty"`
 	Invitations []Invitation `json:"invitations"`
 
 	Accepted   []Invitation `json:"-"`

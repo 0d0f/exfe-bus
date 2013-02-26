@@ -5,13 +5,13 @@ import (
 )
 
 type Place struct {
-	ID          uint64 `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Lng         string `json:"lng"`
-	Lat         string `json:"lat"`
-	Provider    string `json:"provider"`
-	ExternalID  string `json:"external_id"`
+	ID          uint64 `json:"id,omitempty"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+	Lng         string `json:"lng,omitempty"`
+	Lat         string `json:"lat,omitempty"`
+	Provider    string `json:"provider,omitempty"`
+	ExternalID  string `json:"external_id,omitempty"`
 }
 
 func (p *Place) String() string {

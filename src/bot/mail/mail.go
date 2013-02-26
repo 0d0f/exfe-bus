@@ -10,76 +10,115 @@ import (
 	"formatter"
 	"github.com/googollee/go-encoding-ex"
 	"github.com/googollee/go-logger"
-	"gobus"
 	"io/ioutil"
 	"launchpad.net/tomb"
 	"mime/multipart"
 	"model"
+	"net"
 	"net/mail"
 	"regexp"
 	"strings"
 	"time"
 )
 
-func Daemon(config model.Config) (*tomb.Tomb, error) {
-	var tomb tomb.Tomb
+type Worker struct {
+	Tomb tomb.Tomb
 
-	log := config.Log.SubPrefix("mail")
-	timeout := time.Duration(config.Bot.Email.TimeoutInSecond) * time.Second
-	platform, err := broker.NewPlatform(&config)
-	if err != nil {
-		return nil, err
-	}
-	templ, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
-	if err != nil {
-		return nil, err
-	}
-	table, err := gobus.NewTable(config.Dispatcher)
-	if err != nil {
-		return nil, err
-	}
-	sender, err := broker.NewSender(&config, gobus.NewDispatcher(table))
-	if err != nil {
-		return nil, err
-	}
+	config   *model.Config
+	log      *logger.SubLogger
+	templ    *formatter.LocalTemplate
+	platform *broker.Platform
 
-	go func() {
-		defer tomb.Done()
-
-		for {
-			select {
-			case <-tomb.Dying():
-				log.Debug("quit")
-			case <-time.After(timeout):
-				ProcessMail(sender, templ, config, platform, log)
-			}
-		}
-	}()
-	return &tomb, nil
+	htmlRegexp  []*regexp.Regexp
+	replyRegexp []*regexp.Regexp
 }
 
-func ProcessMail(sender *broker.Sender, templ *formatter.LocalTemplate, config model.Config, platform *broker.Platform, log *logger.SubLogger) {
-	conn, err := imap.DialTLS(config.Bot.Email.IMAPHost, new(tls.Config))
+func New(config *model.Config, templ *formatter.LocalTemplate, platform *broker.Platform) (*Worker, error) {
+	var htmlRegexp []*regexp.Regexp
+	for _, html := range []string{
+		`(?iU)<script\b.*>.*</script>`,
+		`(?iU)<style\b.*>.*</style>`,
+		`(?iU)<div class="gmail_quote".*`,
+		`(?U)<.*>`,
+	} {
+		re, err := regexp.Compile(html)
+		if err != nil {
+			return nil, fmt.Errorf("can't compile %s html: %s", html, err)
+		}
+		htmlRegexp = append(htmlRegexp, re)
+	}
+	var replyRegexp []*regexp.Regexp
+	for _, reply := range []string{
+		"^--",
+		"-*Original Message-*",
+		"_____*",
+		"Sent from",
+		"Sent from",
+		`^From:`,
+		`^On (.*) wrote:`,
+		"发自我的 iPhone",
+		`EXFE ·X· <x\+[a-zA-Z0-9]*@exfe.com>`,
+		`^>+`,
+	} {
+		re, err := regexp.Compile(reply)
+		if err != nil {
+			return nil, fmt.Errorf("can't compile %s reply: %s", reply, err)
+		}
+		replyRegexp = append(replyRegexp, re)
+	}
+
+	return &Worker{
+		config:   config,
+		log:      config.Log.SubPrefix("mail"),
+		templ:    templ,
+		platform: platform,
+
+		htmlRegexp:  htmlRegexp,
+		replyRegexp: replyRegexp,
+	}, nil
+}
+
+func (w *Worker) Daemon() {
+	defer w.Tomb.Done()
+
+	timeout := time.Duration(w.config.Bot.Email.TimeoutInSecond) * time.Second
+
+	for true {
+		select {
+		case <-w.Tomb.Dying():
+			w.log.Notice("quitted")
+			return
+		case <-time.After(timeout):
+			w.process()
+		}
+	}
+}
+
+const (
+	processTimeout = 60 * time.Second
+	networkTimeout = 30 * time.Second
+)
+
+func (w *Worker) process() {
+	w.log.Debug("process...")
+
+	conn, err := w.login()
 	if err != nil {
-		log.Err("can't connect to %s: %s", config.Bot.Email.IMAPHost, err)
+		w.log.Err("can't connect to %s: %s", w.config.Bot.Email.IMAPHost, err)
 		return
 	}
-	defer conn.Logout(10 * time.Second)
-
-	conn.Data = nil
-	if conn.Caps["STARTTLS"] {
-		conn.StartTLS(nil)
-	}
+	defer conn.Logout(networkTimeout)
 
 	_, err = conn.Select("INBOX", false)
 	if err != nil {
-		log.Err("can't select INBOX: %s", err)
+		w.log.Err("can't select INBOX: %s", err)
 		return
 	}
 
 	cmd, err := imap.Wait(conn.Search("UNSEEN"))
 	if err != nil {
-		log.Err("can't seach UNSEEN: %s", err)
+		w.log.Err("can't seach UNSEEN: %s", err)
+		return
 	}
 	var ids []uint32
 	for _, resp := range cmd.Data {
@@ -89,184 +128,227 @@ func ProcessMail(sender *broker.Sender, templ *formatter.LocalTemplate, config m
 	var errorIds []uint32
 	var okIds []uint32
 	for _, id := range ids {
-		buf := bytes.NewBuffer(nil)
-		set := new(imap.SeqSet)
-		set.AddNum(id)
-		cmd, err := imap.Wait(conn.Fetch(set, "RFC822"))
+		msg, err := w.getMail(conn, id)
 		if err != nil {
-			log.Err("can't fetch mail %d: %s", id, err)
+			w.log.Err("can't get mail %d: %s", id, err)
 			errorIds = append(errorIds, id)
 			continue
 		}
-		buf.Write(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
-
-		msg, err := mail.ReadMessage(buf)
+		err = w.parseMail(msg)
 		if err != nil {
-			log.Err("can't parse mail %d: %s", id, err)
+			w.log.Err("parse mail %d failed: %s", id, err)
 			errorIds = append(errorIds, id)
 			continue
 		}
+		okIds = append(okIds, id)
+	}
+	w.log.Debug("id:%v, ok:%v, err:%v", ids, okIds, errorIds)
+	if err := w.copy(conn, okIds, "posted"); err != nil {
+		w.log.Err("can't copy %v to posted: %s", errorIds, err)
+	}
+	if err := w.copy(conn, errorIds, "error"); err != nil {
+		w.log.Err("can't copy %v to error: %s", errorIds, err)
+	}
+	if err := w.delete(conn, ids); err != nil {
+		w.log.Err("can't remove %v from inbox: %s", ids, err)
+	}
+}
 
-		toList, err := msg.Header.AddressList("To")
-		if err != nil {
-			log.Err("can't get address To of mail %d: %s", id, err)
-			errorIds = append(errorIds, id)
-		}
-		ccList, err := msg.Header.AddressList("Cc")
-		if err != nil {
-			log.Err("can't get address To of mail %d: %s", id, err)
-			errorIds = append(errorIds, id)
-		}
-		fromList, err := msg.Header.AddressList("From")
-		if err != nil {
-			log.Err("can't get address To of mail %d: %s", id, err)
-			errorIds = append(errorIds, id)
-		}
-		addrList := append(toList, ccList...)
-		addrList = append(addrList, fromList...)
+func (w *Worker) copy(conn *imap.Client, ids []uint32, folder string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	set := new(imap.SeqSet)
+	set.AddNum(ids...)
+	_, err := imap.Wait(conn.Copy(set, folder))
+	return err
+}
 
-		title := parseTitle(msg.Header.Get("Subject"))
-		froms, err := msg.Header.AddressList("From")
-		if err != nil || len(froms) == 0 {
-			log.Err("invalid from address(%s): %s", msg.Header.Get("From"), err)
-			errorIds = append(errorIds, id)
-			continue
+func (w *Worker) delete(conn *imap.Client, ids []uint32) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	set := new(imap.SeqSet)
+	set.AddNum(ids...)
+	_, err := imap.Wait(conn.Store(set, "FLAGS", "\\Deleted"))
+	return err
+}
+
+func (w *Worker) login() (*imap.Client, error) {
+	c, err := net.DialTimeout("tcp", w.config.Bot.Email.IMAPHost, networkTimeout)
+	if err != nil {
+		return nil, err
+	}
+	c.SetDeadline(time.Now().Add(processTimeout))
+	tlsConn := tls.Client(c, nil)
+
+	conn, err := imap.NewClient(tlsConn, strings.Split(w.config.Bot.Email.IMAPHost, ":")[0], networkTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	conn.Data = nil
+	if conn.Caps["STARTTLS"] {
+		conn.StartTLS(nil)
+	}
+
+	if conn.State() == imap.Login {
+		conn.Login(w.config.Bot.Email.IMAPUser, w.config.Bot.Email.IMAPPassword)
+	}
+
+	return conn, nil
+}
+
+func (w *Worker) getMail(conn *imap.Client, id uint32) (*mail.Message, error) {
+	buf := bytes.NewBuffer(nil)
+	set := new(imap.SeqSet)
+	set.AddNum(id)
+
+	cmd, err := imap.Wait(conn.Fetch(set, "RFC822"))
+	if err != nil {
+		return nil, err
+	}
+	buf.Write(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
+
+	msg, err := mail.ReadMessage(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
+}
+
+func (w *Worker) getMailAddress(msg *mail.Message, k string) []*mail.Address {
+	if msg.Header.Get(k) != "" {
+		list, err := msg.Header.AddressList(k)
+		if err == nil {
+			return list
 		}
-		from := froms[0]
-		content, err := getContent(msg)
-		if err != nil {
-			errorIds = append(errorIds, id)
-			continue
-		}
-		if ok, args := findAddress(fmt.Sprintf("x+([0-9a-zA-Z]*)@%s", config.Email.Domain), addrList); ok {
-			post := content
-			addr := args[0]
-			to := "cross"
-			toId := addr
-			typeId := map[uint8]string{
-				'c': "cross",
-				'e': "exfee",
-			}
-			if t := addr[0]; !('0' <= t && t <= '9') {
-				if len(toId) < 2 {
-					log.Err("invalid address %s", t)
-					errorIds = append(errorIds, id)
-					continue
-				}
-				var ok bool
-				to, ok = typeId[t]
-				if !ok {
-					log.Err("invalid address %s", t)
-					errorIds = append(errorIds, id)
-					continue
-				}
-				toId = toId[1:]
-			}
+	}
+	return nil
+}
 
-			err := platform.BotPostConversation(post, to, toId)
-			if err != nil {
-				log.Err("platform BotPostConversation call failed: %s", err)
-				errorIds = append(errorIds, id)
-				continue
-			}
-			okIds = append(okIds, id)
-		} else if ok, _ := findAddress(fmt.Sprintf("x@%s", config.Email.Domain), addrList); ok {
-			cross := model.Cross{
-				Title:       title,
-				Description: content,
-				By: model.Identity{
-					Provider:   "email",
-					Name:       from.Name,
-					ExternalID: from.Address,
-				},
-			}
-			invite := make([]model.Invitation, len(addrList))
-			for i, addr := range addrList {
-				invite[i] = model.Invitation{
-					Host: addr.Address == from.Address,
-					Via:  "email",
-					Identity: model.Identity{
-						Name:       addr.Name,
-						ExternalID: addr.Address,
-						Provider:   "email",
-					},
-				}
-			}
-			cross.Exfee.Invitations = invite
-			err = platform.BotCreateCross(cross)
-			if err != nil {
-				log.Err("platform BotCreateCross call failed: %s", err)
-				errorIds = append(errorIds, id)
-				continue
-			}
-			okIds = append(okIds, id)
-		} else {
-			errorIds = append(errorIds, id)
-			buf := bytes.NewBuffer(nil)
-			type Email struct {
-				From      *mail.Address
-				Subject   string
-				CrossID   string
-				Date      time.Time
-				MessageID string
-				Text      string
+func (w *Worker) parseMail(msg *mail.Message) error {
+	var addrList []*mail.Address
+	if list := w.getMailAddress(msg, "To"); len(list) != 0 {
+		addrList = append(addrList, list...)
+	}
+	if list := w.getMailAddress(msg, "Cc"); len(list) != 0 {
+		addrList = append(addrList, list...)
+	}
+	var from *mail.Address
+	if list := w.getMailAddress(msg, "From"); len(list) != 0 {
+		addrList = append(addrList, list...)
+		from = list[0]
+	} else {
+		return fmt.Errorf("no from field")
+	}
 
-				Config *model.Config
-			}
-			email := Email{
-				From:      from,
-				Subject:   title,
-				MessageID: msg.Header.Get("Message-ID"),
-				Text:      content,
-			}
-			err := templ.Execute(buf, "en_US", "conversation_reply.email", email)
-			if err != nil {
-				log.Crit("template(conversation_reply.email) failed: %s", err)
-				errorIds = append(errorIds, id)
-				continue
-			}
+	msgID := msg.Header.Get("Message-ID")
+	subject := parseTitle(msg.Header.Get("Subject"))
+	content, err := w.getContent(msg)
+	if err != nil {
+		return err
+	}
 
-			info := &model.InfoData{
-				CrossID: 0,
-				Type:    model.TypeCrossInvitation,
-			}
-			to := model.Recipient{
+	if ok, args := findAddress(fmt.Sprintf("x\\+([0-9a-zA-Z]+)@%s", w.config.Email.Domain), addrList); ok {
+		err = w.sendPost(args[0], content)
+	} else if ok, _ := findAddress(fmt.Sprintf("x@%s", w.config.Email.Domain), addrList); ok {
+		err = w.createCross(from, addrList, subject, content)
+	} else {
+		err = fmt.Errorf("can't parse mail list: %v", addrList)
+	}
+	if err != nil {
+		w.sendHelp(msgID, from, subject, content)
+		return err
+	}
+	return nil
+}
+
+var typeId = map[uint8]string{
+	'c': "cross",
+	'e': "exfee",
+}
+
+func (w *Worker) sendPost(arg string, post string) error {
+	w.log.Debug("send post(%s) to x+%s", post, arg)
+	to := "cross"
+	toId := arg
+
+	if t, ok := typeId[arg[0]]; ok {
+		to = t
+		toId = arg[1:]
+	}
+
+	err := w.platform.BotPostConversation(post, to, toId)
+	return err
+}
+
+func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, desc string) error {
+	w.log.Debug("create x(%s) for %v", title, list)
+	cross := model.Cross{
+		Title:       title,
+		Description: desc,
+		By: model.Identity{
+			Provider:         "email",
+			Name:             from.Name,
+			ExternalID:       from.Address,
+			ExternalUsername: from.Address,
+		},
+	}
+	invite := make([]model.Invitation, len(list))
+	for i, addr := range list {
+		invite[i] = model.Invitation{
+			Host: addr.Address == from.Address,
+			Via:  "email",
+			Identity: model.Identity{
 				Provider:         "email",
-				ExternalID:       from.Address,
-				ExternalUsername: from.Name,
-			}
-			_, err = sender.Send(to, buf.String(), "", info)
-			if err != nil {
-				log.Crit("send error: %s", err)
-				errorIds = append(errorIds, id)
-				continue
-			}
+				Name:             addr.Name,
+				ExternalID:       addr.Address,
+				ExternalUsername: addr.Address,
+			},
 		}
 	}
-	{
-		set := new(imap.SeqSet)
-		set.AddNum(errorIds...)
-		_, err := imap.Wait(conn.Copy(set, "error"))
-		if err != nil {
-			log.Err("can't copy to error: %s", err)
-		}
+	cross.Exfee.Invitations = invite
+	return w.platform.BotCreateCross(cross)
+}
+
+func (w *Worker) sendHelp(msgID string, from *mail.Address, subject, content string) error {
+	w.log.Debug("send help to %v", from)
+	buf := bytes.NewBuffer(nil)
+	type Email struct {
+		From      *mail.Address
+		Subject   string
+		CrossID   string
+		Date      time.Time
+		MessageID string
+		Text      string
+
+		Config *model.Config
 	}
-	{
-		set := new(imap.SeqSet)
-		set.AddNum(okIds...)
-		_, err := imap.Wait(conn.Copy(set, "error"))
-		if err != nil {
-			log.Err("can't copy to error: %s", err)
-		}
+	email := Email{
+		From:      from,
+		Subject:   subject,
+		MessageID: msgID,
+		Text:      content,
 	}
-	{
-		set := new(imap.SeqSet)
-		set.AddNum(ids...)
-		_, err := imap.Wait(conn.Store(set, "FLAGS", "\\Deleted"))
-		if err != nil {
-			log.Err("can't remove from inbox: %s", err)
-		}
+	err := w.templ.Execute(buf, "en_US", "conversation_reply.email", email)
+	if err != nil {
+		w.log.Crit("template(conversation_reply.email) failed: %s", err)
 	}
+
+	info := &model.InfoData{
+		CrossID: 0,
+		Type:    model.TypeCrossInvitation,
+	}
+	to := model.Recipient{
+		Provider:         "email",
+		Name:             from.Name,
+		ExternalID:       from.Address,
+		ExternalUsername: from.Address,
+	}
+	_, err = w.platform.Send(to, buf.String(), "", info)
+	return err
 }
 
 func findAddress(pattern string, list []*mail.Address) (bool, []string) {
@@ -302,7 +384,7 @@ func parseContentType(contentType string) (string, map[string]string) {
 	return mime, pairs
 }
 
-func getContent(msg *mail.Message) (string, error) {
+func (w *Worker) getContent(msg *mail.Message) (string, error) {
 	mime, pairs := parseContentType(msg.Header.Get("Content-Type"))
 	if mime == "multipart/alternative" {
 		parts := multipart.NewReader(msg.Body, pairs["boundary"])
@@ -347,50 +429,27 @@ func getContent(msg *mail.Message) (string, error) {
 	content := replacer.Replace(string(b))
 
 	if mime == "text/html" {
-		content = parseHtml(content)
+		content = w.parseHtml(content)
 	}
-	content = parsePlain(content)
+	content = w.parsePlain(content)
 
 	return content, nil
 }
 
-func parseHtml(content string) string {
-	var removeLine = [...]string{
-		`(?iU)<script\b.*>.*</script>`,
-		`(?iU)<style\b.*>.*</style>`,
-		`(?U)<.*>`,
-		`(?iU)<div class="gmail_quote".*`,
-	}
-	for _, remove := range removeLine {
-		re := regexp.MustCompile(remove)
-		content = re.ReplaceAllString(content, "\n")
+func (w *Worker) parseHtml(content string) string {
+	for _, remove := range w.htmlRegexp {
+		content = remove.ReplaceAllString(content, "\n")
 	}
 	return content
 }
 
-func parsePlain(content string) string {
-	var replyLine = [...]string{
-		"^--",
-		"-*Original Message-*",
-		"_____*",
-		"Sent from",
-		"Sent from",
-		`^From:`,
-		`^On (.*) wrote:`,
-		"发自我的 iPhone",
-		`EXFE ·X· <x\+[a-zA-Z0-9]*@exfe.com>`,
-		`^>+`,
-	}
-
+func (w *Worker) parsePlain(content string) string {
 	lines := make([]string, 0)
 LINE:
 	for _, l := range strings.Split(content, "\n") {
 		l = strings.Trim(l, " \n\t")
-		for _, reply := range replyLine {
-			if ok, err := regexp.MatchString(reply, l); ok || err != nil {
-				if err != nil {
-					panic(err)
-				}
+		for _, reply := range w.replyRegexp {
+			if reply.MatchString(l) {
 				break LINE
 			}
 		}

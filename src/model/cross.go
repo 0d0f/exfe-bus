@@ -5,13 +5,13 @@ import (
 )
 
 type Cross struct {
-	ID          uint64    `json:"id"`
-	By          Identity  `json:"by_identity"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Time        CrossTime `json:"time"`
-	Place       Place     `json:"place"`
-	Exfee       Exfee     `json:"exfee"`
+	ID          uint64    `json:"id,omitempty"`
+	By          Identity  `json:"by_identity,omitempty"`
+	Title       string    `json:"title,omitempty"`
+	Description string    `json:"description,omitempty"`
+	Time        CrossTime `json:"time,omitempty"`
+	Place       Place     `json:"place,omitempty"`
+	Exfee       Exfee     `json:"exfee,omitempty"`
 }
 
 func (c Cross) Equal(other *Cross) bool {

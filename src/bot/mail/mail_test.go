@@ -3,7 +3,9 @@ package mail
 import (
 	"bytes"
 	"fmt"
+	"github.com/googollee/go-logger"
 	"github.com/stretchrcom/testify/assert"
+	"model"
 	"net/mail"
 	"testing"
 )
@@ -157,8 +159,18 @@ r+WboOS4uuS4gOS7o+S6uueahOmAneWOu+OAgg0KPC9kaXY+DQo=
 		{mail1, true, "cc"},
 		{mail2, true, "cc"},
 	}
+	config := new(model.Config)
+	log, err := logger.New(logger.Stderr, "bot")
+	if err != nil {
+		t.Fatal(err)
+	}
+	config.Log = log
+	worker, err := New(config, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for i, test := range tests {
-		content, err := getContent(test.mail)
+		content, err := worker.getContent(test.mail)
 		if !test.ok {
 			if err == nil {
 				t.Errorf("test %d should not ok", i)
