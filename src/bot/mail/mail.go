@@ -108,20 +108,20 @@ func (w *Worker) Daemon() {
 func (w *Worker) process() {
 	w.log.Debug("process...")
 
-	conn, err := w.login()
+	conn, imapConn, err := w.login()
 	if err != nil {
 		w.log.Err("can't connect to %s: %s", w.config.Bot.Email.IMAPHost, err)
 		return
 	}
-	defer conn.Logout(networkTimeout)
+	defer imapConn.Logout(networkTimeout)
 
-	_, err = conn.Select("INBOX", false)
+	_, err = imapConn.Select("INBOX", false)
 	if err != nil {
 		w.log.Err("can't select INBOX: %s", err)
 		return
 	}
 
-	cmd, err := imap.Wait(conn.Search("UNSEEN"))
+	cmd, err := imap.Wait(imapConn.Search("UNSEEN"))
 	if err != nil {
 		w.log.Err("can't seach UNSEEN: %s", err)
 		return
@@ -134,7 +134,9 @@ func (w *Worker) process() {
 	var errorIds []uint32
 	var okIds []uint32
 	for _, id := range ids {
-		msg, err := w.getMail(conn, id)
+		conn.SetDeadline(time.Now().Add(processTimeout))
+
+		msg, err := w.getMail(imapConn, id)
 		if err != nil {
 			w.log.Err("can't get mail %d: %s", id, err)
 			errorIds = append(errorIds, id)
@@ -149,13 +151,13 @@ func (w *Worker) process() {
 		okIds = append(okIds, id)
 	}
 	w.log.Debug("id:%v, ok:%v, err:%v", ids, okIds, errorIds)
-	if err := w.copy(conn, okIds, "posted"); err != nil {
+	if err := w.copy(imapConn, okIds, "posted"); err != nil {
 		w.log.Err("can't copy %v to posted: %s", errorIds, err)
 	}
-	if err := w.copy(conn, errorIds, "error"); err != nil {
+	if err := w.copy(imapConn, errorIds, "error"); err != nil {
 		w.log.Err("can't copy %v to error: %s", errorIds, err)
 	}
-	if err := w.delete(conn, ids); err != nil {
+	if err := w.delete(imapConn, ids); err != nil {
 		w.log.Err("can't remove %v from inbox: %s", ids, err)
 	}
 }
@@ -180,17 +182,16 @@ func (w *Worker) delete(conn *imap.Client, ids []uint32) error {
 	return err
 }
 
-func (w *Worker) login() (*imap.Client, error) {
+func (w *Worker) login() (net.Conn, *imap.Client, error) {
 	c, err := net.DialTimeout("tcp", w.config.Bot.Email.IMAPHost, networkTimeout)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	c.SetDeadline(time.Now().Add(processTimeout))
 	tlsConn := tls.Client(c, nil)
 
 	conn, err := imap.NewClient(tlsConn, strings.Split(w.config.Bot.Email.IMAPHost, ":")[0], networkTimeout)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	conn.Data = nil
@@ -202,7 +203,7 @@ func (w *Worker) login() (*imap.Client, error) {
 		conn.Login(w.config.Bot.Email.IMAPUser, w.config.Bot.Email.IMAPPassword)
 	}
 
-	return conn, nil
+	return c, conn, nil
 }
 
 func (w *Worker) getMail(conn *imap.Client, id uint32) (*mail.Message, error) {
