@@ -44,6 +44,7 @@ func main() {
 	log.Notice("quiting...")
 
 	for _, tomb := range tombs {
+		tomb.Kill(nil)
 		tomb.Wait()
 	}
 	log.Notice("quit")
