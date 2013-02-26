@@ -53,7 +53,7 @@ func NewDBMultiplexer(config *model.Config) *DBMultiplexer {
 	}
 	return &DBMultiplexer{
 		homo: multiplexer.NewHomo(func() (multiplexer.Instance, error) {
-			db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&keepalive=1",
+			db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8",
 				config.DB.Username, config.DB.Password, config.DB.Addr, config.DB.Port, config.DB.DbName))
 			if err != nil {
 				return nil, err
