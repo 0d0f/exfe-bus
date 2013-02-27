@@ -1,1 +1,0 @@
-Welcome to EXFE! An utility for gathering with friends.{{if .NeedVerify}}Please click here to verify your identity: \({{.Link}}\){{end}}

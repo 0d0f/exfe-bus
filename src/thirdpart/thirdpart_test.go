@@ -7,7 +7,6 @@ import (
 
 type Faker struct {
 	provider        string
-	messageType     MessageType
 	tos             []*model.Recipient
 	privateMessages []string
 	publicMessages  []string
@@ -64,12 +63,10 @@ var to2 = &model.Recipient{
 
 func TestThirdpartSender(t *testing.T) {
 	faker1 := &Faker{
-		provider:    "faker1",
-		messageType: ShortMessage,
+		provider: "faker1",
 	}
 	faker2 := &Faker{
-		provider:    "faker2",
-		messageType: HTMLMessage,
+		provider: "faker2",
 	}
 	config := new(model.Config)
 	third := New(config)
@@ -112,12 +109,10 @@ func TestThirdpartSender(t *testing.T) {
 
 func TestThirdpartUpdate(t *testing.T) {
 	faker1 := &Faker{
-		provider:    "faker1",
-		messageType: ShortMessage,
+		provider: "faker1",
 	}
 	faker2 := &Faker{
-		provider:    "faker2",
-		messageType: HTMLMessage,
+		provider: "faker2",
 	}
 	config := new(model.Config)
 	third := New(config)
