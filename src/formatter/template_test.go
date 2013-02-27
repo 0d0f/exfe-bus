@@ -87,23 +87,6 @@ func TestTemplateBase64(t *testing.T) {
 	}
 }
 
-func TestTemplateSub(t *testing.T) {
-	templ, err := NewTemplate("a").Parse(`abcd{{sub "b" .}}`)
-	if err != nil {
-		t.Fatalf("unexpect error: %s", err)
-	}
-	_, err = templ.New("b").Parse(`1234`)
-	if err != nil {
-		t.Fatalf("unexpect error: %s", err)
-	}
-	buf := bytes.NewBuffer(nil)
-	err = templ.Execute(buf, nil)
-	if err != nil {
-		t.Fatalf("unexpect error: %s", err)
-	}
-	assert.Equal(t, buf.String(), "abcd1234", "should equal")
-}
-
 func TestTemplateFor(t *testing.T) {
 	templ, err := NewTemplate("test").Parse(`{{range for .}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}{{.Index}} - {{.V}}{{end}}`)
 	if err != nil {
@@ -137,6 +120,25 @@ func TestTemplatePlural(t *testing.T) {
 	assert.Equal(t, buf.String(), "isare")
 }
 
+func TestTemplateSub(t *testing.T) {
+	templ, err := NewTemplate("test").Parse(`{{sub . "a"}} {{sub . "b"}} {{sub . "a" "b"}} {{sub . "c" "b"}}`)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	_, err = templ.New("a").Parse(`aaa`)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	_, err = templ.New("b").Parse(`bbb`)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	buf := bytes.NewBuffer(nil)
+	err = templ.Execute(buf, nil)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, buf.String(), "aaa bbb aaa bbb")
+}
+
 func TestLocalTemplate(t *testing.T) {
 	l, err := NewLocalTemplate("./template_test", "en_US")
 	assert.Equal(t, err, nil)
@@ -150,7 +152,7 @@ func TestLocalTemplate(t *testing.T) {
 
 	buf := bytes.NewBuffer(nil)
 	l.Execute(buf, "en_US", "test.template", nil)
-	assert.Equal(t, buf.String(), "1234\n")
+	assert.Equal(t, buf.String(), "1234 abccc\n")
 
 	buf.Reset()
 	l.Execute(buf, "zh_CN", "test.template", nil)
@@ -158,5 +160,5 @@ func TestLocalTemplate(t *testing.T) {
 
 	buf.Reset()
 	l.Execute(buf, "en_CN", "test.template", nil)
-	assert.Equal(t, buf.String(), "1234\n")
+	assert.Equal(t, buf.String(), "1234 abccc\n")
 }

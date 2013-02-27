@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
@@ -23,6 +24,21 @@ func NewTemplate(name string) *template.Template {
 	ret := template.New(name)
 
 	funcs := template.FuncMap{
+		"sub": func(data interface{}, templates ...string) (string, error) {
+			buf := bytes.NewBuffer(nil)
+			var t *template.Template
+			for _, templ := range templates {
+				t = ret.Lookup(templ)
+				if t != nil {
+					break
+				}
+			}
+			if t == nil {
+				return "", fmt.Errorf("can't find both %v templates.", templates)
+			}
+			err := t.Execute(buf, data)
+			return buf.String(), err
+		},
 		"append": func(str ...string) string {
 			return strings.Join(str, "")
 		},
@@ -49,11 +65,6 @@ func NewTemplate(name string) *template.Template {
 		},
 		"base64url": func(str string) string {
 			return base64.URLEncoding.EncodeToString([]byte(str))
-		},
-		"sub": func(name string, data interface{}) (string, error) {
-			buf := bytes.NewBuffer(nil)
-			err := ret.ExecuteTemplate(buf, name, data)
-			return buf.String(), err
 		},
 		"limit": func(max int, str string) string {
 			if max < 4 {
@@ -121,7 +132,7 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 			continue
 		}
 		template := NewTemplate(i.Name())
-		_, err := template.ParseGlob(fmt.Sprintf("%s/%s/*", path, i.Name()))
+		err := parseDirTemplate(template, fmt.Sprintf("%s/%s", path, i.Name()), "")
 		if err != nil {
 			return nil, fmt.Errorf("can't parse %s/%s: %s", path, i.Name(), err)
 		}
@@ -141,6 +152,44 @@ func (l *LocalTemplate) Execute(wr io.Writer, lang, name string, data interface{
 	err := t.ExecuteTemplate(wr, name, data)
 	if err != nil {
 		return fmt.Errorf("execute %s error: %s", lang, err)
+	}
+	return nil
+}
+
+func parseDirTemplate(t *template.Template, dir, name string) error {
+	f, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	fis, err := f.Readdir(0)
+	if err != nil {
+		return err
+	}
+	for _, fi := range fis {
+		n := fi.Name()
+		if name != "" {
+			n = fmt.Sprintf("%s/%s", name, fi.Name())
+		}
+		path := fmt.Sprintf("%s%c%s", dir, os.PathSeparator, fi.Name())
+		if fi.IsDir() {
+			err := parseDirTemplate(t, path, n)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		content, err := ioutil.ReadAll(f)
+		if err != nil {
+			return err
+		}
+		_, err = t.New(n).Parse(string(content))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

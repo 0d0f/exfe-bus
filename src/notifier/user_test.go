@@ -58,7 +58,7 @@ func TestUserVerifyTwitter(t *testing.T) {
 	content, err := GetContent(localTemplate, "user_verify", arg.To, arg)
 	assert.Equal(t, err, nil)
 	t.Logf("content:---------start---------\n%s\n---------end----------", content)
-	expectPrivate := "\\(You(twitter1@domain.com)\\) has been requested for verification by \\(Steve Exfer\\) on EXFE. Please click here to verify: \\(http://site/url/#token=recipient_twitter1_token\\)"
+	expectPrivate := "\\(You(twitter1@domain.com)\\) has been requested for verification by \\(Steve Exfer\\) on EXFE. Please click here to verify: \\(http://site/url/?t=recipient_twitter1_token\\)"
 	assert.Equal(t, content, expectPrivate)
 }
 
