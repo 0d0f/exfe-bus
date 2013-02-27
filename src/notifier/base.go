@@ -5,18 +5,16 @@ import (
 	"fmt"
 	"formatter"
 	"model"
-	"thirdpart"
 )
 
 func GetContent(localTemplate *formatter.LocalTemplate, template string, to model.Recipient, arg interface{}) (string, error) {
-	t, err := thirdpart.MessageTypeFromProvider(to.Provider)
-	if err != nil {
-		return "", err
+	templateName := fmt.Sprintf("%s/%s", to.Provider, template)
+	if !localTemplate.IsExist(to.Language, templateName) {
+		templateName = fmt.Sprintf("_default/%s", template)
 	}
-	templateName := fmt.Sprintf("%s.%s", template, t)
 
 	ret := bytes.NewBuffer(nil)
-	err = localTemplate.Execute(ret, to.Language, templateName, arg)
+	err := localTemplate.Execute(ret, to.Language, templateName, arg)
 	if err != nil {
 		return "", fmt.Errorf("template(%s) failed: %s", templateName, err)
 	}

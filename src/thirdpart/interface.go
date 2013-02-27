@@ -23,33 +23,6 @@ type ExternalUser interface {
 	Avatar() string
 }
 
-type MessageType string
-
-const (
-	ShortMessage    MessageType = "short_message.txt"
-	LongTextMessage             = "long_message.txt"
-	HTMLMessage                 = "html"
-	EmailMessage                = "email"
-)
-
-func MessageTypeFromProvider(provider string) (MessageType, error) {
-	switch provider {
-	case "email":
-		fallthrough
-	case "facebook":
-		return EmailMessage, nil
-	case "iOS":
-		fallthrough
-	case "Android":
-		fallthrough
-	case "twitter":
-		fallthrough
-	case "phone":
-		return ShortMessage, nil
-	}
-	return "", fmt.Errorf("unknow provider: %s", provider)
-}
-
 type Sender interface {
 	Provider() string
 	Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (id string, err error)

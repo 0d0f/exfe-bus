@@ -7,6 +7,19 @@ import (
 	"testing"
 )
 
+func TestTemplateSubstr(t *testing.T) {
+	templ, err := NewTemplate("test").Parse(`{{"0123456789" | substr 2 4}}`)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	buf := bytes.NewBuffer(nil)
+	err = templ.Execute(buf, nil)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	assert.Equal(t, buf.String(), "2345", "should equal")
+}
+
 func TestTemplateAppend(t *testing.T) {
 	templ, err := NewTemplate("test").Parse(`{{append "1234567890" "abcd"}}`)
 	if err != nil {
@@ -161,4 +174,15 @@ func TestLocalTemplate(t *testing.T) {
 	buf.Reset()
 	l.Execute(buf, "en_CN", "test.template", nil)
 	assert.Equal(t, buf.String(), "1234 abccc\n")
+}
+
+func TestLocalTemplateExist(t *testing.T) {
+	l, err := NewLocalTemplate("./template_test", "en_US")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, l.defaultLang, "en_US")
+
+	assert.Equal(t, l.IsExist("en_US", "test.template"), true)
+	assert.Equal(t, l.IsExist("en_CN", "test.template"), true)
+	assert.Equal(t, l.IsExist("en_US", "nonexist.template"), false)
+	assert.Equal(t, l.IsExist("en_CN", "nonexist.template"), false)
 }

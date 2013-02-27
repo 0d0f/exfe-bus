@@ -334,7 +334,7 @@ func (w *Worker) sendHelp(code int, err error, msgID string, from *mail.Address,
 		MessageID: msgID,
 		Text:      content,
 	}
-	err = w.templ.Execute(buf, "en_US", "conversation_reply.email", email)
+	err = w.templ.Execute(buf, "en_US", "email/conversation_reply", email)
 	if err != nil {
 		w.log.Crit("template(conversation_reply.email) failed: %s", err)
 	}

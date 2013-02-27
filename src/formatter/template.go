@@ -24,6 +24,12 @@ func NewTemplate(name string) *template.Template {
 	ret := template.New(name)
 
 	funcs := template.FuncMap{
+		"substr": func(start, l int, str string) string {
+			if start+l > len(str) {
+				l = len(str) - start
+			}
+			return str[start : start+l]
+		},
 		"sub": func(data interface{}, templates ...string) (string, error) {
 			buf := bytes.NewBuffer(nil)
 			var t *template.Template
@@ -139,6 +145,20 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 		ret.templates[i.Name()] = template
 	}
 	return ret, nil
+}
+
+func (l *LocalTemplate) IsExist(lang, name string) bool {
+	t, ok := l.templates[lang]
+	if ok {
+		if t.Lookup(name) != nil {
+			return true
+		}
+	}
+	t, ok = l.templates[l.defaultLang]
+	if !ok {
+		return false
+	}
+	return t.Lookup(name) != nil
 }
 
 func (l *LocalTemplate) Execute(wr io.Writer, lang, name string, data interface{}) error {
