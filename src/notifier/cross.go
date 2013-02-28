@@ -11,14 +11,14 @@ import (
 type Cross struct {
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
-	sender        *broker.Sender
+	platform      *broker.Platform
 }
 
-func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config, sender *broker.Sender) *Cross {
+func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *Cross {
 	return &Cross{
 		localTemplate: localTemplate,
 		config:        config,
-		sender:        sender,
+		platform:      platform,
 	}
 }
 
@@ -43,19 +43,16 @@ func (c *Cross) Summary(updates model.CrossUpdates) error {
 		return nil
 	}
 
-	private, public, err := c.getSummaryContent(updates)
+	text, err := c.getSummaryContent(updates)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
 
-	if private == "" && public == "" {
+	if text == "" {
 		return nil
 	}
 
-	_, err = c.sender.Send(to, private, public, &model.InfoData{
-		CrossID: updates[0].Cross.ID,
-		Type:    model.TypeCrossUpdate,
-	})
+	_, err = c.platform.Send(to, text)
 	if err != nil {
 		return fmt.Errorf("send error: %s", err)
 	}
@@ -63,15 +60,12 @@ func (c *Cross) Summary(updates model.CrossUpdates) error {
 }
 
 func (c *Cross) Invite(invitation model.CrossInvitation) error {
-	private, public, err := c.getInvitationContent(invitation)
+	text, err := c.getInvitationContent(invitation)
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
 
-	_, err = c.sender.Send(invitation.To, private, public, &model.InfoData{
-		CrossID: invitation.Cross.ID,
-		Type:    model.TypeCrossInvitation,
-	})
+	_, err = c.platform.Send(invitation.To, text)
 	if err != nil {
 		return fmt.Errorf("send error: %s", err)
 	}
@@ -79,45 +73,37 @@ func (c *Cross) Invite(invitation model.CrossInvitation) error {
 	return nil
 }
 
-func (c *Cross) getSummaryContent(updates []model.CrossUpdate) (string, string, error) {
+func (c *Cross) getSummaryContent(updates []model.CrossUpdate) (string, error) {
 	arg, err := SummaryFromUpdates(updates, c.config)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	if !arg.IsChanged() {
-		return "", "", nil
+		return "", nil
 	}
 
-	private, err := GetContent(c.localTemplate, "cross_summary", arg.To, arg)
+	text, err := GetContent(c.localTemplate, "cross_summary", arg.To, arg)
 	if err != nil {
-		return "", "", fmt.Errorf("can't get content: %s", err)
-	}
-	public, err := GetContent(c.localTemplate, "cross_summary_public", arg.To, arg)
-	if err != nil {
-		return "", "", fmt.Errorf("can't get content: %s", err)
+		return "", fmt.Errorf("can't get content: %s", err)
 	}
 
-	return private, public, nil
+	return text, nil
 }
 
-func (c *Cross) getInvitationContent(arg model.CrossInvitation) (string, string, error) {
+func (c *Cross) getInvitationContent(arg model.CrossInvitation) (string, error) {
 	err := arg.Parse(c.config)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	arg.Cross.Exfee.Parse()
 
-	private, err := GetContent(c.localTemplate, "cross_invitation", arg.To, arg)
+	text, err := GetContent(c.localTemplate, "cross_invitation", arg.To, arg)
 	if err != nil {
-		return "", "", fmt.Errorf("can't get content: %s", err)
-	}
-	public, err := GetContent(c.localTemplate, "cross_invitation_public", arg.To, arg)
-	if err != nil {
-		return "", "", fmt.Errorf("can't get content: %s", err)
+		return "", fmt.Errorf("can't get content: %s", err)
 	}
 
-	return private, public, nil
+	return text, nil
 }
 
 func in(id *model.Invitation, ids []model.Invitation) bool {

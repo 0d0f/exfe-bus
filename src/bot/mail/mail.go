@@ -361,17 +361,13 @@ func (w *Worker) sendHelp(code int, err error, msgID string, from *mail.Address,
 		w.log.Crit("template(conversation_reply.email) failed: %s", err)
 	}
 
-	info := &model.InfoData{
-		CrossID: 0,
-		Type:    model.TypeCrossInvitation,
-	}
 	to := model.Recipient{
 		Provider:         "email",
 		Name:             from.Name,
 		ExternalID:       from.Address,
 		ExternalUsername: from.Address,
 	}
-	_, err = w.platform.Send(to, buf.String(), "", info)
+	_, err = w.platform.Send(to, buf.String())
 	return err
 }
 

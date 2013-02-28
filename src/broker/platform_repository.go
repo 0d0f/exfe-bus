@@ -63,13 +63,11 @@ func NewPlatform(config *model.Config) (*Platform, error) {
 	}, nil
 }
 
-func (p *Platform) Send(to model.Recipient, private, public string, info *model.InfoData) (string, error) {
+func (p *Platform) Send(to model.Recipient, text string) (string, error) {
 	arg := model.ThirdpartSend{
-		PrivateMessage: private,
-		PublicMessage:  public,
-		Info:           info,
+		To:   to,
+		Text: text,
 	}
-	arg.To = to
 
 	var ids string
 	err := p.dispatcher.DoWithTicket(to.Provider, "bus://exfe_service/thirdpart/message", "POST", &arg, &ids)

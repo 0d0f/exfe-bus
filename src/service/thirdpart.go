@@ -136,7 +136,7 @@ func (t *Thirdpart) Send(params map[string]string, arg model.ThirdpartSend) (str
 			}
 		}()
 	}
-	id, err := t.thirdpart.Send(&arg.To, arg.PrivateMessage)
+	id, err := t.thirdpart.Send(&arg.To, arg.Text)
 
 	key := fmt.Sprintf("%s(%s)@%s", arg.To.ExternalID, arg.To.ExternalUsername, arg.To.Provider)
 	lastErr := t.sendCache.Get(key)

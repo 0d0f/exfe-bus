@@ -10,14 +10,14 @@ import (
 type User struct {
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
-	sender        *broker.Sender
+	platform      *broker.Platform
 }
 
-func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config, sender *broker.Sender) *User {
+func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *User {
 	return &User{
 		localTemplate: localTemplate,
 		config:        config,
-		sender:        sender,
+		platform:      platform,
 	}
 }
 
@@ -61,7 +61,7 @@ func (u User) ResetPassword(arg model.UserVerify) error {
 }
 
 func (u User) send(content string, to model.Recipient) error {
-	_, err := u.sender.Send(to, content, "", nil)
+	_, err := u.platform.Send(to, content)
 
 	if err != nil {
 		return fmt.Errorf("send error: %s", err)

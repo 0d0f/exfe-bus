@@ -10,14 +10,14 @@ import (
 type Conversation struct {
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
-	sender        *broker.Sender
+	platform      *broker.Platform
 }
 
-func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Config, sender *broker.Sender) *Conversation {
+func NewConversation(localTemplate *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *Conversation {
 	return &Conversation{
 		localTemplate: localTemplate,
 		config:        config,
-		sender:        sender,
+		platform:      platform,
 	}
 }
 
@@ -42,15 +42,12 @@ func (c *Conversation) Update(updates model.ConversationUpdates) error {
 		return nil
 	}
 
-	private, err := c.getConversationContent(updates)
+	text, err := c.getConversationContent(updates)
 	if err != nil {
 		return err
 	}
 
-	_, err = c.sender.Send(to, private, "", &model.InfoData{
-		CrossID: updates[0].Cross.ID,
-		Type:    model.TypeConversation,
-	})
+	_, err = c.platform.Send(to, text)
 
 	if err != nil {
 		return fmt.Errorf("send error: %s", err)

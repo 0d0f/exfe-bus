@@ -14,11 +14,11 @@ type Notifier struct {
 	user         *notifier.User
 }
 
-func NewNotifier(local *formatter.LocalTemplate, config *model.Config, sender *broker.Sender) *Notifier {
+func NewNotifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *Notifier {
 	return &Notifier{
-		conversation: notifier.NewConversation(local, config, sender),
-		cross:        notifier.NewCross(local, config, sender),
-		user:         notifier.NewUser(local, config, sender),
+		conversation: notifier.NewConversation(local, config, platform),
+		cross:        notifier.NewCross(local, config, platform),
+		user:         notifier.NewUser(local, config, platform),
 	}
 }
 

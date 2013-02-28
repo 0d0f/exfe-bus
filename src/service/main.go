@@ -25,18 +25,7 @@ func main() {
 
 	db := broker.NewDBMultiplexer(&config)
 	redis := broker.NewRedisMultiplexer(&config)
-	table, err := gobus.NewTable(config.Dispatcher)
-	if err != nil {
-		panic(err)
-		return
-	}
-	dispatcher := gobus.NewDispatcher(table)
-	sender, err := broker.NewSender(&config, dispatcher)
-	if err != nil {
-		log.Crit("can't create sender: %s", err)
-		os.Exit(-1)
-		return
-	}
+
 	localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
 	if err != nil {
 		log.Crit("load local template failed: %s", err)
@@ -159,7 +148,7 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Notifier {
-		notifier := NewNotifier(localTemplate, &config, sender)
+		notifier := NewNotifier(localTemplate, &config, platform)
 		err = bus.Register(notifier)
 		if err != nil {
 			log.Crit("gobus launch failed: %s", err)

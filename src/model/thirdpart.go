@@ -55,14 +55,16 @@ func (i InfoData) String() string {
 }
 
 type ThirdpartSend struct {
-	To             Recipient `json:"to"`
-	PrivateMessage string    `json:"private"`
-	PublicMessage  string    `json:"public"`
-	Info           *InfoData `json:"info"`
+	To   Recipient `json:"to"`
+	Text string    `json:"text"`
 
 	Config *Config `json:"-"`
 }
 
 func (a ThirdpartSend) String() string {
-	return fmt.Sprintf("{to:%s info:%s}", a.To, a.Info)
+	text := a.Text
+	if len(text) > 10 {
+		text = text[:10]
+	}
+	return fmt.Sprintf("{to:%s text:%s}", a.To, text)
 }
