@@ -109,6 +109,7 @@ func (w *Worker) process() {
 		return
 	}
 	defer imapConn.Logout(broker.NetworkTimeout)
+	conn.SetDeadline(time.Now().Add(broker.ProcessTimeout))
 
 	_, err = imapConn.Select("INBOX", false)
 	if err != nil {
