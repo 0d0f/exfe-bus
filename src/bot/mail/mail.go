@@ -258,7 +258,7 @@ func (w *Worker) parseMail(msg *mail.Message) error {
 
 	code := 500
 	if ok, args := findAddress(fmt.Sprintf("x\\+([0-9a-zA-Z]+)@%s", w.config.Email.Domain), addrList); ok {
-		code, err = w.sendPost(args[0], from, content)
+		code, err = w.sendPost(args[0], from, addrList, content)
 	} else if ok, _ := findAddress(fmt.Sprintf("x@%s", w.config.Email.Domain), addrList); ok {
 		code, err = w.createCross(from, addrList, subject, content)
 	} else {
@@ -272,7 +272,7 @@ func (w *Worker) parseMail(msg *mail.Message) error {
 	return nil
 }
 
-func (w *Worker) sendPost(arg string, from *mail.Address, post string) (int, error) {
+func (w *Worker) sendPost(arg string, from *mail.Address, addrs []*mail.Address, post string) (int, error) {
 	w.log.Debug("send post(%s) from(%s) to x+%s", post, from.Address, arg)
 	to := "cross"
 	toId := arg
@@ -283,6 +283,27 @@ func (w *Worker) sendPost(arg string, from *mail.Address, post string) (int, err
 	}
 
 	code, err := w.platform.BotPostConversation(from.Address, post, to, toId)
+	if err != nil {
+		return code, err
+	}
+
+	var identities []model.Identity
+	self := fmt.Sprintf("x+%s@%s", arg, w.config.Email.Domain)
+	for _, addr := range addrs {
+		if addr.Address == self {
+			continue
+		}
+		identities = append(identities, model.Identity{
+			Provider:         "email",
+			Name:             addr.Name,
+			ExternalID:       addr.Address,
+			ExternalUsername: addr.Address,
+		})
+	}
+	if len(identities) == 0 {
+		return code, err
+	}
+	code, err = w.platform.BotCrossInvite(to, toId, identities)
 	return code, err
 }
 
@@ -312,7 +333,7 @@ func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, de
 		}
 	}
 	cross.Exfee.Invitations = invite
-	return w.platform.BotCreateCross(cross)
+	return w.platform.BotCrossGather(cross)
 }
 
 func (w *Worker) sendHelp(code int, err error, msgID string, from *mail.Address, subject, content string) error {

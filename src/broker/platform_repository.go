@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gobus"
+	"io"
 	"io/ioutil"
 	"model"
 	"net"
@@ -162,14 +163,44 @@ func (p *Platform) UploadPhoto(photoxID string, photos []model.Photo) error {
 	return nil
 }
 
-func (p *Platform) BotCreateCross(cross model.Cross) (int, error) {
+func (p *Platform) BotCrossGather(cross model.Cross) (int, error) {
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
 	err := encoder.Encode(cross)
 	if err != nil {
 		return 500, err
 	}
-	p.config.Log.Debug("create cross: %s", buf.String())
+	u := fmt.Sprintf("%s/v2/gobus/gather", p.config.SiteApi)
+	p.config.Log.Debug("bot gather to: %s, cross: %s", u, buf.String())
+	body, code, err := parseResp(client.Post(u, "application/json", buf))
+	if err != nil {
+		return code, fmt.Errorf("error(%s) when send message(%s)", err, buf.String())
+	}
+	defer body.Close()
+
+	return 200, nil
+}
+
+func (p *Platform) BotCrossInvite(to, id string, identities []model.Identity) (int, error) {
+	arg := make(map[string]interface{})
+	arg[to] = id
+	arg["identities"] = identities
+
+	buf := bytes.NewBuffer(nil)
+	encoder := json.NewEncoder(buf)
+	err := encoder.Encode(arg)
+	if err != nil {
+		return 500, err
+	}
+
+	u := fmt.Sprintf("%s/v2/gobus/invite", p.config.SiteApi)
+	p.config.Log.Debug("bot invite to: %s, arg: %s", u, buf.String())
+	body, code, err := parseResp(client.Post(u, "application/json", buf))
+	if err != nil {
+		return code, fmt.Errorf("error(%s) when send message(%s)", err, buf.String())
+	}
+	defer body.Close()
+
 	return 200, nil
 }
 
@@ -182,18 +213,26 @@ func (p *Platform) BotPostConversation(from, post, to, id string) (int, error) {
 	params.Add("provider", "email")
 	p.config.Log.Debug("bot post to: %s, post content: %s\n", u, params.Encode())
 
-	resp, err := client.PostForm(u, params)
+	body, code, err := parseResp(client.PostForm(u, params))
 	if err != nil {
-		return 500, fmt.Errorf("message(%s) send to server error: %s", params.Encode(), err)
+		return code, fmt.Errorf("error(%s) when send message(%s)", err, params.Encode())
 	}
-	defer resp.Body.Close()
+	defer body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	return 200, nil
+}
+
+func parseResp(resp *http.Response, err error) (io.ReadCloser, int, error) {
 	if err != nil {
-		return 500, fmt.Errorf("message(%s) get response body error: %s", params.Encode(), err)
+		return nil, 500, err
 	}
 	if resp.StatusCode != 200 {
-		return resp.StatusCode, fmt.Errorf("message(%s) send error(%s): %s", params.Encode(), resp.Status, string(body))
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, 500, err
+		}
+		return nil, resp.StatusCode, fmt.Errorf("%s: %s", resp.Status, body)
 	}
-	return 200, nil
+	return resp.Body, 200, nil
 }
