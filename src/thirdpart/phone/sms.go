@@ -5,18 +5,21 @@ import (
 	"formatter"
 	"model"
 	"strings"
+	"thirdpart/imsg"
 	"unicode/utf8"
 )
 
 type Sms struct {
 	senders map[string]Sender
 	config  *model.Config
+	imsg    *imsg.IMsg
 }
 
-func New(config *model.Config) *Sms {
+func New(config *model.Config, imsg *imsg.IMsg) *Sms {
 	ret := &Sms{
 		senders: make(map[string]Sender),
 		config:  config,
+		imsg:    imsg,
 	}
 
 	senders := [...]Sender{NewTwilio(config), NewDuanCaiWang(config)}
@@ -44,8 +47,8 @@ func (s *Sms) Send(to *model.Recipient, privateMessage string, publicMessage str
 			break
 		}
 	}
-	if sender == nil {
-		return "", fmt.Errorf("can't send to %s, no support code", to)
+	if sender == nil || s.config.Thirdpart.Sms.AllToiMsg {
+		return s.imsg.Send(to, privateMessage, publicMessage, data)
 	}
 	lines := strings.Split(privateMessage, "\n")
 	contents := make([]string, 0)

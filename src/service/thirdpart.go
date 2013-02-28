@@ -66,7 +66,13 @@ func NewThirdpart(config *model.Config, streaming *Streaming, platform *broker.P
 	gcm_ := gcm.New(gcms_)
 	t.AddSender(gcm_)
 
-	sms_ := sms.New(config)
+	imsg_, err := imsg.New(config)
+	if err != nil {
+		return nil, fmt.Errorf("can't connect imessage: %s", err)
+	}
+	t.AddSender(imsg_)
+
+	sms_ := sms.New(config, imsg_)
 	t.AddSender(sms_)
 
 	if config.Test {
@@ -74,12 +80,6 @@ func NewThirdpart(config *model.Config, streaming *Streaming, platform *broker.P
 		t.AddSender(performance)
 		t.AddUpdater(performance)
 	}
-
-	imsg_, err := imsg.New(config)
-	if err != nil {
-		return nil, fmt.Errorf("can't connect imessage: %s", err)
-	}
-	t.AddSender(imsg_)
 
 	if streaming != nil {
 		t.AddSender(streaming)
@@ -128,9 +128,6 @@ func (t *Thirdpart) SetRoute(route gobus.RouteCreater) error {
 //   > curl http://127.0.0.1:23333/thirdpart/message -d '{"to":{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1},"private":"private","public":"public","info":null}'
 //
 func (t *Thirdpart) Send(params map[string]string, arg model.ThirdpartSend) (string, error) {
-	if t.config.Thirdpart.Sms.AllToiMsg && arg.To.Provider == "phone" {
-		arg.To.Provider = "imessage"
-	}
 	if arg.To.ExternalID == "" {
 		go func() {
 			err := t.thirdpart.UpdateIdentity(&arg.To)
