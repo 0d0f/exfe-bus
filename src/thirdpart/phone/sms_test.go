@@ -37,7 +37,9 @@ var data = &model.InfoData{
 
 func TestSend(t *testing.T) {
 	testSender := new(testSender)
+	config := new(model.Config)
 	sms := new(Sms)
+	sms.config = config
 	sms.senders = make(map[string]Sender)
 	sms.senders["+1"] = testSender
 	sms.senders["+86"] = testSender
