@@ -59,8 +59,8 @@ func (s *Streaming) Provider() string {
 	return "streaming"
 }
 
-func (s *Streaming) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
-	err := s.streaming.Send(fmt.Sprintf("%d", to.UserID), to.ExternalID, privateMessage)
+func (s *Streaming) Send(to *model.Recipient, text string) (string, error) {
+	err := s.streaming.Send(fmt.Sprintf("%d", to.UserID), to.ExternalID, text)
 	if err != nil {
 		s.log.Err("send error: %s", err)
 	}
@@ -94,6 +94,6 @@ func (s *Streaming) Receive(params map[string]string, data map[string]interface{
 	if err != nil || to.To == nil {
 		return -1, fmt.Errorf("field 'to' invalid")
 	}
-	_, err = s.Send(to.To, string(content), "", nil)
+	_, err = s.Send(to.To, string(content))
 	return 1, err
 }

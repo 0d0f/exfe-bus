@@ -46,8 +46,8 @@ func (i *IMsg) Provider() string {
 	return "imessage"
 }
 
-func (i *IMsg) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
-	for _, line := range strings.Split(privateMessage, "\n") {
+func (i *IMsg) Send(to *model.Recipient, text string) (string, error) {
+	for _, line := range strings.Split(text, "\n") {
 		line = strings.Trim(line, " \r\n\t")
 		line = tailUrlRegex.ReplaceAllString(line, "")
 		line = tailQuoteUrlRegex.ReplaceAllString(line, `)\)`)

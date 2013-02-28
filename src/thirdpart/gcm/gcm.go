@@ -1,6 +1,7 @@
 package gcm
 
 import (
+	"encoding/json"
 	"fmt"
 	"formatter"
 	"github.com/googollee/go-gcm"
@@ -28,15 +29,18 @@ func (g *GCM) Provider() string {
 	return "Android"
 }
 
-func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (id string, err error) {
+func (g *GCM) Send(to *model.Recipient, text string) (id string, err error) {
 	ids := ""
-	if data == nil {
-		data = &model.InfoData{
-			CrossID: 0,
-			Type:    model.TypeCrossUpdate,
-		}
+	lines := strings.Split(text, "\n")
+	dataStr := lines[len(lines)-1]
+	lines = lines[:len(lines)-1]
+	var data map[string]interface{}
+	err = json.Unmarshal([]byte(dataStr), &data)
+	if err != nil {
+		return "", err
 	}
-	for _, line := range strings.Split(privateMessage, "\n") {
+
+	for _, line := range lines {
 		line = strings.Trim(line, " \r\n\t")
 		line = tailUrlRegex.ReplaceAllString(line, "")
 		line = tailQuoteUrlRegex.ReplaceAllString(line, `)\)`)
@@ -51,9 +55,10 @@ func (g *GCM) Send(to *model.Recipient, privateMessage string, publicMessage str
 		message := gcm.NewMessage(to.ExternalID)
 		message.SetPayload("badge", "1")
 		message.SetPayload("sound", "")
-		if data != nil {
-			message.SetPayload("cid", fmt.Sprintf("%d", data.CrossID))
-			message.SetPayload("t", data.Type.String())
+		if len(data) > 0 {
+			for k, v := range data {
+				message.SetPayload(k, fmt.Sprintf("%v", v))
+			}
 		}
 		message.DelayWhileIdle = true
 		message.CollapseKey = "exfe"

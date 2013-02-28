@@ -6,29 +6,23 @@ import (
 )
 
 type Faker struct {
-	provider        string
-	tos             []*model.Recipient
-	privateMessages []string
-	publicMessages  []string
-	datas           []*model.InfoData
+	provider string
+	tos      []*model.Recipient
+	texts    []string
 }
 
 func (f *Faker) Reset() {
 	f.tos = make([]*model.Recipient, 0)
-	f.privateMessages = make([]string, 0)
-	f.publicMessages = make([]string, 0)
-	f.datas = make([]*model.InfoData, 0)
+	f.texts = make([]string, 0)
 }
 
 func (f *Faker) Provider() string {
 	return f.provider
 }
 
-func (f *Faker) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (id string, err error) {
+func (f *Faker) Send(to *model.Recipient, text string) (id string, err error) {
 	f.tos = append(f.tos, to)
-	f.privateMessages = append(f.privateMessages, privateMessage)
-	f.publicMessages = append(f.publicMessages, publicMessage)
-	f.datas = append(f.datas, data)
+	f.texts = append(f.texts, text)
 
 	return "1", nil
 }
@@ -77,31 +71,25 @@ func TestThirdpartSender(t *testing.T) {
 		faker1.Reset()
 		faker2.Reset()
 
-		third.Send(to1, "private to 1", "public to 1", nil)
+		third.Send(to1, "text to 1")
 		if len(faker1.tos) != 1 {
 			t.Fatalf("faker1 should received 1 message")
 		}
 		if got, expect := faker1.tos[0].ExternalUsername, "to1"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
-		if got, expect := faker1.privateMessages[0], "private to 1"; got != expect {
-			t.Errorf("got: %s, expect: %s", got, expect)
-		}
-		if got, expect := faker1.publicMessages[0], "public to 1"; got != expect {
+		if got, expect := faker1.texts[0], "text to 1"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 
-		third.Send(to2, "private to 2", "public to 2", nil)
+		third.Send(to2, "text to 2")
 		if len(faker2.tos) != 1 {
 			t.Fatalf("faker2 should received 1 message")
 		}
 		if got, expect := faker2.tos[0].ExternalUsername, "to2"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
-		if got, expect := faker2.privateMessages[0], "private to 2"; got != expect {
-			t.Errorf("got: %s, expect: %s", got, expect)
-		}
-		if got, expect := faker2.publicMessages[0], "public to 2"; got != expect {
+		if got, expect := faker2.texts[0], "text to 2"; got != expect {
 			t.Errorf("got: %s, expect: %s", got, expect)
 		}
 	}

@@ -1,6 +1,7 @@
 package apn
 
 import (
+	"encoding/json"
 	"fmt"
 	"formatter"
 	"github.com/virushuo/Go-Apns"
@@ -38,9 +39,17 @@ func (a *Apn) Provider() string {
 	return "iOS"
 }
 
-func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
+func (a *Apn) Send(to *model.Recipient, text string) (string, error) {
 	ids := ""
-	for _, line := range strings.Split(privateMessage, "\n") {
+	lines := strings.Split(text, "\n")
+	dataStr := lines[len(lines)-1]
+	var data interface{}
+	err := json.Unmarshal([]byte(dataStr), &data)
+	if err != nil {
+		return "", fmt.Errorf("last line of text(%s) can't unmarshal: %s", dataStr, err)
+	}
+	lines = lines[:len(lines)-1]
+	for _, line := range lines {
 		line = strings.Trim(line, " \n\r\t")
 		line = tailUrlRegex.ReplaceAllString(line, "")
 		line = tailQuoteUrlRegex.ReplaceAllString(line, `)\)`)
@@ -63,10 +72,7 @@ func (a *Apn) Send(to *model.Recipient, privateMessage string, publicMessage str
 			payload.Aps.Badge = 1
 			payload.Aps.Sound = ""
 			if data != nil {
-				payload.SetCustom("args", ExfePush{
-					Cid: data.CrossID,
-					T:   data.Type.String(),
-				})
+				payload.SetCustom("args", data)
 			}
 			notification := apns.Notification{
 				DeviceToken: to.ExternalID,

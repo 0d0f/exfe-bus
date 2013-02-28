@@ -5,17 +5,17 @@ import (
 	"formatter"
 	"model"
 	"strings"
-	"thirdpart/imsg"
+	"thirdpart"
 	"unicode/utf8"
 )
 
 type Sms struct {
 	senders map[string]Sender
 	config  *model.Config
-	imsg    *imsg.IMsg
+	imsg    thirdpart.Sender
 }
 
-func New(config *model.Config, imsg *imsg.IMsg) *Sms {
+func New(config *model.Config, imsg thirdpart.Sender) *Sms {
 	ret := &Sms{
 		senders: make(map[string]Sender),
 		config:  config,
@@ -36,7 +36,7 @@ func (s *Sms) Provider() string {
 	return "phone"
 }
 
-func (s *Sms) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (id string, err error) {
+func (s *Sms) Send(to *model.Recipient, text string) (id string, err error) {
 	phone := to.ExternalID
 	var sender Sender
 	for i := 3; i > 0; i-- {
@@ -48,9 +48,9 @@ func (s *Sms) Send(to *model.Recipient, privateMessage string, publicMessage str
 		}
 	}
 	if sender == nil || s.config.Thirdpart.Sms.AllToiMsg {
-		return s.imsg.Send(to, privateMessage, publicMessage, data)
+		return s.imsg.Send(to, text)
 	}
-	lines := strings.Split(privateMessage, "\n")
+	lines := strings.Split(text, "\n")
 	contents := make([]string, 0)
 	for _, line := range lines {
 		line = strings.Trim(line, " \n\r\t")

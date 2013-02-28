@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"model"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -22,10 +23,12 @@ func (p Performance) Provider() string {
 	return "_performance"
 }
 
-func (p *Performance) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
-	switch privateMessage {
+func (p *Performance) Send(to *model.Recipient, text string) (string, error) {
+	lines := strings.Split(text, "\n")
+	key, value := lines[0], lines[1]
+	switch key {
 	case "set delay":
-		i, err := strconv.Atoi(publicMessage)
+		i, err := strconv.Atoi(value)
 		if err != nil {
 			return "", err
 		}

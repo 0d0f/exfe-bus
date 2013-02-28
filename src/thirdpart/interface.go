@@ -25,7 +25,7 @@ type ExternalUser interface {
 
 type Sender interface {
 	Provider() string
-	Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (id string, err error)
+	Send(to *model.Recipient, text string) (id string, err error)
 }
 
 type Updater interface {

@@ -46,10 +46,15 @@ func TestSend(t *testing.T) {
 	gcm := New(broker)
 	var tester thirdpart.Sender
 	tester = gcm
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dataStr := string(b)
 
 	{
 		broker.Reset()
-		_, err := tester.Send(to, `\(AAAAAAAA name1\), \(AAAAAAAA name2\) and \(AAAAAAAA name3\) are accepted on \(“some cross”\), \(IIIII name1\), \(IIIII name2\) and \(IIIII name3\) interested, \(UUUU name1\), \(UUUU name2\) and \(UUUU name3\) are unavailable, \(PPPPPPP name1\), \(PPPPPPP name2\) and \(PPPPPPP name3\) are pending. \(3 of 10 accepted\). https://exfe.com/#!token=932ce5324321433253`, "", data)
+		_, err := tester.Send(to, `\(AAAAAAAA name1\), \(AAAAAAAA name2\) and \(AAAAAAAA name3\) are accepted on \(“some cross”\), \(IIIII name1\), \(IIIII name2\) and \(IIIII name3\) interested, \(UUUU name1\), \(UUUU name2\) and \(UUUU name3\) are unavailable, \(PPPPPPP name1\), \(PPPPPPP name2\) and \(PPPPPPP name3\) are pending. \(3 of 10 accepted\). https://exfe.com/#!token=932ce5324321433253`+"\n"+dataStr)
 		if err != nil {
 			t.Fatalf("send error: %s", err)
 		}
@@ -69,7 +74,7 @@ func TestSend(t *testing.T) {
 
 	{
 		broker.Reset()
-		_, err := tester.Send(to, `Post: abc \(("Title" https://exfe.com/#!token=932ce5324321433253)\)`, "", data)
+		_, err := tester.Send(to, `Post: abc \(("Title" https://exfe.com/#!token=932ce5324321433253)\)`+"\n"+dataStr)
 		if err != nil {
 			t.Fatalf("send error: %s", err)
 		}
@@ -88,7 +93,7 @@ func TestSend(t *testing.T) {
 
 	{
 		broker.Reset()
-		_, err := tester.Send(to, "post line1\npost line2\n\n", "", data)
+		_, err := tester.Send(to, "post line1\npost line2\n\n"+"\n"+dataStr)
 		if err != nil {
 			t.Fatalf("send error: %s", err)
 		}
@@ -109,7 +114,7 @@ func TestSend(t *testing.T) {
 	{
 		broker.Reset()
 		_, err := tester.Send(to, `Googol Lee: 测试时间 \((“看电影 007” https://exfe.com/#!token=cd48a91ee3c2afb545d32f301b342510)\)
-aadfdafdas https://exfe.com/fdafa`, "", data)
+aadfdafdas https://exfe.com/fdafa`+"\n"+dataStr)
 		if err != nil {
 			t.Fatalf("send error: %s", err)
 		}

@@ -27,12 +27,12 @@ func (t *Thirdpart) AddSender(sender Sender) {
 	t.senders[sender.Provider()] = sender
 }
 
-func (t *Thirdpart) Send(to *model.Recipient, privateMessage, publicMessage string, data *model.InfoData) (string, error) {
+func (t *Thirdpart) Send(to *model.Recipient, text string) (string, error) {
 	sender, ok := t.senders[to.Provider]
 	if !ok {
 		return "", fmt.Errorf("can't find %s sender", to.Provider)
 	}
-	return sender.Send(to, privateMessage, publicMessage, data)
+	return sender.Send(to, text)
 }
 
 func (t *Thirdpart) AddUpdater(updater Updater) {

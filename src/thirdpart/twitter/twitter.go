@@ -44,7 +44,11 @@ type twitterReply struct {
 	Recipient twitterInfo `json:"recipient"`
 }
 
-func (t *Twitter) Send(to *model.Recipient, privateMessage string, publicMessage string, data *model.InfoData) (string, error) {
+func (t *Twitter) Send(to *model.Recipient, text string) (string, error) {
+	text = strings.Trim(text, " \n\r")
+	lastEnter := strings.LastIndex(text, "\n")
+	privateMessage := text[:lastEnter]
+	publicMessage := text[lastEnter+1:]
 	ids, err := t.sendPrivate(to, privateMessage)
 	if err != nil {
 		ids, err = t.sendPublic(to, publicMessage)

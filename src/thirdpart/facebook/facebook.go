@@ -26,14 +26,14 @@ func (f *Facebook) Provider() string {
 	return provider
 }
 
-func (f *Facebook) Send(to *model.Recipient, privateMessage string, publicMessage string, info *model.InfoData) (string, error) {
+func (f *Facebook) Send(to *model.Recipient, text string) (string, error) {
 	name := to.ExternalUsername
 	if name == "" {
 		name = to.ExternalID
 	}
 	email := fmt.Sprintf("%s@facebook.com", name)
-	privateMessage = strings.Replace(privateMessage, "to_email_address", email, -1)
-	return f.helper.SendEmail(email, privateMessage)
+	text = strings.Replace(text, "to_email_address", email, -1)
+	return f.helper.SendEmail(email, text)
 }
 
 func (f *Facebook) UpdateFriends(to *model.Recipient) error {
