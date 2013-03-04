@@ -19,7 +19,7 @@ type Manager struct {
 	generators map[string]func(*Token)
 }
 
-func New(repo Repo, length int) *Manager {
+func New(repo Repo) *Manager {
 	generators := map[string]func(*Token){
 		"short": GenerateShortToken,
 		"long":  GenerateLongToken,
@@ -37,7 +37,10 @@ func (t *Manager) Create(gentype, resource, data string, after time.Duration) (m
 		ExpireAt:  time.Now().Add(after),
 		CreatedAt: time.Now(),
 	}
-	generator := t.generators[gentype]
+	generator, ok := t.generators[gentype]
+	if !ok {
+		return model.Token{}, fmt.Errorf("invalid type %s", gentype)
+	}
 	for i := 0; i < 3; i++ {
 		generator(&token)
 		tokens, err := t.repo.Find(token)

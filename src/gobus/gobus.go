@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-logger"
+	"github.com/googollee/go-rest"
 	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
@@ -30,6 +31,7 @@ type Server struct {
 	router *mux.Router
 	addr   string
 	log    *logger.Logger
+	mux    *http.ServeMux
 }
 
 func NewServer(addr string, log *logger.Logger) (*Server, error) {
@@ -39,6 +41,7 @@ func NewServer(addr string, log *logger.Logger) (*Server, error) {
 		router: router,
 		addr:   addr,
 		log:    log,
+		mux:    http.NewServeMux(),
 	}, nil
 }
 
@@ -46,6 +49,21 @@ func (s *Server) Register(service Service) error {
 	return service.SetRoute(func() *Route {
 		return &Route{s.router.NewRoute(), s}
 	})
+}
+
+func (s *Server) RegisterRestful(service interface{}) error {
+	v := reflect.ValueOf(service).FieldByName("Service")
+	if !v.IsValid() {
+		return fmt.Errorf("can't find rest.Service field")
+	}
+	serv := v.Interface().(rest.Service)
+	root := serv.Root
+	handler, err := rest.New(service)
+	if err != nil {
+		return err
+	}
+	s.mux.Handle(root, handler)
+	return nil
 }
 
 func (s *Server) ListenAndServe() error {

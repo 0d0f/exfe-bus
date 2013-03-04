@@ -35,12 +35,6 @@ func (s *ShortToken) SetRoute(route gobus.RouteCreater) error {
 	return nil
 }
 
-type CreateArg struct {
-	Data               string `json:"data"`
-	Resource           string `json:"resource"`
-	ExpireAfterSeconds int    `json:"expire_after_seconds"`
-}
-
 // 根据resource，data和expire after seconds创建一个token
 //
 // 例子：
@@ -70,11 +64,6 @@ func (s *ShortToken) Get(params map[string]string) ([]model.Token, error) {
 	resource := params["resource"]
 	ret, err := s.short.Get(key, resource)
 	return ret, err
-}
-
-type UpdateArg struct {
-	Data               *string `json:"data"`
-	ExpireAfterSeconds *int    `json:"expire_after_seconds"`
 }
 
 // 更新key对应的token的data信息或者expire after seconds

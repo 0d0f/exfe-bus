@@ -76,7 +76,7 @@ func TestShortToken(t *testing.T) {
 	repo := &TestTokenRepo{
 		store: make(map[string]Token),
 	}
-	mgr := New(repo, 4)
+	mgr := New(repo)
 	resource := "resource"
 	tk := ""
 

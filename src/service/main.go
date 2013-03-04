@@ -85,6 +85,22 @@ func main() {
 	}
 	log.Info("register streaming")
 
+	if config.ExfeService.Services.Token {
+		token, err := NewToken(&config, db)
+		if err != nil {
+			log.Crit("create token failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		err = bus.RegisterRestful(token)
+		if err != nil {
+			log.Crit("regiest token failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register Token")
+	}
+
 	if config.ExfeService.Services.TokenManager {
 		tkMng, err := NewTokenManager(&config, db)
 		if err != nil {
