@@ -12,7 +12,7 @@ import (
 )
 
 type Token struct {
-	rest.Service `root:"/v3/tokens"`
+	rest.Service `prefix:"/v3/tokens"`
 
 	Create         rest.Processor `method:"POST" path:"/(short|long)"`
 	KeyGet         rest.Processor `method:"GET" path:"/key/([a-zA-Z0-9]+)"`
