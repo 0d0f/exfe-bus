@@ -55,18 +55,7 @@ func (s *Server) RegisterRestful(service interface{}) error {
 	if err != nil {
 		return err
 	}
-	v := reflect.ValueOf(service)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	v = v.FieldByName("Service")
-	if !v.IsValid() {
-		return fmt.Errorf("can't find rest.Service field")
-	}
-	serv := v.Interface().(rest.Service)
-	root := serv.Root
-
-	s.router.PathPrefix(root).Handler(handler)
+	s.router.PathPrefix(handler.Prefix()).Handler(handler)
 	return nil
 }
 
