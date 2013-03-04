@@ -47,7 +47,7 @@ type CreateArg struct {
 // 返回：
 //
 //     {"key":"0303","data":"abc"}
-func (s *Token) Create_(genType string, arg CreateArg) (ret model.Token) {
+func (s Token) Create_(genType string, arg CreateArg) (ret model.Token) {
 	after := time.Duration(arg.ExpireAfterSeconds) * time.Second
 	ret, err := s.manager.Create(genType, arg.Resource, arg.Data, after)
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *Token) Create_(genType string, arg CreateArg) (ret model.Token) {
 // 返回：
 //
 //     [{"key":"0303","data":"abc"}]
-func (s *Token) KeyGet_(key string) []model.Token {
+func (s Token) KeyGet_(key string) []model.Token {
 	ret, err := s.manager.Get(key, "")
 	if err != nil {
 		s.Error(http.StatusNotFound, err)
@@ -84,7 +84,7 @@ func (s *Token) KeyGet_(key string) []model.Token {
 // 返回：
 //
 //     [{"key":"0303","data":"abc"}]
-func (s *Token) ResourceGet_(resource string) []model.Token {
+func (s Token) ResourceGet_(resource string) []model.Token {
 	ret, err := s.manager.Get("", resource)
 	if err != nil {
 		s.Error(http.StatusNotFound, err)
@@ -104,7 +104,7 @@ type UpdateArg struct {
 // 例子：
 //
 //     > curl "http://127.0.0.1:23333/token/key/0303" -d '{"data":"xyz","expire_after_seconds":13}'
-func (s *Token) KeyUpdate_(key string, arg UpdateArg) {
+func (s Token) KeyUpdate_(key string, arg UpdateArg) {
 	if arg.Data != nil {
 		err := s.manager.UpdateData(key, *arg.Data)
 		if err != nil {
@@ -127,7 +127,7 @@ func (s *Token) KeyUpdate_(key string, arg UpdateArg) {
 // 例子：
 //
 //     > curl "http://127.0.0.1:23333/token/resource" -d '{"resource":"abc", "data":"xyz","expire_after_seconds":13}'
-func (s *Token) ResourceUpdate_(arg UpdateArg) {
+func (s Token) ResourceUpdate_(arg UpdateArg) {
 	if arg.ExpireAfterSeconds != nil {
 		after := time.Duration(*arg.ExpireAfterSeconds) * time.Second
 		err := s.manager.Refresh("", arg.Resource, after)
