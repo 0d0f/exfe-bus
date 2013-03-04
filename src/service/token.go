@@ -15,7 +15,7 @@ type Token struct {
 	Create         rest.Processor `method:"POST" path:"/tokens/(short|long)"`
 	KeyGet         rest.Processor `method:"GET" path:"/tokens/key/([a-zA-Z0-9]+)"`
 	ResourceGet    rest.Processor `method:"GET" path:"/tokens/resource"`
-	KeyUpdate      rest.Processor `moethod:"POST" path:"/tokens/key/([a-zA-Z0-9]+)"`
+	KeyUpdate      rest.Processor `method:"POST" path:"/tokens/key/([a-zA-Z0-9]+)"`
 	ResourceUpdate rest.Processor `method:"POST" path:"/tokens/resource"`
 
 	manager *token.Manager
