@@ -102,12 +102,14 @@ func (w *Worker) Daemon() {
 
 func (w *Worker) process() {
 	w.log.Debug("process...")
+	w.log.Notice("process...")
 
 	conn, imapConn, err := w.login()
 	if err != nil {
 		w.log.Err("can't connect to %s: %s", w.config.Bot.Email.IMAPHost, err)
 		return
 	}
+	w.log.Notice("logined")
 	defer imapConn.Logout(broker.NetworkTimeout)
 	conn.SetDeadline(time.Now().Add(broker.ProcessTimeout))
 
@@ -116,12 +118,14 @@ func (w *Worker) process() {
 		w.log.Err("can't select INBOX: %s", err)
 		return
 	}
+	w.log.Notice("selected inbox")
 
 	cmd, err := imap.Wait(imapConn.Search("UNSEEN"))
 	if err != nil {
 		w.log.Err("can't seach UNSEEN: %s", err)
 		return
 	}
+	w.log.Notice("done search unseen")
 	var ids []uint32
 	for _, resp := range cmd.Data {
 		ids = append(ids, resp.SearchResults()...)
@@ -138,24 +142,30 @@ func (w *Worker) process() {
 			errorIds = append(errorIds, id)
 			continue
 		}
+		w.log.Notice("got %d", id)
 		err = w.parseMail(msg)
 		if err != nil {
 			w.log.Err("parse mail %d failed: %s", id, err)
 			errorIds = append(errorIds, id)
 			continue
 		}
+		w.log.Notice("parsed %d", id)
 		okIds = append(okIds, id)
+		w.log.Notice("handled %d", id)
 	}
 	w.log.Debug("id:%v, ok:%v, err:%v", ids, okIds, errorIds)
 	if err := w.copy(imapConn, okIds, "posted"); err != nil {
 		w.log.Err("can't copy %v to posted: %s", errorIds, err)
 	}
+	w.log.Notice("copied %v to posted", okIds)
 	if err := w.copy(imapConn, errorIds, "error"); err != nil {
 		w.log.Err("can't copy %v to error: %s", errorIds, err)
 	}
+	w.log.Notice("copied %v to error", errorIds)
 	if err := w.delete(imapConn, ids); err != nil {
 		w.log.Err("can't remove %v from inbox: %s", ids, err)
 	}
+	w.log.Notice("removed %v", ids)
 }
 
 func (w *Worker) copy(conn *imap.Client, ids []uint32, folder string) error {
