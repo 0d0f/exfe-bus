@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	TOKEN_STORE           = "INSERT INTO `tokens_` (`key`, `hash`, `data`, `expire_at`, `created_at`) VALUES (?, ?, ?, ?, ?)"
-	TOKEN_FIND            = "SELECT `key`, hash, data, touched_at, expire_at FROM `tokens_` WHERE expire_at>UTC_TIMESTAMP()"
-	TOKEN_UPDATE_DATA     = "UPDATE `tokens_` SET data=? WHERE expire_at>UTC_TIMESTAMP()"
-	TOKEN_UPDATE_EXPIREAT = "UPDATE `tokens_` SET expire_at=? WHERE expire_at>UTC_TIMESTAMP()"
-	TOKEN_TOUCH           = "UPDATE `tokens_` SET touched_at=NOW() WHERE expire_at>UTC_TIMESTAMP()"
+	TOKEN_STORE           = "INSERT INTO `tokens` (`key`, `hash`, `data`, `expire_at`, `created_at`, `touched_at`) VALUES (?, ?, ?, ?, ?, NOW())"
+	TOKEN_FIND            = "SELECT `key`, hash, data, touched_at, expire_at FROM `tokens` WHERE expire_at>UTC_TIMESTAMP()"
+	TOKEN_UPDATE_DATA     = "UPDATE `tokens` SET data=? WHERE expire_at>UTC_TIMESTAMP()"
+	TOKEN_UPDATE_EXPIREAT = "UPDATE `tokens` SET expire_at=? WHERE expire_at>UTC_TIMESTAMP()"
+	TOKEN_TOUCH           = "UPDATE `tokens` SET touched_at=NOW() WHERE expire_at>UTC_TIMESTAMP()"
 )
 
 func where(token token.Token) string {

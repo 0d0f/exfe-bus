@@ -10,15 +10,15 @@ import (
 )
 
 const (
-	CREATE                   = "INSERT INTO `tokens` VALUES (null, ?, ?, ?, ?, ?, ?)"
-	STORE                    = "UPDATE `tokens` SET expire_at=?, data=? WHERE tokens.key=? AND tokens.rand=?"
-	FIND_BY_KEY              = "SELECT rand, touched_at, created_at, expire_at, data FROM `tokens` WHERE tokens.key=?"
-	FIND_BY_TOKEN            = "SELECT touched_at, created_at, expire_at, data FROM `tokens` WHERE tokens.key=? AND tokens.rand=?"
-	UPDATE_DATA_BY_TOKEN     = "UPDATE `tokens` SET tokens.data=? WHERE tokens.key=? AND tokens.rand=?"
-	UPDATE_EXPIREAT_BY_TOKEN = "UPDATE `tokens` SET tokens.expire_at=? WHERE tokens.key=? AND tokens.rand=?"
-	UPDATE_EXPIREAT_BY_KEY   = "UPDATE `tokens` SET tokens.expire_at=? WHERE tokens.key=?"
-	DELETE_BY_TOKEN          = "DELETE FROM `tokens` WHERE tokens.key=? AND tokens.rand=?"
-	TOUCH                    = "UPDATE `tokens` SET touched_at=NOW() WHERE tokens.key=? AND tokens.rand=?"
+	CREATE                   = "INSERT INTO `tokens_` VALUES (null, ?, ?, ?, ?, ?, ?)"
+	STORE                    = "UPDATE `tokens_` SET expire_at=?, data=? WHERE tokens_.key=? AND tokens_.rand=?"
+	FIND_BY_KEY              = "SELECT rand, touched_at, created_at, expire_at, data FROM `tokens_` WHERE tokens_.key=?"
+	FIND_BY_TOKEN            = "SELECT touched_at, created_at, expire_at, data FROM `tokens_` WHERE tokens_.key=? AND tokens_.rand=?"
+	UPDATE_DATA_BY_TOKEN     = "UPDATE `tokens_` SET tokens_.data=? WHERE tokens_.key=? AND tokens_.rand=?"
+	UPDATE_EXPIREAT_BY_TOKEN = "UPDATE `tokens_` SET tokens_.expire_at=? WHERE tokens_.key=? AND tokens_.rand=?"
+	UPDATE_EXPIREAT_BY_KEY   = "UPDATE `tokens_` SET tokens_.expire_at=? WHERE tokens_.key=?"
+	DELETE_BY_TOKEN          = "DELETE FROM `tokens_` WHERE tokens_.key=? AND tokens_.rand=?"
+	TOUCH                    = "UPDATE `tokens_` SET touched_at=NOW() WHERE tokens_.key=? AND tokens_.rand=?"
 )
 
 type TokenRepository struct {
@@ -34,7 +34,7 @@ func NewTokenRepository(config *model.Config, db *broker.DBMultiplexer) (*TokenR
 	return ret, nil
 }
 
-// CREATE TABLE `tokens` (`id` SERIAL NOT NULL, `key` CHAR(32) NOT NULL, `rand` CHAR(32) NOT NULL, `created_at` DATETIME NOT NULL, `expire_at` DATETIME NOT NULL, `data` TEXT NOT NULL)
+// CREATE TABLE `tokens_` (`id` SERIAL NOT NULL, `key` CHAR(32) NOT NULL, `rand` CHAR(32) NOT NULL, `created_at` DATETIME NOT NULL, `expire_at` DATETIME NOT NULL, `data` TEXT NOT NULL)
 
 func (r *TokenRepository) Create(token *tokenmanager.Token) error {
 	var err error
