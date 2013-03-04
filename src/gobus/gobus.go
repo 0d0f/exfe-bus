@@ -41,7 +41,6 @@ func NewServer(addr string, log *logger.Logger) (*Server, error) {
 		router: router,
 		addr:   addr,
 		log:    log,
-		mux:    http.NewServeMux(),
 	}, nil
 }
 
@@ -67,7 +66,7 @@ func (s *Server) RegisterRestful(service interface{}) error {
 	serv := v.Interface().(rest.Service)
 	root := serv.Root
 
-	s.mux.Handle(root, handler)
+	s.router.PathPrefix(root).Handler(handler)
 	return nil
 }
 

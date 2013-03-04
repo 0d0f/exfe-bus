@@ -10,13 +10,13 @@ import (
 )
 
 type Token struct {
-	rest.Service `root:"/v3/token"`
+	rest.Service `root:"/v3/tokens"`
 
-	Create         rest.Processor `method:"POST" path:"/tokens/(short|long)"`
-	KeyGet         rest.Processor `method:"GET" path:"/tokens/key/([a-zA-Z0-9]+)"`
-	ResourceGet    rest.Processor `method:"GET" path:"/tokens/resource"`
-	KeyUpdate      rest.Processor `method:"POST" path:"/tokens/key/([a-zA-Z0-9]+)"`
-	ResourceUpdate rest.Processor `method:"POST" path:"/tokens/resource"`
+	Create         rest.Processor `method:"POST" path:"/(short|long)"`
+	KeyGet         rest.Processor `method:"GET" path:"/key/([a-zA-Z0-9]+)"`
+	ResourceGet    rest.Processor `method:"GET" path:"/resource"`
+	KeyUpdate      rest.Processor `method:"POST" path:"/key/([a-zA-Z0-9]+)"`
+	ResourceUpdate rest.Processor `method:"POST" path:"/resource"`
 
 	manager *token.Manager
 }
@@ -42,7 +42,7 @@ type CreateArg struct {
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/tokens/long" -d '{"data":"abc","resource":"123","expire_after_seconds":300}'
+//     > curl "http://127.0.0.1:23333/v3/tokens/long" -d '{"data":"abc","resource":"123","expire_after_seconds":300}'
 //
 // 返回：
 //
@@ -61,7 +61,7 @@ func (s Token) Create_(genType string, arg CreateArg) (ret model.Token) {
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/token/key/0303"
+//     > curl "http://127.0.0.1:23333/v3/tokens/key/0303"
 //
 // 返回：
 //
@@ -79,7 +79,7 @@ func (s Token) KeyGet_(key string) []model.Token {
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/token/resource" -d '"abc"'
+//     > curl "http://127.0.0.1:23333/v3/tokens/resource" -d '"abc"'
 //
 // 返回：
 //
@@ -103,7 +103,7 @@ type UpdateArg struct {
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/token/key/0303" -d '{"data":"xyz","expire_after_seconds":13}'
+//     > curl "http://127.0.0.1:23333/v3/tokens/key/0303" -d '{"data":"xyz","expire_after_seconds":13}'
 func (s Token) KeyUpdate_(key string, arg UpdateArg) {
 	if arg.Data != nil {
 		err := s.manager.UpdateData(key, *arg.Data)
@@ -126,7 +126,7 @@ func (s Token) KeyUpdate_(key string, arg UpdateArg) {
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/token/resource" -d '{"resource":"abc", "data":"xyz","expire_after_seconds":13}'
+//     > curl "http://127.0.0.1:23333/v3/tokens/resource" -d '{"resource":"abc", "data":"xyz","expire_after_seconds":13}'
 func (s Token) ResourceUpdate_(arg UpdateArg) {
 	if arg.ExpireAfterSeconds != nil {
 		after := time.Duration(*arg.ExpireAfterSeconds) * time.Second
