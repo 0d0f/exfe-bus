@@ -2,6 +2,8 @@ package main
 
 import (
 	"broker"
+	"fmt"
+	"github.com/googollee/go-logger"
 	"github.com/googollee/go-rest"
 	"model"
 	"net/http"
@@ -18,6 +20,7 @@ type Token struct {
 	KeyUpdate      rest.Processor `method:"POST" path:"/key/([a-zA-Z0-9]+)"`
 	ResourceUpdate rest.Processor `method:"POST" path:"/resource"`
 
+	log     *logger.SubLogger
 	manager *token.Manager
 }
 
@@ -27,6 +30,7 @@ func NewToken(config *model.Config, db *broker.DBMultiplexer) (*Token, error) {
 		return nil, err
 	}
 	token := &Token{
+		log:     config.Log.SubPrefix("tokens"),
 		manager: token.New(repo),
 	}
 	return token, nil
@@ -122,12 +126,16 @@ func (s Token) KeyUpdate_(key string, arg UpdateArg) {
 	}
 }
 
-// 更新resource对应的token的data信息或者expire after seconds
+// 更新resource对应的token的expire after seconds
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/v3/tokens/resource" -d '{"resource":"abc", "data":"xyz","expire_after_seconds":13}'
+//     > curl "http://127.0.0.1:23333/v3/tokens/resource" -d '{"resource":"abc", "expire_after_seconds":13}'
 func (s Token) ResourceUpdate_(arg UpdateArg) {
+	if arg.Resource == "" {
+		s.Error(http.StatusBadRequest, fmt.Errorf("invalid resource"))
+		return
+	}
 	if arg.ExpireAfterSeconds != nil {
 		after := time.Duration(*arg.ExpireAfterSeconds) * time.Second
 		err := s.manager.Refresh("", arg.Resource, after)
