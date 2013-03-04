@@ -21,7 +21,7 @@ type Token struct {
 	manager *token.Manager
 }
 
-func NewToken(config *model.Config, db *broker.DBMultiplexer) (http.Handler, error) {
+func NewToken(config *model.Config, db *broker.DBMultiplexer) (*Token, error) {
 	repo, err := NewTokenRepo(config, db)
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func NewToken(config *model.Config, db *broker.DBMultiplexer) (http.Handler, err
 	token := &Token{
 		manager: token.New(repo),
 	}
-	return rest.New(token)
+	return token, nil
 }
 
 type CreateArg struct {

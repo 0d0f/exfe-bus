@@ -52,16 +52,21 @@ func (s *Server) Register(service Service) error {
 }
 
 func (s *Server) RegisterRestful(service interface{}) error {
-	v := reflect.ValueOf(service).FieldByName("Service")
+	handler, err := rest.New(service)
+	if err != nil {
+		return err
+	}
+	v := reflect.ValueOf(service)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	v = v.FieldByName("Service")
 	if !v.IsValid() {
 		return fmt.Errorf("can't find rest.Service field")
 	}
 	serv := v.Interface().(rest.Service)
 	root := serv.Root
-	handler, err := rest.New(service)
-	if err != nil {
-		return err
-	}
+
 	s.mux.Handle(root, handler)
 	return nil
 }
