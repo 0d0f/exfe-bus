@@ -55,7 +55,10 @@ func (s *Sms) Send(to *model.Recipient, text string) (id string, err error) {
 	}
 	if phone[:3] == "+86" && s.imsg != nil {
 		to := phone[3:]
-		if ok, err := s.imsg.Check(to); err == nil && ok {
+		ok, err := s.imsg.Check(to)
+		if err != nil {
+			s.config.Log.Debug("imessage error: %s", err)
+		} else if ok {
 			sender = s.imsg
 			s.config.Log.Debug("phone %s is imessage", to)
 		} else {
