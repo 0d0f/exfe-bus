@@ -5,17 +5,20 @@ import (
 	"formatter"
 	"model"
 	"strings"
-	"thirdpart"
 	"unicode/utf8"
 )
 
 type Sms struct {
 	senders map[string]Sender
 	config  *model.Config
-	imsg    thirdpart.Sender
+	imsg    *IMessage
 }
 
-func New(config *model.Config, imsg thirdpart.Sender) *Sms {
+func New(config *model.Config) (*Sms, error) {
+	imsg, err := NewIMessage(config)
+	if err != nil {
+		return nil, err
+	}
 	ret := &Sms{
 		senders: make(map[string]Sender),
 		config:  config,
@@ -29,7 +32,7 @@ func New(config *model.Config, imsg thirdpart.Sender) *Sms {
 		}
 	}
 
-	return ret
+	return ret, nil
 }
 
 func (s *Sms) Provider() string {
@@ -40,15 +43,24 @@ func (s *Sms) Send(to *model.Recipient, text string) (id string, err error) {
 	phone := to.ExternalID
 	var sender Sender
 	for i := 3; i > 0; i-- {
-		code := phone[0:i]
+		if len(phone) < i {
+			continue
+		}
+		code := phone[:i]
 		var ok bool
 		sender, ok = s.senders[code]
 		if ok {
 			break
 		}
 	}
-	if sender == nil || s.config.Thirdpart.Sms.AllToiMsg {
-		return s.imsg.Send(to, text)
+	if phone[:3] == "+86" && s.imsg != nil {
+		to := phone[3:]
+		if ok, err := s.imsg.Check(to); err == nil && ok {
+			sender = s.imsg
+		}
+	}
+	if sender == nil {
+		return "", fmt.Errorf("invalid recipient %s", to)
 	}
 	lines := strings.Split(text, "\n")
 	contents := make([]string, 0)
