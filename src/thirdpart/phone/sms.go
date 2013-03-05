@@ -60,7 +60,7 @@ func (s *Sms) Send(to *model.Recipient, text string) (id string, err error) {
 			s.config.Log.Debug("imessage error: %s", err)
 		} else if ok {
 			sender = s.imsg
-			to.ExternalID = p
+			phone = p
 			s.config.Log.Debug("phone %s is imessage", p)
 		} else {
 			s.config.Log.Debug("phone %s is not imessage", p)
