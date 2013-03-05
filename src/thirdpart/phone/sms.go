@@ -57,6 +57,9 @@ func (s *Sms) Send(to *model.Recipient, text string) (id string, err error) {
 		to := phone[3:]
 		if ok, err := s.imsg.Check(to); err == nil && ok {
 			sender = s.imsg
+			s.config.Log.Debug("phone %s is imessage", to)
+		} else {
+			s.config.Log.Debug("phone %s is not imessage", to)
 		}
 	}
 	if sender == nil {
