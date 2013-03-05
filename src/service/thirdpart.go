@@ -72,7 +72,10 @@ func NewThirdpart(config *model.Config, streaming *Streaming, platform *broker.P
 	}
 	t.AddSender(imsg_)
 
-	sms_ := sms.New(config, imsg_)
+	sms_, err := sms.New(config)
+	if err != nil {
+		return nil, fmt.Errorf("can't create sms: %s", err)
+	}
 	t.AddSender(sms_)
 
 	if config.Test {
