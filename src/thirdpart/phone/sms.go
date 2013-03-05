@@ -54,16 +54,16 @@ func (s *Sms) Send(to *model.Recipient, text string) (id string, err error) {
 		}
 	}
 	if phone[:3] == "+86" && s.imsg != nil {
-		to := phone[3:]
-		ok, err := s.imsg.Check(to)
+		p := phone[3:]
+		ok, err := s.imsg.Check(p)
 		if err != nil {
 			s.config.Log.Debug("imessage error: %s", err)
 		} else if ok {
 			sender = s.imsg
-			to.ExternalID = to
-			s.config.Log.Debug("phone %s is imessage", to)
+			to.ExternalID = p
+			s.config.Log.Debug("phone %s is imessage", p)
 		} else {
-			s.config.Log.Debug("phone %s is not imessage", to)
+			s.config.Log.Debug("phone %s is not imessage", p)
 		}
 	}
 	if sender == nil {
