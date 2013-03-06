@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"thirdpart/imsg"
 	"time"
 )
 
@@ -61,7 +60,7 @@ func main() {
 			log.Crit("conn read: %s", err)
 			return
 		}
-		var load imsg.Load
+		var load Load
 		err = json.Unmarshal(buf[:n], &load)
 		if err != nil {
 			log.Err("unmashal: %s", err)
@@ -69,8 +68,8 @@ func main() {
 		}
 
 		switch load.Type {
-		case imsg.Ping:
-			load.Type = imsg.Pong
+		case Ping:
+			load.Type = Pong
 			l, err := json.Marshal(load)
 			if err != nil {
 				log.Crit("marshal: %s", err)
@@ -81,11 +80,11 @@ func main() {
 				log.Crit("write: %s", err)
 				return
 			}
-		case imsg.Send:
+		case Send:
 			log.Info("received send to %s", load.To)
 
 			err := SendiMsg(load.To, load.Content)
-			load.Type = imsg.Respond
+			load.Type = Respond
 			load.Content = ""
 			if err != nil {
 				load.Content = err.Error()

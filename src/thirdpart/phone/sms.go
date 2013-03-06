@@ -5,20 +5,17 @@ import (
 	"formatter"
 	"model"
 	"strings"
+	"thirdpart"
 	"unicode/utf8"
 )
 
 type Sms struct {
 	senders map[string]Sender
 	config  *model.Config
-	imsg    *IMessage
+	imsg    thirdpart.Sender
 }
 
-func New(config *model.Config) (*Sms, error) {
-	imsg, err := NewIMessage(config)
-	if err != nil {
-		return nil, err
-	}
+func New(config *model.Config, imsg thirdpart.Sender) (*Sms, error) {
 	ret := &Sms{
 		senders: make(map[string]Sender),
 		config:  config,
@@ -40,6 +37,11 @@ func (s *Sms) Provider() string {
 }
 
 func (s *Sms) Send(to *model.Recipient, text string) (id string, err error) {
+	id, err = s.imsg.Send(to, text)
+	if err == nil {
+		return
+	}
+
 	phone := to.ExternalID
 	var sender Sender
 	for i := 3; i > 0; i-- {
@@ -53,19 +55,7 @@ func (s *Sms) Send(to *model.Recipient, text string) (id string, err error) {
 			break
 		}
 	}
-	if phone[:3] == "+86" && s.imsg != nil {
-		p := phone[3:]
-		ok, err := s.imsg.Check(p)
-		if err != nil {
-			s.config.Log.Debug("imessage error: %s", err)
-		} else if ok {
-			sender = s.imsg
-			phone = p
-			s.config.Log.Debug("phone %s is imessage", p)
-		} else {
-			s.config.Log.Debug("phone %s is not imessage", p)
-		}
-	}
+
 	if sender == nil {
 		return "", fmt.Errorf("invalid recipient %s", to)
 	}

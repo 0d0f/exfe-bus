@@ -1,191 +1,218 @@
-package imsg
+package imessage
 
 import (
-	"crypto/rand"
-	"crypto/tls"
+	"broker"
 	"encoding/json"
 	"fmt"
 	"formatter"
 	"github.com/googollee/go-logger"
+	"github.com/googollee/go-multiplexer"
+	"github.com/googollee/go-socket.io"
 	"model"
-	"net"
-	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
 )
 
-type IMsg struct {
-	connChan chan Load
-	isRun    bool
-	config   *model.Config
+type IMessageConn struct {
+	conn *socketio.Client
+	log  *logger.SubLogger
 }
 
-func New(config *model.Config) (*IMsg, error) {
-	connChan := make(chan Load)
-
-	cert, err := tls.LoadX509KeyPair(config.Thirdpart.Apn.Cert, config.Thirdpart.Apn.Key)
-	if err != nil {
-		return nil, fmt.Errorf("load cert error: %s", err)
-	}
-	c := tls.Config{Certificates: []tls.Certificate{cert}}
-	c.Rand = rand.Reader
-	addr := "0.0.0.0:25000"
-
-	ret := &IMsg{
-		connChan: connChan,
-		isRun:    false,
-		config:   config,
-	}
-
-	go listen(ret, addr, &c, connChan, config.Log)
-	return ret, nil
+func (i *IMessageConn) Ping() error {
+	return nil
 }
 
-func (i *IMsg) Provider() string {
+func (i *IMessageConn) Close() error {
+	return i.conn.Close()
+}
+
+func (i *IMessageConn) Error(err error) {
+	i.log.Err("%s", err)
+}
+
+type IMessage struct {
+	conn *multiplexer.Homo
+	log  *logger.SubLogger
+}
+
+func New(config *model.Config) (*IMessage, error) {
+	log := config.Log.SubPrefix("imessage")
+	homo := multiplexer.NewHomo(func() (multiplexer.Instance, error) {
+		sio, err := socketio.Dial("http://www.kufuwu.com:1080/socket.io/", "http://www.kufuwu.com/p.html", broker.NetworkTimeout)
+		if err != nil {
+			return nil, err
+		}
+		return &IMessageConn{
+			conn: sio,
+			log:  log,
+		}, nil
+	}, 5, 30*time.Second, 40*time.Second)
+	return &IMessage{
+		conn: homo,
+		log:  log,
+	}, nil
+}
+
+func (i *IMessage) Provider() string {
 	return "imessage"
 }
 
-func (i *IMsg) Send(to *model.Recipient, text string) (string, error) {
-	for _, line := range strings.Split(text, "\n") {
-		line = strings.Trim(line, " \r\n\t")
-		line = tailUrlRegex.ReplaceAllString(line, "")
-		line = tailQuoteUrlRegex.ReplaceAllString(line, `)\)`)
+func (i *IMessage) Check(to string) (ret bool, err error) {
+	i.conn.Do(func(i multiplexer.Instance) {
+		imsg, ok := i.(*IMessageConn)
+		if !ok {
+			err = fmt.Errorf("instance %+v is not *IMessageConn", i)
+			return
+		}
+		req := Request{
+			To:      to,
+			Channel: getChannel(),
+			Action:  "1",
+		}
+		err = imsg.conn.Emit(true, "send", req)
+		if err != nil {
+			return
+		}
+		var msg socketio.Message
+		err = imsg.conn.Receive(&msg)
+		if err != nil {
+			return
+		}
+		var respString string
+		err = msg.ReadArguments(&respString)
+		if err != nil {
+			return
+		}
+		var resp Response
+		err = json.Unmarshal([]byte(respString), &resp)
+		if err != nil {
+			return
+		}
+		ret = resp.Head.Status == 0
+	})
+	return
+}
+
+func (i *IMessage) Send(to *model.Recipient, text string) (id string, err error) {
+	phone := to.ExternalID
+
+	if phone[:3] == "+86" {
+		p := phone[3:]
+		ok, err := i.Check(p)
+		if err != nil {
+			return "", fmt.Errorf("imessage error: %s", err)
+		} else if ok {
+			phone = p
+			i.log.Debug("phone %s is imessage", p)
+		} else {
+			return "", fmt.Errorf("%s not imessage", phone)
+		}
+	} else {
+		return "", fmt.Errorf("unsupport phone %s", phone)
+	}
+
+	lines := strings.Split(text, "\n")
+	contents := make([]string, 0)
+	for _, line := range lines {
+		line = strings.Trim(line, " \n\r\t")
 		if line == "" {
 			continue
 		}
 
-		cutter, err := formatter.CutterParse(line, imsgLen)
+		cutter, err := formatter.CutterParse(line, smsLen)
 		if err != nil {
 			return "", fmt.Errorf("parse cutter error: %s", err)
 		}
 
-		load := Load{
-			Type:    Send,
-			To:      to.ExternalID,
-			Content: line,
-		}
-
 		for _, content := range cutter.Limit(140) {
-			load.Content = content
-			i.connChan <- load
-			l := <-i.connChan
-			if l.Content != "" {
-				i.config.Log.Err("imessage send error: %s", l.Content)
-			}
+			contents = append(contents, content)
 		}
 	}
-	return "", nil
+	return i.SendMessage(phone, contents)
 }
 
-func listen(imsg *IMsg, addr string, c *tls.Config, connChan chan Load, log *logger.Logger) {
-	for {
-		log.Info("imsg server: listening")
-		listener, err := tls.Listen("tcp", addr, c)
-		if err != nil {
-			log.Err("listen error: %s", err)
-			time.Sleep(time.Second)
-			continue
-		}
-		conn, err := listener.Accept()
-		if err != nil {
-			log.Err("accept error: %s", err)
-			time.Sleep(time.Second)
-			continue
-		}
-		listener.Close()
-		imsg.isRun = true
-		handleClient(conn, connChan, log.SubCode())
-		imsg.isRun = false
-	}
-}
-
-func handleClient(conn net.Conn, connChan chan Load, log *logger.SubLogger) {
-	defer conn.Close()
-	log.Info("accepted from: %s", conn.RemoteAddr())
-
-	for {
-		select {
-		case load := <-connChan:
-			load.Type = Send
-			l, err := json.Marshal(load)
-			if err != nil {
-				log.Crit("marshal error: %s", err)
-				return
-			}
-			_, err = conn.Write(l)
-			if err != nil {
-				log.Err("write error: %s", err)
-				return
-			}
-			log.Info("send to %s", load.To)
-
-			reply := make([]byte, 256)
-			conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-			n, err := conn.Read(reply)
-			if err != nil {
-				log.Err("read error: %s", err)
-				load.Type = Respond
-				load.Content = fmt.Sprintf("read error: %s", err)
-				connChan <- load
-				return
-			}
-			err = json.Unmarshal(reply[:n], &load)
-			if err != nil {
-				log.Err("unmashal error: %s", err)
-				load.Content = fmt.Sprintf("unmashal error: %s", err)
-				connChan <- load
-				return
-			}
-			if load.Type != Respond {
-				log.Info("client no respond")
-				load.Content = fmt.Sprintf("client no respond")
-				connChan <- load
-				return
-			}
-			connChan <- load
-		case <-time.After(10 * time.Second):
-			var load Load
-
-			load.Type = Ping
-			load.To = ""
-			load.Content = ""
-			l, err := json.Marshal(load)
-			if err != nil {
-				log.Crit("marshal error: %s", err)
-				return
-			}
-			_, err = conn.Write(l)
-			if err != nil {
-				log.Err("write error: %s", err)
-				return
-			}
-
-			reply := make([]byte, 256)
-			conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-			n, err := conn.Read(reply)
-			if err != nil {
-				log.Err("read error: %s", err)
-				return
-			}
-			err = json.Unmarshal(reply[:n], &load)
-			if err != nil {
-				log.Err("unmashal error: %s", err)
-				return
-			}
-			if load.Type != Pong {
-				log.Info("client not respone ping")
-				return
-			}
+func smsLen(content string) int {
+	allAsc := true
+	for _, r := range content {
+		if r > 127 {
+			allAsc = false
+			break
 		}
 	}
-
-	log.Info("closed")
+	if allAsc {
+		return len([]byte(content))
+	}
+	return utf8.RuneCountInString(content) * 2
 }
 
-func imsgLen(content string) int {
-	return utf8.RuneCountInString(content)
+func (i *IMessage) SendMessage(to string, contents []string) (id string, err error) {
+	i.conn.Do(func(i multiplexer.Instance) {
+		imsg, ok := i.(*IMessageConn)
+		if !ok {
+			err = fmt.Errorf("instance %+v is not *IMessageConn", i)
+			return
+		}
+		for _, content := range contents {
+			req := Request{
+				To:      to,
+				Channel: getChannel(),
+				Action:  "2",
+				Message: content,
+			}
+			err = imsg.conn.Emit(true, "send", req)
+			if err != nil {
+				return
+			}
+			var msg socketio.Message
+			err = imsg.conn.Receive(&msg)
+			if err != nil {
+				return
+			}
+			var respString string
+			err = msg.ReadArguments(&respString)
+			if err != nil {
+				return
+			}
+			var resp Response
+			err = json.Unmarshal([]byte(respString), &resp)
+			if err != nil {
+				return
+			}
+			if resp.Head.Status != 0 {
+				err = fmt.Errorf("%s", resp.Head.Err)
+				return
+			}
+			id += "," + resp.Head.ID
+		}
+	})
+	if len(id) > 0 {
+		id = id[1:]
+	}
+	return
 }
 
-var tailUrlRegex = regexp.MustCompile(` *(http|https):\/\/exfe.com(\/[\w#!:.?+=&%@!\-\/]*)?$`)
-var tailQuoteUrlRegex = regexp.MustCompile(` *(http|https):\/\/exfe.com(\/[\w#!:.?+=&%@!\-\/]*)?\)(\\\))$`)
+func (i *IMessage) Codes() []string {
+	return nil
+}
+
+type Request struct {
+	To      string `json:"to"`
+	Channel string `json:"channel"`
+	Action  string `json:"act"`
+	Message string `json:"message,omitempty"`
+}
+
+type Response struct {
+	Head struct {
+		Status int    `json:"status"`
+		To     string `json:"to"`
+		Action string `json:"act"`
+		ID     string `json:"id"`
+		Err    string `json:"errmsg"`
+	} `json:"head"`
+}
+
+func getChannel() string {
+	return "4"
+}

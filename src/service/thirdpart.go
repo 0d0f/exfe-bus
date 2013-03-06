@@ -66,13 +66,13 @@ func NewThirdpart(config *model.Config, streaming *Streaming, platform *broker.P
 	gcm_ := gcm.New(gcms_)
 	t.AddSender(gcm_)
 
-	imsg_, err := imsg.New(config)
+	imsg_, err := imessage.New(config)
 	if err != nil {
 		return nil, fmt.Errorf("can't connect imessage: %s", err)
 	}
 	t.AddSender(imsg_)
 
-	sms_, err := sms.New(config)
+	sms_, err := sms.New(config, imsg_)
 	if err != nil {
 		return nil, fmt.Errorf("can't create sms: %s", err)
 	}
