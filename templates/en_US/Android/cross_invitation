@@ -1,9 +1,3 @@
-{{$title := .Cross.Title | limit 30 | replace `\` `\\`}}
-{{$time := .Cross.Time.StringInZone .Timezone | replace `\` `\\`}}
-{{$place := .Cross.Place.Title | limit 30| replace `\` `\\`}}
-{{$link := .PublicLink | replace `\` `\\`}}
-{{if .IsCreator}}Successfully gathering \("{{$title}}"\){{if $time}}, \({{$time}}\){{end}}{{if $place}} at \({{$place}}\){{end}}. {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} invited: {{.ListInvitations}} {{$link}}{{else}}
-{{if .ToIn .Cross.Exfee.Invitations}}EXFE by \({{.Cross.By.Name}}\) \("{{$title}}"\){{if $time}}, \({{$time}}\){{end}}{{if $place}} at \({{$place}}\){{end}}. {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} people invited. {{$link}}{{end}}
-{{end}}
+{{sub . "_default/cross_invitation"}}
 
 {"cid":{{.Cross.ID}},"t":"i"}

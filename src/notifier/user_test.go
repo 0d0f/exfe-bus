@@ -30,7 +30,7 @@ func TestUserWelcomeTwitter(t *testing.T) {
 	content, err := GetContent(localTemplate, "user_welcome", arg.To, arg)
 	assert.Equal(t, err, nil)
 	t.Logf("content:---------start---------\n%s\n---------end----------", content)
-	expectPrivate := "Welcome to EXFE! An utility for gathering with friends.Please click here to verify your identity: \\(http://site/url/#token=recipient_twitter1_token\\)"
+	expectPrivate := ""
 	assert.Equal(t, content, expectPrivate)
 }
 
@@ -58,7 +58,7 @@ func TestUserVerifyTwitter(t *testing.T) {
 	content, err := GetContent(localTemplate, "user_verify", arg.To, arg)
 	assert.Equal(t, err, nil)
 	t.Logf("content:---------start---------\n%s\n---------end----------", content)
-	expectPrivate := "\\(You(twitter1@domain.com)\\) has been requested for verification by \\(Steve Exfer\\) on EXFE. Please click here to verify: \\(http://site/url/?t=recipient_twitter1_token\\)"
+	expectPrivate := ""
 	assert.Equal(t, content, expectPrivate)
 }
 
@@ -86,6 +86,6 @@ func TestUserResetTwitter(t *testing.T) {
 	content, err := GetContent(localTemplate, "user_resetpass", arg.To, arg)
 	assert.Equal(t, err, nil)
 	t.Logf("content:---------start---------\n%s\n---------end----------", content)
-	expectPrivate := "Please click here to set new password: \\(http://site/url/#token=recipient_twitter1_token\\) (This single-use link will be expired in 1 day.)"
+	expectPrivate := ""
 	assert.Equal(t, content, expectPrivate)
 }

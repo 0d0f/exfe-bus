@@ -1,1 +1,1 @@
-\(You({{.To.ExternalUsername}})\) has been requested for verification{{if .UserName}} by \({{.UserName}}\){{end}} on EXFE. Please click here to verify: \({{.ShortLink}}\)
+EXFE verification requested, please proceed to: http://{{.Config.SiteUrl}}/?t={{.To.Token}}  *DO NOT OPEN if you didn't request*

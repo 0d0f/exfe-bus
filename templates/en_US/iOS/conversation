@@ -1,4 +1,3 @@
-{{$link := .Link | replace `\` `\\`}}{{$title := .Cross.Title | limit 20 | replace `\` `\\`}}{{range .Posts}}{{.By.Name | replace `\` `\\`}}: {{.Content | limit 60 | replace `\` `\\`}} \(("{{$title}}" {{$link}})\)
-{{end}}
+{{sub . "_default/conversation"}}
 
 {"cid":{{.Cross.ID}},"t":"c"}

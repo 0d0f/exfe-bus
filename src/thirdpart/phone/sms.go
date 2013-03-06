@@ -37,9 +37,11 @@ func (s *Sms) Provider() string {
 }
 
 func (s *Sms) Send(to *model.Recipient, text string) (id string, err error) {
-	id, err = s.imsg.Send(to, text)
-	if err == nil {
-		return
+	if s.imsg != nil {
+		id, err = s.imsg.Send(to, text)
+		if err == nil {
+			return
+		}
 	}
 
 	phone := to.ExternalID
