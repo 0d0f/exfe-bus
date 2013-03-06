@@ -1,2 +1,2 @@
-{{range .Posts}}{{.By.Name | replace `\` `\\`}}: {{.Content | limit 60 | replace `\` `\\`}}
+{{range .Posts}}{{.By.Name}}: {{.Content | limit 60}}
 {{end}}

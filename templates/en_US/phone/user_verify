@@ -1,1 +1,1 @@
-EXFE verification requested, please proceed to: http://{{.Config.SiteUrl}}/?t={{.To.Token}}  *DO NOT OPEN if you didn't request*
+EXFE verification requested, please proceed to: {{.Config.SiteUrl}}/?t={{.To.Token}}  *DO NOT OPEN if you didn't request*
