@@ -1,1 +1,1 @@
-{{if not .IsCreator}}{{.Cross.By.Name}} invites you to "{{.Cross.Title | limit 30}}". {{.Config.SiteUrl}}/#!{{.Cross.ID}}/{{substr 1 4 .To.Token}}{{end}} 
+{{if not .IsCreator}}{{.Cross.By.Name}} invites you to "{{.Cross.Title | limit 30}}". {{.Config.SiteUrl}}/#!{{.Cross.ID}}/{{substr 1 4 .To.Token}}{{end}} .
