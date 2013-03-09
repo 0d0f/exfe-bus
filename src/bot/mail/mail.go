@@ -199,6 +199,7 @@ func (w *Worker) login() (net.Conn, *imap.Client, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	c.SetDeadline(time.Now().Add(broker.NetworkTimeout))
 
 	conn.Data = nil
 	if conn.Caps["STARTTLS"] {
@@ -206,7 +207,10 @@ func (w *Worker) login() (net.Conn, *imap.Client, error) {
 	}
 
 	if conn.State() == imap.Login {
-		conn.Login(w.config.Bot.Email.IMAPUser, w.config.Bot.Email.IMAPPassword)
+		_, err = conn.Login(w.config.Bot.Email.IMAPUser, w.config.Bot.Email.IMAPPassword)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	return c, conn, nil
