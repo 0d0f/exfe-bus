@@ -58,6 +58,7 @@ NEXIST:
 	if err != nil {
 		return model.Token{}, err
 	}
+	token.TouchedAt = time.Now()
 	return token.Token(), nil
 }
 
