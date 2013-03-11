@@ -11,7 +11,6 @@ import (
 	"model"
 	"strings"
 	"time"
-	"unicode/utf8"
 )
 
 type IMessageConn struct {
@@ -120,30 +119,20 @@ func (i *IMessage) Send(to *model.Recipient, text string) (id string, err error)
 			continue
 		}
 
-		cutter, err := formatter.CutterParse(line, smsLen)
+		cutter, err := formatter.CutterParse(line, imsgLen)
 		if err != nil {
 			return "", fmt.Errorf("parse cutter error: %s", err)
 		}
 
-		for _, content := range cutter.Limit(140) {
+		for _, content := range cutter.Limit(300) {
 			contents = append(contents, content)
 		}
 	}
 	return i.SendMessage(phone, contents)
 }
 
-func smsLen(content string) int {
-	allAsc := true
-	for _, r := range content {
-		if r > 127 {
-			allAsc = false
-			break
-		}
-	}
-	if allAsc {
-		return len([]byte(content))
-	}
-	return utf8.RuneCountInString(content) * 2
+func imsgLen(content string) int {
+	return len([]byte(content))
 }
 
 func (i *IMessage) SendMessage(to string, contents []string) (id string, err error) {
