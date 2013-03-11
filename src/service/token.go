@@ -50,7 +50,7 @@ type CreateArg struct {
 //
 // 返回：
 //
-//     {"key":"0303","data":"abc"}
+//     {"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}
 func (s Token) Create_(genType string, arg CreateArg) (ret model.Token) {
 	after := time.Duration(arg.ExpireAfterSeconds) * time.Second
 	ret, err := s.manager.Create(genType, arg.Resource, arg.Data, after)
@@ -69,7 +69,7 @@ func (s Token) Create_(genType string, arg CreateArg) (ret model.Token) {
 //
 // 返回：
 //
-//     [{"key":"0303","data":"abc"}]
+//     [{"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}]
 func (s Token) KeyGet_(key string) []model.Token {
 	ret, err := s.manager.Get(key, "")
 	if err != nil {
@@ -87,7 +87,7 @@ func (s Token) KeyGet_(key string) []model.Token {
 //
 // 返回：
 //
-//     [{"key":"0303","data":"abc"}]
+//     [{"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}]
 func (s Token) ResourceGet_(resource string) []model.Token {
 	ret, err := s.manager.Get("", resource)
 	if err != nil {
