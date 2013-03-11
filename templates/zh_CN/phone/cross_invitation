@@ -1,0 +1,1 @@
+{{if not .IsCreator}}{{.Cross.By.Name}}邀您参加"{{if not .IsCreator}}{{.Cross.By.Name}}" {{.Config.SiteUrl}}/#!{{.Cross.ID}}/{{substr 1 4 .To.Token}}/{{end}}
