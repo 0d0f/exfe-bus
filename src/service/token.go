@@ -83,7 +83,7 @@ func (s Token) KeyGet_(key string) []model.Token {
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/v3/tokens/resource" -d '"abc"'
+//     > curl "http://127.0.0.1:23333/v3/tokens/resource" -X GET -d '"abc"'
 //
 // 返回：
 //
