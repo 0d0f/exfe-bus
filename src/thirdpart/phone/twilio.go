@@ -25,7 +25,9 @@ func NewTwilio(config *model.Config) *Twilio {
 }
 
 func (t *Twilio) Codes() []string {
-	return []string{"+1"}
+	return []string{
+		"+1",
+	}
 }
 
 type twilioReply struct {
