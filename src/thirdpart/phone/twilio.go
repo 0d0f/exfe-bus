@@ -26,7 +26,11 @@ func NewTwilio(config *model.Config) *Twilio {
 
 func (t *Twilio) Codes() []string {
 	return []string{
-		"+1",
+		"+1",   // American, Canada
+		"+45",  // Denmark
+		"+7",   // Russia
+		"+852", // Hong Kong
+		"+886", // Taiwan
 	}
 }
 
