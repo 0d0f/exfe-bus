@@ -21,6 +21,7 @@ func (i *IMessageConn) Ping() error {
 }
 
 func (i *IMessageConn) Close() error {
+	i.conn.SetDeadline(time.Now().Add(broker.NetworkTimeout))
 	return i.conn.Close()
 }
 
@@ -50,12 +51,13 @@ func NewIMessage(config *model.Config) (*IMessage, error) {
 }
 
 func (i *IMessage) Check(to string) (ret bool, err error) {
-	i.conn.Do(func(i multiplexer.Instance) {
+	err = i.conn.Do(func(i multiplexer.Instance) {
 		imsg, ok := i.(*IMessageConn)
 		if !ok {
 			err = fmt.Errorf("instance %+v is not *IMessageConn", i)
 			return
 		}
+		imsg.conn.SetDeadline(time.Now().Add(broker.NetworkTimeout))
 		req := Request{
 			To:      to,
 			Channel: getChannel(),
@@ -86,12 +88,13 @@ func (i *IMessage) Check(to string) (ret bool, err error) {
 }
 
 func (i *IMessage) Send(to string, contents []string) (id string, err error) {
-	i.conn.Do(func(i multiplexer.Instance) {
+	err = i.conn.Do(func(i multiplexer.Instance) {
 		imsg, ok := i.(*IMessageConn)
 		if !ok {
 			err = fmt.Errorf("instance %+v is not *IMessageConn", i)
 			return
 		}
+		imsg.conn.SetDeadline(time.Now().Add(broker.ProcessTimeout))
 		for _, content := range contents {
 			req := Request{
 				To:      to,
