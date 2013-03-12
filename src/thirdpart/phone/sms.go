@@ -19,7 +19,7 @@ func New(config *model.Config, imsg thirdpart.Sender) (*Sms, error) {
 	ret := &Sms{
 		senders: make(map[string]Sender),
 		config:  config,
-		imsg:    imsg,
+		// imsg:    imsg,
 	}
 
 	senders := [...]Sender{NewTwilio(config), NewDuanCaiWang(config)}
