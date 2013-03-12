@@ -140,25 +140,6 @@ func (t *Thirdpart) Send(params map[string]string, arg model.ThirdpartSend) (str
 		}()
 	}
 	id, err := t.thirdpart.Send(&arg.To, arg.Text)
-
-	key := fmt.Sprintf("%s(%s)@%s", arg.To.ExternalID, arg.To.ExternalUsername, arg.To.Provider)
-	lastErr := t.sendCache.Get(key)
-	if lastErr == nil {
-		if err == thirdpart.Unreachable {
-			t.sendCallback(arg.To, err)
-		}
-		if err != thirdpart.Unreachable {
-			t.sendCallback(arg.To, nil)
-		}
-	} else {
-		lastError := lastErr.(string)
-		if lastError != "Unreachable" && err == thirdpart.Unreachable {
-			t.sendCallback(arg.To, err)
-		}
-		if lastError == "Unreachable" && err != thirdpart.Unreachable {
-			t.sendCallback(arg.To, nil)
-		}
-	}
 	return id, err
 }
 
