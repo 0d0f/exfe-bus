@@ -101,39 +101,6 @@ func main() {
 		log.Info("register Token")
 	}
 
-	if config.ExfeService.Services.TokenManager {
-		tkMng, err := NewTokenManager(&config, db)
-		if err != nil {
-			log.Crit("create token manager failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-
-		err = bus.Register(tkMng)
-		if err != nil {
-			log.Crit("gobus launch failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register TokenManager")
-	}
-
-	if config.ExfeService.Services.ShortToken {
-		shorttoken, err := NewShortToken(&config, db)
-		if err != nil {
-			log.Crit("shorttoken can't created: %s", err)
-			os.Exit(-1)
-		}
-
-		err = bus.Register(shorttoken)
-		if err != nil {
-			log.Crit("gobus launch failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register shorttoken")
-	}
-
 	if config.ExfeService.Services.Iom {
 		iom := NewIom(&config, redis)
 
