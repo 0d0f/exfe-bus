@@ -30,9 +30,11 @@ func main() {
 		log.Crit("create local template failed: %s", err)
 		return
 	}
+	db := broker.NewDBMultiplexer(&config)
+	saver := NewCrossSaver(db)
 
 	var tombs []*tomb.Tomb
-	mail, err := mail.New(&config, templ, platform)
+	mail, err := mail.New(&config, templ, platform, saver)
 	if err != nil {
 		log.Crit("create mail bot failed: %s", err)
 		return

@@ -22,6 +22,28 @@ import (
 	"time"
 )
 
+func GetID(m *mail.Message, field string) string {
+	ret := m.Header.Get(field)
+	return strings.Trim(ret, " <>")
+}
+
+func GetReferencesID(m *mail.Message) []string {
+	ref := m.Header.Get("References")
+	if ref == "" {
+		return nil
+	}
+	ret := strings.Split(ref, " ")
+	for i, id := range ret {
+		ret[i] = strings.Trim(id, " <>")
+	}
+	return ret
+}
+
+type MessageIDSaver interface {
+	Save(id []string, crossID string) error
+	Check(id []string) (string, bool, error)
+}
+
 var typeId = map[uint8]string{
 	'c': "cross_id",
 	'e': "exfee_id",
@@ -34,12 +56,13 @@ type Worker struct {
 	log      *logger.SubLogger
 	templ    *formatter.LocalTemplate
 	platform *broker.Platform
+	saver    MessageIDSaver
 
 	htmlRegexp  []*regexp.Regexp
 	replyRegexp []*regexp.Regexp
 }
 
-func New(config *model.Config, templ *formatter.LocalTemplate, platform *broker.Platform) (*Worker, error) {
+func New(config *model.Config, templ *formatter.LocalTemplate, platform *broker.Platform, saver MessageIDSaver) (*Worker, error) {
 	var htmlRegexp []*regexp.Regexp
 	for _, html := range []string{
 		`(?iU)<script\b.*>.*</script>`,
@@ -78,6 +101,7 @@ func New(config *model.Config, templ *formatter.LocalTemplate, platform *broker.
 		log:      config.Log.SubPrefix("mail"),
 		templ:    templ,
 		platform: platform,
+		saver:    saver,
 
 		htmlRegexp:  htmlRegexp,
 		replyRegexp: replyRegexp,
@@ -261,7 +285,20 @@ func (w *Worker) parseMail(msg *mail.Message) error {
 		return fmt.Errorf("no from field")
 	}
 
-	msgID := msg.Header.Get("Message-ID")
+	refIDs := GetReferencesID(msg)
+	msgID := GetID(msg, "Message-ID")
+	if msgID != "" {
+		refIDs = append(refIDs, msgID)
+	}
+	replyID := GetID(msg, "In-Reply-To")
+	if replyID != "" {
+		refIDs = append(refIDs, replyID)
+	}
+	crossID, crossExist, err := w.saver.Check(refIDs)
+	if err != nil {
+		return err
+	}
+
 	subject := msg.Header.Get("Subject")
 	if s, err := encodingex.DecodeEncodedWord(subject); err == nil {
 		subject = s
@@ -274,8 +311,19 @@ func (w *Worker) parseMail(msg *mail.Message) error {
 	code := 500
 	if ok, args := findAddress(fmt.Sprintf("x\\+([0-9a-zA-Z]+)@%s", w.config.Email.Domain), addrList); ok {
 		code, err = w.sendPost(args[0], from, addrList, content)
+		w.saver.Save(refIDs, args[0])
 	} else if ok, _ := findAddress(fmt.Sprintf("x@%s", w.config.Email.Domain), addrList); ok {
-		code, err = w.createCross(from, addrList, subject, content)
+		if !crossExist {
+			var id uint64
+			id, code, err = w.createCross(from, addrList, subject, content)
+			if err == nil {
+				crossID = fmt.Sprintf("%d", id)
+				w.saver.Save(refIDs, crossID)
+			}
+		} else {
+			code, err = w.sendPost(crossID, from, addrList, content)
+			w.saver.Save(refIDs, crossID)
+		}
 	} else {
 		code = http.StatusBadRequest
 		err = fmt.Errorf("can't parse mail list: %v", addrList)
@@ -322,7 +370,7 @@ func (w *Worker) sendPost(arg string, from *mail.Address, addrs []*mail.Address,
 	return code, err
 }
 
-func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, desc string) (int, error) {
+func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, desc string) (uint64, int, error) {
 	w.log.Debug("create x(%s) for %v", title, list)
 	cross := model.Cross{
 		Title:       title,
@@ -348,7 +396,11 @@ func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, de
 		}
 	}
 	cross.Exfee.Invitations = invite
-	return w.platform.BotCrossGather(cross)
+	id, status, err := w.platform.BotCrossGather(cross)
+	if err != nil {
+		return 0, status, err
+	}
+	return id, status, err
 }
 
 func (w *Worker) sendHelp(code int, err error, msgID string, from *mail.Address, subject, content string) error {

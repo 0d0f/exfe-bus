@@ -125,6 +125,30 @@ DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
          uFFA==
 X-Received: by 10.50.88.228 with SMTP id bj4mr569047igb.85.1361525972908; Fri,
  22 Feb 2013 01:39:32 -0800 (PST)
+References: <CABTp9f9aWfbh9xzHM6DZ6v9jfJL1+RCBHN3U7otSEHx+QsRUAA@mail.gmail.com>
+	<5A846D28-194D-42C5-9B56-FB4B58622FB8@gmail.com>
+	<CAOf82vPhowLHNZFjEVzYDz3spgPHJ31bi78xHp5jM2C45Bok9g@mail.gmail.com>
+	<CAOf82vPDJsT-wqVyzOMBOXygOcbZ_u2Oqj87sUNHTwKbHyAOng@mail.gmail.com>
+	<CA+wfOabc5aJbAqnvp0WwTY8iyaRkjUuJz5GUNi6YVb=pt8D=KA@mail.gmail.com>
+	<CA+wfOaYpi47wZf8-cjSCHO2=L=2K-jJEEeZ=Ld-eUagKWatpWQ@mail.gmail.com>
+	<CALsf4ScfeuNtdn4qFQLn7Cj0NK5s8aPzj=0MWUiR2ASAFvhDkw@mail.gmail.com>
+	<CAEWKm+kUVvepoq9j=LCGbpnfZi1h5wo31ebpz6R1Mo=zLFLRTw@mail.gmail.com>
+	<0F3F126D-B5F3-4B29-B048-95973ED822EC@gmail.com>
+	<CAKib_jBJDBwy12GCaVrr3bP8ELTypODWu+xOSjFgZpUtNyfqQQ@mail.gmail.com>
+	<CABTp9f_u+-SC1CoeXTYDio96OxLXYKKf0LQLS4YVU7vdg9NV6A@mail.gmail.com>
+	<3C6F4630-44A8-4B5E-900F-447E41C2224B@gmail.com>
+	<CA+wfOab3nzg_iuQ5=4Ybun8+_3HBkEBGCQ66bVkaeJR97=Njrg@mail.gmail.com>
+	<CAKib_jA+06MGRMhi_G2DF1QGO=5Vu0iRGtYzVPMTjN4mG9V8pw@mail.gmail.com>
+	<CAKib_jAYLChNff4Gp1L7T4G64qYswmFonb8DS8arT=f2rFRtng@mail.gmail.com>
+	<CABTp9f8pTJeJBorZrU7wq=UbPxhzT0PYTt00g4nbN_-k6FbNMw@mail.gmail.com>
+	<DB295B32-900D-45B2-98D7-981D2B832A8A@gmail.com>
+	<CA+wfOaZBWUP7cNVO6P7t3fO9e_Mr3VKaSzob=FGQLFOyH4wbLA@mail.gmail.com>
+	<C9BFFE30-2C92-4BA6-88D5-BC24186F828D@gmail.com>
+	<CAOf82vPV57SgJ0Gr4Wz8q1nBZAffkVzcTz0csH96k=NnZhjDJw@mail.gmail.com>
+	<4321185B-34EF-43D0-A6B5-9638E3DB41FE@gmail.com>
+	<CAOf82vM9361tEcCB2G_rkYy8a1yJRu6EHZvGj1MB7M-xb1JOMw@mail.gmail.com>
+	<A345842B-7C38-4551-A94C-382E53A95748@gmail.com>
+	<CAOf82vNbm-YGY8VqfgZDCi2rFia1HU6TYThVZ09CgydQuywagA@mail.gmail.com>
 MIME-Version: 1.0
 Received: by 10.42.18.199 with HTTP; Fri, 22 Feb 2013 01:39:11 -0800 (PST)
 From: Googol Lee <googollee@gmail.com>
@@ -165,7 +189,7 @@ r+WboOS4uuS4gOS7o+S6uueahOmAneWOu+OAgg0KPC9kaXY+DQo=
 		t.Fatal(err)
 	}
 	config.Log = log
-	worker, err := New(config, nil, nil)
+	worker, err := New(config, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

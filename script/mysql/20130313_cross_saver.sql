@@ -1,0 +1,1 @@
+CREATE TABLE `cross_saver` (id BIGINT(20) NOT NULL AUTO_INCREMENT PRIMARY KEY, reference_id CHAR(100) NOT NULL, cross_id CHAR(100) NOT NULL, touched_at DATETIME NOT NULL, UNIQUE(reference_id));

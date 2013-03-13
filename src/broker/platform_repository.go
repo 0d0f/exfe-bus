@@ -161,22 +161,28 @@ func (p *Platform) UploadPhoto(photoxID string, photos []model.Photo) error {
 	return nil
 }
 
-func (p *Platform) BotCrossGather(cross model.Cross) (int, error) {
+func (p *Platform) BotCrossGather(cross model.Cross) (uint64, int, error) {
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
 	err := encoder.Encode(cross)
 	if err != nil {
-		return 500, err
+		return 0, 500, err
 	}
 	u := fmt.Sprintf("%s/v2/gobus/gather", p.config.SiteApi)
 	p.config.Log.Debug("bot gather to: %s, cross: %s", u, buf.String())
 	body, code, err := parseResp(client.Post(u, "application/json", buf))
 	if err != nil {
-		return code, fmt.Errorf("error(%s) when send message(%s)", err, buf.String())
+		return 0, code, fmt.Errorf("error(%s) when send message(%s)", err, buf.String())
 	}
 	defer body.Close()
+	decoder := json.NewDecoder(body)
+	err = decoder.Decode(&cross)
+	if err != nil {
+		p.config.Log.Crit("can't parse gather return: %s", err)
+		return 0, 500, err
+	}
 
-	return 200, nil
+	return cross.ID, 200, nil
 }
 
 func (p *Platform) BotCrossInvite(to, id string, identities []model.Identity) (int, error) {
