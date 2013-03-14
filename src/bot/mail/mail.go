@@ -1,6 +1,7 @@
 package mail
 
 import (
+	"bot/ics"
 	"broker"
 	"bytes"
 	"code.google.com/p/go-imap/go1/imap"
@@ -10,6 +11,7 @@ import (
 	"formatter"
 	"github.com/googollee/go-encoding-ex"
 	"github.com/googollee/go-logger"
+	"io"
 	"io/ioutil"
 	"launchpad.net/tomb"
 	"mime/multipart"
@@ -18,6 +20,7 @@ import (
 	"net/http"
 	"net/mail"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -294,17 +297,80 @@ func (w *Worker) parseMail(msg *mail.Message) error {
 	if replyID != "" {
 		refIDs = append(refIDs, replyID)
 	}
-	crossID, crossExist, err := w.saver.Check(refIDs)
-	if err != nil {
-		return err
-	}
+	refIDs = append([]string{replyID}, refIDs...)
 
 	subject := msg.Header.Get("Subject")
 	if s, err := encodingex.DecodeEncodedWord(subject); err == nil {
 		subject = s
 	}
-	content, err := w.getContent(msg)
+	content, ics, err := w.getContent(msg)
 	if err != nil {
+		return err
+	}
+
+	if ics == "" {
+		err := w.processNonICS(refIDs, subject, from, addrList, content)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (w *Worker) prcessICS(icsBody string, msgID string, subject string, from *mail.Address, content string) error {
+	r := bytes.NewBufferString(icsBody)
+	calendar, err := ics.ParseCalendar(r)
+	if err != nil {
+		return err
+	}
+	for _, event := range calendar.Event {
+		cross := convertEventToCross(event, from)
+		crossID, crossExist, err := w.saver.Check([]string{event.ID})
+		if err != nil {
+			w.log.Crit("saver check %s failed: %s", event.ID, err)
+		}
+		if !crossExist {
+			id, code, err := w.platform.BotCrossGather(cross)
+			if err != nil {
+				if code < 500 {
+					w.sendHelp(code, err, msgID, from, subject, content)
+				}
+				return err
+			}
+			err = w.saver.Save([]string{event.ID}, fmt.Sprintf("%s", id))
+			if err != nil {
+				w.log.Crit("saver save %s failed: %s", event.ID, err)
+			}
+		} else {
+			id, err := strconv.Atoi(crossID)
+			if err != nil {
+				w.log.Crit("cross id (%s) invalid in saver: %s", crossID, err)
+				return err
+			}
+			cross.ID = uint64(id)
+			cross.Title = ""
+			cross.Description = ""
+			code, err := w.platform.BotCrossUpdate("cross", crossID, cross, model.Identity{
+				Provider:         "email",
+				ExternalID:       from.Address,
+				ExternalUsername: from.Address,
+				Name:             from.Name,
+			})
+			if err != nil {
+				if code < 500 {
+					w.sendHelp(code, err, msgID, from, subject, content)
+				}
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (w *Worker) processNonICS(refIDs []string, subject string, from *mail.Address, addrList []*mail.Address, content string) error {
+	crossID, crossExist, err := w.saver.Check(refIDs)
+	if err != nil {
+		w.log.Crit("saver check %s failed: %s", refIDs, err)
 		return err
 	}
 
@@ -329,7 +395,7 @@ func (w *Worker) parseMail(msg *mail.Message) error {
 		err = fmt.Errorf("can't parse mail list: %v", addrList)
 	}
 	if err != nil {
-		w.sendHelp(code, err, msgID, from, subject, content)
+		w.sendHelp(code, err, refIDs[0], from, subject, content)
 		return err
 	}
 	return nil
@@ -350,23 +416,36 @@ func (w *Worker) sendPost(arg string, from *mail.Address, addrs []*mail.Address,
 		return code, err
 	}
 
-	var identities []model.Identity
+	var invitations []model.Invitation
 	self := fmt.Sprintf("x+%s@%s", arg, w.config.Email.Domain)
+	by := model.Identity{
+		Provider:         "email",
+		Name:             from.Name,
+		ExternalID:       from.Address,
+		ExternalUsername: from.Address,
+	}
 	for _, addr := range addrs {
 		if addr.Address == self {
 			continue
 		}
-		identities = append(identities, model.Identity{
-			Provider:         "email",
-			Name:             addr.Name,
-			ExternalID:       addr.Address,
-			ExternalUsername: addr.Address,
+		invitations = append(invitations, model.Invitation{
+			Identity: model.Identity{
+				Provider:         "email",
+				Name:             addr.Name,
+				ExternalID:       addr.Address,
+				ExternalUsername: addr.Address,
+			},
+			By: by,
 		})
 	}
-	if len(identities) == 0 {
-		return code, err
+	if len(invitations) == 0 {
+		return 200, nil
 	}
-	code, err = w.platform.BotCrossInvite(to, toId, identities)
+	code, err = w.platform.BotCrossUpdate(to, toId, model.Cross{
+		Exfee: model.Exfee{
+			Invitations: invitations,
+		},
+	}, by)
 	return code, err
 }
 
@@ -437,15 +516,37 @@ func (w *Worker) sendHelp(code int, err error, msgID string, from *mail.Address,
 	return err
 }
 
-func (w *Worker) getContent(msg *mail.Message) (string, error) {
+func (w *Worker) getContent(msg *mail.Message) (string, string, error) {
 	mime, pairs := parseContentType(msg.Header.Get("Content-Type"))
+	ics := ""
+	if mime == "multipart/mixed" {
+		parts := multipart.NewReader(msg.Body, pairs["boundary"])
+		var err error
+		var part *multipart.Part
+		for part, err = parts.NextPart(); err == nil; part, err = parts.NextPart() {
+			m, p := parseContentType(part.Header.Get("Content-Type"))
+			if m == "application/ics" && ics == "" {
+				ics, err = getPartBody(part, part.Header.Get("Content-Transfer-Encoding"), p["charset"])
+				if err != nil {
+					return "", "", err
+				}
+			}
+			if m == "text/plain" || (m == "text/html" && mime != "text/plain") || (m == "multipart/alternative" && m != "text/html" && mime != "text/plain") {
+				mime, pairs = m, p
+				msg.Body = part
+				for k, v := range part.Header {
+					msg.Header[k] = v
+				}
+			}
+		}
+	}
 	if mime == "multipart/alternative" {
 		parts := multipart.NewReader(msg.Body, pairs["boundary"])
 		var err error
 		var part *multipart.Part
 		for part, err = parts.NextPart(); err == nil; part, err = parts.NextPart() {
 			m, p := parseContentType(part.Header.Get("Content-Type"))
-			if m == "text/plain" || (m == "text/html" && mime != "text/plain") {
+			if m == "text/plain" || m == "text/html" {
 				mime, pairs = m, p
 				msg.Body = part
 				for k, v := range part.Header {
@@ -456,37 +557,19 @@ func (w *Worker) getContent(msg *mail.Message) (string, error) {
 		}
 	}
 	if mime != "text/plain" && mime != "text/html" {
-		return "", fmt.Errorf("can't find plain or html, mime %s can't process", mime)
+		return "", "", fmt.Errorf("can't find plain or html, mime %s can't process", mime)
 	}
-	if encoder := msg.Header.Get("Content-Transfer-Encoding"); encoder != "base64" {
-		return "", fmt.Errorf("can't decode %s", encoder)
-	}
-	b, err := ioutil.ReadAll(msg.Body)
+	content, err := getPartBody(msg.Body, msg.Header.Get("Content-Transfer-Encoding"), pairs["charset"])
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	b, _ = base64.StdEncoding.DecodeString(string(b))
-	if charset := strings.ToLower(pairs["charset"]); charset != "utf-8" {
-		buf := bytes.NewBuffer(b)
-		reader, err := encodingex.NewIconvReadCloser(buf, "utf-8", charset)
-		if err != nil {
-			return "", err
-		}
-		b, err = ioutil.ReadAll(reader)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	replacer := strings.NewReplacer("\r\n", "\n", "\r", "\n")
-	content := replacer.Replace(string(b))
 
 	if mime == "text/html" {
 		content = w.parseHtml(content)
 	}
 	content = w.parsePlain(content)
 
-	return content, nil
+	return content, ics, nil
 }
 
 func (w *Worker) parseHtml(content string) string {
@@ -542,4 +625,104 @@ func parseContentType(contentType string) (string, map[string]string) {
 		pairs[p[0]] = p[1]
 	}
 	return mime, pairs
+}
+
+func getPartBody(r io.Reader, encoder string, charset string) (string, error) {
+	if encoder != "base64" {
+		return "", fmt.Errorf("can't decode %s", encoder)
+	}
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return "", err
+	}
+	b, err = base64.StdEncoding.DecodeString(string(b))
+	if err != nil {
+		return "", err
+	}
+	if charset = strings.ToLower(charset); charset != "utf-8" {
+		buf := bytes.NewBuffer(b)
+		reader, err := encodingex.NewIconvReadCloser(buf, "utf-8", charset)
+		if err != nil {
+			return "", err
+		}
+		b, err = ioutil.ReadAll(reader)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	replacer := strings.NewReplacer("\r\n", "\n", "\r", "\n")
+	content := replacer.Replace(string(b))
+	return content, nil
+}
+
+func convertEventToCross(event ics.Event, from *mail.Address) model.Cross {
+	places := strings.SplitN(event.Location, "\n", 2)
+	place := model.Place{
+		Title: places[0],
+	}
+	if len(places) > 1 {
+		place.Description = places[1]
+	}
+	desc := event.Description
+	if event.URL != "" {
+		desc += "\n" + event.URL
+	}
+	time := model.CrossTime{
+		BeginAt: model.EFTime{
+			Date: event.Start.UTC().Format("2006-01-02"),
+		},
+		OutputFormat: model.TimeFormat,
+	}
+	format := "2006-01-02 15:04:05"
+	if event.DateStart {
+		format = "2006-01-02"
+	} else {
+		time.BeginAt.Time = event.Start.UTC().Format("15:04:05")
+	}
+	time.Origin = fmt.Sprintf("%s - %s", event.Start.UTC().Format(format), event.End.UTC().Format(format))
+	invitations := make([]model.Invitation, 0)
+	attendees := make(map[string]bool)
+	by := model.Identity{
+		Name:             from.Name,
+		ExternalID:       from.Address,
+		ExternalUsername: from.Address,
+		Provider:         "email",
+	}
+	for _, a := range append(event.Attendees, event.Organizer) {
+		if _, ok := attendees[a.Email]; ok {
+			continue
+		}
+		attendees[a.Email] = true
+		host := a.Email == event.Organizer.Email
+		identity := model.Identity{
+			Name:             a.Name,
+			ExternalID:       a.Email,
+			ExternalUsername: a.Email,
+			Provider:         "email",
+		}
+		rsvp := model.RsvpNoresponse
+		switch a.PartStat {
+		case "ACCEPTED":
+			rsvp = model.RsvpAccepted
+		case "DECLINED":
+			rsvp = model.RsvpDeclined
+		}
+		invitations = append(invitations, model.Invitation{
+			Host:       host,
+			RsvpStatus: rsvp,
+			Identity:   identity,
+			By:         by,
+		})
+	}
+
+	return model.Cross{
+		Title:       event.Summary,
+		Place:       place,
+		Description: desc,
+		Time:        time,
+		Exfee: model.Exfee{
+			Invitations: invitations,
+		},
+	}
 }

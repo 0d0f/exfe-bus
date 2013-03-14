@@ -168,7 +168,7 @@ func (p *Platform) BotCrossGather(cross model.Cross) (uint64, int, error) {
 	if err != nil {
 		return 0, 500, err
 	}
-	u := fmt.Sprintf("%s/v2/gobus/gather", p.config.SiteApi)
+	u := fmt.Sprintf("%s/v2/GoBus/Gather", p.config.SiteApi)
 	p.config.Log.Debug("bot gather to: %s, cross: %s", u, buf.String())
 	body, code, err := parseResp(client.Post(u, "application/json", buf))
 	if err != nil {
@@ -185,10 +185,11 @@ func (p *Platform) BotCrossGather(cross model.Cross) (uint64, int, error) {
 	return cross.ID, 200, nil
 }
 
-func (p *Platform) BotCrossInvite(to, id string, identities []model.Identity) (int, error) {
+func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Identity) (int, error) {
 	arg := make(map[string]interface{})
 	arg[to] = id
-	arg["identities"] = identities
+	arg["cross"] = cross
+	arg["by_identity"] = by
 
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
@@ -197,7 +198,7 @@ func (p *Platform) BotCrossInvite(to, id string, identities []model.Identity) (i
 		return 500, err
 	}
 
-	u := fmt.Sprintf("%s/v2/gobus/invite", p.config.SiteApi)
+	u := fmt.Sprintf("%s/v2/GoBus/XUpdate", p.config.SiteApi)
 	p.config.Log.Debug("bot invite to: %s, arg: %s", u, buf.String())
 	body, code, err := parseResp(client.Post(u, "application/json", buf))
 	if err != nil {
@@ -209,7 +210,7 @@ func (p *Platform) BotCrossInvite(to, id string, identities []model.Identity) (i
 }
 
 func (p *Platform) BotPostConversation(from, post, to, id string) (int, error) {
-	u := fmt.Sprintf("%s/v2/gobus/PostConversation", p.config.SiteApi)
+	u := fmt.Sprintf("%s/v2/GoBus/PostConversation", p.config.SiteApi)
 	params := make(url.Values)
 	params.Add(to, id)
 	params.Add("content", post)
