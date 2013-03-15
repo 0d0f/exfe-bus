@@ -102,34 +102,43 @@ func (h *HelperImp) SendEmail(to string, content string) (string, error) {
 		return "", fmt.Errorf("mail(%s) not valid.", to)
 	}
 	host := mail_split[1]
+	addr := ""
+	var s *smtp.Client
+	var conn net.Conn
 
 	mx, err := net.LookupMX(host)
 	if err != nil {
-		return "", fmt.Errorf("lookup mail exchange fail: %s", err)
+		h.Log().Notice("lookup mail exchange fail: %s", err)
+		goto SEND
 	}
 	if len(mx) == 0 {
-		return "", Unreachable
+		h.Log().Notice("unreach mail exchange: %s", host)
+		goto SEND
 	}
-	addr := fmt.Sprintf("%s:25", mx[0].Host)
-	conn, err := net.DialTimeout("tcp", addr, time.Second)
+	addr = fmt.Sprintf("%s:25", mx[0].Host)
+	conn, err = net.DialTimeout("tcp", addr, time.Second)
 	if err != nil {
-		return "", fmt.Errorf("conn %s fail: %s", addr, err)
+		h.Log().Notice("conn %s fail: %s", addr, err)
+		goto SEND
 	}
 	conn.SetDeadline(time.Now().Add(time.Second * 10))
-	s, err := smtp.NewClient(conn, host)
+	s, err = smtp.NewClient(conn, host)
 	if err != nil {
-		return "", fmt.Errorf("new smtp client %s fail: %s", mx[0].Host, err)
+		h.Log().Notice("new smtp client %s fail: %s", mx[0].Host, err)
+		goto SEND
 	}
 	err = s.Mail(h.emailFrom)
 	if err != nil {
-		return "", fmt.Errorf("mail smtp %s command mail fail: %s", host, err)
+		h.Log().Notice("mail smtp %s command mail fail: %s", host, err)
+		goto SEND
 	}
 	err = s.Rcpt(to)
 	if err != nil {
-		return "", Unreachable
+		return "", fmt.Errorf("can't find mail: %s", to)
 	}
 	s.Quit()
 
+SEND:
 	id, err := smtp.SendMailTimeout(h.emailHost+":25", h.auth, h.emailFrom, []string{to}, []byte(content), time.Second*10)
 	return id, err
 }

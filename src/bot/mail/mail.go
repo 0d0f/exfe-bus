@@ -451,7 +451,8 @@ func (w *Worker) sendPost(to, id string, from *mail.Address, addrs []*mail.Addre
 				ExternalID:       addr.Address,
 				ExternalUsername: addr.Address,
 			},
-			By: by,
+			By:         by,
+			RsvpStatus: model.RsvpNoresponse,
 		})
 	}
 	if len(invitations) == 0 {
@@ -493,7 +494,8 @@ func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, de
 				ExternalID:       addr.Address,
 				ExternalUsername: addr.Address,
 			},
-			By: by,
+			By:         by,
+			RsvpStatus: model.RsvpNoresponse,
 		})
 	}
 	cross.Exfee.Invitations = invite
