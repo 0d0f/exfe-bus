@@ -339,6 +339,7 @@ func (w *Worker) processICS(icsBody string, msgID string, subject string, from *
 			w.log.Crit("saver check %s failed: %s", event.ID, err)
 		}
 		if !crossExist {
+			w.log.Notice("|gather|%s|%s|%+v|", cross.Title, from.Address, cross.Exfee.Invitations)
 			id, code, err := w.platform.BotCrossGather(cross)
 			if err != nil {
 				if code < 500 {
@@ -359,6 +360,7 @@ func (w *Worker) processICS(icsBody string, msgID string, subject string, from *
 			cross.ID = uint64(id)
 			cross.Title = ""
 			cross.Description = ""
+			w.log.Notice("|update|%s|%s|%+v|", cross.Title, from.Address, cross.Exfee.Invitations)
 			code, err := w.platform.BotCrossUpdate("cross_id", crossID, cross, model.Identity{
 				Provider:         "email",
 				ExternalID:       from.Address,
@@ -377,7 +379,6 @@ func (w *Worker) processICS(icsBody string, msgID string, subject string, from *
 }
 
 func (w *Worker) processNonICS(refIDs []string, subject string, from *mail.Address, addrList []*mail.Address, content string) error {
-	fmt.Println(refIDs)
 	crossID, crossExist, err := w.saver.Check(refIDs)
 	if err != nil {
 		w.log.Crit("saver check %s failed: %s", refIDs, err)
@@ -422,7 +423,7 @@ func (w *Worker) processNonICS(refIDs []string, subject string, from *mail.Addre
 }
 
 func (w *Worker) sendPost(to, id string, from *mail.Address, addrs []*mail.Address, post string) (int, error) {
-	w.log.Debug("send post(%s) from(%s) to %s:%s", post, from.Address, to, id)
+	w.log.Notice("|post|%s|%s|%s|%s|", to, id, from.Address, post)
 
 	code, err := w.platform.BotPostConversation(from.Address, post, to, id)
 	if err != nil {
@@ -453,10 +454,11 @@ func (w *Worker) sendPost(to, id string, from *mail.Address, addrs []*mail.Addre
 			By: by,
 		})
 	}
-	fmt.Println(addrs, invitations)
 	if len(invitations) == 0 {
 		return 200, nil
 	}
+
+	w.log.Notice("|invite|%s|%s|%s|%+v|", to, id, from.Address, invitations)
 	code, err = w.platform.BotCrossUpdate(to, id, model.Cross{
 		Exfee: model.Exfee{
 			Invitations: invitations,
@@ -466,7 +468,6 @@ func (w *Worker) sendPost(to, id string, from *mail.Address, addrs []*mail.Addre
 }
 
 func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, desc string) (uint64, int, error) {
-	w.log.Debug("create x(%s) for %v", title, list)
 	cross := model.Cross{
 		Title:       title,
 		Description: desc,
@@ -494,6 +495,7 @@ func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, de
 		})
 	}
 	cross.Exfee.Invitations = invite
+	w.log.Notice("|gather|%s|%s|%+v|", title, from.Address, invite)
 	id, status, err := w.platform.BotCrossGather(cross)
 	if err != nil {
 		return 0, status, err
@@ -502,7 +504,7 @@ func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, de
 }
 
 func (w *Worker) sendHelp(code int, err error, msgID string, from *mail.Address, subject, content string) error {
-	w.log.Debug("send help to %v", from)
+	w.log.Notice("|help|%s|", from.Address)
 	buf := bytes.NewBuffer(nil)
 	type Email struct {
 		From      *mail.Address
