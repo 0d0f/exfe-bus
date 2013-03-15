@@ -168,7 +168,7 @@ func (p *Platform) BotCrossGather(cross model.Cross) (uint64, int, error) {
 	if err != nil {
 		return 0, 500, err
 	}
-	u := fmt.Sprintf("%s/v2/GoBus/Gather", p.config.SiteApi)
+	u := fmt.Sprintf("%s/v2/Gobus/Gather", p.config.SiteApi)
 	p.config.Log.Debug("bot gather to: %s, cross: %s", u, buf.String())
 	body, code, err := parseResp(client.Post(u, "application/json", buf))
 	if err != nil {
@@ -199,7 +199,7 @@ func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Ide
 		return 500, err
 	}
 
-	u := fmt.Sprintf("%s/v2/GoBus/XUpdate", p.config.SiteApi)
+	u := fmt.Sprintf("%s/v2/Gobus/XUpdate", p.config.SiteApi)
 	p.config.Log.Debug("bot invite to: %s, arg: %s", u, buf.String())
 	body, code, err := parseResp(client.Post(u, "application/json", buf))
 	if err != nil {
@@ -211,7 +211,7 @@ func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Ide
 }
 
 func (p *Platform) BotPostConversation(from, post, to, id string) (int, error) {
-	u := fmt.Sprintf("%s/v2/GoBus/PostConversation", p.config.SiteApi)
+	u := fmt.Sprintf("%s/v2/Gobus/PostConversation", p.config.SiteApi)
 	params := make(url.Values)
 	params.Add(to, id)
 	params.Add("content", post)

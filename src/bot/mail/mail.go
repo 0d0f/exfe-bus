@@ -521,6 +521,7 @@ func (w *Worker) sendHelp(code int, err error, msgID string, from *mail.Address,
 		Subject:   subject,
 		MessageID: msgID,
 		Text:      content,
+		Config:    w.config,
 	}
 	err = w.templ.Execute(buf, "en_US", "email/conversation_reply", email)
 	if err != nil {
