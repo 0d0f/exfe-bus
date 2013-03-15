@@ -468,15 +468,16 @@ func (w *Worker) sendPost(to, id string, from *mail.Address, addrs []*mail.Addre
 }
 
 func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, desc string) (uint64, int, error) {
+	by := model.Identity{
+		Provider:         "email",
+		Name:             from.Name,
+		ExternalID:       from.Address,
+		ExternalUsername: from.Address,
+	}
 	cross := model.Cross{
 		Title:       title,
 		Description: desc,
-		By: model.Identity{
-			Provider:         "email",
-			Name:             from.Name,
-			ExternalID:       from.Address,
-			ExternalUsername: from.Address,
-		},
+		By:          by,
 	}
 	var invite []model.Invitation
 	for _, addr := range list {
@@ -492,6 +493,7 @@ func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, de
 				ExternalID:       addr.Address,
 				ExternalUsername: addr.Address,
 			},
+			By: by,
 		})
 	}
 	cross.Exfee.Invitations = invite

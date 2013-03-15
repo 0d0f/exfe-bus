@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -49,6 +50,7 @@ func dial(net_, addr string) (net.Conn, error) {
 type Platform struct {
 	dispatcher *gobus.Dispatcher
 	config     *model.Config
+	replacer   *strings.Replacer
 }
 
 func NewPlatform(config *model.Config) (*Platform, error) {
@@ -60,6 +62,7 @@ func NewPlatform(config *model.Config) (*Platform, error) {
 	return &Platform{
 		dispatcher: dispatcher,
 		config:     config,
+		replacer:   strings.NewReplacer(`"place":{},`, "", `"time":{"begin_at":{}},`, ""),
 	}, nil
 }
 
@@ -168,6 +171,9 @@ func (p *Platform) BotCrossGather(cross model.Cross) (uint64, int, error) {
 	if err != nil {
 		return 0, 500, err
 	}
+	str := p.replacer.Replace(buf.String())
+	buf = bytes.NewBufferString(str)
+
 	u := fmt.Sprintf("%s/v2/Gobus/Gather", p.config.SiteApi)
 	p.config.Log.Debug("bot gather to: %s, cross: %s", u, buf.String())
 	body, code, err := parseResp(client.Post(u, "application/json", buf))
@@ -198,6 +204,8 @@ func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Ide
 	if err != nil {
 		return 500, err
 	}
+	str := p.replacer.Replace(buf.String())
+	buf = bytes.NewBufferString(str)
 
 	u := fmt.Sprintf("%s/v2/Gobus/XUpdate", p.config.SiteApi)
 	p.config.Log.Debug("bot invite to: %s, arg: %s", u, buf.String())
