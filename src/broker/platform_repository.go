@@ -184,8 +184,8 @@ func (p *Platform) BotCrossGather(cross model.Cross) (uint64, int, error) {
 
 	var ret struct {
 		Response struct {
-			CrossID uint64
-		}
+			CrossID uint64 `json:"cross_id"`
+		} `json:"response"`
 	}
 	decoder := json.NewDecoder(body)
 	err = decoder.Decode(&ret)
