@@ -181,14 +181,20 @@ func (p *Platform) BotCrossGather(cross model.Cross) (uint64, int, error) {
 		return 0, code, fmt.Errorf("error(%s) when send message(%s)", err, buf.String())
 	}
 	defer body.Close()
+
+	var ret struct {
+		Response struct {
+			CrossID uint64
+		}
+	}
 	decoder := json.NewDecoder(body)
-	err = decoder.Decode(&cross)
+	err = decoder.Decode(&ret)
 	if err != nil {
 		p.config.Log.Crit("can't parse gather return: %s", err)
 		return 0, 500, err
 	}
 
-	return cross.ID, 200, nil
+	return ret.Response.CrossID, 200, nil
 }
 
 func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Identity) (int, error) {
