@@ -190,6 +190,7 @@ func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Ide
 	arg[to] = id
 	arg["cross"] = cross
 	arg["by_identity"] = by
+	fmt.Println(arg)
 
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
