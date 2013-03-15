@@ -339,7 +339,7 @@ func (w *Worker) processICS(icsBody string, msgID string, subject string, from *
 			w.log.Crit("saver check %s failed: %s", event.ID, err)
 		}
 		if !crossExist {
-			w.log.Notice("|gather|%s|%s|%+v|", cross.Title, from.Address, cross.Exfee.Invitations)
+			w.log.Info("|gather|%s|%s|%+v|", cross.Title, from.Address, cross.Exfee.Invitations)
 			id, code, err := w.platform.BotCrossGather(cross)
 			if err != nil {
 				if code < 500 {
@@ -360,7 +360,7 @@ func (w *Worker) processICS(icsBody string, msgID string, subject string, from *
 			cross.ID = uint64(id)
 			cross.Title = ""
 			cross.Description = ""
-			w.log.Notice("|update|%s|%s|%+v|", cross.Title, from.Address, cross.Exfee.Invitations)
+			w.log.Info("|update|%s|%s|%+v|", cross.Title, from.Address, cross.Exfee.Invitations)
 			code, err := w.platform.BotCrossUpdate("cross_id", crossID, cross, model.Identity{
 				Provider:         "email",
 				ExternalID:       from.Address,
@@ -423,7 +423,7 @@ func (w *Worker) processNonICS(refIDs []string, subject string, from *mail.Addre
 }
 
 func (w *Worker) sendPost(to, id string, from *mail.Address, addrs []*mail.Address, post string) (int, error) {
-	w.log.Notice("|post|%s|%s|%s|%s|", to, id, from.Address, post)
+	w.log.Info("|post|%s|%s|%s|%s|", to, id, from.Address, post)
 
 	code, err := w.platform.BotPostConversation(from.Address, post, to, id)
 	if err != nil {
@@ -458,7 +458,7 @@ func (w *Worker) sendPost(to, id string, from *mail.Address, addrs []*mail.Addre
 		return 200, nil
 	}
 
-	w.log.Notice("|invite|%s|%s|%s|%+v|", to, id, from.Address, invitations)
+	w.log.Info("|invite|%s|%s|%s|%+v|", to, id, from.Address, invitations)
 	code, err = w.platform.BotCrossUpdate(to, id, model.Cross{
 		Exfee: model.Exfee{
 			Invitations: invitations,
@@ -495,7 +495,7 @@ func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, de
 		})
 	}
 	cross.Exfee.Invitations = invite
-	w.log.Notice("|gather|%s|%s|%+v|", title, from.Address, invite)
+	w.log.Info("|gather|%s|%s|%+v|", title, from.Address, invite)
 	id, status, err := w.platform.BotCrossGather(cross)
 	if err != nil {
 		return 0, status, err
@@ -504,7 +504,7 @@ func (w *Worker) createCross(from *mail.Address, list []*mail.Address, title, de
 }
 
 func (w *Worker) sendHelp(code int, err error, msgID string, from *mail.Address, subject, content string) error {
-	w.log.Notice("|help|%s|", from.Address)
+	w.log.Info("|help|%s|", from.Address)
 	buf := bytes.NewBuffer(nil)
 	type Email struct {
 		From      *mail.Address
