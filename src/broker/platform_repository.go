@@ -224,12 +224,13 @@ func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Ide
 	return 200, nil
 }
 
-func (p *Platform) BotPostConversation(from, post, to, id string) (int, error) {
+func (p *Platform) BotPostConversation(from, post, createdAt, to, id string) (int, error) {
 	u := fmt.Sprintf("%s/v2/Gobus/PostConversation", p.config.SiteApi)
 	params := make(url.Values)
 	params.Add(to, id)
 	params.Add("content", post)
 	params.Add("external_id", from)
+	params.Add("time", createdAt)
 	params.Add("provider", "email")
 	p.config.Log.Debug("bot post to: %s, post content: %s\n", u, params.Encode())
 

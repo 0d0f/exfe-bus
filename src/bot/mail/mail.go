@@ -130,14 +130,14 @@ func (w *Worker) process() {
 				errorIds = append(errorIds, id)
 				continue
 			}
-			err = w.saver.Save(parser.GetIDs(), fmt.Sprintf("%s", crossID))
+			err = w.saver.Save(parser.GetIDs(), fmt.Sprintf("%d", crossID))
 			if err != nil {
 				w.log.Crit("saver save %s failed: %s", id, err)
 			}
 		} else {
 			post := parser.GetPost()
 			if post != "" {
-				_, err := w.platform.BotPostConversation(parser.from.Address, post, to, toID)
+				_, err := w.platform.BotPostConversation(parser.from.Address, post, parser.Date(), to, toID)
 				if err != nil {
 					w.log.Err("%s can't post %s with: %s", parser.from.Address, post, err)
 					errorIds = append(errorIds, id)

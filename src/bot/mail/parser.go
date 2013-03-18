@@ -13,6 +13,7 @@ import (
 	"net/mail"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var htmlRegexp []*regexp.Regexp
@@ -82,6 +83,7 @@ type Parser struct {
 	config       *model.Config
 	idRegexp     *regexp.Regexp
 	domain       string
+	date         time.Time
 
 	content     string
 	contentMime string
@@ -109,17 +111,23 @@ func NewParser(msg *mail.Message, config *model.Config) (*Parser, error) {
 		subject = s
 	}
 
+	date, err := time.Parse("Mon, 02 Jan 2006 15:04:05 -0700", msg.Header.Get("Date"))
+	if err != nil {
+		date = time.Now()
+	}
+
 	ret := &Parser{
 		from:         from,
 		addrList:     addrList,
 		messageID:    msgID,
 		referenceIDs: ids,
 		subject:      subject,
+		date:         date.UTC(),
 		config:       config,
 		domain:       config.Email.Domain,
 		idRegexp:     regexp.MustCompile(config.Email.Prefix + "\\+([0-9a-zA-Z]+)@"),
 	}
-	err := ret.init(msg.Body, msg.Header)
+	err = ret.init(msg.Body, msg.Header)
 	if err != nil {
 		return nil, err
 	}
@@ -196,6 +204,10 @@ func (h *Parser) GetIDs() []string {
 	fmt.Printf("%+v\n", h.event)
 	fmt.Println(ret)
 	return ret
+}
+
+func (h *Parser) Date() string {
+	return h.date.Format("2006-01-02 15:04:05")
 }
 
 func (h *Parser) GetCross() (cross model.Cross) {
