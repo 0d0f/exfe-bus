@@ -149,14 +149,11 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 
 func (l *LocalTemplate) IsExist(lang, name string) bool {
 	t, ok := l.templates[lang]
-	if ok {
-		if t.Lookup(name) != nil {
-			return true
-		}
-	}
-	t, ok = l.templates[l.defaultLang]
 	if !ok {
-		return false
+		t, ok = l.templates[l.defaultLang]
+		if !ok {
+			return false
+		}
 	}
 	return t.Lookup(name) != nil
 }

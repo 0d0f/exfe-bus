@@ -30,6 +30,7 @@ func main() {
 		log.Crit("create local template failed: %s", err)
 		return
 	}
+
 	db := broker.NewDBMultiplexer(&config)
 	saver := NewCrossSaver(db)
 
