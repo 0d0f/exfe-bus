@@ -1,4 +1,4 @@
-{{$time := .Cross.Time.StringInZone .To.Timezone}}<!DOCTYPE html>
+{{$time := .Cross.Time.StringInZone .Timezone}}<!DOCTYPE html>
 <html>
     <head>
         <title></title>
@@ -40,7 +40,7 @@
                 <td valign="top" width="180">
                     {{if $time}}
                     <p style="font-size: 20px; line-height: 26px; margin: 0;">
-                        <a href="{{.Link}}" style="color: {{if .IsTimeChanged}}#3a6ea5{{else}}#333333{{end}}; text-decoration: none;">{{$time | html}}</a>
+                        <a href="{{.Link}}" style="color: {{if .IsTimeChanged}}#3a6ea5{{else}}#333333{{end}}; text-decoration: none;">{{$time | html}}({{.Timezone}})</a>
                     </p>
                     {{else}}
                     <p style="font-size: 20px; line-height: 26px; margin: 0;">

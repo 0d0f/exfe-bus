@@ -52,7 +52,7 @@
                                             	{{$time := .Cross.Time.StringInZone .Timezone}}
                                                 {{if $time}}
                                                 <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
-                                                    {{$time | html}}
+                                                    {{$time | html}}({{.Timezone}})
                                                 </p>
                                                 {{else}}
                                                 <p style="font-size: 20px; line-height: 26px; margin: 0; color: #333333;">
