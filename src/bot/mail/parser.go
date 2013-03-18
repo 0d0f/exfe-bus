@@ -372,30 +372,28 @@ func (h *Parser) convertEventToCross(event ics.Event, from *mail.Address) model.
 }
 
 func getPartBody(r io.Reader, encoder string, charset string) (string, error) {
-	if encoder != "base64" {
+	switch strings.ToLower(encoder) {
+	case "base64":
+		r = encodingex.NewIgnoreReader(r, []byte(" \r\n"))
+		r = base64.NewDecoder(base64.StdEncoding, r)
+	case "quoted-printable":
+		r = encodingex.NewQEncodingDecoder(r)
+	default:
 		return "", fmt.Errorf("can't decode %s", encoder)
-	}
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return "", err
-	}
-	b, err = base64.StdEncoding.DecodeString(strings.Trim(string(b), "\n\r "))
-	if err != nil {
-		return "", err
 	}
 	if charset = strings.ToLower(charset); charset != "utf-8" {
 		if charset == "gb2312" {
 			charset = "gbk"
 		}
-		buf := bytes.NewBuffer(b)
-		reader, err := encodingex.NewIconvReadCloser(buf, "utf-8", charset)
+		var err error
+		r, err = encodingex.NewIconvReadCloser(r, "utf-8", charset)
 		if err != nil {
 			return "", err
 		}
-		b, err = ioutil.ReadAll(reader)
-		if err != nil {
-			return "", err
-		}
+	}
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return "", err
 	}
 
 	return string(b), nil
