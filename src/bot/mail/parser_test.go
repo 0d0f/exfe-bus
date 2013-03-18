@@ -2,6 +2,7 @@ package mail
 
 import (
 	"bytes"
+	"github.com/stretchrcom/testify/assert"
 	"model"
 	"net/mail"
 	"testing"
@@ -165,5 +166,5 @@ REFSDQo=
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Errorf("%+v", parser)
+	assert.Equal(t, parser.messageID, "BAY152-ds11D2686FF50F86678FFD1AA0E80@phx.gbl")
 }
