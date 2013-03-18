@@ -292,7 +292,7 @@ func (a *SummaryArg) IsTitleChanged() bool {
 }
 
 func (a *SummaryArg) IsPlaceChanged() bool {
-	return !a.Cross.Place.Same(&a.OldCross.Place)
+	return !a.Cross.Place.Same(a.OldCross.Place)
 }
 
 func (a *SummaryArg) IsPlaceTitleChanged() bool {

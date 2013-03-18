@@ -363,9 +363,9 @@ func (h *Parser) convertEventToCross(event ics.Event, from *mail.Address) model.
 	return model.Cross{
 		By:          by,
 		Title:       event.Summary,
-		Place:       place,
+		Place:       &place,
 		Description: desc,
-		Time:        time,
+		Time:        &time,
 		Exfee: model.Exfee{
 			Invitations: invitations,
 		},

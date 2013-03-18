@@ -10,11 +10,11 @@ var nowFunc = func() time.Time {
 }
 
 type EFTime struct {
-	DateWord string `json:"date_word,omitempty"`
-	Date     string `json:"date,omitempty"`
-	TimeWord string `json:"time_word,omitempty"`
-	Time     string `json:"time,omitempty"`
-	Timezone string `json:"timezone,omitempty"`
+	DateWord string `json:"date_word"`
+	Date     string `json:"date"`
+	TimeWord string `json:"time_word"`
+	Time     string `json:"time"`
+	Timezone string `json:"timezone"`
 }
 
 func (t EFTime) UTCTime(layout string) (string, error) {
