@@ -1,7 +1,7 @@
 Content-Type: multipart/mixed; boundary="56040bc4f71301a3dc363b960b1796dafbb8b190894fd231dda878b5be75"
-References: <x+e{{.Cross.Exfee.ID}}@exfe.com>
+References: <{{.Config.Email.Prefix}}+c{{.Cross.ID}}@exfe.com>
 To: =?utf-8?B?{{.To.Name | base64}}?= <to_email_address>
-From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <x+e{{.Cross.Exfee.ID}}@{{.Config.Email.Domain}}>
+From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <{{.Config.Email.Prefix}}+c{{.Cross.ID}}@{{.Config.Email.Domain}}>
 Subject: =?utf-8?B?{{.Cross.Title | base64}}?=
 
 --56040bc4f71301a3dc363b960b1796dafbb8b190894fd231dda878b5be75

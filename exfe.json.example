@@ -28,6 +28,7 @@
     "username": "x@0d0f.com",
     "password": "",
     "name": "[DEV]EXFE ·X·",
+    "prefix": "x",
     "domain": "0d0f.com",
     "idle_timeout_in_sec": 30,
     "interval_in_sec": 10

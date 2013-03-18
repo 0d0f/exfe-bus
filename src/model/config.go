@@ -34,6 +34,7 @@ type Config struct {
 		Username         string `json:"username"`
 		Password         string `json:"password"`
 		Name             string `json:"name"`
+		Prefix           string `json:"prefix"`
 		Domain           string `json:"domain"`
 		IdleTimeoutInSec uint   `json:"idle_timeout_in_sec"`
 		IntervalInSec    uint   `json:"interval_in_sec"`
