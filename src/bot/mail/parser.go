@@ -310,8 +310,8 @@ func (h *Parser) convertEventToCross(event ics.Event, from *mail.Address) model.
 	}
 	time := model.CrossTime{
 		BeginAt: model.EFTime{
-			Date:     event.Start.UTC().Format("2006-01-02"),
-			Timezone: "+00:00",
+			Date:     event.Start.Format("2006-01-02"),
+			Timezone: event.Start.Format("-0700"),
 		},
 		OutputFormat: model.TimeFormat,
 	}
