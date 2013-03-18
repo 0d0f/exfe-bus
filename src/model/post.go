@@ -25,11 +25,13 @@ func (p *Post) CreatedAtInZone(timezone string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	loc, err := LoadLocation(timezone)
-	if err != nil {
-		return "", fmt.Errorf("Parse target zone error: %s", err)
+	if timezone != "" {
+		loc, err := LoadLocation(timezone)
+		if err != nil {
+			return "", fmt.Errorf("Parse target zone error: %s", err)
+		}
+		t = t.In(loc)
 	}
-	t = t.In(loc)
 	return t.Format("03:04PM Mon, Jan 2"), nil
 }
 
