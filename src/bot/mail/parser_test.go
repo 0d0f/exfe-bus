@@ -16,6 +16,20 @@ func init() {
 	config.Email.Domain = "0d0f.com"
 }
 
+func TestParsePlain(t *testing.T) {
+	type Test struct {
+		input  string
+		output string
+	}
+	var tests = []Test{
+		{"测试普通邮件\n\n在 2013-03-19 13:10:34，\"Googol Lee\" <googollee@gmail.com> 写道：\n\n测试普通邮件回复", "测试普通邮件"},
+	}
+	for i, test := range tests {
+		output := parsePlain(test.input)
+		assert.Equal(t, output, test.output, fmt.Sprintf("test %d", i))
+	}
+}
+
 func TestParseContentType(t *testing.T) {
 	type Test struct {
 		contentType string

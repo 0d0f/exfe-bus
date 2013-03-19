@@ -44,7 +44,7 @@ func init() {
 		"发自我的 iPhone",
 		`EXFE ·X·"? *<x\+?[a-zA-Z0-9]*@exfe.com>`,
 		`EXFE ·X·"? *<x\+?[a-zA-Z0-9]*@0d0f.com>`,
-		`在 \d\d\d\d-\d-\d \d\d:\d\d:\d\d，.*写道：`,
+		`在 \d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d，.*写道：`,
 		`^>+`,
 	} {
 		replyRegexp = append(replyRegexp, regexp.MustCompile(reply))
