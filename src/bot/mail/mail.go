@@ -155,7 +155,7 @@ func (w *Worker) process() {
 				continue
 			}
 		}
-		err = w.saver.Save(parser.GetIDs(), fmt.Sprintf("%d", toID))
+		err = w.saver.Save(parser.GetIDs(), toID)
 		if err != nil {
 			w.log.Crit("saver save %s failed: %s", id, err)
 		}
