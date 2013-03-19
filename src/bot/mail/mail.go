@@ -130,10 +130,7 @@ func (w *Worker) process() {
 				errorIds = append(errorIds, id)
 				continue
 			}
-			err = w.saver.Save(parser.GetIDs(), fmt.Sprintf("%d", crossID))
-			if err != nil {
-				w.log.Crit("saver save %s failed: %s", id, err)
-			}
+			to, toID = "cross_id", fmt.Sprintf("%d", crossID)
 		} else {
 			post := parser.GetPost()
 			if post != "" {
@@ -157,6 +154,10 @@ func (w *Worker) process() {
 				errorIds = append(errorIds, id)
 				continue
 			}
+		}
+		err = w.saver.Save(parser.GetIDs(), fmt.Sprintf("%d", toID))
+		if err != nil {
+			w.log.Crit("saver save %s failed: %s", id, err)
 		}
 		w.log.Notice("parsed %d", id)
 		okIds = append(okIds, id)
