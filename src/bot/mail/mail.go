@@ -155,9 +155,11 @@ func (w *Worker) process() {
 				continue
 			}
 		}
-		err = w.saver.Save(parser.GetIDs(), toID)
-		if err != nil {
-			w.log.Crit("saver save %s failed: %s", id, err)
+		if to == "cross_id" {
+			err = w.saver.Save(parser.GetIDs(), toID)
+			if err != nil {
+				w.log.Crit("saver save %s failed: %s", id, err)
+			}
 		}
 		w.log.Notice("parsed %d", id)
 		okIds = append(okIds, id)
