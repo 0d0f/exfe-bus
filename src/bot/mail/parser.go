@@ -145,11 +145,7 @@ func (h *Parser) init(r io.Reader, header mail.Header) error {
 	case "multipart/alternative":
 		parts := multipart.NewReader(r, pairs["boundary"])
 		for part, e := parts.NextPart(); e == nil; part, e = parts.NextPart() {
-			err := h.init(part, mail.Header(part.Header))
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
+			h.init(part, mail.Header(part.Header))
 		}
 	case "text/plain":
 		if h.contentMime == "text/plain" {
@@ -172,6 +168,11 @@ func (h *Parser) init(r io.Reader, header mail.Header) error {
 		}
 		content = parseHtml(content)
 		h.content = parsePlain(content)
+	case "application/octet-stream":
+		if !strings.HasSuffix(strings.ToLower(pairs["name"]), ".ics") {
+			return nil
+		}
+		fallthrough
 	case "text/calendar":
 		fallthrough
 	case "application/ics":
