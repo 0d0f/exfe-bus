@@ -42,7 +42,8 @@ func init() {
 		`^From:`,
 		`^On (.*) wrote:`,
 		"发自我的 iPhone",
-		`EXFE ·X· <x\+[a-zA-Z0-9]*@exfe.com>`,
+		`EXFE ·X·"? *<x\+?[a-zA-Z0-9]*@exfe.com>`,
+		`EXFE ·X·"? *<x\+?[a-zA-Z0-9]*@0d0f.com>`,
 		`^>+`,
 	} {
 		replyRegexp = append(replyRegexp, regexp.MustCompile(reply))
@@ -415,7 +416,7 @@ func parseContentType(contentType string) (string, map[string]string) {
 	pairs := make(map[string]string)
 	for _, part := range parts[1:] {
 		part = strings.Trim(part, " \n\t")
-		p := strings.Split(part, "=")
+		p := strings.SplitN(part, "=", 2)
 		pairs[p[0]] = strings.Trim(p[1], "\"' ")
 	}
 	return mime, pairs

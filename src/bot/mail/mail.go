@@ -134,7 +134,7 @@ func (w *Worker) process() {
 		} else {
 			post := parser.GetPost()
 			if post != "" {
-				_, err := w.platform.BotPostConversation(parser.from.Address, post, parser.Date(), to, toID)
+				_, err := w.platform.BotPostConversation(parser.from.Address, post, parser.Date(), parser.addrList, to, toID)
 				if err != nil {
 					w.log.Err("%s can't post %s with: %s", parser.from.Address, post, err)
 					errorIds = append(errorIds, id)

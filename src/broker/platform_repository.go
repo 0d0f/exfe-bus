@@ -10,6 +10,7 @@ import (
 	"model"
 	"net"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"strings"
 	"time"
@@ -224,7 +225,7 @@ func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Ide
 	return 200, nil
 }
 
-func (p *Platform) BotPostConversation(from, post, createdAt, to, id string) (int, error) {
+func (p *Platform) BotPostConversation(from, post, createdAt string, exclude []*mail.Address, to, id string) (int, error) {
 	u := fmt.Sprintf("%s/v2/Gobus/PostConversation", p.config.SiteApi)
 	params := make(url.Values)
 	params.Add(to, id)
@@ -232,6 +233,11 @@ func (p *Platform) BotPostConversation(from, post, createdAt, to, id string) (in
 	params.Add("external_id", from)
 	params.Add("time", createdAt)
 	params.Add("provider", "email")
+	ex := make([]string, len(exclude))
+	for i, addr := range exclude {
+		ex[i] = fmt.Sprintf("%s@email", addr.Address)
+	}
+	params.Add("exclude", strings.Join(ex, ","))
 	p.config.Log.Debug("bot post to: %s, post content: %s\n", u, params.Encode())
 
 	body, code, err := parseResp(client.PostForm(u, params))
