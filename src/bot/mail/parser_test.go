@@ -54,7 +54,8 @@ Date: Tue, 19 Mar 2013 16:05:42 +0800 (CST)
 From: googollee  <googollee@163.com>
 To: "Googol Lee" <googollee@gmail.com>
 Cc: =?GBK?Q?=5BDEV=5D_EXFE_=A1=A4X=A1=A4?= <x@0d0f.com>
-Subject: =?GBK?Q?Re:Re:_=B2=E2=CA=D4=D3=CA=BC=FE=B4=B4=BD=A85?=
+Subject: =?utf-8?Q?=E9=82=AE=E4=BB=B6=E5=88=9B=E5=BB=BAX=E6=B5=8B?=
+ =?utf-8?Q?=E8=AF=95_take2?=
 X-Priority: 3
 X-Mailer: Coremail Webmail Server Version SP_ntes V3.5 build
  20130201(21528.5249.5248) Copyright (c) 2002-2013 www.mailtech.cn 163com
@@ -154,6 +155,7 @@ VA0KRU5EOlZDQUxFTkRBUg0K
 	}
 	assert.Equal(t, parser.messageID, "231eec8.da02.13d81aeb39b.Coremail.googollee@163.com")
 	assert.Equal(t, parser.content, "再次更新地点")
+	assert.Equal(t, parser.subject, "邮件创建X测试 take2")
 	assert.Equal(t, parser.event.ID, "a7bb1d2f-3ef1-4251-9bc2-d0c24dee24d5")
 	assert.Equal(t, parser.HasICS(), true)
 	assert.Equal(t, parser.GetCross().Place.Title, "地点233")
