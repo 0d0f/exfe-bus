@@ -145,6 +145,8 @@ func (w *Worker) process() {
 			if !parser.HasICS() {
 				cross.Title = ""
 				cross.Description = ""
+				cross.Place = nil
+				cross.Time = nil
 			}
 			_, err = w.platform.BotCrossUpdate(to, toID, cross, cross.By)
 			if err != nil {
