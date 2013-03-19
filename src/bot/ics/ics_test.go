@@ -52,7 +52,8 @@ END:VCALENDAR`
 }
 
 func TestParseICloud(t *testing.T) {
-	icloud := `BEGIN:VCALENDAR
+	{
+		icloud := `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Apple Inc.//Mac OS X 10.8.2//EN
 CALSCALE:GREGORIAN
@@ -89,13 +90,64 @@ ACTION:AUDIO
 END:VALARM
 END:VEVENT
 END:VCALENDAR`
-	expect := `{"Event":[{"ID":"E2F546B3-A866-4F77-87C7-9CA46A477EE5","Organizer":{"Name":"GoogolLee LiZhaoHai","Email":"/1342978541/principal/","PartStat":""},"Start":"2013-03-26T00:00:00Z","DateStart":true,"End":"2013-03-27T00:00:00Z","DateEnd":true,"Location":"","Description":"","URL":"","Summary":"New Event","Attendees":[{"Name":"GoogolLee LiZhaoHai","Email":"/1342978541/principal/","PartStat":"ACCEPTED"},{"Name":"+8613488802891","Email":"+8613488802891","PartStat":"NEEDS-ACTION"},{"Name":"googollee@163.com","Email":"googollee@163.com","PartStat":"TENTATIVE"},{"Name":"lzh@exfe.com","Email":"lzh@exfe.com","PartStat":"NEEDS-ACTION"},{"Name":"李 兆海","Email":" googollee@hotmail.com","PartStat":"DECLINED"}]}]}`
+		expect := "{\"Event\":[{\"ID\":\"A97BCE9C-70F9-4C31-8A5B-C08A5B8F147D\",\"Organizer\":{\"Name\":\"GoogolLee LiZhaoHai\",\"Email\":\"/1342978541/principal/\",\"PartStat\":\"\"},\"Start\":\"2013-03-26T00:00:00Z\",\"DateStart\":true,\"End\":\"2013-03-27T00:00:00Z\",\"DateEnd\":true,\"Location\":\"\",\"Description\":\"\",\"URL\":\"\",\"Summary\":\"New Event\",\"Attendees\":[{\"Name\":\"GoogolLee LiZhaoHai\",\"Email\":\"/1342978541/principal/\",\"PartStat\":\"ACCEPTED\"},{\"Name\":\"+8613488802891\",\"Email\":\"+8613488802891\",\"PartStat\":\"NEEDS-ACTION\"},{\"Name\":\"googollee@163.com\",\"Email\":\"googollee@163.com\",\"PartStat\":\"TENTATIVE\"},{\"Name\":\"lzh@exfe.com\",\"Email\":\"lzh@exfe.com\",\"PartStat\":\"NEEDS-ACTION\"},{\"Name\":\"李 兆海\",\"Email\":\" googollee@hotmail.com\",\"PartStat\":\"DECLINED\"}]}]}"
 
-	reader := bytes.NewBufferString(icloud)
-	calendar, err := ParseCalendar(reader)
-	assert.Equal(t, err, nil)
-	j, _ := json.Marshal(calendar)
-	assert.Equal(t, string(j), expect)
+		reader := bytes.NewBufferString(icloud)
+		calendar, err := ParseCalendar(reader)
+		assert.Equal(t, err, nil)
+		j, _ := json.Marshal(calendar)
+		assert.Equal(t, string(j), expect)
+	}
+
+	{
+		icloud := `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Apple Inc.//Mac OS X 10.8.3//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+CREATED:20130318T070456Z
+UID:2BF86533-77BC-43D1-AD8F-3C688B8E1C11
+DTEND;VALUE=DATE:20130321
+RRULE:FREQ=MONTHLY;INTERVAL=3
+TRANSP:TRANSPARENT
+SUMMARY:交房租
+LAST-MODIFIED:20130318T070456Z
+DTSTAMP:20130319T063256Z
+DTSTART;VALUE=DATE:20130320
+SEQUENCE:3
+DESCRIPTION:金毅  6210801190013403 建设银行上海徐汇支行
+BEGIN:VALARM
+X-WR-ALARMUID:60B40A02-0A21-4D7C-8BE0-02C0C5470116
+UID:60B40A02-0A21-4D7C-8BE0-02C0C5470116
+TRIGGER;VALUE=DATE-TIME:20121217T040000Z
+DESCRIPTION:Event notification
+ACTION:DISPLAY
+END:VALARM
+BEGIN:VALARM
+X-WR-ALARMUID:9B12DC30-7F95-4CD6-BD11-5910D505113A
+UID:9B12DC30-7F95-4CD6-BD11-5910D505113A
+TRIGGER;VALUE=DATE-TIME:19760401T005545Z
+X-APPLE-DEFAULT-ALARM:TRUE
+X-APPLE-LOCAL-DEFAULT-ALARM:TRUE
+ACTION:NONE
+END:VALARM
+BEGIN:VALARM
+X-WR-ALARMUID:333D9179-45D1-4998-93A0-4F81CDC0EEC6
+UID:333D9179-45D1-4998-93A0-4F81CDC0EEC6
+TRIGGER;VALUE=DATE-TIME:19760401T005545Z
+X-APPLE-DEFAULT-ALARM:TRUE
+ACTION:NONE
+END:VALARM
+END:VEVENT
+END:VCALENDAR`
+		expect := "{\"Event\":[{\"ID\":\"2BF86533-77BC-43D1-AD8F-3C688B8E1C11\",\"Organizer\":{\"Name\":\"\",\"Email\":\"\",\"PartStat\":\"\"},\"Start\":\"2013-03-20T00:00:00Z\",\"DateStart\":true,\"End\":\"2013-03-21T00:00:00Z\",\"DateEnd\":true,\"Location\":\"\",\"Description\":\"金毅  6210801190013403 建设银行上海徐汇支行\",\"URL\":\"\",\"Summary\":\"交房租\",\"Attendees\":null}]}"
+
+		reader := bytes.NewBufferString(icloud)
+		calendar, err := ParseCalendar(reader)
+		assert.Equal(t, err, nil)
+		j, _ := json.Marshal(calendar)
+		assert.Equal(t, string(j), expect)
+	}
 }
 
 func TestParseOutlook(t *testing.T) {

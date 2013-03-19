@@ -117,9 +117,27 @@ func ParseEvent(r *textproto.Reader, tzs map[string]Timezone) (Event, error) {
 			if value == "VEVENT" {
 				return ret, nil
 			}
+		case "BEGIN":
+			err := IgnoreTo(r, value)
+			if err != nil {
+				return ret, err
+			}
 		}
 	}
 	return ret, nil
+}
+
+func IgnoreTo(r *textproto.Reader, name string) error {
+	for {
+		key, _, value, err := GetIcsLine(r)
+		if err != nil {
+			return err
+		}
+		if key == "END" && value == name {
+			break
+		}
+	}
+	return nil
 }
 
 func ParseTimezone(r *textproto.Reader) (Timezone, error) {
@@ -131,7 +149,6 @@ func ParseTimezone(r *textproto.Reader) (Timezone, error) {
 		}
 		switch key {
 		case "END":
-			fmt.Println(value)
 			if value == "VTIMEZONE" {
 				return ret, nil
 			}
