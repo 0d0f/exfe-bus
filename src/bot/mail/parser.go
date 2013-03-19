@@ -385,7 +385,7 @@ func getPartBody(r io.Reader, encoder string, charset string) (string, error) {
 	default:
 		return "", fmt.Errorf("can't decode %s", encoder)
 	}
-	if charset = strings.ToLower(charset); charset != "utf-8" {
+	if charset = strings.ToLower(charset); charset != "" && charset != "utf-8" {
 		if charset == "gb2312" {
 			charset = "gbk"
 		}

@@ -46,6 +46,119 @@ func TestParseContentType(t *testing.T) {
 	}
 }
 
+func TestNormalAttachment(t *testing.T) {
+	var str = `Received: from googollee$163.com ( [116.237.198.97] ) by
+ ajax-webmail-wmsvr64 (Coremail) ; Tue, 19 Mar 2013 16:05:42 +0800 (CST)
+X-Originating-IP: [116.237.198.97]
+Date: Tue, 19 Mar 2013 16:05:42 +0800 (CST)
+From: googollee  <googollee@163.com>
+To: "Googol Lee" <googollee@gmail.com>
+Cc: =?GBK?Q?=5BDEV=5D_EXFE_=A1=A4X=A1=A4?= <x@0d0f.com>
+Subject: =?GBK?Q?Re:Re:_=B2=E2=CA=D4=D3=CA=BC=FE=B4=B4=BD=A85?=
+X-Priority: 3
+X-Mailer: Coremail Webmail Server Version SP_ntes V3.5 build
+ 20130201(21528.5249.5248) Copyright (c) 2002-2013 www.mailtech.cn 163com
+In-Reply-To: <CAOf82vOyhNiqKTqw79nEQePxNP2r+RgZj3UujbBBaEsQjAGrKg@mail.gmail.com>
+References: <CAOf82vPe2Nt1hs6VVeDcczxvrqvvzCYdzUjv3vCWT1XK1MkFyQ@mail.gmail.com>
+ <365e2f32.8ad2.13d810a1b28.Coremail.googollee@163.com>
+ <CAOf82vOyhNiqKTqw79nEQePxNP2r+RgZj3UujbBBaEsQjAGrKg@mail.gmail.com>
+X-CM-CTRLDATA: WWdja2Zvb3Rlcl9odG09MTI3ODo4MQ==
+Content-Type: multipart/mixed; 
+	boundary="----=_Part_207651_1797332469.1363680342939"
+MIME-Version: 1.0
+Message-ID: <231eec8.da02.13d81aeb39b.Coremail.googollee@163.com>
+
+------=_Part_207651_1797332469.1363680342939
+Content-Type: multipart/alternative; 
+	boundary="----=_Part_207653_1138501142.1363680342939"
+
+------=_Part_207653_1138501142.1363680342939
+Content-Type: text/plain; charset=GBK
+Content-Transfer-Encoding: base64
+
+CtTZtM64/NDCtdi14woKCgoKCtTaIDIwMTMtMDMtMTkgMTM6MTA6MzSjrCJHb29nb2wgTGVlIiA8
+Z29vZ29sbGVlQGdtYWlsLmNvbT4g0LS1wKO6Cgqy4srUxtXNqNPKvP672Li0CgoKCjIwMTMvMy8x
+OSBnb29nb2xsZWUgPGdvb2dvbGxlZUAxNjMuY29tPgqy4srUxtXNqNPKvP672Li0CgrU2iAyMDEz
+LTAzLTE5IDEzOjA0OjQzo6wiR29vZ29sIExlZSIgPGdvb2dvbGxlZUBnbWFpbC5jb20+INC0tcCj
+ugoKCrS0vaiwoaOho6GjoQoKCgotLQrQwrXEwO3C27TTydnK/cjLtcTW99XFtb3Su82zzOzPwqOs
+sqKyu8rH0vLOqtXiuPbA7cLby7W3/sHLsfDIy8XXxvq+ybnbteOjrLb4ysfS8s6q0ru0+sjLtcTK
+xciloaMKCgoKCgoKCgotLQrQwrXEwO3C27TTydnK/cjLtcTW99XFtb3Su82zzOzPwqOssqKyu8rH
+0vLOqtXiuPbA7cLby7W3/sHLsfDIy8XXxvq+ybnbteOjrLb4ysfS8s6q0ru0+sjLtcTKxciloaM=
+
+------=_Part_207653_1138501142.1363680342939
+Content-Type: text/html; charset=GBK
+Content-Transfer-Encoding: base64
+
+PGRpdiBzdHlsZT0ibGluZS1oZWlnaHQ6MS43O2NvbG9yOiMwMDAwMDA7Zm9udC1zaXplOjE0cHg7
+Zm9udC1mYW1pbHk6YXJpYWwiPjxicj7U2bTOuPzQwrXYteM8YnI+PGJyPjxicj48YnI+PGRpdj48
+L2Rpdj48ZGl2IGlkPSJkaXZOZXRlYXNlTWFpbENhcmQiPjwvZGl2Pjxicj7U2iAyMDEzLTAzLTE5
+IDEzOjEwOjM0o6wiR29vZ29sJm5ic3A7TGVlIiZuYnNwOyZsdDtnb29nb2xsZWVAZ21haWwuY29t
+Jmd0OyDQtLXAo7o8YnI+IDxibG9ja3F1b3RlIGlkPSJpc1JlcGx5Q29udGVudCIgc3R5bGU9IlBB
+RERJTkctTEVGVDogMWV4OyBNQVJHSU46IDBweCAwcHggMHB4IDAuOGV4OyBCT1JERVItTEVGVDog
+I2NjYyAxcHggc29saWQiPjxkaXYgZGlyPSJsdHIiPrLiytTG1c2o08q8/rvYuLQ8L2Rpdj48ZGl2
+IGNsYXNzPSJnbWFpbF9leHRyYSI+PGJyPjxicj48ZGl2IGNsYXNzPSJnbWFpbF9xdW90ZSI+MjAx
+My8zLzE5IGdvb2dvbGxlZSA8c3BhbiBkaXI9Imx0ciI+Jmx0OzxhIGhyZWY9Im1haWx0bzpnb29n
+b2xsZWVAMTYzLmNvbSIgdGFyZ2V0PSJfYmxhbmsiPmdvb2dvbGxlZUAxNjMuY29tPC9hPiZndDs8
+L3NwYW4+PGJyPjxibG9ja3F1b3RlIGNsYXNzPSJnbWFpbF9xdW90ZSIgc3R5bGU9Im1hcmdpbjow
+IDAgMCAuOGV4O2JvcmRlci1sZWZ0OjFweCAjY2NjIHNvbGlkO3BhZGRpbmctbGVmdDoxZXgiPgoK
+suLK1MbVzajTyrz+u9i4tDxicj48YnI+1NogMjAxMy0wMy0xOSAxMzowNDo0M6OsIkdvb2dvbCZu
+YnNwO0xlZSImbmJzcDsmbHQ7PGEgaHJlZj0ibWFpbHRvOmdvb2dvbGxlZUBnbWFpbC5jb20iIHRh
+cmdldD0iX2JsYW5rIj5nb29nb2xsZWVAZ21haWwuY29tPC9hPiZndDsg0LS1wKO6PGRpdiBjbGFz
+cz0iSE9FblpiIj48ZGl2IGNsYXNzPSJoNSI+PGJyPiA8YmxvY2txdW90ZSBzdHlsZT0iUEFERElO
+Ry1MRUZUOjFleDtNQVJHSU46MHB4IDBweCAwcHggMC44ZXg7Qk9SREVSLUxFRlQ6I2NjYyAxcHgg
+c29saWQiPgoKPGRpdiBkaXI9Imx0ciI+tLS9qLCho6GjoaOhPGJyIGNsZWFyPSJhbGwiPjxkaXY+
+PGJyPjwvZGl2Pi0tIDxicj7QwrXEwO3C27TTydnK/cjLtcTW99XFtb3Su82zzOzPwqOssqKyu8rH
+0vLOqtXiuPbA7cLby7W3/sHLsfDIy8XXxvq+ybnbteOjrLb4ysfS8s6q0ru0+sjLtcTKxciloaMK
+PC9kaXY+CjwvYmxvY2txdW90ZT48YnI+PGJyPjxzcGFuIHRpdGxlPSJuZXRlYXNlZm9vdGVyIj48
+c3Bhbj48L3NwYW4+PC9zcGFuPjwvZGl2PjwvZGl2PjwvYmxvY2txdW90ZT48L2Rpdj48YnI+PGJy
+IGNsZWFyPSJhbGwiPjxkaXY+PGJyPjwvZGl2Pi0tIDxicj7QwrXEwO3C27TTydnK/cjLtcTW99XF
+tb3Su82zzOzPwqOssqKyu8rH0vLOqtXiuPbA7cLby7W3/sHLsfDIy8XXxvq+ybnbteOjrLb4ysfS
+8s6q0ru0+sjLtcTKxciloaMKPC9kaXY+CjwvYmxvY2txdW90ZT48L2Rpdj48YnI+PGJyPjxzcGFu
+IHRpdGxlPSJuZXRlYXNlZm9vdGVyIj48c3BhbiBpZD0ibmV0ZWFzZV9tYWlsX2Zvb3RlciI+PC9z
+cGFuPjwvc3Bhbj4=
+------=_Part_207653_1138501142.1363680342939--
+
+------=_Part_207651_1797332469.1363680342939
+Content-Type: application/octet-stream; name="ics.ics"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="ics.ics"
+
+QkVHSU46VkNBTEVOREFSDQpNRVRIT0Q6UkVRVUVTVA0KVkVSU0lPTjoyLjANClBST0RJRDotLy9N
+aWNyb3NvZnQgQ29ycG9yYXRpb24vL1dpbmRvd3MgTGl2ZSBDYWxlbmRhci8vRU4NCkJFR0lOOlZU
+SU1FWk9ORQ0KVFpJRDpDaGluYSBTdGFuZGFyZCBUaW1lDQpCRUdJTjpTVEFOREFSRA0KRFRTVEFS
+VDoyMDA4MDEwMVQwMDAwMDANClRaT0ZGU0VUVE86KzA4MDANClRaT0ZGU0VURlJPTTorMDgwMA0K
+RU5EOlNUQU5EQVJEDQpFTkQ6VlRJTUVaT05FDQpCRUdJTjpWRVZFTlQNClVJRDphN2JiMWQyZi0z
+ZWYxLTQyNTEtOWJjMi1kMGMyNGRlZTI0ZDUNCkRUU1RBTVA6MjAxMzAzMTlUMDczODE5Wg0KQ0xB
+U1M6UFVCTElDDQpYLU1JQ1JPU09GVC1DRE8tQlVTWVNUQVRVUzpCVVNZDQpUUkFOU1A6T1BBUVVF
+DQpTRVFVRU5DRTowDQpEVFNUQVJUO1RaSUQ9Q2hpbmEgU3RhbmRhcmQgVGltZToyMDEzMDMyMFQw
+OTAwMDANCkRURU5EO1RaSUQ9Q2hpbmEgU3RhbmRhcmQgVGltZToyMDEzMDMyMFQxMDAwMDANClNV
+TU1BUlk65p2l6Ieqb3V0bG9vayBjYWxlbmRhcg0KTE9DQVRJT0465Zyw54K5MjMzDQpQUklPUklU
+WTowDQpBVFRFTkRFRTtDVVRZUEU9SU5ESVZJRFVBTDtST0xFPVJFUS1QQVJUSUNJUEFOVDtQQVJU
+U1RBVD1ORUVEUy1BQ1RJT047UlNWUD0NCiBUUlVFOk1BSUxUTzp4QDBkMGYuY29tDQpBVFRFTkRF
+RTtDVVRZUEU9SU5ESVZJRFVBTDtST0xFPVJFUS1QQVJUSUNJUEFOVDtQQVJUU1RBVD1ORUVEUy1B
+Q1RJT047UlNWUD0NCiBUUlVFOk1BSUxUTzpnb29nb2xsZWVAMTYzLmNvbQ0KT1JHQU5JWkVSO0NO
+PUxlZSBHb29nb2wgTGVlOk1BSUxUTzpnb29nb2xsZWVAaG90bWFpbC5jb20NCkJFR0lOOlZBTEFS
+TQ0KQUNUSU9OOkRJU1BMQVkNClRSSUdHRVI6LVBUMTVNDQpFTkQ6VkFMQVJNDQpCRUdJTjpWQUxB
+Uk0NCkFDVElPTjpESVNQTEFZDQpUUklHR0VSOi1QVDE1TQ0KRU5EOlZBTEFSTQ0KRU5EOlZFVkVO
+VA0KRU5EOlZDQUxFTkRBUg0K
+------=_Part_207651_1797332469.1363680342939--`
+
+	buf := bytes.NewBufferString(str)
+	msg, err := mail.ReadMessage(buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parser, err := NewParser(msg, &config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, parser.messageID, "231eec8.da02.13d81aeb39b.Coremail.googollee@163.com")
+	assert.Equal(t, parser.content, "再次更新地点")
+	assert.Equal(t, parser.event.ID, "a7bb1d2f-3ef1-4251-9bc2-d0c24dee24d5")
+	assert.Equal(t, parser.HasICS(), true)
+	assert.Equal(t, parser.GetCross().Place.Title, "地点233")
+}
+
 func Test163(t *testing.T) {
 	var str = `Received: from googollee$163.com ( [116.237.198.97] ) by
  ajax-webmail-wmsvr64 (Coremail) ; Tue, 19 Mar 2013 13:09:50 +0800 (CST)
