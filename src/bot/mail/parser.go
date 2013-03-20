@@ -109,7 +109,7 @@ func NewParser(msg *mail.Message, config *model.Config) (*Parser, error) {
 	ids = append(ids, getMailIDs(msg, "References")...)
 
 	subject := msg.Header.Get("Subject")
-	if s, err := encodinjg.DecodeEncodedWord(subject); err == nil {
+	if s, err := encoding.DecodeEncodedWord(subject); err == nil {
 		subject = s
 	}
 
