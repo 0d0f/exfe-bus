@@ -353,7 +353,7 @@ func (h *Parser) convertEventToCross(event ics.Event, from *mail.Address) model.
 	} else {
 		time.BeginAt.Time = event.Start.UTC().Format("15:04:05")
 	}
-	time.Origin = fmt.Sprintf("%s - %s", event.Start.UTC().Format(format), event.End.UTC().Format(format))
+	time.Origin = fmt.Sprintf("%s", event.Start.UTC().Format(format))
 	var invitations []model.Invitation
 	attendees := make(map[string]bool)
 	by := model.Identity{
