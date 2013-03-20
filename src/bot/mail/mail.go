@@ -142,8 +142,8 @@ func (w *Worker) process() {
 				}
 			}
 
+			cross.Title = ""
 			if !parser.HasICS() {
-				cross.Title = ""
 				cross.Description = ""
 				cross.Place = nil
 				cross.Time = nil

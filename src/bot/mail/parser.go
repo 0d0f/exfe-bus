@@ -109,7 +109,7 @@ func NewParser(msg *mail.Message, config *model.Config) (*Parser, error) {
 	ids = append(ids, getMailIDs(msg, "References")...)
 
 	subject := msg.Header.Get("Subject")
-	if s, err := encoding.DecodeEncodedWord(subject); err == nil {
+	if s, err := encodinjg.DecodeEncodedWord(subject); err == nil {
 		subject = s
 	}
 
@@ -169,9 +169,6 @@ func (h *Parser) init(r io.Reader, header mail.Header) error {
 		content = parseHtml(content)
 		h.content = parsePlain(content)
 	case "application/octet-stream":
-		if !strings.HasSuffix(strings.ToLower(pairs["name"]), ".ics") {
-			return nil
-		}
 		fallthrough
 	case "text/calendar":
 		fallthrough
