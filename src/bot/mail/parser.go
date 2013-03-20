@@ -252,7 +252,6 @@ func (h *Parser) GetCross() (cross model.Cross) {
 }
 
 func (h *Parser) GetPost() string {
-	fmt.Println(h.contentMime, h.content)
 	return h.content
 }
 
@@ -278,8 +277,41 @@ func (h *Parser) GetTypeID() (string, string) {
 
 func getMailAddress(msg *mail.Message, k string) []*mail.Address {
 	var ret []*mail.Address
-	if msg.Header.Get(k) != "" {
-		ret, _ = msg.Header.AddressList(k)
+	if lists := msg.Header.Get(k); lists != "" {
+		for _, l := range strings.Split(lists, ",") {
+			l = strings.Trim(l, " ")
+			var addr mail.Address
+			switch l[0] {
+			case '"':
+				last := strings.LastIndex(l, "\"")
+				if last <= 0 {
+					continue
+				}
+				addr.Name = strings.Trim(l[1:last], " ")
+				addr.Address = strings.Trim(l[last+1:], " <>")
+			case '=':
+				last := strings.LastIndex(l, "=")
+				if last <= 0 {
+					continue
+				}
+				var err error
+				addr.Name, err = encoding.DecodeEncodedWord(l[1 : last+1])
+				if err != nil {
+					continue
+				}
+				addr.Address = strings.Trim(l[last+1:], " <>")
+			case '<':
+				addr.Address = strings.Trim(l, " <>")
+			default:
+				last := strings.LastIndex(l, " ")
+				if last <= 0 {
+					continue
+				}
+				addr.Name = strings.Trim(l[:last], " ")
+				addr.Address = strings.Trim(l[last+1:], " <>")
+			}
+			ret = append(ret, &addr)
+		}
 	}
 	return ret
 }
@@ -322,7 +354,7 @@ func (h *Parser) convertEventToCross(event ics.Event, from *mail.Address) model.
 		time.BeginAt.Time = event.Start.UTC().Format("15:04:05")
 	}
 	time.Origin = fmt.Sprintf("%s - %s", event.Start.UTC().Format(format), event.End.UTC().Format(format))
-	invitations := make([]model.Invitation, 0)
+	var invitations []model.Invitation
 	attendees := make(map[string]bool)
 	by := model.Identity{
 		Name:             from.Name,
@@ -331,7 +363,7 @@ func (h *Parser) convertEventToCross(event ics.Event, from *mail.Address) model.
 		Provider:         "email",
 	}
 	for _, a := range append(event.Attendees, event.Organizer) {
-		if strings.HasSuffix(a.Email, h.domain) {
+		if a.Email == "" || strings.HasSuffix(a.Email, h.domain) {
 			continue
 		}
 		if _, ok := attendees[a.Email]; ok {
@@ -356,6 +388,7 @@ func (h *Parser) convertEventToCross(event ics.Event, from *mail.Address) model.
 			Host:       host,
 			RsvpStatus: rsvp,
 			Identity:   identity,
+			Via:        "email",
 			By:         by,
 		})
 	}

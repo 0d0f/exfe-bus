@@ -509,3 +509,69 @@ REFSDQo=
 	}
 	assert.Equal(t, parser.messageID, "BAY152-ds11D2686FF50F86678FFD1AA0E80@phx.gbl")
 }
+
+func TestIcsCreate(t *testing.T) {
+	var str = `Received: from googollee$163.com ( [114.92.187.87] ) by
+ ajax-webmail-wmsvr129 (Coremail) ; Wed, 20 Mar 2013 16:35:41 +0800 (CST)
+X-Originating-IP: [114.92.187.87]
+Date: Wed, 20 Mar 2013 16:35:41 +0800 (CST)
+From: googollee <googollee@163.com>
+To: "x@0d0f.com" <x@0d0f.com>, =?GBK?B?1de6oyDA7g==?= <googollee@hotmail.com>
+Subject: =?GBK?Q?=D0=C2event?=
+X-Priority: 3
+X-Mailer: Coremail Webmail Server Version SP_ntes V3.5 build
+ 20130201(21528.5249.5248) Copyright (c) 2002-2013 www.mailtech.cn 163com
+X-CM-CTRLDATA: kqKFxGZvb3Rlcl9odG09OTE6ODE=
+Content-Type: multipart/mixed; 
+	boundary="----=_Part_534281_720845632.1363768541461"
+MIME-Version: 1.0
+Message-ID: <1b4b8508.23889.13d86f08116.Coremail.googollee@163.com>
+
+------=_Part_534281_720845632.1363768541461
+Content-Type: multipart/alternative; 
+	boundary="----=_Part_534283_55711688.1363768541461"
+
+------=_Part_534283_55711688.1363768541461
+Content-Type: text/plain; charset=GBK
+Content-Transfer-Encoding: base64
+
+suLK1NPKvP5pY3O0tL2o
+------=_Part_534283_55711688.1363768541461
+Content-Type: text/html; charset=GBK
+Content-Transfer-Encoding: base64
+
+PGRpdiBzdHlsZT0ibGluZS1oZWlnaHQ6MS43O2NvbG9yOiMwMDAwMDA7Zm9udC1zaXplOjE0cHg7
+Zm9udC1mYW1pbHk6YXJpYWwiPrLiytTTyrz+aWNztLS9qDwvZGl2Pjxicj48YnI+PHNwYW4gdGl0
+bGU9Im5ldGVhc2Vmb290ZXIiPjxzcGFuIGlkPSJuZXRlYXNlX21haWxfZm9vdGVyIj48L3NwYW4+
+PC9zcGFuPg==
+------=_Part_534283_55711688.1363768541461--
+
+------=_Part_534281_720845632.1363768541461
+Content-Type: application/octet-stream; name="=?GBK?Q?=D0=C2event.ics?="
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="=?GBK?Q?=D0=C2event.ics?="
+
+QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL0FwcGxlIEluYy4vL01hYyBP
+UyBYIDEwLjguMy8vRU4NCkNBTFNDQUxFOkdSRUdPUklBTg0KQkVHSU46VkVWRU5UDQpDUkVBVEVE
+OjIwMTMwMzIwVDA4MjMyNVoNClVJRDoyODJGMDgxNi1ENzdGLTQ5OUUtQTVFMi1BNDAxM0QxRDEz
+REMNCkRURU5EO1ZBTFVFPURBVEU6MjAxMzAzMjINClRSQU5TUDpUUkFOU1BBUkVOVA0KU1VNTUFS
+WTrmlrBldmVudA0KRFRTVEFSVDtWQUxVRT1EQVRFOjIwMTMwMzIxDQpEVFNUQU1QOjIwMTMwMzIw
+VDA4MjM0M1oNCkxPQ0FUSU9OOuWcsOeCuQ0KU0VRVUVOQ0U6Mw0KQkVHSU46VkFMQVJNDQpYLVdS
+LUFMQVJNVUlEOjk3QUJEREVELTA5NDktNDZBNy04NDkzLUQ3OENEMDA4NjEyOA0KVUlEOjk3QUJE
+REVELTA5NDktNDZBNy04NDkzLUQ3OENEMDA4NjEyOA0KVFJJR0dFUjotUFQxNUgNClgtQVBQTEUt
+REVGQVVMVC1BTEFSTTpUUlVFDQpBVFRBQ0g7VkFMVUU9VVJJOkJhc3NvDQpBQ1RJT046QVVESU8N
+CkVORDpWQUxBUk0NCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVINCg==
+------=_Part_534281_720845632.1363768541461--`
+
+	buf := bytes.NewBufferString(str)
+	msg, err := mail.ReadMessage(buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parser, err := NewParser(msg, &config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, parser.GetCross().Exfee.Invitations[0].Identity.ExternalID, "googollee@163.com")
+	assert.Equal(t, parser.GetCross().Exfee.Invitations[1].Identity.ExternalID, "googollee@hotmail.com")
+}
