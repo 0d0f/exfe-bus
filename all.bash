@@ -9,7 +9,7 @@ go get $1 github.com/googollee/go-multiplexer
 go get $1 github.com/googollee/go-aws/smtp
 go get $1 github.com/googollee/go-aws/s3
 go get $1 github.com/googollee/go-aws/smtp
-go get $1 github.com/googollee/go-encoding-ex
+go get $1 github.com/googollee/go-encoding
 go get $1 github.com/googollee/go-logger
 go get $1 github.com/go-sql-driver/mysql
 go get $1 github.com/gorilla/mux

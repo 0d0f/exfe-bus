@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/googollee/go-encoding-ex"
+	"github.com/googollee/go-encoding"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -109,7 +109,7 @@ func NewParser(msg *mail.Message, config *model.Config) (*Parser, error) {
 	ids = append(ids, getMailIDs(msg, "References")...)
 
 	subject := msg.Header.Get("Subject")
-	if s, err := encodingex.DecodeEncodedWord(subject); err == nil {
+	if s, err := encoding.DecodeEncodedWord(subject); err == nil {
 		subject = s
 	}
 
@@ -378,10 +378,10 @@ func (h *Parser) convertEventToCross(event ics.Event, from *mail.Address) model.
 func getPartBody(r io.Reader, encoder string, charset string) (string, error) {
 	switch strings.ToLower(encoder) {
 	case "base64":
-		r = encodingex.NewIgnoreReader(r, []byte(" \r\n"))
+		r = encoding.NewIgnoreReader(r, []byte(" \r\n"))
 		r = base64.NewDecoder(base64.StdEncoding, r)
 	case "quoted-printable":
-		r = encodingex.NewQEncodingDecoder(r)
+		r = encoding.NewQEncodingDecoder(r)
 	default:
 		return "", fmt.Errorf("can't decode %s", encoder)
 	}
@@ -390,7 +390,7 @@ func getPartBody(r io.Reader, encoder string, charset string) (string, error) {
 			charset = "gbk"
 		}
 		var err error
-		r, err = encodingex.NewIconvReadCloser(r, "utf-8", charset)
+		r, err = encoding.NewIconvReadCloser(r, "utf-8", charset)
 		if err != nil {
 			return "", err
 		}
