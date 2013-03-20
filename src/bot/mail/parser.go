@@ -201,8 +201,6 @@ func (h *Parser) GetIDs() []string {
 	if h.HasICS() {
 		ret = append(ret, h.event.ID)
 	}
-	fmt.Printf("%+v\n", h.event)
-	fmt.Println(ret)
 	return ret
 }
 

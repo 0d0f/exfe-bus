@@ -107,8 +107,9 @@ func (w *Worker) process() {
 			continue
 		}
 		to, toID := parser.GetTypeID()
+		fromCalendar := false
 		if to == "" {
-			crossID, exist, err := w.saver.Check(parser.GetIDs())
+			crossID, exist, err := w.saver.Check(parser.referenceIDs)
 			if err != nil {
 				w.log.Crit("saver check %s failed: %s", id, err)
 				errorIds = append(errorIds, id)
@@ -116,6 +117,18 @@ func (w *Worker) process() {
 			}
 			if exist {
 				to, toID = "cross_id", crossID
+			}
+		}
+		if to == "" && parser.event != nil {
+			crossID, exist, err := w.saver.Check([]string{parser.event.ID})
+			if err != nil {
+				w.log.Crit("saver check %s failed: %s", id, err)
+				errorIds = append(errorIds, id)
+				continue
+			}
+			if exist {
+				to, toID = "cross_id", crossID
+				fromCalendar = true
 			}
 		}
 		cross := parser.GetCross()
@@ -133,7 +146,7 @@ func (w *Worker) process() {
 			to, toID = "cross_id", fmt.Sprintf("%d", crossID)
 		} else {
 			post := parser.GetPost()
-			if post != "" {
+			if post != "" && !fromCalendar {
 				_, err := w.platform.BotPostConversation(parser.from.Address, post, parser.Date(), parser.addrList, to, toID)
 				if err != nil {
 					w.log.Err("%s can't post %s with: %s", parser.from.Address, post, err)
