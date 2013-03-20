@@ -575,3 +575,264 @@ CkVORDpWQUxBUk0NCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVINCg==
 	assert.Equal(t, parser.GetCross().Exfee.Invitations[0].Identity.ExternalID, "googollee@163.com")
 	assert.Equal(t, parser.GetCross().Exfee.Invitations[1].Identity.ExternalID, "googollee@hotmail.com")
 }
+
+func TestCrossIDType(t *testing.T) {
+	var str = `Delivered-To: x+259@0d0f.com
+Received: by 10.229.117.1 with SMTP id o1csp67210qcq;
+        Wed, 20 Mar 2013 03:21:45 -0700 (PDT)
+X-Received: by 10.66.116.138 with SMTP id jw10mr8192933pab.154.1363774905182;
+        Wed, 20 Mar 2013 03:21:45 -0700 (PDT)
+Return-Path: <googollee@gmail.com>
+Received: from mail-pd0-f170.google.com (mail-pd0-f170.google.com [209.85.192.170])
+        by mx.google.com with ESMTPS id ui2si1456826pab.146.2013.03.20.03.21.44
+        (version=TLSv1 cipher=ECDHE-RSA-RC4-SHA bits=128/128);
+        Wed, 20 Mar 2013 03:21:45 -0700 (PDT)
+Received-SPF: pass (google.com: domain of googollee@gmail.com designates 209.85.192.170 as permitted sender) client-ip=209.85.192.170;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of googollee@gmail.com designates 209.85.192.170 as permitted sender) smtp.mail=googollee@gmail.com;
+       dkim=pass header.i=@gmail.com
+Received: by mail-pd0-f170.google.com with SMTP id 4so552277pdd.15
+        for <x+259@0d0f.com>; Wed, 20 Mar 2013 03:21:44 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20120113;
+        h=x-received:mime-version:in-reply-to:references:from:date:message-id
+         :subject:to:content-type;
+        bh=nhHTx5UwQDfrnsHwzXP33DaIicFlsER04l+m55Qfw+Y=;
+        b=DjOblLucTJqubTyRDVbL4dTIDfQtZ2ZBKvb5Rlxmyo+jr5WUQP6+sg1DjUwAMJfO+2
+         81F14XeyarknCi162o2pfFpgwmafvb/oh0+ErUxYmZxOdItLa+k/i0nBPgZH9RJVe80S
+         /4uEBtS/oGbiKbgMvXQnZknwM9ajusmxtrPwvxbovfg+pAR6cQgrz/7KcTajemhoWgHe
+         7rXTII6IZlWQArgPrXXN7TsAcwVyxIMNASG4GjATXy8Vga7YqGhwhoT1hoSiNnX7Atmb
+         Z5MFPYzFCtpuJKT7W8JB2w6zdM9t16sQu87ZF8ySPSEMwP9vcrul321wAdeCtvSrV2nd
+         fsAw==
+X-Received: by 10.66.14.232 with SMTP id s8mr8364717pac.13.1363774904509; Wed,
+ 20 Mar 2013 03:21:44 -0700 (PDT)
+MIME-Version: 1.0
+Received: by 10.70.51.106 with HTTP; Wed, 20 Mar 2013 03:21:24 -0700 (PDT)
+In-Reply-To: <51498d74.a1c1420a.4a65.ffff87cc@mx.google.com>
+References: <x+259@exfe.com> <51498d74.a1c1420a.4a65.ffff87cc@mx.google.com>
+From: Googol Lee <googollee@gmail.com>
+Date: Wed, 20 Mar 2013 18:21:24 +0800
+Message-ID: <CAOf82vNTO4nXDAFO+1q7qu-9G1YbSeG67xSeZAxMYwtzLNWt_A@mail.gmail.com>
+Subject: =?UTF-8?B?UmU6IEludml0YXRpb246IOWGjeasoWdvb2dsZSBjYWxlbmRhciBAIEZyaSBNYXIgMjIsIA==?=
+	=?UTF-8?B?MjAxMyAoeEAwZDBmLmNvbSk=?=
+To: x+259@0d0f.com
+Content-Type: multipart/mixed; boundary=bcaec520eef1bcacb104d858964e
+
+--bcaec520eef1bcacb104d858964e
+Content-Type: multipart/alternative; boundary=bcaec520eef1bcacad04d858964c
+
+--bcaec520eef1bcacad04d858964c
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+=E6=B5=8B=E8=AF=95ics=E6=9B=B4=E6=96=B0
+
+
+2013/3/20 [DEV]EXFE =C2=B7X=C2=B7 <x@0d0f.com>
+
+> **
+>   Updates of =C2=B7X=C2=B7 by Googol Lee, googollee.<http://0d0f.com/#!to=
+ken=3D70502fb3ee6e7e2ca359cff4c60d3fc1>   Invitation: =E5=86=8D=E6=AC=A1goo=
+gle calendar @ Fri Mar 22, 2013 (x@0d0f.com)
+> <http://0d0f.com/#!token=3D70502fb3ee6e7e2ca359cff4c60d3fc1>
+>
+> Fri, Mar 22(+08:00 CST)<http://0d0f.com/#!token=3D70502fb3ee6e7e2ca359cff=
+4c60d3fc1>
+>
+> =E5=9C=B0=E7=82=B9 <http://0d0f.com/#!token=3D70502fb3ee6e7e2ca359cff4c60=
+d3fc1>
+>
+>  <http://0d0f.com/#!token=3D70502fb3ee6e7e2ca359cff4c60d3fc1>
+>         [image: googollee] [image: Googol Lee]   <http://0d0f.com/#!token=
+=3D70502fb3ee6e7e2ca359cff4c60d3fc1>   Reply
+> this email directly as conversation, or try EXFE<http://itunes.apple.com/=
+ua/app/exfe/id514026604>app.
+> This update is sent from EXFE <http://0d0f.com> automatically.
+> Unsubscribe?<http://0d0f.com/mute/cross?token=3D70502fb3ee6e7e2ca359cff4c=
+60d3fc1>
+>
+
+
+
+--=20
+=E6=96=B0=E7=9A=84=E7=90=86=E8=AE=BA=E4=BB=8E=E5=B0=91=E6=95=B0=E4=BA=BA=E7=
+=9A=84=E4=B8=BB=E5=BC=A0=E5=88=B0=E4=B8=80=E7=BB=9F=E5=A4=A9=E4=B8=8B=EF=BC=
+=8C=E5=B9=B6=E4=B8=8D=E6=98=AF=E5=9B=A0=E4=B8=BA=E8=BF=99=E4=B8=AA=E7=90=86=
+=E8=AE=BA=E8=AF=B4=E6=9C=8D=E4=BA=86=E5=88=AB=E4=BA=BA=E6=8A=9B=E5=BC=83=E6=
+=97=A7=E8=A7=82=E7=82=B9=EF=BC=8C=E8=80=8C=E6=98=AF=E5=9B=A0=E4=B8=BA=E4=B8=
+=80=E4=BB=A3=E4=BA=BA=E7=9A=84=E9=80=9D=E5=8E=BB=E3=80=82
+
+--bcaec520eef1bcacad04d858964c
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr">=E6=B5=8B=E8=AF=95ics=E6=9B=B4=E6=96=B0</div><div class=3D=
+"gmail_extra"><br><br><div class=3D"gmail_quote">2013/3/20 [DEV]EXFE =C2=B7=
+X=C2=B7 <span dir=3D"ltr">&lt;<a href=3D"mailto:x@0d0f.com" target=3D"_blan=
+k">x@0d0f.com</a>&gt;</span><br><blockquote class=3D"gmail_quote" style=3D"=
+margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">
+
+<u></u>
+
+   =20
+       =20
+       =20
+       =20
+   =20
+    <div>
+        <table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"fo=
+nt-family:Verdana;font-size:13px;line-height:20px;color:#191919;font-weight=
+:normal;width:640px;padding:20px;background-color:#fbfbfb">
+            <tbody><tr>
+                <td colspan=3D"5" style=3D"color:#333333">
+                    <a href=3D"http://0d0f.com/#!token=3D70502fb3ee6e7e2ca3=
+59cff4c60d3fc1" style=3D"color:#333333;text-decoration:none" target=3D"_bla=
+nk">Updates of <span style=3D"color:#3a6ea5">=C2=B7X=C2=B7</span> by Googol=
+ Lee, googollee.</a>
+                </td>
+            </tr>
+            <tr><td colspan=3D"5" height=3D"10"></td></tr>
+            <tr>
+                <td colspan=3D"5" style=3D"font-size:20px;line-height:26px"=
+>
+                    <a href=3D"http://0d0f.com/#!token=3D70502fb3ee6e7e2ca3=
+59cff4c60d3fc1" style=3D"color:#333333;text-decoration:none;font-weight:lig=
+hter" target=3D"_blank">
+                        Invitation: =E5=86=8D=E6=AC=A1google calendar @ Fri=
+ Mar 22, 2013 (x@0d0f.com)
+                    </a>
+                </td>
+            </tr>
+            <tr><td colspan=3D"5" height=3D"10"></td></tr>
+            <tr>
+                <td valign=3D"top" width=3D"180">
+                   =20
+                    <p style=3D"font-size:20px;line-height:26px;margin:0">
+                        <a href=3D"http://0d0f.com/#!token=3D70502fb3ee6e7e=
+2ca359cff4c60d3fc1" style=3D"color:#3a6ea5;text-decoration:none" target=3D"=
+_blank">Fri, Mar 22(+08:00 CST)</a>
+                    </p>
+                   =20
+                </td>
+                <td width=3D"10"></td>
+                <td valign=3D"top" width=3D"190" style=3D"word-break:break-=
+all">
+                   =20
+                    <p style=3D"font-size:20px;line-height:26px;margin:0">
+                        <a href=3D"http://0d0f.com/#!token=3D70502fb3ee6e7e=
+2ca359cff4c60d3fc1" style=3D"color:#333333;text-decoration:none" target=3D"=
+_blank">=E5=9C=B0=E7=82=B9</a>
+                    </p>
+                    <p style=3D"margin:0">
+                        <a href=3D"http://0d0f.com/#!token=3D70502fb3ee6e7e=
+2ca359cff4c60d3fc1" style=3D"color:#191919;text-decoration:none" target=3D"=
+_blank"></a>
+                    </p>
+                   =20
+                </td>
+                <td width=3D"10"></td>
+                <td valign=3D"top" width=3D"210">
+                   =20
+                </td>
+            </tr>
+            <tr><td colspan=3D"5" height=3D"10"></td></tr>
+            <tr>
+                <td colspan=3D"5">
+                    <table border=3D"0" cellpadding=3D"0" cellspacing=3D"0"=
+ style=3D"font-family:Verdana;font-size:13px;line-height:20px;color:#191919=
+;font-weight:normal;width:100%;background-color:#fbfbfb">
+                    =09
+                       =20
+                       =20
+                       =20
+                    </table>
+                </td>
+            </tr>
+            <tr><td colspan=3D"5" height=3D"10"></td></tr>
+            <tr>
+                <td colspan=3D"5">
+                   =20
+                   =20
+                    <img style=3D"padding-right:5px" width=3D"40" height=3D=
+"40" alt=3D"googollee" title=3D"googollee" src=3D"http://api.0d0f.com/v2/av=
+atar/render?resolution=3D2x&amp;url=3DaHR0cDovL2FwaS4wZDBmLmNvbS92Mi9hdmF0Y=
+XIvZGVmYXVsdD9uYW1lPWdvb2dvbGxlZQ%3D%3D&amp;width=3D40&amp;height=3D40&amp;=
+alpha=3D0.33">
+                   =20
+                    <img style=3D"padding-right:5px" width=3D"40" height=3D=
+"40" alt=3D"Googol Lee" title=3D"Googol Lee" src=3D"http://api.0d0f.com/v2/=
+avatar/render?resolution=3D2x&amp;url=3DaHR0cDovL3d3dy5ncmF2YXRhci5jb20vYXZ=
+hdGFyLzE1YjdmYzFiMTAxZWUyODliODE2Nzg4MTI3ODFhZWE2&amp;width=3D40&amp;height=
+=3D40&amp;ishost=3Dtrue">
+                   =20
+                </td>
+            </tr>
+            <tr><td colspan=3D"5" height=3D"10"></td></tr>
+            <tr>
+                <td colspan=3D"5">
+                    <a href=3D"http://0d0f.com/#!token=3D70502fb3ee6e7e2ca3=
+59cff4c60d3fc1" style=3D"color:#333333;text-decoration:none" target=3D"_bla=
+nk"></a>
+                </td>
+            </tr>
+            <tr><td colspan=3D"5" height=3D"20"></td></tr>
+            <tr>
+                <td colspan=3D"5" style=3D"font-size:11px;line-height:15px;=
+color:#7f7f7f">
+                    Reply this email directly as conversation, or try <a st=
+yle=3D"color:#3a6ea5;text-decoration:none" href=3D"http://itunes.apple.com/=
+ua/app/exfe/id514026604" target=3D"_blank">EXFE</a> app.
+                    <br>
+                    <span style=3D"color:#b2b2b2">This update is sent from =
+<a style=3D"color:#3a6ea5;text-decoration:none" href=3D"http://0d0f.com" ta=
+rget=3D"_blank">EXFE</a> automatically. <a style=3D"color:#e6e6e6;text-deco=
+ration:none" href=3D"http://0d0f.com/mute/cross?token=3D70502fb3ee6e7e2ca35=
+9cff4c60d3fc1" target=3D"_blank">Unsubscribe?</a>
+                   =20
+                    </span>
+                </td>
+            </tr>
+        </tbody></table>
+    </div>
+
+</blockquote></div><br><br clear=3D"all"><div><br></div>-- <br>=E6=96=B0=E7=
+=9A=84=E7=90=86=E8=AE=BA=E4=BB=8E=E5=B0=91=E6=95=B0=E4=BA=BA=E7=9A=84=E4=B8=
+=BB=E5=BC=A0=E5=88=B0=E4=B8=80=E7=BB=9F=E5=A4=A9=E4=B8=8B=EF=BC=8C=E5=B9=B6=
+=E4=B8=8D=E6=98=AF=E5=9B=A0=E4=B8=BA=E8=BF=99=E4=B8=AA=E7=90=86=E8=AE=BA=E8=
+=AF=B4=E6=9C=8D=E4=BA=86=E5=88=AB=E4=BA=BA=E6=8A=9B=E5=BC=83=E6=97=A7=E8=A7=
+=82=E7=82=B9=EF=BC=8C=E8=80=8C=E6=98=AF=E5=9B=A0=E4=B8=BA=E4=B8=80=E4=BB=A3=
+=E4=BA=BA=E7=9A=84=E9=80=9D=E5=8E=BB=E3=80=82
+</div>
+
+--bcaec520eef1bcacad04d858964c--
+--bcaec520eef1bcacb104d858964e
+Content-Type: application/octet-stream; name="=?UTF-8?B?5pawZXZlbnQuaWNz?="
+Content-Disposition: attachment; filename="=?UTF-8?B?5pawZXZlbnQuaWNz?="
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_heicccag1
+
+QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL0FwcGxlIEluYy4vL01hYyBP
+UyBYIDEwLjguMy8vRU4NCkNBTFNDQUxFOkdSRUdPUklBTg0KQkVHSU46VkVWRU5UDQpDUkVBVEVE
+OjIwMTMwMzIwVDA4MjMyNVoNClVJRDoyODJGMDgxNi1ENzdGLTQ5OUUtQTVFMi1BNDAxM0QxRDEz
+REUNCkRURU5EO1ZBTFVFPURBVEU6MjAxMzAzMjINClRSQU5TUDpUUkFOU1BBUkVOVA0KU1VNTUFS
+WTrmlrBldmVudA0KRFRTVEFSVDtWQUxVRT1EQVRFOjIwMTMwMzIxDQpEVFNUQU1QOjIwMTMwMzIw
+VDA4MjM0M1oNCkxPQ0FUSU9OOuWcsOeCuQ0KU0VRVUVOQ0U6Mw0KQkVHSU46VkFMQVJNDQpYLVdS
+LUFMQVJNVUlEOjk3QUJEREVELTA5NDktNDZBNy04NDkzLUQ3OENEMDA4NjEyOA0KVUlEOjk3QUJE
+REVELTA5NDktNDZBNy04NDkzLUQ3OENEMDA4NjEyOA0KVFJJR0dFUjotUFQxNUgNClgtQVBQTEUt
+REVGQVVMVC1BTEFSTTpUUlVFDQpBVFRBQ0g7VkFMVUU9VVJJOkJhc3NvDQpBQ1RJT046QVVESU8N
+CkVORDpWQUxBUk0NCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVINCg==
+--bcaec520eef1bcacb104d858964e--`
+
+	buf := bytes.NewBufferString(str)
+	msg, err := mail.ReadMessage(buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parser, err := NewParser(msg, &config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	to, id := parser.GetTypeID()
+	assert.Equal(t, to, "cross_id")
+	assert.Equal(t, id, "259")
+}

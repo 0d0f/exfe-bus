@@ -303,10 +303,11 @@ func getMailAddress(msg *mail.Message, k string) []*mail.Address {
 			default:
 				last := strings.LastIndex(l, " ")
 				if last <= 0 {
-					continue
+					addr.Address = strings.Trim(l, " <>")
+				} else {
+					addr.Name = strings.Trim(l[:last], " ")
+					addr.Address = strings.Trim(l[last+1:], " <>")
 				}
-				addr.Name = strings.Trim(l[:last], " ")
-				addr.Address = strings.Trim(l[last+1:], " <>")
 			}
 			ret = append(ret, &addr)
 		}
