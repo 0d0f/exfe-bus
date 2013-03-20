@@ -109,7 +109,7 @@ func NewParser(msg *mail.Message, config *model.Config) (*Parser, error) {
 	ids = append(ids, getMailIDs(msg, "References")...)
 
 	subject := msg.Header.Get("Subject")
-	if s, err := encodingex.DecodeEncodedWordArray(strings.Split(subject, " ")); err == nil {
+	if s, err := encodingex.DecodeEncodedWord(subject); err == nil {
 		subject = s
 	}
 
@@ -217,9 +217,9 @@ func (h *Parser) GetCross() (cross model.Cross) {
 	if h.HasICS() {
 		cross = h.convertEventToCross(*h.event, h.from)
 	} else {
-		cross.Title = h.subject
 		cross.Description = h.content
 	}
+	cross.Title = h.subject
 
 	check := make(map[string]bool)
 	for _, i := range cross.Exfee.Invitations {
