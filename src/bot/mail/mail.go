@@ -156,16 +156,18 @@ func (w *Worker) process() {
 			}
 
 			cross.Title = ""
+			cross.Description = ""
 			if !parser.HasICS() {
-				cross.Description = ""
 				cross.Place = nil
 				cross.Time = nil
 			}
-			_, err = w.platform.BotCrossUpdate(to, toID, cross, cross.By)
-			if err != nil {
-				w.log.Err("%s can't update %s %s: %s", parser.from.Address, to, toID, err)
-				errorIds = append(errorIds, id)
-				continue
+			if cross.Place != nil || cross.Time != nil || len(cross.Exfee.Invitations) != 0 {
+				_, err = w.platform.BotCrossUpdate(to, toID, cross, cross.By)
+				if err != nil {
+					w.log.Err("%s can't update %s %s: %s", parser.from.Address, to, toID, err)
+					errorIds = append(errorIds, id)
+					continue
+				}
 			}
 		}
 		if to == "cross_id" {
