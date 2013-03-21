@@ -37,6 +37,7 @@ type Updater interface {
 type Photographer interface {
 	Provider() string
 	Grab(to model.Recipient, albumID string) ([]model.Photo, error)
+	Get(to model.Recipient, pictures []string) ([]string, error)
 }
 
 type Helper interface {

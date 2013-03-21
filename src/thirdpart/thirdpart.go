@@ -66,3 +66,11 @@ func (t *Thirdpart) GrabPhotos(to model.Recipient, albumID string) ([]model.Phot
 	}
 	return photographer.Grab(to, albumID)
 }
+
+func (t *Thirdpart) GetPhotos(to model.Recipient, pictureIDs []string) ([]string, error) {
+	photographer, ok := t.photographers[to.Provider]
+	if !ok {
+		return nil, fmt.Errorf("can't find %s photographer", to)
+	}
+	return photographer.Get(to, pictureIDs)
+}

@@ -187,6 +187,10 @@ func (p *Photostream) Grab(to model.Recipient, albumID string) ([]model.Photo, e
 	return ret, nil
 }
 
+func (p *Photostream) Get(to model.Recipient, pictureIDs []string) ([]string, error) {
+	return nil, fmt.Errorf("not support photostream.")
+}
+
 func (p *Photostream) getList(albumID string) (list StreamingList, err error) {
 	url := fmt.Sprintf("https://%s/%s/sharedstreams/webstream", p.domain, albumID)
 	buf := bytes.NewBufferString(`{"streamCtag":null}`)

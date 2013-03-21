@@ -1,11 +1,14 @@
 package dropbox
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-aws/s3"
 	"github.com/googollee/go-logger"
 	"github.com/mrjones/oauth"
+	"io"
 	"io/ioutil"
 	"model"
 	"net/http"
@@ -111,6 +114,48 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 		photo.Images.Fullsize.Height = 768
 		photo.Images.Fullsize.Width = 1024
 		ret = append(ret, photo)
+	}
+	return ret, nil
+}
+
+func (d *Dropbox) Get(to model.Recipient, pictureIDs []string) ([]string, error) {
+	var data model.OAuthToken
+	err := json.Unmarshal([]byte(to.AuthData), &data)
+	if err != nil {
+		return nil, fmt.Errorf("can't parse %s auth data(%s): %s", to, to.AuthData, err)
+	}
+	token := oauth.AccessToken{
+		Token:  data.Token,
+		Secret: data.Secret,
+	}
+
+	var ret []string
+	for _, id := range pictureIDs {
+		url := fmt.Sprintf("https://api-content.dropbox.com/1/thumbnails/dropbox%s", escapePath(id))
+		resp, err := d.consumer.Get(url, map[string]string{"size": "l"}, &token)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			return nil, fmt.Errorf("%s: %s", resp.Status, body)
+		}
+		mime := resp.Header.Get("Content-Type")
+		if spliter := strings.Index(mime, ";"); spliter > 0 {
+			mime = mime[:spliter]
+		}
+		buf := bytes.NewBuffer(nil)
+		encoder := base64.NewEncoder(base64.StdEncoding, buf)
+		_, err = io.Copy(encoder, resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		uri := fmt.Sprintf("data:%s;base64,%s", mime, buf.String())
+		ret = append(ret, uri)
 	}
 	return ret, nil
 }

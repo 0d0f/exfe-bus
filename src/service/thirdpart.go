@@ -12,6 +12,7 @@ import (
 	"model"
 	"net/http"
 	"ringcache"
+	"strings"
 	"thirdpart"
 	"thirdpart/_performance"
 	"thirdpart/apn"
@@ -115,6 +116,7 @@ func (t *Thirdpart) SetRoute(route gobus.RouteCreater) error {
 	route().Methods("POST").Path("/thirdpart/identity").HandlerMethod(json, t, "UpdateIdentity")
 	route().Methods("POST").Path("/thirdpart/friends").HandlerMethod(json, t, "UpdateFriends")
 	route().Methods("POST").Path("/thirdpart/photographers").HandlerMethod(json, t, "GrabPhotos")
+	route().Methods("POST").Path("/thirdpart/photographers/photos").HandlerMethod(json, t, "GetPhotos")
 
 	// old
 	route().Methods("POST").Path("/Thirdpart").Queries("method", "Send").HandlerMethod(json, t, "Send")
@@ -184,6 +186,24 @@ func (t *Thirdpart) GrabPhotos(params map[string]string, to model.Recipient) (in
 		return 0, err
 	}
 	return len(photos), nil
+}
+
+// 抓取渠道to上图片pictureIDs的图片。bus地质：bus://exfe_service/thirdpart/photographers
+//
+// 例子：
+//
+//   > curl "http://127.0.0.1:23333/thirdpart/photographers/photos?picture_id=/Photos/underwater/001.jpg,/Photos/underwater/002.jpg" -d '{"external_id":"123","external_username":"name","auth_data":"{\"oauth_token\":\"key\",\"oauth_token_secret\":\"secret\"}","provider":"dropbox","identity_id":789,"user_id":1}'
+//
+func (t *Thirdpart) GetPhotos(params map[string]string, to model.Recipient) ([]string, error) {
+	pictureIDs := strings.Split(params["picture_id"], ",")
+	if len(pictureIDs) == 0 {
+		return nil, fmt.Errorf("must give picture_id")
+	}
+	datas, err := t.thirdpart.GetPhotos(to, pictureIDs)
+	if err != nil {
+		return nil, err
+	}
+	return datas, nil
 }
 
 func (t *Thirdpart) sendCallback(recipient model.Recipient, err error) {
