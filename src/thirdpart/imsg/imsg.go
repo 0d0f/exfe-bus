@@ -80,13 +80,8 @@ func (im *IMessage) Check(to string) (ret bool, err error) {
 		if err != nil {
 			return
 		}
-		var respString string
-		err = msg.ReadArguments(&respString)
-		if err != nil {
-			return
-		}
 		var resp Response
-		err = json.Unmarshal([]byte(respString), &resp)
+		err = msg.ReadArguments(&respString)
 		if err != nil {
 			return
 		}
@@ -145,13 +140,8 @@ func (im *IMessage) SendMessage(to string, contents []string) (id string, err er
 			if err != nil {
 				return
 			}
-			var respString string
-			err = msg.ReadArguments(&respString)
-			if err != nil {
-				return
-			}
 			var resp Response
-			err = json.Unmarshal([]byte(respString), &resp)
+			err = msg.ReadArguments(&resp)
 			if err != nil {
 				return
 			}
