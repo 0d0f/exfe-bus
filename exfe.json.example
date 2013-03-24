@@ -97,6 +97,11 @@
         "url": "http://6956-24f8e.sms-api.63810.com/api/SmsSend/user/{user}/hash/{hash}/encode/utf-8/smstype/notify"
       }
     },
+    "imessage": {
+      "address": "http://www.kufuwu.com:1080/socket.io/",
+      "origin": "http://www.kufuwu.com/p.html",
+      "channel": "1"
+    },
     "dropbox": {
       "key": "",
       "secret": ""

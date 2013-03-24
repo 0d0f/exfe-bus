@@ -101,6 +101,11 @@ type Config struct {
 				Url string `json:"url"`
 			} `json:"duancaiwang"`
 		}
+		IMessage struct {
+			Address string `json:"address"`
+			Origin  string `json:"origin"`
+			Channel string `json:"channel"`
+		} `json:"imessage"`
 		Dropbox struct {
 			Key    string `json:"key"`
 			Secret string `json:"secret"`

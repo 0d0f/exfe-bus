@@ -31,14 +31,15 @@ func (i *IMessageConn) Error(err error) {
 }
 
 type IMessage struct {
-	conn *multiplexer.Homo
-	log  *logger.SubLogger
+	conn    *multiplexer.Homo
+	log     *logger.SubLogger
+	channel string
 }
 
 func New(config *model.Config) (*IMessage, error) {
 	log := config.Log.SubPrefix("imessage")
 	homo := multiplexer.NewHomo(func() (multiplexer.Instance, error) {
-		sio, err := socketio.Dial("http://www.kufuwu.com:1080/socket.io/", "http://www.kufuwu.com/p.html", broker.NetworkTimeout)
+		sio, err := socketio.Dial(config.Thirdpart.IMessage.Address, config.Thirdpart.IMessage.Origin, broker.NetworkTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -48,8 +49,9 @@ func New(config *model.Config) (*IMessage, error) {
 		}, nil
 	}, 5, 30*time.Second, 40*time.Second)
 	return &IMessage{
-		conn: homo,
-		log:  log,
+		conn:    homo,
+		log:     log,
+		channel: config.Thirdpart.IMessage.Channel,
 	}, nil
 }
 
@@ -57,8 +59,8 @@ func (i *IMessage) Provider() string {
 	return "imessage"
 }
 
-func (i *IMessage) Check(to string) (ret bool, err error) {
-	i.conn.Do(func(i multiplexer.Instance) {
+func (im *IMessage) Check(to string) (ret bool, err error) {
+	im.conn.Do(func(i multiplexer.Instance) {
 		imsg, ok := i.(*IMessageConn)
 		if !ok {
 			err = fmt.Errorf("instance %+v is not *IMessageConn", i)
@@ -66,7 +68,7 @@ func (i *IMessage) Check(to string) (ret bool, err error) {
 		}
 		req := Request{
 			To:      to,
-			Channel: getChannel(),
+			Channel: im.getChannel(),
 			Action:  "1",
 		}
 		err = imsg.conn.Emit(true, "send", req)
@@ -135,8 +137,8 @@ func imsgLen(content string) int {
 	return len([]byte(content))
 }
 
-func (i *IMessage) SendMessage(to string, contents []string) (id string, err error) {
-	i.conn.Do(func(i multiplexer.Instance) {
+func (im *IMessage) SendMessage(to string, contents []string) (id string, err error) {
+	im.conn.Do(func(i multiplexer.Instance) {
 		imsg, ok := i.(*IMessageConn)
 		if !ok {
 			err = fmt.Errorf("instance %+v is not *IMessageConn", i)
@@ -145,7 +147,7 @@ func (i *IMessage) SendMessage(to string, contents []string) (id string, err err
 		for _, content := range contents {
 			req := Request{
 				To:      to,
-				Channel: getChannel(),
+				Channel: im.getChannel(),
 				Action:  "2",
 				Message: content,
 			}
@@ -181,8 +183,8 @@ func (i *IMessage) SendMessage(to string, contents []string) (id string, err err
 	return
 }
 
-func (i *IMessage) Codes() []string {
-	return nil
+func (i *IMessage) getChannel() string {
+	return i.channel
 }
 
 type Request struct {
@@ -200,8 +202,4 @@ type Response struct {
 		ID     string `json:"id"`
 		Err    string `json:"errmsg"`
 	} `json:"head"`
-}
-
-func getChannel() string {
-	return "4"
 }
