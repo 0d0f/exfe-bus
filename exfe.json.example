@@ -98,7 +98,7 @@
       }
     },
     "imessage": {
-      "address": "http://www.kufuwu.com:1080/socket.io/",
+      "address": "http://www.kufuwu.com:1888/socket.io/",
       "origin": "http://www.kufuwu.com/p.html",
       "channel": "1"
     },
