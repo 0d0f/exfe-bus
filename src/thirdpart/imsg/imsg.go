@@ -98,21 +98,6 @@ func (im *IMessage) Check(to string) (ret bool, err error) {
 func (i *IMessage) Send(to *model.Recipient, text string) (id string, err error) {
 	phone := to.ExternalID
 
-	if phone[:3] == "+86" {
-		p := phone[3:]
-		ok, err := i.Check(p)
-		if err != nil {
-			return "", fmt.Errorf("imessage error: %s", err)
-		} else if ok {
-			phone = p
-			i.log.Debug("phone %s is imessage", p)
-		} else {
-			return "", fmt.Errorf("%s not imessage", phone)
-		}
-	} else {
-		return "", fmt.Errorf("unsupport phone %s", phone)
-	}
-
 	lines := strings.Split(text, "\n")
 	contents := make([]string, 0)
 	for _, line := range lines {
