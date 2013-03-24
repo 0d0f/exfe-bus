@@ -2,7 +2,6 @@ package imessage
 
 import (
 	"broker"
-	"encoding/json"
 	"fmt"
 	"formatter"
 	"github.com/googollee/go-logger"
@@ -81,7 +80,7 @@ func (im *IMessage) Check(to string) (ret bool, err error) {
 			return
 		}
 		var resp Response
-		err = msg.ReadArguments(&respString)
+		err = msg.ReadArguments(&resp)
 		if err != nil {
 			return
 		}
