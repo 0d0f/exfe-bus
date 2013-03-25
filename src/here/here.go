@@ -40,6 +40,10 @@ func New(threshold, signThreshold float64, timeout time.Duration) *Here {
 	return ret
 }
 
+func (h *Here) UpdateChannel() chan string {
+	return h.update
+}
+
 func (h *Here) Add(user User) {
 	h.locker.Lock()
 	h.cluster.AddUser(&user)

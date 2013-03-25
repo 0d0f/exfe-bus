@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/googollee/go-rest"
 	"github.com/gorilla/mux"
 	"here"
 	"model"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -22,7 +24,8 @@ func (h HereService) Users_(user here.User) {
 }
 
 type HereStreaming struct {
-	ids map[string][]chan string
+	locker sync.Mutex
+	ids    map[string][]chan string
 }
 
 func (h *HereStreaming) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -42,15 +45,20 @@ func (h *HereStreaming) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	c := make(chan string)
+	h.locker.Lock()
 	h.ids[token] = append(h.ids[token], c)
+	h.locker.Unlock()
 	defer func() {
 		conn.Close()
 		for i, ch := range h.ids[token] {
 			if ch == c {
+				h.locker.Lock()
 				h.ids[token] = append(h.ids[token][:i], h.ids[token][i+1:]...)
+				h.locker.Unlock()
 				return
 			}
 		}
+		close(c)
 	}()
 
 	for {
@@ -88,6 +96,23 @@ func NewHere(config *model.Config) (http.Handler, error) {
 	streaming := &HereStreaming{
 		ids: make(map[string][]chan string),
 	}
+	go func() {
+		for {
+			select {
+			case id := <-service.here.UpdateChannel():
+				group := service.here.GetGroup(id)
+				buf, _ := json.Marshal(group)
+				data := string(buf)
+				for k := range group.Users {
+					streaming.locker.Lock()
+					for _, s := range streaming.ids[k] {
+						s <- data
+					}
+					streaming.locker.Unlock()
+				}
+			}
+		}
+	}()
 	ret.PathPrefix(handler.Prefix()).Handler(handler)
 	ret.Path("/here/streaming").Handler(streaming)
 	return ret, nil
