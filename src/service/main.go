@@ -92,7 +92,7 @@ func main() {
 			os.Exit(-1)
 			return
 		}
-		err = bus.RegisterPrefix("/here", here)
+		err = bus.RegisterPrefix("/v3/here", here)
 		if err != nil {
 			log.Crit("regiest here failed: %s", err)
 			os.Exit(-1)
