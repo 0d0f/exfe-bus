@@ -53,7 +53,7 @@
   "exfe_service": {
     "addr": "127.0.0.1",
     "port": 23333,
-    "services": {"token": true, "iom":true, "thirdpart":true, "notifier":true, "message": true}
+    "services": {"token": true, "iom":true, "thirdpart":true, "notifier":true, "message": true, "here": true}
   },
   "exfe_queue": {
     "addr": "127.0.0.1",
@@ -68,6 +68,11 @@
     "port": 23335
   },
 
+  "here": {
+    "threshold": 0.001,
+    "sign_threshold": 1.0,
+    "timeout_in_second": 60
+  },
   "thirdpart": {
     "max_state_cache": 1000,
     "twitter": {
