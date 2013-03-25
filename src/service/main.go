@@ -85,6 +85,22 @@ func main() {
 	}
 	log.Info("register streaming")
 
+	if config.ExfeService.Services.Here {
+		here, err := NewHere(&config)
+		if err != nil {
+			log.Crit("create here failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		err = bus.RegisterPrefix("/here", here)
+		if err != nil {
+			log.Crit("regiest here failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register here")
+	}
+
 	if config.ExfeService.Services.Token {
 		token, err := NewToken(&config, db)
 		if err != nil {

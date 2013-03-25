@@ -58,6 +58,7 @@ type Config struct {
 			Iom       bool `json:"iom"`
 			Thirdpart bool `json:"thirdpart"`
 			Notifier  bool `json:"notifier"`
+			Here      bool `json:"here"`
 		} `json:"services"`
 	} `json:"exfe_service"`
 	ExfeQueue struct {
@@ -72,6 +73,11 @@ type Config struct {
 		Port uint   `json:"port"`
 	} `json:"exfe_gate"`
 
+	Here struct {
+		Threshold       float64 `json:"threshold"`
+		SignThreshold   float64 `json:"sign_threshold"`
+		TimeoutInSecond int     `json:"timeout_in_second"`
+	} `json:"here"`
 	Thirdpart struct {
 		MaxStateCache uint `json:"max_state_cache"`
 		Twitter       struct {

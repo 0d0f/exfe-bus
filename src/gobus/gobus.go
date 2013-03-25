@@ -50,6 +50,11 @@ func (s *Server) Register(service Service) error {
 	})
 }
 
+func (s *Server) RegisterPrefix(prefix string, handler http.Handler) error {
+	s.router.PathPrefix(prefix).Handler(handler)
+	return nil
+}
+
 func (s *Server) RegisterRestful(service interface{}) error {
 	handler, err := rest.New(service)
 	if err != nil {
