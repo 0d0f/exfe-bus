@@ -114,6 +114,6 @@ func NewHere(config *model.Config) (http.Handler, error) {
 		}
 	}()
 	ret.PathPrefix(handler.Prefix()).Handler(handler)
-	ret.Path("/here/streaming").Handler(streaming)
+	ret.Path("/v3/here/streaming").Handler(streaming)
 	return ret, nil
 }
