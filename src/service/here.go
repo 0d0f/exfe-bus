@@ -16,14 +16,11 @@ type HereService struct {
 
 	Users rest.Processor `path:"/users" method:"POST"`
 
-	locker *sync.Mutex
-	here   *here.Here
+	here *here.Here
 }
 
 func (h HereService) Users_(user here.User) {
-	h.locker.Lock()
 	h.here.Add(user)
-	h.locker.Unlock()
 }
 
 type HereStreaming struct {
@@ -99,7 +96,6 @@ func NewHere(config *model.Config) (http.Handler, error) {
 	ret := mux.NewRouter()
 	service := new(HereService)
 	service.here = here.New(config.Here.Threshold, config.Here.SignThreshold, time.Duration(config.Here.TimeoutInSecond)*time.Second)
-	service.locker = new(sync.Mutex)
 	handler, err := rest.New(service)
 	if err != nil {
 		return nil, err
@@ -108,19 +104,15 @@ func NewHere(config *model.Config) (http.Handler, error) {
 		ids: make(map[string][]chan string),
 	}
 	go func() {
-		service.locker.Lock()
 		update := service.here.UpdateChannel()
-		service.locker.Unlock()
 		for {
 			select {
 			case id := <-update:
-				service.locker.Lock()
 				group := service.here.UserInGroup(id)
 				if group == nil {
 					group = here.NewGroup()
 				}
 				buf, _ := json.Marshal(group.Users)
-				service.locker.Unlock()
 				data := string(buf)
 				streaming.locker.Lock()
 				for _, s := range streaming.ids[id] {
