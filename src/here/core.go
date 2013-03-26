@@ -6,8 +6,7 @@ import (
 )
 
 type Identity struct {
-	Id      string `json:"id"`
-	Visible bool   `json:"visible"`
+	Id string `json:"id"`
 }
 
 type User struct {
@@ -19,7 +18,7 @@ type User struct {
 
 	Latitude  float64  `json:"latitude"`
 	Longitude float64  `json:"longitude"`
-	Accuracy  int      `json:"accuracy"`
+	Accuracy  float64  `json:"accuracy"`
 	Traits    []string `json:"traits"`
 
 	UpdatedAt time.Time `json:"-"`
@@ -87,7 +86,7 @@ func (g *Group) calcuate() {
 	for k, u := range g.Users {
 		if len(u.Traits) == 0 {
 			a := u.Accuracy
-			coeff := float64(a * n)
+			coeff := float64(n) * a
 			g.CenterLatitude = (coeff*g.CenterLatitude + u.Latitude) / (coeff + 1)
 			g.CenterLongitude = (coeff*g.CenterLongitude + u.Longitude) / (coeff + 1)
 			n += 1
