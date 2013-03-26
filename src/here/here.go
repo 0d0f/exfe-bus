@@ -54,3 +54,7 @@ func (h *Here) Add(user User) {
 func (h *Here) GetGroup(id string) *Group {
 	return h.cluster.Groups[id]
 }
+
+func (h *Here) UserInGroupId(userId string) string {
+	return h.cluster.UserGroup[userId]
+}

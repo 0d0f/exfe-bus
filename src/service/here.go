@@ -110,15 +110,20 @@ func NewHere(config *model.Config) (http.Handler, error) {
 				service.locker.Lock()
 				group := service.here.GetGroup(id)
 				service.locker.Unlock()
-				buf, _ := json.Marshal(group)
+				buf, _ := json.Marshal(group.Users)
 				data := string(buf)
+				streaming.locker.Lock()
+				service.locker.Lock()
 				for k := range group.Users {
-					streaming.locker.Lock()
+					if service.here.UserInGroupId(k) != id {
+						continue
+					}
 					for _, s := range streaming.ids[k] {
 						s <- data
 					}
-					streaming.locker.Unlock()
 				}
+				service.locker.Unlock()
+				streaming.locker.Unlock()
 			}
 		}
 	}()
