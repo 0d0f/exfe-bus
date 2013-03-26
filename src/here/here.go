@@ -52,7 +52,11 @@ func (h *Here) Add(user User) {
 }
 
 func (h *Here) GetGroup(id string) *Group {
-	return h.cluster.Groups[id]
+	ret, ok := h.cluster.Groups[id]
+	if !ok {
+		ret = NewGroup()
+	}
+	return ret
 }
 
 func (h *Here) UserInGroupId(userId string) string {
