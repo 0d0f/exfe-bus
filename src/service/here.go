@@ -8,6 +8,7 @@ import (
 	"model"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -21,6 +22,9 @@ type HereService struct {
 }
 
 func (h HereService) Users_(user here.User) {
+	remote := h.Request().RemoteAddr
+	remotes := strings.Split(remote, ":")
+	user.Traits = append(user.Traits, remotes[0])
 	h.here.Add(user)
 }
 
