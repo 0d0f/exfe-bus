@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"here"
 	"model"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -71,14 +72,13 @@ func (h *HereStreaming) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	for {
 		select {
 		case <-time.After(time.Second):
-			_, err = bufrw.Write([]byte("\n"))
-			if err != nil {
-				return
+			conn.SetDeadline(time.Now().Add(time.Second / 10))
+			buf := make([]byte, 10)
+			_, err := conn.Read(buf)
+			if e, ok := err.(net.Error); err == nil || (ok && e.Timeout()) {
+				continue
 			}
-			err = bufrw.Flush()
-			if err != nil {
-				return
-			}
+			return
 		case data := <-c:
 			_, err = bufrw.Write([]byte(data + "\n"))
 			if err != nil {
