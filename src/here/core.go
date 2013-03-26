@@ -144,10 +144,6 @@ func (c *Cluster) AddUser(user *User) {
 	c.UserGroup[user.Id] = groupKey
 }
 
-func (c *Cluster) UserInGroupId(userId string) string {
-	return c.UserGroup[userId]
-}
-
 func (c *Cluster) Clear() []string {
 	var remove []string
 	var ret []string

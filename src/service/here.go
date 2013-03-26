@@ -52,16 +52,23 @@ func (h *HereStreaming) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	h.ids[token] = append(h.ids[token], c)
 	h.locker.Unlock()
 	defer func() {
-		conn.Close()
-		for i, ch := range h.ids[token] {
-			if ch == c {
-				h.locker.Lock()
-				h.ids[token] = append(h.ids[token][:i], h.ids[token][i+1:]...)
-				h.locker.Unlock()
-				return
-			}
-		}
 		close(c)
+		conn.Close()
+		h.locker.Lock()
+		defer h.locker.Unlock()
+
+		var chs []chan string
+		for _, ch := range h.ids[token] {
+			if ch == c {
+				continue
+			}
+			chs = append(chs, ch)
+		}
+		if len(chs) > 0 {
+			h.ids[token] = chs
+		} else {
+			delete(h.ids, token)
+		}
 	}()
 
 	for {
@@ -109,11 +116,9 @@ func NewHere(config *model.Config) (http.Handler, error) {
 			case id := <-update:
 				service.locker.Lock()
 				group := service.here.GetGroup(id)
-				service.locker.Unlock()
 				buf, _ := json.Marshal(group.Users)
 				data := string(buf)
 				streaming.locker.Lock()
-				service.locker.Lock()
 				for k := range group.Users {
 					if service.here.UserInGroupId(k) != id {
 						continue
@@ -122,8 +127,8 @@ func NewHere(config *model.Config) (http.Handler, error) {
 						s <- data
 					}
 				}
-				service.locker.Unlock()
 				streaming.locker.Unlock()
+				service.locker.Unlock()
 			}
 		}
 	}()
