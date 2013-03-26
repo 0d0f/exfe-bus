@@ -120,13 +120,13 @@ func NewHere(config *model.Config) (http.Handler, error) {
 					group = here.NewGroup()
 				}
 				buf, _ := json.Marshal(group.Users)
+				service.locker.Unlock()
 				data := string(buf)
 				streaming.locker.Lock()
 				for _, s := range streaming.ids[id] {
 					s <- data
 				}
 				streaming.locker.Unlock()
-				service.locker.Unlock()
 			}
 		}
 	}()
