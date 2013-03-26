@@ -16,11 +16,11 @@ type HereService struct {
 
 	Users rest.Processor `path:"/users" method:"POST"`
 
-	locker sync.Mutex
+	locker *sync.Mutex
 	here   *here.Here
 }
 
-func (h *HereService) Users_(user here.User) {
+func (h HereService) Users_(user here.User) {
 	h.locker.Lock()
 	h.here.Add(user)
 	h.locker.Unlock()
@@ -92,6 +92,7 @@ func NewHere(config *model.Config) (http.Handler, error) {
 	ret := mux.NewRouter()
 	service := new(HereService)
 	service.here = here.New(config.Here.Threshold, config.Here.SignThreshold, time.Duration(config.Here.TimeoutInSecond)*time.Second)
+	service.locker = new(sync.Mutex)
 	handler, err := rest.New(service)
 	if err != nil {
 		return nil, err
