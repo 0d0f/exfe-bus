@@ -50,7 +50,7 @@ func (g *Group) Remove(user *User) {
 	g.calcuate()
 }
 
-func (g *Group) Clear(limit time.Duration) int {
+func (g *Group) Clear(limit time.Duration) []string {
 	var remove []string
 	for k, u := range g.Users {
 		if u.UpdatedAt.Add(limit).Before(time.Now()) {
@@ -61,7 +61,7 @@ func (g *Group) Clear(limit time.Duration) int {
 		delete(g.Users, k)
 	}
 	g.calcuate()
-	return len(remove)
+	return remove
 }
 
 func (g *Group) Distant(u *User) float64 {
@@ -148,9 +148,7 @@ func (c *Cluster) Clear() []string {
 	var remove []string
 	var ret []string
 	for k, group := range c.Groups {
-		if group.Clear(c.timeout) > 0 {
-			ret = append(ret, k)
-		}
+		ret = append(ret, group.Clear(c.timeout)...)
 		if len(group.Users) == 0 {
 			remove = append(remove, k)
 		} else {

@@ -48,17 +48,24 @@ func (h *Here) Add(user User) {
 	h.locker.Lock()
 	h.cluster.AddUser(&user)
 	h.locker.Unlock()
-	h.update <- h.cluster.UserGroup[user.Id]
+	group := h.GetGroup(h.cluster.UserGroup[user.Id])
+	if group == nil {
+		h.update <- user.Id
+	} else {
+		for _, u := range group.Users {
+			h.update <- u.Id
+		}
+	}
 }
 
 func (h *Here) GetGroup(id string) *Group {
-	ret, ok := h.cluster.Groups[id]
-	if !ok {
-		ret = NewGroup()
-	}
-	return ret
+	return h.cluster.Groups[id]
 }
 
-func (h *Here) UserInGroupId(userId string) string {
-	return h.cluster.UserGroup[userId]
+func (h *Here) UserInGroup(userId string) *Group {
+	id, ok := h.cluster.UserGroup[userId]
+	if !ok {
+		return nil
+	}
+	return h.cluster.Groups[id]
 }
