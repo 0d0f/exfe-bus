@@ -6,7 +6,8 @@ import (
 )
 
 type Identity struct {
-	Id string
+	Id      string `json:"id"`
+	Visible bool   `json:"visible"`
 }
 
 type User struct {
@@ -16,11 +17,10 @@ type User struct {
 	Bio        string     `json:"bio"`
 	Identities []Identity `json:"identities"`
 
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
-	Accuracy  int     `json:"accuracy"`
-	Sign      string  `json:"sign"`
-	OldSign   string  `json:"old_sign"`
+	Latitude  float64  `json:"latitude"`
+	Longitude float64  `json:"longitude"`
+	Accuracy  int      `json:"accuracy"`
+	Traits    []string `json:"traits"`
 
 	UpdatedAt time.Time `json:"-"`
 }
@@ -29,31 +29,26 @@ type Group struct {
 	Name            string
 	CenterLatitude  float64
 	CenterLongitude float64
-	Signs           map[string]int
+	Traits          map[string]int
 	Users           map[string]*User
 }
 
 func NewGroup() *Group {
 	return &Group{
-		Signs: make(map[string]int),
-		Users: make(map[string]*User),
+		Traits: make(map[string]int),
+		Users:  make(map[string]*User),
 	}
 }
 
 func (g *Group) Add(user *User) {
 	user.UpdatedAt = time.Now()
 	g.Users[user.Id] = user
-	g.calcuateCenter()
-	if user.Sign != "" {
-		g.Signs[user.Sign] += 1
-	}
-	if user.OldSign != "" {
-		i := g.Signs[user.OldSign]
-		i -= 1
-		if i <= 0 {
-			delete(g.Signs, user.OldSign)
-		}
-	}
+	g.calcuate()
+}
+
+func (g *Group) Remove(user *User) {
+	delete(g.Users, user.Id)
+	g.calcuate()
 }
 
 func (g *Group) Clear(limit time.Duration) int {
@@ -64,37 +59,47 @@ func (g *Group) Clear(limit time.Duration) int {
 		}
 	}
 	for _, k := range remove {
-		user := g.Users[k]
-		if user.Sign != "" {
-			i := g.Signs[user.Sign]
-			i -= 1
-			if i <= 0 {
-				delete(g.Signs, user.Sign)
-			} else {
-				g.Signs[user.Sign] = i
-			}
-		}
 		delete(g.Users, k)
 	}
+	g.calcuate()
 	return len(remove)
-}
-
-func (g *Group) calcuateCenter() {
-	g.CenterLatitude, g.CenterLongitude = 0, 0
-	n := 0
-	for _, u := range g.Users {
-		a := u.Accuracy
-		coeff := float64(a * n)
-		g.CenterLatitude = (coeff*g.CenterLatitude + u.Latitude) / (coeff + 1)
-		g.CenterLongitude = (coeff*g.CenterLongitude + u.Longitude) / (coeff + 1)
-		n += 1
-	}
 }
 
 func (g *Group) Distant(u *User) float64 {
 	a := math.Cos(g.CenterLatitude) * math.Cos(u.Latitude) * math.Cos(g.CenterLongitude-u.Longitude)
 	b := math.Sin(g.CenterLatitude) * math.Sin(u.Latitude)
 	return math.Acos(a + b)
+}
+
+func (g *Group) HasTraits(traits []string) bool {
+	for _, t := range traits {
+		if _, ok := g.Traits[t]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *Group) calcuate() {
+	g.CenterLatitude, g.CenterLongitude, g.Traits = 0, 0, make(map[string]int)
+	n := 0
+	var userId string
+	for k, u := range g.Users {
+		if len(u.Traits) == 0 {
+			a := u.Accuracy
+			coeff := float64(a * n)
+			g.CenterLatitude = (coeff*g.CenterLatitude + u.Latitude) / (coeff + 1)
+			g.CenterLongitude = (coeff*g.CenterLongitude + u.Longitude) / (coeff + 1)
+			n += 1
+		}
+		for _, t := range u.Traits {
+			g.Traits[t] += 1
+		}
+		userId = k
+	}
+	if u, ok := g.Users[userId]; ok && (g.CenterLatitude == 0 || g.CenterLongitude == 0) {
+		g.CenterLatitude, g.CenterLongitude = u.Latitude, u.Longitude
+	}
 }
 
 type Cluster struct {
@@ -121,17 +126,18 @@ func (c *Cluster) AddUser(user *User) {
 	var distant float64 = -1
 	for k, group := range c.Groups {
 		d := group.Distant(user)
-		if user.Sign != "" && d < c.signThreshold && group.Signs[user.Sign] > 0 {
+		if len(user.Traits) > 0 && d < c.signThreshold && group.HasTraits(user.Traits) {
 			groupKey, distant = k, 0
 		}
 		if distant < 0 || d < distant {
 			groupKey, distant = k, d
 		}
 	}
-	group := NewGroup()
+	var group *Group
 	if groupKey != "" && distant < c.distantThreshold {
 		group = c.Groups[groupKey]
 	} else {
+		group = NewGroup()
 		groupKey = user.Id
 	}
 	group.Add(user)

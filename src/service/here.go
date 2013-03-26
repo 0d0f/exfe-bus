@@ -16,11 +16,14 @@ type HereService struct {
 
 	Users rest.Processor `path:"/users" method:"POST"`
 
-	here *here.Here
+	locker sync.Mutex
+	here   *here.Here
 }
 
-func (h HereService) Users_(user here.User) {
+func (h *HereService) Users_(user here.User) {
+	h.locker.Lock()
 	h.here.Add(user)
+	h.locker.Unlock()
 }
 
 type HereStreaming struct {
@@ -97,10 +100,15 @@ func NewHere(config *model.Config) (http.Handler, error) {
 		ids: make(map[string][]chan string),
 	}
 	go func() {
+		service.locker.Lock()
+		update := service.here.UpdateChannel()
+		service.locker.Unlock()
 		for {
 			select {
-			case id := <-service.here.UpdateChannel():
+			case id := <-update:
+				service.locker.Lock()
 				group := service.here.GetGroup(id)
+				service.locker.Unlock()
 				buf, _ := json.Marshal(group)
 				data := string(buf)
 				for k := range group.Users {
@@ -113,7 +121,7 @@ func NewHere(config *model.Config) (http.Handler, error) {
 			}
 		}
 	}()
-	ret.PathPrefix(handler.Prefix()).Handler(handler)
 	ret.Path("/v3/here/streaming").Handler(streaming)
+	ret.PathPrefix(handler.Prefix()).Handler(handler)
 	return ret, nil
 }
