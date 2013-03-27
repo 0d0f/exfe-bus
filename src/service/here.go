@@ -116,7 +116,11 @@ func NewHere(config *model.Config) (http.Handler, error) {
 				if group == nil {
 					group = here.NewGroup()
 				}
-				buf, _ := json.Marshal(group.Users)
+				users := group.Users
+				if _, ok := users[id]; !ok {
+					users = make(map[string]*here.User)
+				}
+				buf, _ := json.Marshal(users)
 				data := string(buf)
 				streaming.locker.Lock()
 				for _, s := range streaming.ids[id] {
