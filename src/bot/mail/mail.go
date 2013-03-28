@@ -106,6 +106,10 @@ func (w *Worker) process() {
 			errorIds = append(errorIds, id)
 			continue
 		}
+		if strings.HasSuffix(parser.from.Address, "googolemail.com") {
+			errorIds = append(errorIds, id)
+			continue
+		}
 		to, toID := parser.GetTypeID()
 		fromCalendar := false
 		if to == "" {
