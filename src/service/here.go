@@ -38,5 +38,13 @@ func NewHere(config *model.Config) (http.Handler, error) {
 	service := new(HereService)
 	service.here = here.New(config.Here.Threshold, config.Here.SignThreshold, time.Duration(config.Here.TimeoutInSecond)*time.Second)
 
+	go func() {
+		c := service.here.UpdateChannel()
+		for {
+			id := <-c
+			service.Streaming.Feed(id, service.here.UserInGroup(id))
+		}
+	}()
+
 	return rest.New(service)
 }
