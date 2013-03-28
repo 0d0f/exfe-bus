@@ -16,7 +16,8 @@ type HereService struct {
 	Users     rest.Processor `path:"/users" method:"POST"`
 	Streaming rest.Streaming `path:"/streaming" method:"GET" end:"" timeout:"60"`
 
-	here *here.Here
+	config *model.Config
+	here   *here.Here
 }
 
 func (h HereService) Users_(user here.User) {
@@ -36,13 +37,21 @@ func (h HereService) Streaming_() string {
 
 func NewHere(config *model.Config) (http.Handler, error) {
 	service := new(HereService)
+	service.config = config
 	service.here = here.New(config.Here.Threshold, config.Here.SignThreshold, time.Duration(config.Here.TimeoutInSecond)*time.Second)
 
 	go func() {
 		c := service.here.UpdateChannel()
 		for {
 			id := <-c
-			service.Streaming.Feed(id, service.here.UserInGroup(id))
+			group := service.here.UserInGroup(id)
+			users := make(map[string]*here.User)
+			if group != nil {
+				if _, ok := group.Users[id]; ok {
+					users = group.Users
+				}
+			}
+			service.Streaming.Feed(id, users)
 		}
 	}()
 
