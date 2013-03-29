@@ -99,6 +99,20 @@ func main() {
 			return
 		}
 		log.Info("register here")
+
+		live, err := NewLive(&config)
+		if err != nil {
+			log.Crit("create live failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		err = bus.RegisterPrefix("/v3/live", live)
+		if err != nil {
+			log.Crit("regiest live failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register live")
 	}
 
 	if config.ExfeService.Services.Token {
