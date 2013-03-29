@@ -10,15 +10,13 @@ type Timer struct {
 	redis    redis.Conn
 	prefix   string
 	timerKey string
-	delay    time.Duration
 }
 
-func NewTimer(prefix string, delay time.Duration, redis redis.Conn) *Timer {
+func NewTimer(prefix string, redis redis.Conn) *Timer {
 	return &Timer{
 		redis:    redis,
 		prefix:   prefix,
 		timerKey: fmt.Sprintf("%s:timer", prefix),
-		delay:    delay,
 	}
 }
 
@@ -92,16 +90,18 @@ func (t *Timer) Pop() (string, []interface{}, error) {
 func (t *Timer) NextWakeup() (time.Duration, error) {
 	reply, err := redis.Values(t.redis.Do("ZRANGEBYSCORE", t.timerKey, "-inf", "+inf", "LIMIT", 0, 1, "WITHSCORES"))
 	if err != nil {
-		return t.delay, err
+		return -1, err
 	}
 	if len(reply) == 0 {
-		return t.delay, nil
+		return -1, nil
 	}
 	ontime, err := redis.Int64(reply[1], nil)
 	if err != nil {
-		return t.delay, err
+		return -1, err
 	}
-	fmt.Println(ontime)
-	fmt.Println(time.Unix(ontime, 0))
-	return time.Unix(ontime, 0).Sub(time.Now()), nil
+	ret := time.Unix(ontime, 0).Sub(time.Now())
+	if ret < 0 {
+		ret = 0
+	}
+	return ret, nil
 }

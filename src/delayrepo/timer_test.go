@@ -16,7 +16,7 @@ func TestTimer(t *testing.T) {
 	}
 	r := redis.NewConn(conn, 0, 0)
 
-	queue := NewTimer("delay:queue", time.Second, r)
+	queue := NewTimer("delay:queue", r)
 	ontime := time.Now().Add(time.Second).Unix()
 	err = queue.Push(ontime, "123", 1)
 	if err != nil {
