@@ -137,6 +137,7 @@ func (c *Cluster) AddUser(user *User) {
 		group = c.Groups[groupKey]
 	} else {
 		group = NewGroup()
+		group.Name = user.Id
 		groupKey = user.Id
 	}
 	group.Add(user)
