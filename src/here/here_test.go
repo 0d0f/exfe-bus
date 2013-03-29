@@ -50,5 +50,5 @@ func TestHere(t *testing.T) {
 		Traits:    []string{"abc"},
 	})
 	time.Sleep(time.Second * 2)
-	t.Errorf("show")
+	// t.Errorf("show")
 }
