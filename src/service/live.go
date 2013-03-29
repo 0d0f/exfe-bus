@@ -31,6 +31,7 @@ func (h LiveService) Card_(user here.User) string {
 			h.Error(http.StatusNotFound, fmt.Errorf("please wait and try again."))
 			return ""
 		}
+		h.tokens[token] = true
 	} else if !h.tokens[token] {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
 		return ""
@@ -63,17 +64,18 @@ func NewLive(config *model.Config) (http.Handler, error) {
 	go func() {
 		c := service.here.UpdateChannel()
 		for {
-			id := <-c
-			group := service.here.UserInGroup(id)
+			token := <-c
+			group := service.here.UserInGroup(token)
 			users := make(map[string]*here.User)
 			if group != nil {
-				if _, ok := group.Users[id]; ok {
+				if _, ok := group.Users[token]; ok {
 					users = group.Users
 				}
 			}
-			service.Streaming.Feed(id, users)
+			service.Streaming.Feed(token, users)
 			if len(users) == 0 {
-				service.Streaming.Disconnect(id)
+				service.Streaming.Disconnect(token)
+				delete(service.tokens, token)
 			}
 		}
 	}()
