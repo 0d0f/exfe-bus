@@ -31,8 +31,7 @@ func (h LiveService) Card_(user here.User) string {
 			h.Error(http.StatusNotFound, fmt.Errorf("please wait and try again."))
 			return ""
 		}
-	}
-	if !h.tokens[token] {
+	} else if !h.tokens[token] {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
 		return ""
 	}
