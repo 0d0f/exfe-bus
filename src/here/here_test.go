@@ -27,35 +27,31 @@ func TestHere(t *testing.T) {
 	}()
 
 	fmt.Println("add 123")
-	here.Add(User{
-		Id:        "123",
-		Name:      "123",
+	here.Add(Data{
+		Token:     "123",
 		Latitude:  13.4576787,
 		Longitude: 14.4324325,
 		Accuracy:  10,
 	})
 	fmt.Println("add 1234")
-	here.Add(User{
-		Id:        "1234",
-		Name:      "1234",
+	here.Add(Data{
+		Token:     "1234",
 		Latitude:  13.457677,
 		Longitude: 14.432435,
 		Accuracy:  10,
 	})
 	time.Sleep(time.Second / 2)
 	fmt.Println("add 1235")
-	here.Add(User{
-		Id:        "1235",
-		Name:      "1235",
+	here.Add(Data{
+		Token:     "1235",
 		Latitude:  13.457677,
 		Longitude: 14.432425,
 		Accuracy:  10,
 		Traits:    []string{"abc"},
 	})
 	fmt.Println("add 1236")
-	here.Add(User{
-		Id:        "1236",
-		Name:      "1236",
+	here.Add(Data{
+		Token:     "1236",
 		Latitude:  133.457677,
 		Longitude: 142.432425,
 		Accuracy:  10,
@@ -74,13 +70,13 @@ func stringGroup(group *Group) string {
 	if group == nil {
 		return ""
 	}
-	var users []string
-	for k := range group.Users {
-		users = append(users, k)
+	var data []string
+	for k := range group.Data {
+		data = append(data, k)
 	}
-	sort.Strings(users)
+	sort.Strings(data)
 	ret := group.Name + " {"
-	for _, u := range users {
+	for _, u := range data {
 		ret += u + " "
 	}
 	ret += "}"

@@ -20,11 +20,11 @@ type HereService struct {
 	here   *here.Here
 }
 
-func (h HereService) Users_(user here.User) {
+func (h HereService) Users_(data here.Data) {
 	remote := h.Request().RemoteAddr
 	remotes := strings.Split(remote, ":")
-	user.Traits = append(user.Traits, remotes[0])
-	h.here.Add(user)
+	data.Traits = append(data.Traits, remotes[0])
+	h.here.Add(data)
 }
 
 func (h HereService) Streaming_() string {
@@ -43,15 +43,15 @@ func NewHere(config *model.Config) (http.Handler, error) {
 	go func() {
 		c := service.here.UpdateChannel()
 		for {
-			id := <-c
-			group := service.here.UserInGroup(id)
-			users := make(map[string]*here.User)
+			token := <-c
+			group := service.here.UserInGroup(token)
+			users := make(map[string]*here.Data)
 			if group != nil {
-				if _, ok := group.Users[id]; ok {
-					users = group.Users
+				if _, ok := group.Data[token]; ok {
+					users = group.Data
 				}
 			}
-			service.Streaming.Feed(id, users)
+			service.Streaming.Feed(token, users)
 		}
 	}()
 

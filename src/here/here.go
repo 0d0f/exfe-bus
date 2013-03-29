@@ -44,16 +44,16 @@ func (h *Here) UpdateChannel() chan string {
 	return h.update
 }
 
-func (h *Here) Add(user User) {
+func (h *Here) Add(data Data) {
 	h.locker.Lock()
-	h.cluster.AddUser(&user)
+	h.cluster.AddUser(&data)
 	h.locker.Unlock()
-	group := h.UserInGroup(user.Id)
+	group := h.UserInGroup(data.Token)
 	if group == nil {
-		h.update <- user.Id
+		h.update <- data.Token
 	} else {
-		for _, u := range group.Users {
-			h.update <- u.Id
+		for _, u := range group.Data {
+			h.update <- u.Token
 		}
 	}
 }

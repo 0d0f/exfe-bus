@@ -23,7 +23,7 @@ type LiveService struct {
 	tokens map[string]bool
 }
 
-func (h LiveService) Card_(user here.User) string {
+func (h LiveService) Card_(data here.Data) string {
 	token := h.Request().URL.Query().Get("token")
 	if token == "" {
 		token = fmt.Sprintf("%04d", rand.Int31n(10000))
@@ -36,11 +36,11 @@ func (h LiveService) Card_(user here.User) string {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
 		return ""
 	}
-	user.Id = token
+	data.Token = token
 	remote := h.Request().RemoteAddr
 	remotes := strings.Split(remote, ":")
-	user.Traits = append(user.Traits, remotes[0])
-	h.here.Add(user)
+	data.Traits = append(data.Traits, remotes[0])
+	h.here.Add(data)
 
 	return token
 }
@@ -66,10 +66,10 @@ func NewLive(config *model.Config) (http.Handler, error) {
 		for {
 			token := <-c
 			group := service.here.UserInGroup(token)
-			users := make(map[string]*here.User)
+			users := make(map[string]*here.Data)
 			if group != nil {
-				if _, ok := group.Users[token]; ok {
-					users = group.Users
+				if _, ok := group.Data[token]; ok {
+					users = group.Data
 				}
 			}
 			service.Streaming.Feed(token, users)
