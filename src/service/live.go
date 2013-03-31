@@ -14,7 +14,7 @@ import (
 type LiveService struct {
 	rest.Service `prefix:"/v3/live"`
 
-	Card      rest.Processor `path:"/card" method:"POST"`
+	Card      rest.Processor `path:"/cards" method:"POST"`
 	Streaming rest.Streaming `path:"/streaming" method:"GET" end:"" timeout:"60"`
 
 	config *model.Config
