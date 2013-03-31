@@ -14,6 +14,7 @@ type Card struct {
 	Name       string     `json:"name"`
 	Avatar     string     `json:"avatar"`
 	Bio        string     `json:"bio"`
+	IsMe       bool       `json:"is_me"`
 	Identities []Identity `json:"identities"`
 }
 

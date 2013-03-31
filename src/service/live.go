@@ -37,6 +37,7 @@ func (h LiveService) Card_(data here.Data) string {
 		return ""
 	}
 	data.Token = token
+	data.Card.IsMe = false
 	remote := h.Request().RemoteAddr
 	remotes := strings.Split(remote, ":")
 	data.Traits = append(data.Traits, remotes[0])
@@ -66,14 +67,20 @@ func NewLive(config *model.Config) (http.Handler, error) {
 		for {
 			token := <-c
 			group := service.here.UserInGroup(token)
-			users := make(map[string]*here.Data)
+			cards := make([]here.Card, 0)
 			if group != nil {
 				if _, ok := group.Data[token]; ok {
-					users = group.Data
+					for k, d := range group.Data {
+						card := d.Card
+						if k == token {
+							card.IsMe = true
+						}
+						cards = append(cards, card)
+					}
 				}
 			}
-			service.Streaming.Feed(token, users)
-			if len(users) == 0 {
+			service.Streaming.Feed(token, cards)
+			if len(cards) == 0 {
 				service.Streaming.Disconnect(token)
 				delete(service.tokens, token)
 			}
