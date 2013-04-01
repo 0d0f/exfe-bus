@@ -41,6 +41,7 @@ func (u CrossUpdates) String() string {
 type CrossInvitation struct {
 	To    Recipient `json:"to"`
 	Cross Cross     `json:"cross"`
+	By    Identity  `json:"by"`
 
 	Config *Config `json:"-"`
 }
