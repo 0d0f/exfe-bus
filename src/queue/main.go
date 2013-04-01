@@ -65,6 +65,14 @@ func main() {
 	}
 	config.Log = log
 
+	table, err := gobus.NewTable(config.Dispatcher)
+	if err != nil {
+		log.Crit("create gobus table failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	dispatcher := gobus.NewDispatcher(table)
+
 	addr := fmt.Sprintf("%s:%d", config.ExfeQueue.Addr, config.ExfeQueue.Port)
 	log.Info("start at %s", addr)
 
@@ -74,6 +82,28 @@ func main() {
 		os.Exit(-1)
 		return
 	}
+
+	r, err := broker.NewRedisPool(&config)
+	if err != nil {
+		log.Crit("launch redis pool failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+
+	q, err := NewQueue(&config, r, dispatcher)
+	if err != nil {
+		log.Crit("launch queue failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	defer q.Quit()
+	err = bus.RegisterRestful(q)
+	if err != nil {
+		log.Crit("register queue failed: %s", err)
+		os.Exit(-1)
+		return
+	}
+	log.Notice("launch queue")
 
 	instant := NewInstant(&config)
 	var count int
@@ -110,7 +140,7 @@ func main() {
 	}
 
 	redis := broker.NewRedisImp(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password)
-	queue, err := NewQueue(&config, redis)
+	queue, err := NewQueue_(&config, redis)
 	if err != nil {
 		log.Crit("queue launch failed: %s", err)
 		os.Exit(-1)

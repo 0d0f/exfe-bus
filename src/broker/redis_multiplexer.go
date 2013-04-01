@@ -1,12 +1,72 @@
 package broker
 
 import (
+	"fmt"
+	"github.com/garyburd/redigo/redis"
 	"github.com/googollee/go-logger"
 	"github.com/googollee/go-multiplexer"
 	"github.com/googollee/godis"
 	"model"
+	"net"
 	"time"
 )
+
+type RedisInstance_ struct {
+	Conn  net.Conn
+	Redis redis.Conn
+	log   *logger.SubLogger
+}
+
+func (i *RedisInstance_) Ping() error {
+	reply, err := redis.String(i.Redis.Do("PING"))
+	if reply != "PONG" {
+		err = fmt.Errorf("redis not pong.")
+	}
+	return err
+}
+
+func (i *RedisInstance_) Close() error {
+	return i.Redis.Close()
+}
+
+func (i *RedisInstance_) Error(err error) {
+	i.log.Err("%s", err)
+}
+
+type RedisPool struct {
+	homo   *multiplexer.Homo
+	config *model.Config
+}
+
+func NewRedisPool(config *model.Config) (*RedisPool, error) {
+	if config.Redis.MaxConnections == 0 {
+		return nil, fmt.Errorf("config Redis.MaxConnections should not 0!")
+	}
+	return &RedisPool{
+		homo: multiplexer.NewHomo(func() (multiplexer.Instance, error) {
+			conn, err := net.DialTimeout("tcp", config.Redis.Netaddr, NetworkTimeout)
+			if err != nil {
+				return nil, err
+			}
+			return &RedisInstance_{
+				Conn:  conn,
+				Redis: redis.NewConn(conn, 0, 0),
+				log:   config.Log.SubPrefix("redis"),
+			}, nil
+		}, config.Redis.MaxConnections, -1, time.Duration(config.Redis.HeartBeatInSecond)*time.Second),
+		config: config,
+	}, nil
+}
+
+func (r *RedisPool) Do(f func(multiplexer.Instance)) error {
+	return r.homo.Do(f)
+}
+
+func (r *RedisPool) Close() error {
+	return r.homo.Close()
+}
+
+// old
 
 type RedisInstance struct {
 	redis *godis.Client

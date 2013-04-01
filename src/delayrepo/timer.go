@@ -1,18 +1,20 @@
 package delayrepo
 
 import (
+	"broker"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"github.com/googollee/go-multiplexer"
 	"time"
 )
 
 type Timer struct {
-	redis    redis.Conn
+	redis    *broker.RedisPool
 	prefix   string
 	timerKey string
 }
 
-func NewTimer(prefix string, redis redis.Conn) *Timer {
+func NewTimer(prefix string, redis *broker.RedisPool) *Timer {
 	return &Timer{
 		redis:    redis,
 		prefix:   prefix,
@@ -20,81 +22,111 @@ func NewTimer(prefix string, redis redis.Conn) *Timer {
 	}
 }
 
-func (t *Timer) Push(ontime int64, key, data interface{}) error {
-	err := t.redis.Send("MULTI")
-	if err != nil {
-		return err
-	}
-	err = t.redis.Send("RPUSH", fmt.Sprintf("%s:storage:%s", t.prefix, key), data)
-	if err != nil {
-		return err
-	}
-	err = t.redis.Send("ZADD", t.timerKey, ontime, key)
-	if err != nil {
-		return err
-	}
-	_, err = t.redis.Do("EXEC")
-	if err != nil {
-		return err
-	}
-	return nil
+func (t *Timer) Push(ontime int64, key string, data []byte) (err error) {
+	err = t.redis.Do(func(i multiplexer.Instance) {
+		r := i.(*broker.RedisInstance_)
+		r.Conn.SetDeadline(time.Now().Add(broker.NetworkTimeout))
+
+		err = r.Redis.Send("MULTI")
+		if err != nil {
+			return
+		}
+		err = r.Redis.Send("RPUSH", fmt.Sprintf("%s:storage:%s", t.prefix, key), data)
+		if err != nil {
+			return
+		}
+		err = r.Redis.Send("ZADD", t.timerKey, ontime, key)
+		if err != nil {
+			return
+		}
+		_, err = r.Redis.Do("EXEC")
+		if err != nil {
+			return
+		}
+	})
+	return
 }
 
-func (t *Timer) Pop() (string, []interface{}, error) {
-	reply, err := redis.Values(t.redis.Do("ZRANGEBYSCORE", t.timerKey, "-inf", "+inf", "LIMIT", 0, 1, "WITHSCORES"))
-	if err != nil {
+func (t *Timer) Pop() (string, [][]byte, error) {
+	var err error
+	var key string
+	var reply []interface{}
+	err = t.redis.Do(func(i multiplexer.Instance) {
+		r := i.(*broker.RedisInstance_)
+		r.Conn.SetDeadline(time.Now().Add(broker.NetworkTimeout))
+
+		reply, err = redis.Values(r.Redis.Do("ZRANGEBYSCORE", t.timerKey, "-inf", "+inf", "LIMIT", 0, 1, "WITHSCORES"))
+		if err != nil {
+			return
+		}
+		if len(reply) == 0 {
+			return
+		}
+
+		key, err = redis.String(reply[0], nil)
+		if err != nil {
+			return
+		}
+		var ontime int64
+		ontime, err = redis.Int64(reply[1], nil)
+		if err != nil {
+			return
+		}
+
+		if ontime > time.Now().Unix() {
+			return
+		}
+
+		storageKey := fmt.Sprintf("%s:storage:%s", t.prefix, key)
+		reply, err = redis.Values(r.Redis.Do("LRANGE", storageKey, 0, -1))
+		if err != nil {
+			return
+		}
+		err = r.Redis.Send("MULTI")
+		if err != nil {
+			return
+		}
+		err = r.Redis.Send("ZREM", t.timerKey, key)
+		if err != nil {
+			return
+		}
+		err = r.Redis.Send("DEL", storageKey)
+		if err != nil {
+			return
+		}
+		_, err = r.Redis.Do("EXEC")
+		if err != nil {
+			return
+		}
+	})
+
+	if err != nil || len(reply) == 9 {
 		return "", nil, err
-	}
-	if len(reply) == 0 {
-		return "", nil, nil
 	}
 
-	key, err := redis.String(reply[0], nil)
-	if err != nil {
-		return "", nil, err
+	ret := make([][]byte, len(reply))
+	for i, d := range reply {
+		ret[i], err = redis.Bytes(d, nil)
+		if err != nil {
+			return "", nil, err
+		}
 	}
-	ontime, err := redis.Int64(reply[1], nil)
-	if err != nil {
-		return "", nil, err
-	}
-
-	if ontime > time.Now().Unix() {
-		return "", nil, nil
-	}
-
-	storageKey := fmt.Sprintf("%s:storage:%s", t.prefix, key)
-	reply, err = redis.Values(t.redis.Do("LRANGE", storageKey, 0, -1))
-	if err != nil {
-		return "", nil, err
-	}
-	err = t.redis.Send("MULTI")
-	if err != nil {
-		return "", nil, err
-	}
-	err = t.redis.Send("ZREM", t.timerKey, key)
-	if err != nil {
-		return "", nil, err
-	}
-	err = t.redis.Send("DEL", storageKey)
-	if err != nil {
-		return "", nil, err
-	}
-	_, err = t.redis.Do("EXEC")
-	if err != nil {
-		return "", nil, err
-	}
-
-	return key, reply, nil
+	return key, ret, nil
 }
 
 func (t *Timer) NextWakeup() (time.Duration, error) {
-	reply, err := redis.Values(t.redis.Do("ZRANGEBYSCORE", t.timerKey, "-inf", "+inf", "LIMIT", 0, 1, "WITHSCORES"))
-	if err != nil {
+	var err error
+	var reply []interface{}
+	err = t.redis.Do(func(i multiplexer.Instance) {
+		r := i.(*broker.RedisInstance_)
+		r.Conn.SetDeadline(time.Now().Add(broker.NetworkTimeout))
+
+		reply, err = redis.Values(r.Redis.Do("ZRANGEBYSCORE", t.timerKey, "-inf", "+inf", "LIMIT", 0, 1, "WITHSCORES"))
+	})
+	if err != nil || len(reply) == 0 {
 		return -1, err
 	}
-	if len(reply) == 0 {
-		return -1, nil
-	}
+
 	ontime, err := redis.Int64(reply[1], nil)
 	if err != nil {
 		return -1, err

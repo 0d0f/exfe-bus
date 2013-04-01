@@ -1,37 +1,39 @@
 package delayrepo
 
 import (
+	"broker"
 	"fmt"
-	"github.com/garyburd/redigo/redis"
 	"github.com/stretchrcom/testify/assert"
-	"net"
+	"model"
 	"testing"
 	"time"
 )
 
 func TestTimer(t *testing.T) {
-	conn, err := net.DialTimeout("tcp", ":6379", time.Second)
+	config := new(model.Config)
+	config.Redis.MaxConnections = 1
+	config.Redis.Netaddr = "127.0.0.1:6379"
+	redis, err := broker.NewRedisPool(config)
 	if err != nil {
 		panic(err)
 	}
-	r := redis.NewConn(conn, 0, 0)
 
-	queue := NewTimer("delay:queue", r)
+	strategy := NewTimer("delay:test", redis)
 	ontime := time.Now().Add(time.Second).Unix()
-	err = queue.Push(ontime, "123", 1)
+	err = strategy.Push(ontime, "123", []byte("a"))
 	if err != nil {
 		panic(err)
 	}
-	err = queue.Push(ontime, "123", 2)
+	err = strategy.Push(ontime, "123", []byte("b"))
 	if err != nil {
 		panic(err)
 	}
-	err = queue.Push(ontime, "123", 3)
+	err = strategy.Push(ontime, "123", []byte("c"))
 	if err != nil {
 		panic(err)
 	}
 
-	wait, err := queue.NextWakeup()
+	wait, err := strategy.NextWakeup()
 	if err != nil {
 		panic(err)
 	}
@@ -39,11 +41,11 @@ func TestTimer(t *testing.T) {
 
 	time.Sleep(wait)
 
-	key, data, err := queue.Pop()
+	key, data, err := strategy.Pop()
 	if err != nil {
 		panic(err)
 	}
 
 	assert.Equal(t, key, "123")
-	assert.Equal(t, fmt.Sprintf("%v", data), "[[49] [50] [51]]")
+	assert.Equal(t, fmt.Sprintf("%v", data), "[[97] [98] [99]]")
 }
