@@ -117,7 +117,7 @@ func (q *Queue) Push(param map[string]string, arg Push) (int, error) {
 	if delay == 0 {
 		return q.instant(arg.Service, arg.GroupKey, arg.Recipients, arg.Data)
 	}
-	var repo delayrepo.Repository = nil
+	var repo delayrepo.Repo = nil
 	switch arg.Delay {
 	case "head":
 		repo = q.heads[delay]
@@ -161,7 +161,7 @@ func (q *Queue) instant(service, groupKey string, recipients []model.Recipient, 
 	return ret, nil
 }
 
-func (q *Queue) delay(repo delayrepo.Repository, service, groupKey string, recipients []model.Recipient, data interface{}) (int, error) {
+func (q *Queue) delay(repo delayrepo.Repo, service, groupKey string, recipients []model.Recipient, data interface{}) (int, error) {
 	ret := 0
 	d, ok := data.(map[string]interface{})
 	for _, to := range recipients {

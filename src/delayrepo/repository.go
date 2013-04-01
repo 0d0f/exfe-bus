@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type Repository interface {
+type Repo interface {
 	Push(key string, data []byte) error
 	Pop() (key string, datas [][]byte, err error)
 	NextWakeup() (time.Duration, error)
@@ -18,7 +18,7 @@ var ChangedError = errors.New("Repository changed while poping.")
 
 type Callback func(key string, datas [][]byte)
 
-func ServRepository(log *logger.SubLogger, repo Repository, f Callback) *tomb.Tomb {
+func ServRepository(log *logger.SubLogger, repo Repo, f Callback) *tomb.Tomb {
 	var tomb tomb.Tomb
 
 	go func() {

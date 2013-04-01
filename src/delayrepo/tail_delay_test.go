@@ -10,7 +10,7 @@ import (
 )
 
 func TestTail(t *testing.T) {
-	var q Repository
+	var q Repo
 	redis := broker.NewRedisImp("", 0, "")
 
 	log, err := logger.New(logger.Stderr, "test")
