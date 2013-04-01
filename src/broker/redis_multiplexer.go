@@ -99,7 +99,7 @@ func NewRedisMultiplexer(config *model.Config) *RedisMultiplexer {
 	return &RedisMultiplexer{
 		homo: multiplexer.NewHomo(func() (multiplexer.Instance, error) {
 			return &RedisInstance{
-				redis: godis.New(config.Redis.Netaddr, config.Redis.Db, config.Redis.Password),
+				redis: godis.New(fmt.Sprintf("tcp:", config.Redis.Netaddr), config.Redis.Db, config.Redis.Password),
 				log:   config.Log.SubPrefix("redis"),
 			}, nil
 		}, config.Redis.MaxConnections, -1, time.Duration(config.Redis.HeartBeatInSecond)*time.Second),
