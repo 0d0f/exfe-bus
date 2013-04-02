@@ -6,7 +6,9 @@ import (
 )
 
 type Identity struct {
-	Id string `json:"id"`
+	ExternalID       string `json:"external_id"`
+	ExternalUsername string `json:"external_username"`
+	Provider         string `json:"provider"`
 }
 
 type Card struct {
