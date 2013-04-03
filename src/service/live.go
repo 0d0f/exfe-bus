@@ -43,7 +43,10 @@ func (h LiveService) Card_(data here.Data) string {
 	remote := h.Request().RemoteAddr
 	remotes := strings.Split(remote, ":")
 	data.Traits = append(data.Traits, remotes[0])
-	h.here.Add(data)
+	err := h.here.Add(data)
+	if err != nil {
+		h.Error(http.StatusBadRequest, err)
+	}
 
 	return token
 }

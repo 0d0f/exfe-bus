@@ -44,10 +44,13 @@ func (h *Here) UpdateChannel() chan string {
 	return h.update
 }
 
-func (h *Here) Add(data Data) {
+func (h *Here) Add(data Data) error {
 	h.locker.Lock()
-	h.cluster.AddUser(&data)
+	err := h.cluster.AddUser(&data)
 	h.locker.Unlock()
+	if err != nil {
+		return err
+	}
 	group := h.UserInGroup(data.Token)
 	if group == nil {
 		h.update <- data.Token
@@ -56,6 +59,7 @@ func (h *Here) Add(data Data) {
 			h.update <- u.Token
 		}
 	}
+	return nil
 }
 
 func (h *Here) UserInGroup(userId string) *Group {

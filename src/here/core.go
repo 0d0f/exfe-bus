@@ -2,6 +2,7 @@ package here
 
 import (
 	"math"
+	"strconv"
 	"time"
 )
 
@@ -23,11 +24,15 @@ type Card struct {
 
 type Data struct {
 	Token     string   `json:"token"`
-	Latitude  float64  `json:"latitude"`
-	Longitude float64  `json:"longitude"`
-	Accuracy  float64  `json:"accuracy"`
+	Latitude  string   `json:"latitude"`
+	Longitude string   `json:"longitude"`
+	Accuracy  string   `json:"accuracy"`
 	Traits    []string `json:"traits"`
 	Card      Card     `json:"card"`
+
+	latitude  float64 `json:"-"`
+	longitude float64 `json:"-"`
+	accuracy  float64 `json:"-"`
 
 	UpdatedAt time.Time `json:"-"`
 }
@@ -74,8 +79,8 @@ func (g *Group) Clear(limit time.Duration) []string {
 }
 
 func (g *Group) Distant(u *Data) float64 {
-	a := math.Cos(g.CenterLatitude) * math.Cos(u.Latitude) * math.Cos(g.CenterLongitude-u.Longitude)
-	b := math.Sin(g.CenterLatitude) * math.Sin(u.Latitude)
+	a := math.Cos(g.CenterLatitude) * math.Cos(u.latitude) * math.Cos(g.CenterLongitude-u.longitude)
+	b := math.Sin(g.CenterLatitude) * math.Sin(u.latitude)
 	return math.Acos(a + b)
 }
 
@@ -94,10 +99,10 @@ func (g *Group) calcuate() {
 	var userId string
 	for k, u := range g.Data {
 		if len(u.Traits) == 0 {
-			a := u.Accuracy
+			a := u.accuracy
 			coeff := float64(n) * a
-			g.CenterLatitude = (coeff*g.CenterLatitude + u.Latitude) / (coeff + 1)
-			g.CenterLongitude = (coeff*g.CenterLongitude + u.Longitude) / (coeff + 1)
+			g.CenterLatitude = (coeff*g.CenterLatitude + u.latitude) / (coeff + 1)
+			g.CenterLongitude = (coeff*g.CenterLongitude + u.longitude) / (coeff + 1)
 			n += 1
 		}
 		for _, t := range u.Traits {
@@ -106,7 +111,7 @@ func (g *Group) calcuate() {
 		userId = k
 	}
 	if u, ok := g.Data[userId]; ok && (g.CenterLatitude == 0 || g.CenterLongitude == 0) {
-		g.CenterLatitude, g.CenterLongitude = u.Latitude, u.Longitude
+		g.CenterLatitude, g.CenterLongitude = u.latitude, u.longitude
 	}
 }
 
@@ -129,7 +134,26 @@ func NewCluster(threshold, signThreshold float64, timeout time.Duration) *Cluste
 	}
 }
 
-func (c *Cluster) AddUser(data *Data) {
+func (c *Cluster) AddUser(data *Data) error {
+	var err error
+	if data.Latitude != "" && data.Longitude != "" && data.Accuracy != "" {
+		data.latitude, err = strconv.ParseFloat(data.Latitude, 64)
+		if err != nil {
+			return err
+		}
+		data.longitude, err = strconv.ParseFloat(data.Longitude, 64)
+		if err != nil {
+			return err
+		}
+		data.accuracy, err = strconv.ParseFloat(data.Accuracy, 64)
+		if err != nil {
+			return err
+		}
+	} else {
+		data.Latitude = ""
+		data.Longitude = ""
+		data.Accuracy = ""
+	}
 	groupKey := ""
 	var distant float64 = -1
 	for k, group := range c.Groups {
@@ -152,6 +176,7 @@ func (c *Cluster) AddUser(data *Data) {
 	group.Add(data)
 	c.Groups[groupKey] = group
 	c.UserGroup[data.Token] = groupKey
+	return nil
 }
 
 func (c *Cluster) Clear() []string {
