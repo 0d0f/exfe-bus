@@ -18,6 +18,7 @@ type Card struct {
 	Bio        string     `json:"bio"`
 	IsMe       bool       `json:"is_me"`
 	Identities []Identity `json:"identities"`
+	Timestamp  int64      `json:"timestamp"`
 }
 
 type Data struct {
@@ -48,6 +49,7 @@ func NewGroup() *Group {
 
 func (g *Group) Add(data *Data) {
 	data.UpdatedAt = time.Now()
+	data.Card.Timestamp = time.Now().Unix()
 	g.Data[data.Token] = data
 	g.calcuate()
 }
