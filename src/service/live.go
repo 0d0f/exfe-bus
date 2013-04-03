@@ -42,6 +42,8 @@ func (h LiveService) Card_(data here.Data) string {
 	remotes := strings.Split(remote, ":")
 	data.Traits = append(data.Traits, remotes[0])
 	h.here.Add(data)
+	h.Header().Set("access-control-allow-origin", h.config.AccessDomain)
+	h.Header().Set("access-control-allow-credentials", "True")
 
 	return token
 }
@@ -51,6 +53,8 @@ func (h LiveService) Streaming_() string {
 	if !h.tokens[token] {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
 	}
+	h.Header().Set("access-control-allow-origin", h.config.AccessDomain)
+	h.Header().Set("access-control-allow-credentials", "True")
 	return token
 }
 

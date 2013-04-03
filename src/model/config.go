@@ -11,6 +11,7 @@ type Config struct {
 	AppUrl       string `json:"app_url"`
 	TemplatePath string `json:"template_path"`
 	DefaultLang  string `json:"default_lang"`
+	AccessDomain string `json:"access_domain"`
 
 	Test bool `json:"test"`
 	DB   struct {
