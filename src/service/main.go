@@ -85,21 +85,7 @@ func main() {
 	}
 	log.Info("register streaming")
 
-	if config.ExfeService.Services.Here {
-		here, err := NewHere(&config)
-		if err != nil {
-			log.Crit("create here failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		err = bus.RegisterPrefix("/v3/here", here)
-		if err != nil {
-			log.Crit("regiest here failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register here")
-
+	if config.ExfeService.Services.Live {
 		live, err := NewLive(&config)
 		if err != nil {
 			log.Crit("create live failed: %s", err)

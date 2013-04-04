@@ -59,7 +59,7 @@ type Config struct {
 			Iom       bool `json:"iom"`
 			Thirdpart bool `json:"thirdpart"`
 			Notifier  bool `json:"notifier"`
-			Here      bool `json:"here"`
+			Live      bool `json:"live"`
 		} `json:"services"`
 	} `json:"exfe_service"`
 	ExfeQueue struct {
