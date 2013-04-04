@@ -48,6 +48,7 @@ func (h *Here) Add(data Data) error {
 	h.locker.Lock()
 	err := h.cluster.AddUser(&data)
 	h.locker.Unlock()
+
 	if err != nil {
 		return err
 	}

@@ -34,6 +34,7 @@ func (h LiveService) Card_(data here.Data) string {
 			return ""
 		}
 		h.tokens[token] = true
+		data.Card.Id = fmt.Sprintf("%032d", rand.Int31())
 	} else if !h.tokens[token] {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
 		return ""

@@ -29,32 +29,32 @@ func TestHere(t *testing.T) {
 	fmt.Println("add 123")
 	here.Add(Data{
 		Token:     "123",
-		Latitude:  13.4576787,
-		Longitude: 14.4324325,
-		Accuracy:  10,
+		Latitude:  "13.4576787",
+		Longitude: "14.4324325",
+		Accuracy:  "10",
 	})
 	fmt.Println("add 1234")
 	here.Add(Data{
 		Token:     "1234",
-		Latitude:  13.457677,
-		Longitude: 14.432435,
-		Accuracy:  10,
+		Latitude:  "13.457677",
+		Longitude: "14.432435",
+		Accuracy:  "10",
 	})
 	time.Sleep(time.Second / 2)
 	fmt.Println("add 1235")
 	here.Add(Data{
 		Token:     "1235",
-		Latitude:  13.457677,
-		Longitude: 14.432425,
-		Accuracy:  10,
+		Latitude:  "13.457677",
+		Longitude: "14.432425",
+		Accuracy:  "10",
 		Traits:    []string{"abc"},
 	})
 	fmt.Println("add 1236")
 	here.Add(Data{
 		Token:     "1236",
-		Latitude:  133.457677,
-		Longitude: 142.432425,
-		Accuracy:  10,
+		Latitude:  "133.457677",
+		Longitude: "142.432425",
+		Accuracy:  "10",
 		Traits:    []string{"abc"},
 	})
 	time.Sleep(time.Second * 2)

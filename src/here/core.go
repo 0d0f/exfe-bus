@@ -19,7 +19,6 @@ type Card struct {
 	Bio        string     `json:"bio"`
 	IsMe       bool       `json:"is_me"`
 	Identities []Identity `json:"identities"`
-	Timestamp  int64      `json:"timestamp"`
 }
 
 type Data struct {
@@ -37,10 +36,15 @@ type Data struct {
 	UpdatedAt time.Time `json:"-"`
 }
 
+func (d Data) HasGPS() bool {
+	return d.Latitude != "" && d.Longitude != "" && d.Accuracy != ""
+}
+
 type Group struct {
 	Name            string
 	CenterLatitude  float64
 	CenterLongitude float64
+	HasGps          bool
 	Traits          map[string]int
 	Data            map[string]*Data
 }
@@ -53,8 +57,6 @@ func NewGroup() *Group {
 }
 
 func (g *Group) Add(data *Data) {
-	data.UpdatedAt = time.Now()
-	data.Card.Timestamp = time.Now().Unix()
 	g.Data[data.Token] = data
 	g.calcuate()
 }
@@ -65,20 +67,24 @@ func (g *Group) Remove(data *Data) {
 }
 
 func (g *Group) Clear(limit time.Duration) []string {
-	var remove []string
-	for k, u := range g.Data {
-		if u.UpdatedAt.Add(limit).Before(time.Now()) {
-			remove = append(remove, k)
+	data := make(map[string]*Data)
+	var clearedTokens []string
+	for token, d := range g.Data {
+		if d.UpdatedAt.Add(limit).Before(time.Now()) {
+			clearedTokens = append(clearedTokens, token)
+		} else {
+			data[token] = d
 		}
 	}
-	for _, k := range remove {
-		delete(g.Data, k)
-	}
+	g.Data = data
 	g.calcuate()
-	return remove
+	return clearedTokens
 }
 
-func (g *Group) Distant(u *Data) float64 {
+func (g *Group) Distance(u *Data) float64 {
+	if !u.HasGPS() || !g.HasGps {
+		return -1
+	}
 	a := math.Cos(g.CenterLatitude) * math.Cos(u.latitude) * math.Cos(g.CenterLongitude-u.longitude)
 	b := math.Sin(g.CenterLatitude) * math.Sin(u.latitude)
 	return math.Acos(a + b)
@@ -94,24 +100,25 @@ func (g *Group) HasTraits(traits []string) bool {
 }
 
 func (g *Group) calcuate() {
-	g.CenterLatitude, g.CenterLongitude, g.Traits = 0, 0, make(map[string]int)
+	g.HasGps, g.CenterLatitude, g.CenterLongitude, g.Traits = false, 0, 0, make(map[string]int)
 	n := 0
-	var userId string
-	for k, u := range g.Data {
-		if len(u.Traits) == 0 {
-			a := u.accuracy
-			coeff := float64(n) * a
-			g.CenterLatitude = (coeff*g.CenterLatitude + u.latitude) / (coeff + 1)
-			g.CenterLongitude = (coeff*g.CenterLongitude + u.longitude) / (coeff + 1)
+	for _, u := range g.Data {
+		if u.HasGPS() {
+			if n == 0 {
+				g.CenterLatitude = u.latitude
+				g.CenterLongitude = u.longitude
+			} else {
+				a := u.accuracy
+				coeff := float64(n) * a
+				g.CenterLatitude = (coeff*g.CenterLatitude + u.latitude) / (coeff + 1)
+				g.CenterLongitude = (coeff*g.CenterLongitude + u.longitude) / (coeff + 1)
+			}
 			n += 1
+			g.HasGps = true
 		}
 		for _, t := range u.Traits {
 			g.Traits[t] += 1
 		}
-		userId = k
-	}
-	if u, ok := g.Data[userId]; ok && (g.CenterLatitude == 0 || g.CenterLongitude == 0) {
-		g.CenterLatitude, g.CenterLongitude = u.latitude, u.longitude
 	}
 }
 
@@ -136,7 +143,9 @@ func NewCluster(threshold, signThreshold float64, timeout time.Duration) *Cluste
 
 func (c *Cluster) AddUser(data *Data) error {
 	var err error
-	if data.Latitude != "" && data.Longitude != "" && data.Accuracy != "" {
+	data.UpdatedAt = time.Now()
+
+	if data.HasGPS() {
 		data.latitude, err = strconv.ParseFloat(data.Latitude, 64)
 		if err != nil {
 			return err
@@ -154,11 +163,15 @@ func (c *Cluster) AddUser(data *Data) error {
 		data.Longitude = ""
 		data.Accuracy = ""
 	}
+
 	groupKey := ""
 	var distant float64 = -1
 	for k, group := range c.Groups {
-		d := group.Distant(data)
-		if len(data.Traits) > 0 && d < c.signThreshold && group.HasTraits(data.Traits) {
+		d := group.Distance(data)
+		if d < 0 {
+			d = c.distantThreshold
+		}
+		if group.HasTraits(data.Traits) && d < c.signThreshold {
 			groupKey, distant = k, 0
 		}
 		if distant < 0 || d < distant {
@@ -180,18 +193,14 @@ func (c *Cluster) AddUser(data *Data) error {
 }
 
 func (c *Cluster) Clear() []string {
-	var remove []string
-	var ret []string
+	groups := make(map[string]*Group)
+	var clearedTokens []string
 	for k, group := range c.Groups {
-		ret = append(ret, group.Clear(c.timeout)...)
-		if len(group.Data) == 0 {
-			remove = append(remove, k)
-		} else {
-			c.Groups[k] = group
+		clearedTokens = append(clearedTokens, group.Clear(c.timeout)...)
+		if len(group.Data) > 0 {
+			groups[k] = group
 		}
 	}
-	for _, r := range remove {
-		delete(c.Groups, r)
-	}
-	return ret
+	c.Groups = groups
+	return clearedTokens
 }
