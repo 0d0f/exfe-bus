@@ -31,7 +31,6 @@ type Server struct {
 	router *mux.Router
 	addr   string
 	log    *logger.Logger
-	mux    *http.ServeMux
 }
 
 func NewServer(addr string, log *logger.Logger) (*Server, error) {
