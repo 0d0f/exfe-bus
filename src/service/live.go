@@ -23,24 +23,26 @@ type LiveService struct {
 	tokens map[string]bool
 }
 
-func (h LiveService) Card_(data here.Data) string {
+func (h LiveService) Card_(data here.Data) []string {
 	h.Header().Set("access-control-allow-origin", h.config.AccessDomain)
 	h.Header().Set("access-control-allow-credentials", "True")
+
 	token := h.Request().URL.Query().Get("token")
 	if token == "" {
 		token = fmt.Sprintf("%04d", rand.Int31n(10000))
 		if h.tokens[token] {
 			h.Error(http.StatusNotFound, fmt.Errorf("please wait and try again."))
-			return ""
+			return nil
 		}
 		h.tokens[token] = true
 		data.Card.Id = fmt.Sprintf("%032d", rand.Int31())
 	} else if !h.tokens[token] {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
-		return ""
+		return nil
 	}
 	data.Token = token
 	data.Card.IsMe = false
+	data.Card.Id = fmt.Sprintf("%032d", rand.Uint32())
 	remote := h.Request().RemoteAddr
 	remotes := strings.Split(remote, ":")
 	data.Traits = append(data.Traits, remotes[0])
@@ -49,7 +51,7 @@ func (h LiveService) Card_(data here.Data) string {
 		h.Error(http.StatusBadRequest, err)
 	}
 
-	return token
+	return []string{token, data.Card.Id}
 }
 
 func (h LiveService) Streaming_() string {
