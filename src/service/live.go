@@ -45,7 +45,11 @@ func (h LiveService) Card_(data here.Data) []string {
 	remote := h.Request().RemoteAddr
 	remotes := strings.Split(remote, ":")
 	data.Traits = append(data.Traits, remotes[0])
+
+	h.config.Log.Debug("adding: %s", token)
 	err := h.here.Add(&data)
+	h.config.Log.Debug("added: %s", token)
+
 	if err != nil {
 		h.Error(http.StatusBadRequest, err)
 		return nil
@@ -76,7 +80,10 @@ func NewLive(config *model.Config) (http.Handler, error) {
 	go func() {
 		c := service.here.UpdateChannel()
 		for {
+			config.Log.Debug("waiting update")
 			token := <-c
+			config.Log.Debug("get update: %s", token)
+
 			config.Log.Debug("token update: %s", token)
 			group := service.here.TokenInGroup(token)
 			cards := make([]here.Card, 0)
@@ -91,8 +98,13 @@ func NewLive(config *model.Config) (http.Handler, error) {
 					}
 				}
 			}
+
+			config.Log.Debug("feeding: %s", token)
 			service.Streaming.Feed(token, cards)
+			config.Log.Debug("feeded: %s", token)
+
 			if len(cards) == 0 {
+				config.Log.Debug("disconnecting token: %s", token)
 				service.Streaming.Disconnect(token)
 				config.Log.Debug("disconnect token: %s", token)
 			}
