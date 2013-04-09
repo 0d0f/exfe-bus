@@ -2,6 +2,7 @@ package here
 
 import (
 	"launchpad.net/tomb"
+	"log/syslog"
 	"sync"
 	"time"
 )
@@ -12,13 +13,17 @@ type Here struct {
 	timeout time.Duration
 	update  chan string
 	locker  sync.Mutex
+	log     *syslog.Writer
 }
 
 func New(threshold, signThreshold float64, timeout time.Duration) *Here {
+	l, _ := syslog.New(syslog.LOG_DEBUG, "exfe_service")
+
 	ret := &Here{
 		cluster: NewCluster(threshold, signThreshold, timeout),
 		timeout: timeout,
 		update:  make(chan string),
+		log:     l,
 	}
 	go func() {
 		defer ret.tomb.Done()
@@ -28,9 +33,11 @@ func New(threshold, signThreshold float64, timeout time.Duration) *Here {
 			case <-ret.tomb.Dying():
 				return
 			case <-time.After(timeout):
+				l.Debug("loop clear lock")
 				ret.locker.Lock()
 				ids := ret.cluster.Clear()
 				ret.locker.Unlock()
+				l.Debug("loop clear unlock")
 				for _, id := range ids {
 					ret.update <- id
 				}
@@ -45,9 +52,11 @@ func (h *Here) UpdateChannel() chan string {
 }
 
 func (h *Here) Add(data *Data) error {
+	h.log.Debug("add lock")
 	h.locker.Lock()
 	err := h.cluster.Add(data)
 	h.locker.Unlock()
+	h.log.Debug("add lock")
 
 	if err != nil {
 		return err
@@ -64,8 +73,10 @@ func (h *Here) Add(data *Data) error {
 }
 
 func (h *Here) TokenInGroup(token string) *Group {
+	h.log.Debug("tokeningroup lock")
 	h.locker.Lock()
 	defer h.locker.Unlock()
+	defer h.log.Debug("tokeningroup lock")
 	id, ok := h.cluster.TokenGroup[token]
 	if !ok {
 		return nil
