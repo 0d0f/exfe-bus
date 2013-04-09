@@ -28,12 +28,12 @@ func New(threshold, signThreshold float64, timeout time.Duration) *Here {
 			case <-ret.tomb.Dying():
 				return
 			case <-time.After(timeout):
-			}
-			ret.locker.Lock()
-			ids := ret.cluster.Clear()
-			ret.locker.Unlock()
-			for _, id := range ids {
-				ret.update <- id
+				ret.locker.Lock()
+				ids := ret.cluster.Clear()
+				ret.locker.Unlock()
+				for _, id := range ids {
+					ret.update <- id
+				}
 			}
 		}
 	}()
@@ -66,7 +66,7 @@ func (h *Here) Add(data *Data) error {
 func (h *Here) TokenInGroup(token string) *Group {
 	h.locker.Lock()
 	defer h.locker.Unlock()
-	id, ok := h.cluster.DataGroup[token]
+	id, ok := h.cluster.TokenGroup[token]
 	if !ok {
 		return nil
 	}

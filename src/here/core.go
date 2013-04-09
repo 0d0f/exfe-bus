@@ -40,6 +40,29 @@ func (d Data) HasGPS() bool {
 	return d.Latitude != "" && d.Longitude != "" && d.Accuracy != ""
 }
 
+func (d *Data) Init() error {
+	if d.HasGPS() {
+		var err error
+		d.latitude, err = strconv.ParseFloat(d.Latitude, 64)
+		if err != nil {
+			return err
+		}
+		d.longitude, err = strconv.ParseFloat(d.Longitude, 64)
+		if err != nil {
+			return err
+		}
+		d.accuracy, err = strconv.ParseFloat(d.Accuracy, 64)
+		if err != nil {
+			return err
+		}
+	} else {
+		d.Latitude = ""
+		d.Longitude = ""
+		d.Accuracy = ""
+	}
+	return nil
+}
+
 type Group struct {
 	Name            string
 	CenterLatitude  float64
@@ -123,8 +146,8 @@ func (g *Group) calcuate() {
 }
 
 type Cluster struct {
-	Groups    map[string]*Group
-	DataGroup map[string]string
+	Groups     map[string]*Group
+	TokenGroup map[string]string
 
 	distantThreshold float64
 	signThreshold    float64
@@ -134,7 +157,7 @@ type Cluster struct {
 func NewCluster(threshold, signThreshold float64, timeout time.Duration) *Cluster {
 	return &Cluster{
 		Groups:           make(map[string]*Group),
-		DataGroup:        make(map[string]string),
+		TokenGroup:       make(map[string]string),
 		distantThreshold: threshold,
 		signThreshold:    signThreshold,
 		timeout:          timeout,
@@ -142,9 +165,13 @@ func NewCluster(threshold, signThreshold float64, timeout time.Duration) *Cluste
 }
 
 func (c *Cluster) Add(data *Data) error {
-	var err error
+	err := data.Init()
+	if err != nil {
+		return err
+	}
+
 	data.UpdatedAt = time.Now()
-	groupId, ok := c.DataGroup[data.Token]
+	groupId, ok := c.TokenGroup[data.Token]
 	if ok {
 		group := c.Groups[groupId]
 		oldData := group.Data[data.Token]
@@ -152,26 +179,7 @@ func (c *Cluster) Add(data *Data) error {
 		group.Remove(data)
 	}
 
-	if data.HasGPS() {
-		data.latitude, err = strconv.ParseFloat(data.Latitude, 64)
-		if err != nil {
-			return err
-		}
-		data.longitude, err = strconv.ParseFloat(data.Longitude, 64)
-		if err != nil {
-			return err
-		}
-		data.accuracy, err = strconv.ParseFloat(data.Accuracy, 64)
-		if err != nil {
-			return err
-		}
-	} else {
-		data.Latitude = ""
-		data.Longitude = ""
-		data.Accuracy = ""
-	}
-
-	groupKey := ""
+	groupId = ""
 	var distant float64 = -1
 	for k, group := range c.Groups {
 		d := group.Distance(data)
@@ -179,23 +187,23 @@ func (c *Cluster) Add(data *Data) error {
 			d = c.distantThreshold
 		}
 		if group.HasTraits(data.Traits) && d < c.signThreshold {
-			groupKey, distant = k, 0
+			groupId, distant = k, 0
 		}
 		if distant < 0 || d < distant {
-			groupKey, distant = k, d
+			groupId, distant = k, d
 		}
 	}
 	var group *Group
-	if groupKey != "" && distant < c.distantThreshold {
-		group = c.Groups[groupKey]
+	if groupId != "" && distant < c.distantThreshold {
+		group = c.Groups[groupId]
 	} else {
 		group = NewGroup()
 		group.Name = data.Token
-		groupKey = data.Token
+		groupId = data.Token
 	}
 	group.Add(data)
-	c.Groups[groupKey] = group
-	c.DataGroup[data.Token] = groupKey
+	c.Groups[groupId] = group
+	c.TokenGroup[data.Token] = groupId
 	return nil
 }
 

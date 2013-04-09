@@ -30,13 +30,13 @@ func (h LiveService) Card_(data here.Data) []string {
 	token := h.Request().URL.Query().Get("token")
 	if token == "" {
 		token = fmt.Sprintf("%04d", rand.Int31n(10000))
-		if h.tokens[token] {
+		if h.here.TokenInGroup(token) != nil {
 			h.Error(http.StatusNotFound, fmt.Errorf("please wait and try again."))
 			return nil
 		}
-		h.tokens[token] = true
 		data.Card.Id = fmt.Sprintf("%032d", rand.Int31())
-	} else if !h.tokens[token] {
+		h.config.Log.Debug("new card: %s", token)
+	} else if h.here.TokenInGroup(token) == nil {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
 		return nil
 	}
@@ -48,7 +48,9 @@ func (h LiveService) Card_(data here.Data) []string {
 	err := h.here.Add(&data)
 	if err != nil {
 		h.Error(http.StatusBadRequest, err)
+		return nil
 	}
+	h.config.Log.Debug("update card: %s", token)
 
 	return []string{token, data.Card.Id}
 }
@@ -57,8 +59,9 @@ func (h LiveService) Streaming_() string {
 	h.Header().Set("access-control-allow-origin", h.config.AccessDomain)
 	h.Header().Set("access-control-allow-credentials", "True")
 	token := h.Request().URL.Query().Get("token")
-	if !h.tokens[token] {
+	if h.here.TokenInGroup(token) == nil {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
+		return ""
 	}
 	return token
 }
@@ -68,13 +71,13 @@ func NewLive(config *model.Config) (http.Handler, error) {
 		config: config,
 		here:   here.New(config.Here.Threshold, config.Here.SignThreshold, time.Duration(config.Here.TimeoutInSecond)*time.Second),
 		rand:   rand.New(rand.NewSource(time.Now().Unix())),
-		tokens: make(map[string]bool),
 	}
 
 	go func() {
 		c := service.here.UpdateChannel()
 		for {
 			token := <-c
+			config.Log.Debug("token update: %s", token)
 			group := service.here.TokenInGroup(token)
 			cards := make([]here.Card, 0)
 			if group != nil {
@@ -91,7 +94,7 @@ func NewLive(config *model.Config) (http.Handler, error) {
 			service.Streaming.Feed(token, cards)
 			if len(cards) == 0 {
 				service.Streaming.Disconnect(token)
-				delete(service.tokens, token)
+				config.Log.Debug("disconnect token: %s", token)
 			}
 		}
 	}()
