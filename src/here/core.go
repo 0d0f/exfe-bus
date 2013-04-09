@@ -124,7 +124,7 @@ func (g *Group) calcuate() {
 
 type Cluster struct {
 	Groups    map[string]*Group
-	UserGroup map[string]string
+	DataGroup map[string]string
 
 	distantThreshold float64
 	signThreshold    float64
@@ -134,16 +134,23 @@ type Cluster struct {
 func NewCluster(threshold, signThreshold float64, timeout time.Duration) *Cluster {
 	return &Cluster{
 		Groups:           make(map[string]*Group),
-		UserGroup:        make(map[string]string),
+		DataGroup:        make(map[string]string),
 		distantThreshold: threshold,
 		signThreshold:    signThreshold,
 		timeout:          timeout,
 	}
 }
 
-func (c *Cluster) AddUser(data *Data) error {
+func (c *Cluster) Add(data *Data) error {
 	var err error
 	data.UpdatedAt = time.Now()
+	groupId, ok := c.DataGroup[data.Token]
+	if ok {
+		group := c.Groups[groupId]
+		oldData := group.Data[data.Token]
+		data.Card.Id = oldData.Card.Id
+		group.Remove(data)
+	}
 
 	if data.HasGPS() {
 		data.latitude, err = strconv.ParseFloat(data.Latitude, 64)
@@ -188,7 +195,7 @@ func (c *Cluster) AddUser(data *Data) error {
 	}
 	group.Add(data)
 	c.Groups[groupKey] = group
-	c.UserGroup[data.Token] = groupKey
+	c.DataGroup[data.Token] = groupKey
 	return nil
 }
 

@@ -42,11 +42,10 @@ func (h LiveService) Card_(data here.Data) []string {
 	}
 	data.Token = token
 	data.Card.IsMe = false
-	data.Card.Id = fmt.Sprintf("%032d", rand.Uint32())
 	remote := h.Request().RemoteAddr
 	remotes := strings.Split(remote, ":")
 	data.Traits = append(data.Traits, remotes[0])
-	err := h.here.Add(data)
+	err := h.here.Add(&data)
 	if err != nil {
 		h.Error(http.StatusBadRequest, err)
 	}
@@ -76,7 +75,7 @@ func NewLive(config *model.Config) (http.Handler, error) {
 		c := service.here.UpdateChannel()
 		for {
 			token := <-c
-			group := service.here.UserInGroup(token)
+			group := service.here.TokenInGroup(token)
 			cards := make([]here.Card, 0)
 			if group != nil {
 				if _, ok := group.Data[token]; ok {
