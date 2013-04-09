@@ -2,7 +2,22 @@ package model
 
 import (
 	"fmt"
+	"strings"
 )
+
+type IdentityId string
+
+func (i IdentityId) Split() (externalId, provider string, err error) {
+	s := string(i)
+	spliter := strings.LastIndex(s, "@")
+	if spliter < 0 {
+		err = fmt.Errorf("invalid identity id: %s", i)
+		return
+	}
+	externalId = s[:spliter]
+	provider = s[spliter+1:]
+	return
+}
 
 type Recipient struct {
 	IdentityID       int64  `json:"identity_id"`
@@ -15,6 +30,8 @@ type Recipient struct {
 	Provider         string `json:"provider"`
 	ExternalID       string `json:"external_id"`
 	ExternalUsername string `json:"external_username"`
+
+	IdentityIds []IdentityId `json:"identity_ids"`
 }
 
 func (r Recipient) Equal(other *Recipient) bool {

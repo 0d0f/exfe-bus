@@ -82,6 +82,21 @@ func (p *Platform) Send(to model.Recipient, text string) (string, error) {
 	return ids, nil
 }
 
+func (p *Platform) PostMessage(userId int64, identityId model.IdentityId, text string) (string, error) {
+	externalId, poster, err := identityId.Split()
+	if err != nil {
+		return "", err
+	}
+	url := fmt.Sprintf("bus://exfe_service/thirdpart/poster/%s?to=%s", poster, url.QueryEscape(externalId))
+	var ids string
+	err = p.dispatcher.DoWithTicket(fmt.Sprintf("%d", userId), url, "POST", text, &ids)
+
+	if err != nil {
+		return "", err
+	}
+	return ids, nil
+}
+
 func (p *Platform) GetHotRecipient(userID int64) ([]model.Recipient, error) {
 	return nil, nil
 
@@ -127,9 +142,13 @@ func (p *Platform) FindIdentity(identity model.Identity) (model.Identity, error)
 	return identity, nil
 }
 
-func (p *Platform) FindCross(id uint64) (model.Cross, error) {
+func (p *Platform) FindCross(id int64, query url.Values) (model.Cross, error) {
+	url := fmt.Sprintf("%s/v2/Gobus/Cross?id=%d&", p.config.SiteApi, id)
+	if len(query) > 0 {
+		url += query.Encode()
+	}
 	var ret model.Cross
-	resp, err := http.Get(fmt.Sprintf("%s/v2/Gobus/GetCrossById?id=%d", p.config.SiteApi, id))
+	resp, err := http.Get(url)
 	if err != nil {
 		return ret, err
 	}

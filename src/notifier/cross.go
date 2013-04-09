@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"formatter"
 	"model"
+	"net/url"
 )
 
 type Cross struct {
@@ -20,6 +21,43 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config, plat
 		config:        config,
 		platform:      platform,
 	}
+}
+
+func (c *Cross) V3Summary(requests []model.CrossSummaryRequest) error {
+	if len(requests) == 0 {
+		return fmt.Errorf("len(requests) == 0")
+	}
+	to := requests[len(requests)-1].To
+	crossId := requests[0].CrossId
+	userId := requests[0].UserId
+	updatedAt := requests[0].UpdatedAt
+
+	query := make(url.Values)
+	query.Set("user_id", fmt.Sprintf("%d", userId))
+	query.Set("updated_at", updatedAt)
+	cross, err := c.platform.FindCross(crossId, query)
+	if err != nil {
+		return err
+	}
+
+	for _, identityId := range to.IdentityIds {
+		_, poster, err := identityId.Split()
+		if err != nil {
+			c.config.Log.Crit("%s", err)
+			continue
+		}
+		text, err := GenerateContent(c.localTemplate, "v3_cross_summary", poster, to.Language, cross)
+		if err != nil {
+			c.config.Log.Crit("%s with arg(%+v)", err, cross)
+			continue
+		}
+		_, err = c.platform.PostMessage(to.UserID, identityId, text)
+		if err != nil {
+			c.config.Log.Debug("summary send failed: %s", err)
+			continue
+		}
+	}
+	return nil
 }
 
 func (c *Cross) Summary(updates model.CrossUpdates) error {
