@@ -18,7 +18,7 @@ func New(threshold, signThreshold float64, timeout time.Duration) *Here {
 	ret := &Here{
 		cluster: NewCluster(threshold, signThreshold, timeout),
 		timeout: timeout,
-		update:  make(chan string, 1),
+		update:  make(chan string),
 	}
 	go func() {
 		defer ret.tomb.Done()
