@@ -49,10 +49,10 @@ func (h *Here) Serve() {
 			_, ok := h.cluster.TokenGroup[arg.token]
 			arg.ret <- ok
 		case <-time.After(h.timeout):
-			groups := h.cluster.Clear()
-			for _, group := range groups {
-				h.update <- group
-			}
+		}
+		groups := h.cluster.Clear()
+		for _, group := range groups {
+			h.update <- group
 		}
 	}
 }
