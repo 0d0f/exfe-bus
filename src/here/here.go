@@ -63,6 +63,7 @@ func (h *Here) UpdateChannel() chan Group {
 
 func (h *Here) Add(data *Data) error {
 	err := data.Init()
+	data.UpdatedAt = time.Now()
 	if err != nil {
 		return err
 	}
