@@ -74,6 +74,8 @@ func NewLive(config *model.Config) (http.Handler, error) {
 		rand:   rand.New(rand.NewSource(time.Now().Unix())),
 	}
 
+	go service.here.Serve()
+
 	go func() {
 		c := service.here.UpdateChannel()
 		for {
