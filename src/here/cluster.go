@@ -71,6 +71,7 @@ func (c *Cluster) Clear() []Group {
 				group := NewGroup()
 				group.Data[d.Token] = d
 				clearedGroups = append(clearedGroups, *group)
+				delete(c.TokenGroup, d.Token)
 			}
 		}
 		if len(group.Data) > 0 {

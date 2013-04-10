@@ -35,7 +35,6 @@ func (h LiveService) Card_(data here.Data) []string {
 			return nil
 		}
 		data.Card.Id = fmt.Sprintf("%032d", rand.Int31())
-		h.config.Log.Debug("new card: %s", token)
 	} else if !h.here.Exist(token) {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
 		return nil
@@ -51,7 +50,6 @@ func (h LiveService) Card_(data here.Data) []string {
 		h.Error(http.StatusBadRequest, err)
 		return nil
 	}
-	h.config.Log.Debug("update card: %s", token)
 
 	return []string{token, data.Card.Id}
 }
@@ -80,7 +78,7 @@ func NewLive(config *model.Config) (http.Handler, error) {
 		c := service.here.UpdateChannel()
 		for {
 			group := <-c
-			var cards []here.Card
+			cards := make([]here.Card, 0)
 			if group.Name != "" {
 				for _, d := range group.Data {
 					cards = append(cards, d.Card)
