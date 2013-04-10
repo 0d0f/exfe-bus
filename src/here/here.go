@@ -56,7 +56,7 @@ func (h *Here) Add(data *Data) error {
 	h.locker.Lock()
 	err := h.cluster.Add(data)
 	h.locker.Unlock()
-	h.log.Debug("add lock")
+	h.log.Debug("add unlock")
 
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (h *Here) TokenInGroup(token string) *Group {
 	h.log.Debug("tokeningroup lock")
 	h.locker.Lock()
 	defer h.locker.Unlock()
-	defer h.log.Debug("tokeningroup lock")
+	defer h.log.Debug("tokeningroup unlock")
 	id, ok := h.cluster.TokenGroup[token]
 	if !ok {
 		return nil
