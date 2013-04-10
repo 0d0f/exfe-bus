@@ -8,33 +8,39 @@ import (
 )
 
 func TestHere(t *testing.T) {
-	var results = map[string][]string{
-		"123":  []string{"123 {123 }", "123 {123 1234 }", "123 {123 1234 1235 }", "123 {123 1234 1235 1236 }", "123 {1235 1236 }"},
-		"1234": []string{"123 {123 1234 }", "123 {123 1234 1235 }", "123 {123 1234 1235 1236 }", "123 {1235 1236 }"},
-		"1235": []string{"123 {123 1234 1235 }", "123 {123 1234 1235 1236 }", ""},
-		"1236": []string{"123 {123 1234 1235 1236 }", ""},
+	var results = []string{
+		"123 {123 }",
+		"123 {123 1234 }",
+		"123 {123 1234 1235 }",
+		"123 {123 1234 1235 1236 }",
 	}
 	here := New(0.0001, 1, time.Second)
+	go here.Serve()
+
 	go func() {
-		for id := range here.UpdateChannel() {
-			group := stringGroup(here.UserInGroup(id))
-			fmt.Printf("user update: %+v, group:%s\n", id, group)
-			if group != results[id][0] {
-				t.Errorf("user %s should get %s", id, group)
+		for group := range here.UpdateChannel() {
+			if len(results) == 0 {
+				if group.Name != "" {
+					t.Errorf("should recevie empty, got: %s", stringGroup(&group))
+				}
+				continue
 			}
-			results[id] = results[id][1:]
+			if results[0] != stringGroup(&group) {
+				t.Errorf("should received: %s, got: %s", results[0], stringGroup(&group))
+			}
+			results = results[1:]
 		}
 	}()
 
 	fmt.Println("add 123")
-	here.Add(Data{
+	here.Add(&Data{
 		Token:     "123",
 		Latitude:  "13.4576787",
 		Longitude: "14.4324325",
 		Accuracy:  "10",
 	})
 	fmt.Println("add 1234")
-	here.Add(Data{
+	here.Add(&Data{
 		Token:     "1234",
 		Latitude:  "13.457677",
 		Longitude: "14.432435",
@@ -42,7 +48,7 @@ func TestHere(t *testing.T) {
 	})
 	time.Sleep(time.Second / 2)
 	fmt.Println("add 1235")
-	here.Add(Data{
+	here.Add(&Data{
 		Token:     "1235",
 		Latitude:  "13.457677",
 		Longitude: "14.432425",
@@ -50,7 +56,7 @@ func TestHere(t *testing.T) {
 		Traits:    []string{"abc"},
 	})
 	fmt.Println("add 1236")
-	here.Add(Data{
+	here.Add(&Data{
 		Token:     "1236",
 		Latitude:  "133.457677",
 		Longitude: "142.432425",
@@ -59,10 +65,8 @@ func TestHere(t *testing.T) {
 	})
 	time.Sleep(time.Second * 2)
 
-	for k, v := range results {
-		if len(v) != 0 {
-			fmt.Errorf("user %s should receive %v", k, v)
-		}
+	if len(results) != 0 {
+		fmt.Errorf("should receive %v", results)
 	}
 }
 
