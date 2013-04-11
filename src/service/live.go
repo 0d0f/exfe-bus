@@ -85,7 +85,9 @@ func NewLive(config *model.Config) (http.Handler, error) {
 				}
 			}
 			for token := range group.Data {
+				config.Log.Debug("feeding")
 				service.Streaming.Feed(token, cards)
+				config.Log.Debug("feeded")
 				if group.Name == "" {
 					service.Streaming.Disconnect(token)
 				}

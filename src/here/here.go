@@ -41,18 +41,25 @@ func (h *Here) Serve() {
 		case <-h.tomb.Dying():
 			return
 		case data := <-h.add:
+			h.log.Debug("add")
 			group := h.cluster.Add(data)
 			if group != nil {
+				h.log.Debug("updating")
 				h.update <- *group
+				h.log.Debug("updated")
 			}
 		case arg := <-h.find:
+			h.log.Debug("find")
 			_, ok := h.cluster.TokenGroup[arg.token]
 			arg.ret <- ok
 		case <-time.After(h.timeout):
 		}
+		h.log.Debug("clear")
 		groups := h.cluster.Clear()
 		for _, group := range groups {
+			h.log.Debug("updating")
 			h.update <- group
+			h.log.Debug("updated")
 		}
 	}
 }
