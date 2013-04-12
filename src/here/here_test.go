@@ -19,6 +19,7 @@ func TestHere(t *testing.T) {
 
 	go func() {
 		for group := range here.UpdateChannel() {
+			fmt.Println(stringGroup(&group))
 			if len(results) == 0 {
 				if group.Name != "" {
 					t.Errorf("should recevie empty, got: %s", stringGroup(&group))
