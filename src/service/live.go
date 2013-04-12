@@ -25,7 +25,7 @@ type LiveService struct {
 
 func (h LiveService) Card_(data here.Data) []string {
 	h.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
-	h.Header().Set("Access-Control-Allow-Credentials", "True")
+	h.Header().Set("Access-Control-Allow-Credentials", "true")
 	h.Header().Set("Cache-Control", "no-cache")
 
 	token := h.Request().URL.Query().Get("token")
@@ -57,7 +57,7 @@ func (h LiveService) Card_(data here.Data) []string {
 
 func (h LiveService) Streaming_() string {
 	h.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
-	h.Header().Set("Access-Control-Allow-Credentials", "True")
+	h.Header().Set("Access-Control-Allow-Credentials", "true")
 	h.Header().Set("Cache-Control", "no-cache")
 	token := h.Request().URL.Query().Get("token")
 	if !h.here.Exist(token) {
