@@ -35,6 +35,29 @@ func (e *Exfee) Parse() {
 	}
 }
 
+func (e Exfee) TotalCount() int {
+	return len(e.Invitations)
+}
+
+func (e Exfee) AcceptedCount() int {
+	ret := 0
+	for _, i := range e.Invitations {
+		if i.RsvpStatus == RsvpAccepted {
+			ret++
+		}
+	}
+	return ret
+}
+
+func (e Exfee) FindUser(userId int64) *Invitation {
+	for i := range e.Invitations {
+		if e.Invitations[i].Identity.UserID == userId {
+			return &e.Invitations[i]
+		}
+	}
+	return nil
+}
+
 func (e Exfee) CountPeople(invitations []Invitation) int {
 	ret := 0
 	for _, i := range invitations {

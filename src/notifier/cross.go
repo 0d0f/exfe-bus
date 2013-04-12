@@ -23,7 +23,7 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config, plat
 	}
 }
 
-func (c *Cross) DigestV3(requests []model.CrossDigestRequest) error {
+func (c Cross) DigestV3(requests []model.CrossDigestRequest) error {
 	if len(requests) == 0 {
 		return fmt.Errorf("len(requests) == 0")
 	}
@@ -41,22 +41,25 @@ func (c *Cross) DigestV3(requests []model.CrossDigestRequest) error {
 	}
 
 	arg := map[string]interface{}{
-		"To":     to,
 		"Cross":  cross,
 		"Config": c.config,
 	}
 	for _, identityId := range to.IdentityIds {
-		_, poster, err := identityId.Split()
+		id, poster, err := identityId.Split()
 		if err != nil {
 			c.config.Log.Crit("%s", err)
 			continue
 		}
+		to.ExternalID = id
+		to.Provider = poster
+		arg["To"] = to
+
 		text, err := GenerateContent(c.localTemplate, "cross_summary_v3", poster, to.Language, arg)
 		if err != nil {
 			c.config.Log.Crit("%s with arg(%+v)", err, cross)
 			continue
 		}
-		_, err = c.platform.PostMessage(to.UserID, identityId, text)
+		_, err = c.platform.Send(to, text)
 		if err != nil {
 			c.config.Log.Debug("summary send failed: %s", err)
 			continue

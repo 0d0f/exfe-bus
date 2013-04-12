@@ -28,8 +28,6 @@ type Cross struct {
 	Exfee       Exfee                    `json:"exfee,omitempty"`
 	Updated     map[string]UpdateInfo    `json:"updated,omitempty"`
 	Widgets     []map[string]interface{} `json:"widget"`
-
-	Config *Config `json:"-"`
 }
 
 func (c Cross) Equal(other *Cross) bool {
@@ -40,8 +38,8 @@ func (c Cross) String() string {
 	return fmt.Sprintf("Cross:%d", c.ID)
 }
 
-func (c Cross) TitleBackground() (string, error) {
-	bgUrl := c.findBackground()
+func (c Cross) TitleBackground(config *Config) (string, error) {
+	bgUrl := c.findBackground(config)
 	if bgUrl == "" {
 		return "", nil
 	}
@@ -51,7 +49,7 @@ func (c Cross) TitleBackground() (string, error) {
 	}
 	defer bg.Body.Close()
 
-	pin, err := os.Open(fmt.Sprintf("%s/pin.png", c.Config.TemplatePath))
+	pin, err := os.Open(fmt.Sprintf("%s/pin.png", config.TemplatePath))
 	if err != nil {
 		return "", err
 	}
@@ -84,16 +82,16 @@ func (c Cross) PublicLink(to Recipient, config *Config) string {
 	return fmt.Sprintf("%s/#!%d/%s", config.SiteUrl, c.ID, token)
 }
 
-func (c Cross) findBackground() string {
+func (c Cross) findBackground(config *Config) string {
 	for _, w := range c.Widgets {
 		if t, ok := w["type"].(string); !ok || t != "Background" {
 			continue
 		}
 		if img, ok := w["image"]; ok && img != "" {
-			return fmt.Sprintf("http://%s/static/img/xbg/%s", c.Config.AccessDomain, img)
+			return fmt.Sprintf("http://%s/static/img/xbg/%s", config.SiteUrl, img)
 		}
 	}
-	return fmt.Sprintf("http://%s/static/img/xbg/default.jpg", c.Config.SiteImg)
+	return fmt.Sprintf("http://%s/static/img/xbg/default.jpg", config.SiteUrl)
 }
 
 func MakeTitle(w io.Writer, bg io.Reader, pin io.Reader, width, height, offsetY int, columnX, columnWidth int, latitude, longitude string, mapWidth int) error {

@@ -1,7 +1,10 @@
 package model
 
 import (
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 )
 
 type Identity struct {
@@ -63,6 +66,7 @@ type Invitation struct {
 	Identity   Identity `json:"identity,omitempty"`
 	RsvpStatus RsvpType `json:"rsvp_status,omitempty"`
 	By         Identity `json:"by_identity,omitempty"`
+	UpdateBy   Identity `json:"update_by,omitempty"`
 	Via        string   `json:"via,omitempty"`
 }
 
@@ -70,8 +74,35 @@ func (i *Invitation) String() string {
 	return i.Identity.Name
 }
 
-func (i *Invitation) IsAccepted() bool {
+func (i Invitation) IsAccepted() bool {
 	return i.RsvpStatus == RsvpAccepted
+}
+
+func (i Invitation) IsDeclined() bool {
+	return i.RsvpStatus == RsvpDeclined
+}
+
+func (i Invitation) IsPending() bool {
+	return !i.IsAccepted() && !i.IsDeclined()
+}
+
+func (i Invitation) IsUpdateBy(userId int64) bool {
+	return i.UpdateBy.UserID == userId
+}
+
+func (i Invitation) Avatar() string {
+	resp, err := http.Get(i.Identity.Avatar)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return ""
+	}
+
+	return base64.StdEncoding.EncodeToString(b)
 }
 
 type OAuthToken struct {
