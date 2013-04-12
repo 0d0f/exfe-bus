@@ -65,6 +65,25 @@ func (c Cross) TitleBackground() (string, error) {
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
 
+func (c Cross) Timezone(to Recipient) string {
+	if to.Timezone != "" {
+		return to.Timezone
+	}
+	return c.Time.BeginAt.Timezone
+}
+
+func (c Cross) Link(to Recipient, config *Config) string {
+	return fmt.Sprintf("%s/#!token=%s", config.SiteUrl, to.Data["invitation_token"])
+}
+
+func (c Cross) PublicLink(to Recipient, config *Config) string {
+	token := to.Data["invitation_token"]
+	if len(token) > 5 {
+		token = token[1:5]
+	}
+	return fmt.Sprintf("%s/#!%d/%s", config.SiteUrl, c.ID, token)
+}
+
 func (c Cross) findBackground() string {
 	for _, w := range c.Widgets {
 		if t, ok := w["type"].(string); !ok || t != "Background" {
@@ -158,7 +177,7 @@ func centerize(width, height int, pin image.Point) (w int, h int, offsetX int, o
 	return
 }
 
-type CrossSummaryRequest struct {
+type CrossDigestRequest struct {
 	To        Recipient `json:"to"`
 	CrossId   int64     `json:"cross_id"`
 	UserId    int64     `json:"user_id"`

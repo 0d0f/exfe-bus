@@ -30,7 +30,11 @@ func NewQueue(config *model.Config, redis *broker.RedisPool, dispatcher *gobus.D
 	}
 
 	config.Log.Notice("launching timer")
-	ret.timer = delayrepo.New(delayrepo.NewTimer("bus:queue", redis), ret, ret.timeout)
+	timer, err := delayrepo.NewTimer(delayrepo.Always, "bus:queue", redis)
+	if err != nil {
+		return nil, err
+	}
+	ret.timer = delayrepo.New(timer, ret, ret.timeout)
 	go ret.timer.Serve()
 
 	return ret, nil

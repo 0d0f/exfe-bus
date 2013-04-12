@@ -8,18 +8,33 @@ import (
 	"time"
 )
 
+type updateType int
+
+const (
+	Always updateType = iota
+	Never
+)
+
 type Timer struct {
-	redis    *broker.RedisPool
-	prefix   string
-	timerKey string
+	redis      *broker.RedisPool
+	updateType updateType
+	prefix     string
+	timerKey   string
 }
 
-func NewTimer(prefix string, redis *broker.RedisPool) *Timer {
-	return &Timer{
-		redis:    redis,
-		prefix:   prefix,
-		timerKey: fmt.Sprintf("%s:timer", prefix),
+func NewTimer(updateType updateType, prefix string, redis *broker.RedisPool) (*Timer, error) {
+	switch updateType {
+	case Always:
+	case Never:
+	default:
+		return nil, fmt.Errorf("invalid update type: %s", updateType)
 	}
+	return &Timer{
+		redis:      redis,
+		updateType: updateType,
+		prefix:     prefix,
+		timerKey:   fmt.Sprintf("%s:timer", prefix),
+	}, nil
 }
 
 func (t *Timer) Push(ontime int64, key string, data []byte) (err error) {

@@ -32,6 +32,9 @@ type Recipient struct {
 	ExternalUsername string `json:"external_username"`
 
 	IdentityIds []IdentityId `json:"identity_ids"`
+	Data        map[string]string
+	// data save token or auth or other information:
+	//   { "googollee@twiter":"{\"token\":\"fjdsafdas\"}", "invitation_token": "fdfads" }
 }
 
 func (r Recipient) Equal(other *Recipient) bool {

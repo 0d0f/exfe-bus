@@ -13,6 +13,7 @@ type QueuePush struct {
 	Priority string      `json:"priority"`
 	Tos      []Recipient `json:"tos"` // it will expand and overwrite "to" field in data
 	Data     interface{} `json:"data"`
+	Load     []byte      `json:"load"`
 
 	Ontime int64 `json:"-"`
 }

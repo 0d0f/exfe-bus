@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+	<title></title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body style="font-family:Helvetica Neue,Helvetica,Arial,sans-serif; max-width:640px; background-color:white; margin:0; padding:0; color:#333333; font-size:14px; line-height:20px; font-weight:300;">
+	<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+		<tbody>
+			<tr><td colspan="3">
+				<table cellpadding="0" cellspacing="0" bgcolor="#545454" style="display:inline-block; width:100%; border-spacing:0; vertical-align:top; background-image:url(cid:title_bg_jpg);">
+					<tbody>
+						<tr>
+							<td style="width:54px; height:100%; padding-right:6px; vertical-align:top; text-align:right;"></td>
+							<td style="width:2px; height:100%; vertical-align:top;"></td>
+							<td style="padding:5px 10px 5px 10px; max-width:498px;">
+								<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+									<tbody>
+										<tr><td style="color:white; padding-bottom:12px; max-height:20px; overflow:hidden; display:inline-block; text-overflow:ellipsis; line-height:25px; text-align:left;">·X· digest today.</td></tr>
+										<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">{{$titleUpdate := index .Cross.Updated "title"}}{{if $titleUpdate}}Title updated.{{end}}</td></tr>
+										<tr><td style="max-height:48px; overflow:hidden; display:inline-block; text-overflow:ellipsis; color:white; font-size:22px; line-height:24px; font-weight:500; text-align:left;">{{.Cross.Title | html | replace "\n" "<br />"}}</td></tr>
+									</tbody>
+								</table>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</td></tr>
+			<tr>
+				<td style="width:54px; height:100%; padding-right:6px; vertical-align:top; text-align:right;"></td>
+				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+				<td style="padding:5px 10px 20px 10px;">
+					<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+						<tbody>
+							<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">{{$descUpdate := index .Cross.Updated "description"}}{{if $descUpdate}}Updated{{end}}</td></tr>
+							<tr><td>{{.Cross.Description | html | replace "\n" "<br />"}}</td></tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td style="width:54px; height:100%; padding:15px 6px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:time_30blue_2x_png" width="30px" height="30px" /></td>
+				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+				<td style="padding:5px 10px 20px 10px;">
+					<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+						<tbody>{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}
+							<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">{{$timeUpdate := index .Cross.Updated "time"}}{{if $timeUpdate}}Updated{{end}}</td></tr>
+							{{if $time}}
+							<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">{{$time | html}}</td></tr>
+							<tr><td></td></tr>
+							{{else}}
+							<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">Time</td></tr>
+							<tr><td>To be decided</td></tr>
+							{{end}}
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td style="width:54px; height:100%; padding:15px 6px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:place_30blue_2x_png" width="30px" height="30px" /></td>
+				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+				<td style="padding:5px 10px 20px 10px;">
+					<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+						<tbody>
+							<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">{{$placeUpdate := index .Cross.Updated "place"}}{{if $placeUpdate}}Updated{{end}}</td></tr>
+							{{if .Cross.Place.Title}}
+							<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">{{.Cross.Place.Title | html | replace "\n" "<br />"}}</td></tr>
+							<tr><td>{{.Cross.Place.Description | html | replace "\n" "<br />"}}</td></tr>
+							{{else}}
+							<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">Place<br />"}}</td></tr>
+							<tr><td>To be decided</td></tr>
+							{{end}}
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td style="width:54px; height:100%; padding:25px 6px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:rsvp_accepted_26blue_2x_png" width="30px" height="30px" /></td>
+				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+				<td style="padding:5px 10px 20px 10px;">
+					<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+						<tbody>
+							<tr><td>Your participation status is:</td></tr>
+							<tr><td height="30px" style="line-height:30px; color:#7F7F7F;"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:5px 20px; vertical-align:top; margin-right:8px;">Accepted</span> set by Dave</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td style="width:54px; height:100%; padding:5px 6px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:exfee_30blue_2x_png" width="30px" height="30px" /></td>
+				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+				<td style="padding:5px 10px 5px 10px;">
+					<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+						<tbody>
+							<tr><td height="30px"><span style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">Exfees&nbsp;&nbsp;5</span>/8 accepted</tr>
+							<!--
+							<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">Updated</td></tr>
+							<tr><td>Accepted: <span style="font-weight:500;" style="color:#3A6EA5;">Dave</span>, <span style="font-weight:500;" style="color:#3A6EA5;">Two33</span> and 3 others</td></tr>
+							<tr><td>Newly invited: <span style="font-weight:500;">Joe </span></td></tr>
+							<tr><td>Unavailable: <span style="font-weight:500;">dm.</span></td></tr>
+							<tr><td>Removed: <span style="font-weight:500;"><del>Joel</del></span></td></tr>
+							-->
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr style="vertical-align:top;">
+				<td style="width:54px; height:100%; padding-right:6px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:i123_png" width="24px" height="19px" style="vertical-align:top;" /></td>
+				<td style="width:2px; height:100%; background-color:#3784D5; vertical-align:top;"></td>
+				<td style="padding:0 10px;">
+					<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
+						<tr><td style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+							SteveE<span style="color:#7F7F7F; margin-left:15px; font-style:italic;">+15554500303</span>
+						</td></tr>
+					</tbody></table>
+				</td>
+			</tr>
+			<tr style="vertical-align:top;">
+				<td style="width:54px; height:100%; padding-right:6px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:i124_jpg" width="24px" height="19px" style="vertical-align:top;" /></td>
+				<td style="width:2px; height:100%; background-color:#3784D5; vertical-align:top;"></td>
+				<td style="padding:0 10px;">
+					<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
+						<tr><td style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+							Joan<span style="color:#7F7F7F; margin-left:15px; font-style:italic;">joan@facebook</span>
+						</td></tr>
+					</tbody></table>
+				</td>
+			</tr>
+			<tr style="vertical-align:top;">
+				<td style="width:54px; height:100%; padding-right:6px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:i123_png" width="24px" height="19px" style="vertical-align:top;" /></td>
+				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+				<td style="padding:0 10px;">
+					<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
+						<tr><td style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+							dm.<span style="color:#7F7F7F; margin-left:15px; font-style:italic;">@hengdm</span>
+						</td></tr>
+					</tbody></table>
+				</td>
+			</tr>
+			<tr style="vertical-align:top;">
+				<td style="width:54px; height:100%; padding-right:6px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:i123_png" width="24px" height="19px" style="vertical-align:top;" /></td>
+				<td style="width:2px; height:100%; background-color:#7F7F7F; vertical-align:top;"></td>
+				<td style="padding:0 10px;">
+					<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
+						<tr><td style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+							Joe Some Very looooooooooooong name<span style="color:#7F7F7F; margin-left:15px; font-style:italic;">joexfer@0d0f.com</span>
+						</td></tr>
+					</tbody></table>
+				</td>
+			</tr>
+			<tr style="vertical-align:top">
+				<td></td>
+				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+				<td height="30px">&nbsp;</td>
+			</tr>
+			<tr color="#7F7F7F" bgcolor="#EEEEEE">
+				<td style="width:54px; height:100%; padding-right:6px; vertical-align:top; text-align:right;"></td>
+				<td></td>
+				<td style="color:#7F7F7F; font-size:11px; line-height:13px; padding:8px 0 8px 10px;">Reply this email as group conversation, ‘cc’ people to invite. Get <a href="/app" style="color:#3A6EA5; text-decoration:none;">EXFE</a> app <span style="font-style: italic">free</span> to engage easier.<br />This email is generated by EXFE. <a href="/unsub" style="color:#7F7F7F;">Unsubscribe</a> further updates or <a href="/preference" style="color:#7F7F7F;">change notification preference.</a></td>
+			</tr>
+		</tbody>
+	</table>
+</body>
+</html>
