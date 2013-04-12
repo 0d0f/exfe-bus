@@ -15,7 +15,7 @@ type LiveService struct {
 	rest.Service `prefix:"/v3/live"`
 
 	Card      rest.Processor `path:"/cards" method:"POST"`
-	Streaming rest.Streaming `path:"/streaming" method:"GET" end:"" timeout:"60"`
+	Streaming rest.Streaming `path:"/streaming" method:"POST" end:"" timeout:"60"`
 
 	config *model.Config
 	here   *here.Here
