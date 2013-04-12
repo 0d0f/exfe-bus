@@ -24,8 +24,9 @@ type LiveService struct {
 }
 
 func (h LiveService) Card_(data here.Data) []string {
-	h.Header().Set("access-control-allow-origin", h.config.AccessDomain)
-	h.Header().Set("access-control-allow-credentials", "True")
+	h.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
+	h.Header().Set("Access-Control-Allow-Credentials", "True")
+	h.Header().Set("Cache-Control", "no-cache")
 
 	token := h.Request().URL.Query().Get("token")
 	if token == "" {
@@ -55,8 +56,9 @@ func (h LiveService) Card_(data here.Data) []string {
 }
 
 func (h LiveService) Streaming_() string {
-	h.Header().Set("access-control-allow-origin", h.config.AccessDomain)
-	h.Header().Set("access-control-allow-credentials", "True")
+	h.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
+	h.Header().Set("Access-Control-Allow-Credentials", "True")
+	h.Header().Set("Cache-Control", "no-cache")
 	token := h.Request().URL.Query().Get("token")
 	if !h.here.Exist(token) {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
