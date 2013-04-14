@@ -1,22 +1,17 @@
 package here
 
 import (
+	"model"
 	"strconv"
 	"time"
 )
 
-type Identity struct {
-	ExternalID       string `json:"external_id"`
-	ExternalUsername string `json:"external_username"`
-	Provider         string `json:"provider"`
-}
-
 type Card struct {
-	Id         string     `json:"id"`
-	Name       string     `json:"name"`
-	Avatar     string     `json:"avatar"`
-	Bio        string     `json:"bio"`
-	Identities []Identity `json:"identities"`
+	Id         string           `json:"id"`
+	Name       string           `json:"name"`
+	Avatar     string           `json:"avatar"`
+	Bio        string           `json:"bio"`
+	Identities []model.Identity `json:"identities"`
 }
 
 type Data struct {

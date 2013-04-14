@@ -1,6 +1,7 @@
 package main
 
 import (
+	"broker"
 	"fmt"
 	"github.com/googollee/go-rest"
 	"here"
@@ -17,10 +18,11 @@ type LiveService struct {
 	Card      rest.Processor `path:"/cards" method:"POST"`
 	Streaming rest.Streaming `path:"/streaming" method:"POST" end:"" timeout:"60"`
 
-	config *model.Config
-	here   *here.Here
-	rand   *rand.Rand
-	tokens map[string]bool
+	platform *broker.Platform
+	config   *model.Config
+	here     *here.Here
+	rand     *rand.Rand
+	tokens   map[string]bool
 }
 
 func (h LiveService) Card_(data here.Data) []string {
@@ -44,6 +46,18 @@ func (h LiveService) Card_(data here.Data) []string {
 	remote := h.Request().RemoteAddr
 	remotes := strings.Split(remote, ":")
 	data.Traits = append(data.Traits, remotes[0])
+
+	if data.Card.Avatar == "" {
+		ids, err := h.platform.GetIdentity(data.Card.Identities)
+		if err == nil {
+			for _, id := range ids {
+				if strings.Index(id.Avatar, "/v2/avatar/default?name=") >= 0 {
+					data.Card.Avatar = id.Avatar
+					break
+				}
+			}
+		}
+	}
 
 	h.config.Log.Info("|live|add|t|%s|card|%s|name|%s|long|%s|lang|%s|acc|%s|trait|%s", data.Token, data.Card.Id, data.Card.Name, data.Longitude, data.Latitude, data.Accuracy, data.Traits)
 	err := h.here.Add(&data)
@@ -69,10 +83,15 @@ func (h LiveService) Streaming_() string {
 }
 
 func NewLive(config *model.Config) (http.Handler, error) {
+	platform, err := broker.NewPlatform(config)
+	if err != nil {
+		return nil, err
+	}
 	service := &LiveService{
-		config: config,
-		here:   here.New(config.Here.Threshold, config.Here.SignThreshold, time.Duration(config.Here.TimeoutInSecond)*time.Second),
-		rand:   rand.New(rand.NewSource(time.Now().Unix())),
+		config:   config,
+		here:     here.New(config.Here.Threshold, config.Here.SignThreshold, time.Duration(config.Here.TimeoutInSecond)*time.Second),
+		rand:     rand.New(rand.NewSource(time.Now().Unix())),
+		platform: platform,
 	}
 
 	go service.here.Serve()
