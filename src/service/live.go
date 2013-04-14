@@ -90,9 +90,7 @@ func NewLive(config *model.Config) (http.Handler, error) {
 			for token := range group.Data {
 				service.Streaming.Feed(token, cards)
 				if group.Name == "" {
-					for _, c := range cards {
-						config.Log.Info("|live|clear|t|%s|card|%s|name|%s|long|%s|lang|%s|acc||trait|%s", token, c.Id, c.Name, group.CenterLongitude, group.CenterLatitude, "", group.Traits)
-					}
+					config.Log.Info("|live|clear|t|%s|card||name||long||lang||acc||trait|", token)
 					service.Streaming.Disconnect(token)
 				}
 			}
