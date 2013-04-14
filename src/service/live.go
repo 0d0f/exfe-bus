@@ -45,7 +45,7 @@ func (h LiveService) Card_(data here.Data) []string {
 	remotes := strings.Split(remote, ":")
 	data.Traits = append(data.Traits, remotes[0])
 
-	h.config.Log.Notice("|add|t|%s|card|%s|name|%s|long|%s|lang|%s|trait|%s", data.Token, data.Card.Id, data.Card.Name, data.Longitude, data.Latitude, data.Traits)
+	h.config.Log.Notice("|live|add|t|%s|card|%s|name|%s|long|%s|lang|%s|trait|%s", data.Token, data.Card.Id, data.Card.Name, data.Longitude, data.Latitude, data.Traits)
 	err := h.here.Add(&data)
 
 	if err != nil {
@@ -91,7 +91,7 @@ func NewLive(config *model.Config) (http.Handler, error) {
 				service.Streaming.Feed(token, cards)
 				if group.Name == "" {
 					for _, c := range cards {
-						config.Log.Notice("|clear|t|%s|card|%s|name|%s|long|%s|lang|%s|trait|%s", token, c.Id, c.Name, group.CenterLongitude, group.CenterLatitude, group.Traits)
+						config.Log.Notice("|live|clear|t|%s|card|%s|name|%s|long|%s|lang|%s|trait|%s", token, c.Id, c.Name, group.CenterLongitude, group.CenterLatitude, group.Traits)
 					}
 					service.Streaming.Disconnect(token)
 				}
