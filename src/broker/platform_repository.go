@@ -250,9 +250,12 @@ func (p *Platform) BotPostConversation(from, post, createdAt string, exclude []*
 }
 
 func (p *Platform) GetIdentity(identities []model.Identity) ([]model.Identity, error) {
+	type Arg struct {
+		Identities []model.Identity `json:"identities"`
+	}
 	u := fmt.Sprintf("%s/v2/identities/get", p.config.SiteApi)
 	p.config.Log.Debug("get identities: %d", len(identities))
-	b, err := json.Marshal(identities)
+	b, err := json.Marshal(Arg{identities})
 	if err != nil {
 		return nil, err
 	}
@@ -268,9 +271,7 @@ func (p *Platform) GetIdentity(identities []model.Identity) ([]model.Identity, e
 		return nil, fmt.Errorf("response %d", code)
 	}
 
-	var ret struct {
-		Identities []model.Identity `json:"identities"`
-	}
+	var ret Arg
 	decoder := json.NewDecoder(body)
 	err = decoder.Decode(ret)
 	if err != nil {
