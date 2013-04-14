@@ -51,12 +51,14 @@ func (h LiveService) Card_(data here.Data) []string {
 		ids, err := h.platform.GetIdentity(data.Card.Identities)
 		if err == nil {
 			for _, id := range ids {
-				if strings.Index(id.Avatar, "/v2/avatar/default?name=") >= 0 {
+				if strings.Index(id.Avatar, "/v2/avatar/default?name=") < 0 {
 					data.Card.Avatar = id.Avatar
 					break
 				}
 			}
 			h.config.Log.Debug("token %s can't find avatar", data.Token)
+		} else {
+			h.config.Log.Debug("get avatar failed: %s", err)
 		}
 	}
 
