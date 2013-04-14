@@ -268,14 +268,16 @@ func (p *Platform) GetIdentity(identities []model.Identity) ([]model.Identity, e
 		return nil, fmt.Errorf("response %d", code)
 	}
 
-	var ret []model.Identity
+	var ret struct {
+		Identities []model.Identity `json:"identities"`
+	}
 	decoder := json.NewDecoder(body)
-	err = decoder.Decode(&ret)
+	err = decoder.Decode(ret)
 	if err != nil {
 		return nil, err
 	}
 
-	return ret, nil
+	return ret.Identities, nil
 }
 
 func parseResp(resp *http.Response, err error) (io.ReadCloser, int, error) {
