@@ -271,14 +271,24 @@ func (p *Platform) GetIdentity(identities []model.Identity) ([]model.Identity, e
 		return nil, fmt.Errorf("response %d", code)
 	}
 
-	var ret Arg
+	var ret struct {
+		Meta struct {
+			Code        int    `json:"code"`
+			ErrorDetail string `json:"errorDetail"`
+		} `json:"meta"`
+		Response Arg `json:"response"`
+	}
 	decoder := json.NewDecoder(body)
 	err = decoder.Decode(&ret)
 	if err != nil {
 		return nil, err
 	}
 
-	return ret.Identities, nil
+	if ret.Meta.Code != 200 {
+		return nil, fmt.Errorf("%s", ret.Meta.ErrorDetail)
+	}
+
+	return ret.Response.Identities, nil
 }
 
 func parseResp(resp *http.Response, err error) (io.ReadCloser, int, error) {
