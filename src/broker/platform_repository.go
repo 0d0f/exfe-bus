@@ -273,7 +273,7 @@ func (p *Platform) GetIdentity(identities []model.Identity) ([]model.Identity, e
 
 	var ret Arg
 	decoder := json.NewDecoder(body)
-	err = decoder.Decode(ret)
+	err = decoder.Decode(&ret)
 	if err != nil {
 		return nil, err
 	}
