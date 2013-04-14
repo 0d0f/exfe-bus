@@ -56,6 +56,7 @@ func (h LiveService) Card_(data here.Data) []string {
 					break
 				}
 			}
+			h.config.Log.Debug("token %s can't find avatar", data.Token)
 		}
 	}
 
