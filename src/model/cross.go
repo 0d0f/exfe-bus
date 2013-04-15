@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/googollee/resize"
+	"github.com/nfnt/resize"
 	"image"
 	"image/color"
 	"image/draw"
@@ -125,7 +125,12 @@ func MakeTitle(w io.Writer, bg io.Reader, pin io.Reader, width, height, offsetY 
 	rect = img.Bounds().Sub(image.Pt(0, offsetY)).Intersect(rect)
 	var out draw.Image = image.NewRGBA(rect)
 	draw.Draw(out, rect, img, image.Pt(0, offsetY), draw.Src)
-	out = resize.Resize(uint(width), uint(height), out, resize.Lanczos3)
+	img = resize.Resize(uint(width), uint(height), out, resize.Lanczos3)
+	out, ok := img.(draw.Image)
+	if !ok {
+		out = image.NewRGBA(img.Bounds())
+		draw.Draw(out, out.Bounds(), img, image.Pt(0, 0), draw.Src)
+	}
 
 	draw.Draw(out, out.Bounds(), image.NewUniform(color.RGBA{0, 0, 0, 51}), image.Pt(0, 0), draw.Over)
 	rect = image.Rect(columnX, 0, columnX+columnWidth, height)
