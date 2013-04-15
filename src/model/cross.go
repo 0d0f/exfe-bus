@@ -10,6 +10,7 @@ import (
 	"image/draw"
 	"image/jpeg"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 )
@@ -36,6 +37,23 @@ func (c Cross) Equal(other *Cross) bool {
 
 func (c Cross) String() string {
 	return fmt.Sprintf("Cross:%d", c.ID)
+}
+
+func (c Cross) Ics(config *Config, to Recipient) string {
+	url := fmt.Sprintf("http://%s/v2/ics/crosses/%d?token=%s", config.SiteApi, c.ID, to.Data["invitation_token"])
+	resp, err := http.Get(url)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return ""
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return ""
+	}
+	return base64.StdEncoding.EncodeToString(b)
 }
 
 func (c Cross) TitleBackground(config *Config) (string, error) {
