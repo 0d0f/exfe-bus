@@ -51,6 +51,7 @@ func (c Cross) DigestV3(requests []model.CrossDigestRequest) error {
 			continue
 		}
 		to.ExternalID = id
+		to.ExternalUsername = id
 		to.Provider = poster
 		arg["To"] = to
 
