@@ -1,6 +1,7 @@
 package main
 
 import (
+	"broker"
 	"fmt"
 	"github.com/googollee/go-rest"
 	"here"
@@ -15,51 +16,69 @@ type LiveService struct {
 	rest.Service `prefix:"/v3/live"`
 
 	Card      rest.Processor `path:"/cards" method:"POST"`
-	Streaming rest.Streaming `path:"/streaming" method:"GET" end:"" timeout:"60"`
+	Streaming rest.Streaming `path:"/streaming" method:"POST" end:"" timeout:"60"`
 
-	config *model.Config
-	here   *here.Here
-	rand   *rand.Rand
-	tokens map[string]bool
+	platform *broker.Platform
+	config   *model.Config
+	here     *here.Here
+	rand     *rand.Rand
+	tokens   map[string]bool
 }
 
 func (h LiveService) Card_(data here.Data) []string {
-	h.Header().Set("access-control-allow-origin", h.config.AccessDomain)
-	h.Header().Set("access-control-allow-credentials", "True")
+	h.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
+	h.Header().Set("Access-Control-Allow-Credentials", "true")
+	h.Header().Set("Cache-Control", "no-cache")
 
 	token := h.Request().URL.Query().Get("token")
 	if token == "" {
 		token = fmt.Sprintf("%04d", rand.Int31n(10000))
-		if h.here.TokenInGroup(token) != nil {
+		if h.here.Exist(token) {
 			h.Error(http.StatusNotFound, fmt.Errorf("please wait and try again."))
 			return nil
 		}
 		data.Card.Id = fmt.Sprintf("%032d", rand.Int31())
-		h.config.Log.Debug("new card: %s", token)
-	} else if h.here.TokenInGroup(token) == nil {
+	} else if !h.here.Exist(token) {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
 		return nil
 	}
 	data.Token = token
-	data.Card.IsMe = false
 	remote := h.Request().RemoteAddr
 	remotes := strings.Split(remote, ":")
 	data.Traits = append(data.Traits, remotes[0])
+
+	if data.Card.Avatar == "" {
+		ids, err := h.platform.GetIdentity(data.Card.Identities)
+		if err == nil {
+			for _, id := range ids {
+				if strings.Index(id.Avatar, "/v2/avatar/default?name=") < 0 {
+					data.Card.Avatar = id.Avatar
+					break
+				}
+			}
+			h.config.Log.Debug("token %s can't find avatar", data.Token)
+		} else {
+			h.config.Log.Debug("get avatar failed: %s", err)
+		}
+	}
+
+	h.config.Log.Info("|live|add|t|%s|card|%s|name|%s|long|%s|lang|%s|acc|%s|trait|%s", data.Token, data.Card.Id, data.Card.Name, data.Longitude, data.Latitude, data.Accuracy, data.Traits)
 	err := h.here.Add(&data)
+
 	if err != nil {
 		h.Error(http.StatusBadRequest, err)
 		return nil
 	}
-	h.config.Log.Debug("update card: %s", token)
 
 	return []string{token, data.Card.Id}
 }
 
 func (h LiveService) Streaming_() string {
-	h.Header().Set("access-control-allow-origin", h.config.AccessDomain)
-	h.Header().Set("access-control-allow-credentials", "True")
+	h.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
+	h.Header().Set("Access-Control-Allow-Credentials", "true")
+	h.Header().Set("Cache-Control", "no-cache")
 	token := h.Request().URL.Query().Get("token")
-	if h.here.TokenInGroup(token) == nil {
+	if !h.here.Exist(token) {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
 		return ""
 	}
@@ -67,34 +86,35 @@ func (h LiveService) Streaming_() string {
 }
 
 func NewLive(config *model.Config) (http.Handler, error) {
-	service := &LiveService{
-		config: config,
-		here:   here.New(config.Here.Threshold, config.Here.SignThreshold, time.Duration(config.Here.TimeoutInSecond)*time.Second),
-		rand:   rand.New(rand.NewSource(time.Now().Unix())),
+	platform, err := broker.NewPlatform(config)
+	if err != nil {
+		return nil, err
 	}
+	service := &LiveService{
+		config:   config,
+		here:     here.New(config.Here.Threshold, config.Here.SignThreshold, time.Duration(config.Here.TimeoutInSecond)*time.Second),
+		rand:     rand.New(rand.NewSource(time.Now().Unix())),
+		platform: platform,
+	}
+
+	go service.here.Serve()
 
 	go func() {
 		c := service.here.UpdateChannel()
 		for {
-			token := <-c
-			config.Log.Debug("token update: %s", token)
-			group := service.here.TokenInGroup(token)
+			group := <-c
 			cards := make([]here.Card, 0)
-			if group != nil {
-				if _, ok := group.Data[token]; ok {
-					for k, d := range group.Data {
-						card := d.Card
-						if k == token {
-							card.IsMe = true
-						}
-						cards = append(cards, card)
-					}
+			if group.Name != "" {
+				for _, d := range group.Data {
+					cards = append(cards, d.Card)
 				}
 			}
-			service.Streaming.Feed(token, cards)
-			if len(cards) == 0 {
-				service.Streaming.Disconnect(token)
-				config.Log.Debug("disconnect token: %s", token)
+			for token := range group.Data {
+				service.Streaming.Feed(token, cards)
+				if group.Name == "" {
+					config.Log.Info("|live|clear|t|%s|card||name||long||lang||acc||trait|", token)
+					service.Streaming.Disconnect(token)
+				}
 			}
 		}
 	}()

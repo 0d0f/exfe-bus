@@ -268,6 +268,48 @@ func (p *Platform) BotPostConversation(from, post, createdAt string, exclude []*
 	return 200, nil
 }
 
+func (p *Platform) GetIdentity(identities []model.Identity) ([]model.Identity, error) {
+	type Arg struct {
+		Identities []model.Identity `json:"identities"`
+	}
+	u := fmt.Sprintf("%s/v2/identities/get", p.config.SiteApi)
+	p.config.Log.Debug("get identities: %d", len(identities))
+	b, err := json.Marshal(Arg{identities})
+	if err != nil {
+		return nil, err
+	}
+	buf := bytes.NewBuffer(b)
+
+	body, code, err := parseResp(client.Post(u, "application/json", buf))
+	if err != nil {
+		return nil, err
+	}
+	defer body.Close()
+
+	if code != 200 {
+		return nil, fmt.Errorf("response %d", code)
+	}
+
+	var ret struct {
+		Meta struct {
+			Code        int    `json:"code"`
+			ErrorDetail string `json:"errorDetail"`
+		} `json:"meta"`
+		Response Arg `json:"response"`
+	}
+	decoder := json.NewDecoder(body)
+	err = decoder.Decode(&ret)
+	if err != nil {
+		return nil, err
+	}
+
+	if ret.Meta.Code != 200 {
+		return nil, fmt.Errorf("%s", ret.Meta.ErrorDetail)
+	}
+
+	return ret.Response.Identities, nil
+}
+
 func parseResp(resp *http.Response, err error) (io.ReadCloser, int, error) {
 	if err != nil {
 		return nil, 500, err
