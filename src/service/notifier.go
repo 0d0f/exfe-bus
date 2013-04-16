@@ -27,6 +27,7 @@ func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platfor
 func (n V3Notifier) HandleCrossDigest(requests []model.CrossDigestRequest) {
 	if len(requests) == 0 {
 		n.Error(http.StatusBadRequest, fmt.Errorf("no request"))
+		return
 	}
 	err := n.cross.V3Digest(requests)
 	if err != nil {
