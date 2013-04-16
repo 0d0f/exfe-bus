@@ -51,7 +51,7 @@ type CreateArg struct {
 // 返回：
 //
 //     {"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}
-func (s Token) Create_(string, arg CreateArg) (ret model.Token) {
+func (s Token) HandleCreate(string, arg CreateArg) (ret model.Token) {
 	genType := s.Vars()["type"]
 	if genType != "long" || genType != "short" {
 		s.Error(http.StatusNotFound, fmt.Errorf("invalid type %s", genType))
@@ -75,7 +75,7 @@ func (s Token) Create_(string, arg CreateArg) (ret model.Token) {
 // 返回：
 //
 //     [{"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}]
-func (s Token) KeyGet_() []model.Token {
+func (s Token) HandleKeyGet() []model.Token {
 	key := s.Vars()["key"]
 	ret, err := s.manager.Get(key, "")
 	if err != nil {
@@ -94,7 +94,7 @@ func (s Token) KeyGet_() []model.Token {
 // 返回：
 //
 //     [{"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}]
-func (s Token) ResourceGet_(resource string) []model.Token {
+func (s Token) HandleResourceGet(resource string) []model.Token {
 	ret, err := s.manager.Get("", resource)
 	if err != nil {
 		s.Error(http.StatusNotFound, err)
@@ -114,7 +114,7 @@ type UpdateArg struct {
 // 例子：
 //
 //     > curl "http://127.0.0.1:23333/v3/tokens/key/0303" -d '{"data":"xyz","expire_after_seconds":13}'
-func (s Token) KeyUpdate_(arg UpdateArg) {
+func (s Token) HandleKeyUpdate(arg UpdateArg) {
 	key := s.Vars()["key"]
 	if arg.Data != nil {
 		err := s.manager.UpdateData(key, *arg.Data)
@@ -138,7 +138,7 @@ func (s Token) KeyUpdate_(arg UpdateArg) {
 // 例子：
 //
 //     > curl "http://127.0.0.1:23333/v3/tokens/resource" -d '{"resource":"abc", "expire_after_seconds":13}'
-func (s Token) ResourceUpdate_(arg UpdateArg) {
+func (s Token) HandleResourceUpdate(arg UpdateArg) {
 	if arg.Resource == "" {
 		s.Error(http.StatusBadRequest, fmt.Errorf("invalid resource"))
 		return
