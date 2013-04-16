@@ -18,7 +18,7 @@ type V3Notifier struct {
 	cross *notifier.Cross
 }
 
-func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *V3Notifier0 {
+func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *V3Notifier {
 	return &V3Notifier{
 		cross: notifier.NewCross(local, config, platform),
 	}
