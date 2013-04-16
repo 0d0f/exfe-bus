@@ -51,7 +51,7 @@ type CreateArg struct {
 // 返回：
 //
 //     {"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}
-func (s Token) HandleCreate(string, arg CreateArg) (ret model.Token) {
+func (s Token) HandleCreate(arg CreateArg) (ret model.Token) {
 	genType := s.Vars()["type"]
 	if genType != "long" || genType != "short" {
 		s.Error(http.StatusNotFound, fmt.Errorf("invalid type %s", genType))
