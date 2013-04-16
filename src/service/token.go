@@ -14,10 +14,10 @@ import (
 type Token struct {
 	rest.Service `prefix:"/v3/tokens"`
 
-	Create         rest.Processor `method:"POST" path:"/(short|long)"`
-	KeyGet         rest.Processor `method:"GET" path:"/key/([a-zA-Z0-9]+)"`
+	Create         rest.Processor `method:"POST" path:"/:type"`
+	KeyGet         rest.Processor `method:"GET" path:"/key/:key"`
 	ResourceGet    rest.Processor `method:"POST" path:"/resources"`
-	KeyUpdate      rest.Processor `method:"POST" path:"/key/([a-zA-Z0-9]+)"`
+	KeyUpdate      rest.Processor `method:"POST" path:"/key/:key"`
 	ResourceUpdate rest.Processor `method:"POST" path:"/resource"`
 
 	log     *logger.SubLogger
@@ -51,7 +51,12 @@ type CreateArg struct {
 // 返回：
 //
 //     {"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}
-func (s Token) Create_(genType string, arg CreateArg) (ret model.Token) {
+func (s Token) HandleCreate(arg CreateArg) (ret model.Token) {
+	genType := s.Vars()["type"]
+	if genType != "long" || genType != "short" {
+		s.Error(http.StatusNotFound, fmt.Errorf("invalid type %s", genType))
+		return
+	}
 	after := time.Duration(arg.ExpireAfterSeconds) * time.Second
 	ret, err := s.manager.Create(genType, arg.Resource, arg.Data, after)
 	if err != nil {
@@ -70,7 +75,8 @@ func (s Token) Create_(genType string, arg CreateArg) (ret model.Token) {
 // 返回：
 //
 //     [{"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}]
-func (s Token) KeyGet_(key string) []model.Token {
+func (s Token) HandleKeyGet() []model.Token {
+	key := s.Vars()["key"]
 	ret, err := s.manager.Get(key, "")
 	if err != nil {
 		s.Error(http.StatusNotFound, err)
@@ -88,7 +94,7 @@ func (s Token) KeyGet_(key string) []model.Token {
 // 返回：
 //
 //     [{"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}]
-func (s Token) ResourceGet_(resource string) []model.Token {
+func (s Token) HandleResourceGet(resource string) []model.Token {
 	ret, err := s.manager.Get("", resource)
 	if err != nil {
 		s.Error(http.StatusNotFound, err)
@@ -108,7 +114,8 @@ type UpdateArg struct {
 // 例子：
 //
 //     > curl "http://127.0.0.1:23333/v3/tokens/key/0303" -d '{"data":"xyz","expire_after_seconds":13}'
-func (s Token) KeyUpdate_(key string, arg UpdateArg) {
+func (s Token) HandleKeyUpdate(arg UpdateArg) {
+	key := s.Vars()["key"]
 	if arg.Data != nil {
 		err := s.manager.UpdateData(key, *arg.Data)
 		if err != nil {
@@ -131,7 +138,7 @@ func (s Token) KeyUpdate_(key string, arg UpdateArg) {
 // 例子：
 //
 //     > curl "http://127.0.0.1:23333/v3/tokens/resource" -d '{"resource":"abc", "expire_after_seconds":13}'
-func (s Token) ResourceUpdate_(arg UpdateArg) {
+func (s Token) HandleResourceUpdate(arg UpdateArg) {
 	if arg.Resource == "" {
 		s.Error(http.StatusBadRequest, fmt.Errorf("invalid resource"))
 		return

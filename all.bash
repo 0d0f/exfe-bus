@@ -4,6 +4,7 @@ go get $1 github.com/virushuo/Go-Apns
 go get $1 github.com/garyburd/redigo/redis
 go get $1 github.com/googollee/go-socket.io
 go get $1 github.com/googollee/go-rest
+go get $1 github.com/googollee/go-broadcast
 go get $1 github.com/googollee/godis
 go get $1 github.com/googollee/go-gcm
 go get $1 github.com/googollee/go-multiplexer

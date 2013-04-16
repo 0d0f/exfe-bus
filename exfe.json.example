@@ -64,11 +64,6 @@
     "tail": {"Tail10":600}
   },
 
-  "exfe_gate": {
-    "addr": "127.0.0.1",
-    "port": 23335
-  },
-
   "here": {
     "threshold": 0.001,
     "sign_threshold": 1.0,

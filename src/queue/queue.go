@@ -84,7 +84,7 @@ func (q *Queue) Quit() {
 	q.timer.Quit()
 }
 
-func (q Queue) Timer_(push model.QueuePush) {
+func (q Queue) HandleTimer(push model.QueuePush) {
 	err := push.Init(q.config.ExfeQueue.Priority)
 	if err != nil {
 		q.Error(http.StatusBadRequest, err)
