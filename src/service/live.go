@@ -100,8 +100,8 @@ func (h LiveService) HandleCard(data here.Data) []string {
 		}
 	}
 
-	h.config.Log.Info("|live|add|t|%s|card|%s|name|%s|long|%s|lang|%s|acc|%s|trait|%s", data.Token, data.Card.Id, data.Card.Name, data.Longitude, data.Latitude, data.Accuracy, data.Traits)
 	err := h.here.Add(&data)
+	h.config.Log.Info("|live|add|t|%s|card|%s|name|%s|long|%s|lang|%s|acc|%s|trait|%s", data.Token, data.Card.Id, data.Card.Name, data.Longitude, data.Latitude, data.Accuracy, data.Traits)
 
 	if err != nil {
 		h.Error(http.StatusBadRequest, err)
@@ -135,6 +135,7 @@ func (h LiveService) HandleStreaming(s rest.Stream) {
 		}
 		err := s.Write(cards)
 		if err != nil || len(cards) == 0 {
+			h.config.Log.Info("|live|clear|t|%s|card||name||long||lang||acc||trait|", token)
 			return
 		}
 	}
