@@ -2,6 +2,7 @@ package main
 
 import (
 	"broker"
+	"fmt"
 	"formatter"
 	"github.com/googollee/go-rest"
 	"gobus"
@@ -17,13 +18,16 @@ type V3Notifier struct {
 	cross *notifier.Cross
 }
 
-func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *V3Notifier {
+func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *V3Notifier0 {
 	return &V3Notifier{
 		cross: notifier.NewCross(local, config, platform),
 	}
 }
 
 func (n V3Notifier) HandleCrossDigest(requests []model.CrossDigestRequest) {
+	if len(requests) == 0 {
+		n.Error(http.StatusBadRequest, fmt.Errorf("no request"))
+	}
 	err := n.cross.V3Digest(requests)
 	if err != nil {
 		n.Error(http.StatusInternalServerError, err)
