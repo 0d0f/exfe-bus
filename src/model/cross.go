@@ -9,6 +9,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/jpeg"
+	_ "image/png"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -78,7 +79,7 @@ func (c Cross) TitleBackground(config *Config) (string, error) {
 	buf := bytes.NewBuffer(nil)
 	err = MakeTitle(buf, bg.Body, pin, 640, 150, 199, 60, 2, c.Place.Lat, c.Place.Lng, 80)
 	if err != nil {
-		return "", err
+		return "", nil
 	}
 
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
