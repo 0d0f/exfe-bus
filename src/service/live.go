@@ -127,6 +127,11 @@ func (h LiveService) HandleStreaming(s rest.Stream) {
 		h.broadcast[token] = b
 	}
 	b.Register(c)
+	defer func() {
+		b.Unregister(c)
+		close(c)
+	}()
+
 	for {
 		d := <-c
 		cards, ok := d.([]here.Card)
