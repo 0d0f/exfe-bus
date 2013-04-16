@@ -201,7 +201,6 @@ func centerize(width, height int, pin image.Point) (w int, h int, offsetX int, o
 type CrossDigestRequest struct {
 	To        Recipient `json:"to"`
 	CrossId   int64     `json:"cross_id"`
-	UserId    int64     `json:"user_id"`
 	UpdatedAt string    `json:"updated_at"`
 }
 

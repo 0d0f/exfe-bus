@@ -29,11 +29,9 @@ func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 	}
 	to := requests[len(requests)-1].To
 	crossId := requests[0].CrossId
-	userId := requests[0].UserId
 	updatedAt := requests[0].UpdatedAt
 
 	query := make(url.Values)
-	query.Set("user_id", fmt.Sprintf("%d", userId))
 	query.Set("updated_at", updatedAt)
 	cross, err := c.platform.FindCross(crossId, query)
 	if err != nil {
