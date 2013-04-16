@@ -3,6 +3,7 @@ package main
 import (
 	"broker"
 	"fmt"
+	"github.com/googollee/go-broadcast"
 	"github.com/googollee/go-rest"
 	"here"
 	"math/rand"
@@ -16,16 +17,53 @@ type LiveService struct {
 	rest.Service `prefix:"/v3/live"`
 
 	Card      rest.Processor `path:"/cards" method:"POST"`
-	Streaming rest.Streaming `path:"/streaming" method:"POST" end:"" timeout:"60"`
+	Streaming rest.Streaming `path:"/streaming" method:"POST" end:""`
 
-	platform *broker.Platform
-	config   *model.Config
-	here     *here.Here
-	rand     *rand.Rand
-	tokens   map[string]bool
+	platform  *broker.Platform
+	config    *model.Config
+	here      *here.Here
+	rand      *rand.Rand
+	tokens    map[string]bool
+	broadcast map[string]*broadcast.Broadcast
 }
 
-func (h LiveService) Card_(data here.Data) []string {
+func NewLive(config *model.Config) (http.Handler, error) {
+	platform, err := broker.NewPlatform(config)
+	if err != nil {
+		return nil, err
+	}
+	service := &LiveService{
+		config:    config,
+		here:      here.New(config.Here.Threshold, config.Here.SignThreshold, time.Duration(config.Here.TimeoutInSecond)*time.Second),
+		rand:      rand.New(rand.NewSource(time.Now().Unix())),
+		platform:  platform,
+		broadcast: make(map[string]*broadcast.Broadcast),
+	}
+
+	go service.here.Serve()
+
+	go func() {
+		c := service.here.UpdateChannel()
+		for {
+			group := <-c
+			cards := make([]here.Card, 0)
+			if group.Name != "" {
+				for _, d := range group.Data {
+					cards = append(cards, d.Card)
+				}
+			}
+			for token := range group.Data {
+				if b, ok := service.broadcast[token]; ok {
+					b.Send(cards)
+				}
+			}
+		}
+	}()
+
+	return rest.New(service)
+}
+
+func (h LiveService) HandleCard(data here.Data) []string {
 	h.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
 	h.Header().Set("Access-Control-Allow-Credentials", "true")
 	h.Header().Set("Cache-Control", "no-cache")
@@ -73,51 +111,31 @@ func (h LiveService) Card_(data here.Data) []string {
 	return []string{token, data.Card.Id}
 }
 
-func (h LiveService) Streaming_() string {
+func (h LiveService) HandleStreaming(s rest.Stream) {
 	h.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
 	h.Header().Set("Access-Control-Allow-Credentials", "true")
 	h.Header().Set("Cache-Control", "no-cache")
 	token := h.Request().URL.Query().Get("token")
 	if !h.here.Exist(token) {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
-		return ""
+		return
 	}
-	return token
-}
-
-func NewLive(config *model.Config) (http.Handler, error) {
-	platform, err := broker.NewPlatform(config)
-	if err != nil {
-		return nil, err
+	c := make(chan interface{})
+	b, ok := h.broadcast[token]
+	if !ok {
+		b = broadcast.NewBroadcast()
+		h.broadcast[token] = b
 	}
-	service := &LiveService{
-		config:   config,
-		here:     here.New(config.Here.Threshold, config.Here.SignThreshold, time.Duration(config.Here.TimeoutInSecond)*time.Second),
-		rand:     rand.New(rand.NewSource(time.Now().Unix())),
-		platform: platform,
-	}
-
-	go service.here.Serve()
-
-	go func() {
-		c := service.here.UpdateChannel()
-		for {
-			group := <-c
-			cards := make([]here.Card, 0)
-			if group.Name != "" {
-				for _, d := range group.Data {
-					cards = append(cards, d.Card)
-				}
-			}
-			for token := range group.Data {
-				service.Streaming.Feed(token, cards)
-				if group.Name == "" {
-					config.Log.Info("|live|clear|t|%s|card||name||long||lang||acc||trait|", token)
-					service.Streaming.Disconnect(token)
-				}
-			}
+	b.Register(c)
+	for {
+		d := <-c
+		cards, ok := d.([]here.Card)
+		if !ok {
+			continue
 		}
-	}()
-
-	return rest.New(service)
+		err := s.Write(cards)
+		if err != nil || len(cards) == 0 {
+			return
+		}
+	}
 }
