@@ -143,7 +143,7 @@ func (p *Platform) FindIdentity(identity model.Identity) (model.Identity, error)
 }
 
 func (p *Platform) FindCross(id int64, query url.Values) (model.Cross, error) {
-	url := fmt.Sprintf("%s/v2/Gobus/Cross?id=%d&", p.config.SiteApi, id)
+	url := fmt.Sprintf("%s/v2/Gobus/Crosses?id=%d&", p.config.SiteApi, id)
 	if len(query) > 0 {
 		url += query.Encode()
 	}
