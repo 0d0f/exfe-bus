@@ -2,6 +2,7 @@ go get $1 github.com/mrjones/oauth
 go get $1 code.google.com/p/go-imap/go1/imap
 go get $1 github.com/virushuo/Go-Apns
 go get $1 github.com/garyburd/redigo/redis
+go get $1 github.com/nfnt/resize
 go get $1 github.com/googollee/go-socket.io
 go get $1 github.com/googollee/go-rest
 go get $1 github.com/googollee/go-broadcast
