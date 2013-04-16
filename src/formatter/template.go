@@ -184,6 +184,9 @@ func parseDirTemplate(t *template.Template, dir, name string) error {
 	}
 	for _, fi := range fis {
 		n := fi.Name()
+		if n == "image_data" {
+			continue
+		}
 		if name != "" {
 			n = fmt.Sprintf("%s/%s", name, fi.Name())
 		}

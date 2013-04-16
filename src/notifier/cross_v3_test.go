@@ -7,8 +7,15 @@ import (
 )
 
 func TestCrossDigestV3Email(t *testing.T) {
+	widget := map[string]interface{}{
+		"image":     "RedRiverValley.jpg",
+		"widget_id": 0,
+		"id":        0,
+		"type":      "Background",
+	}
 	cross1 := cross
 	cross1.Exfee = exfee1
+	cross1.Widgets = append(cross1.Widgets, widget)
 
 	cross1.Exfee.Invitations[0].RsvpStatus = model.RsvpAccepted
 	cross1.Exfee.Invitations[1].RsvpStatus = model.RsvpAccepted

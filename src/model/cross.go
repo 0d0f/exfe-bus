@@ -66,8 +66,11 @@ func (c Cross) TitleBackground(config *Config) (string, error) {
 		return "", nil
 	}
 	defer bg.Body.Close()
+	if bg.StatusCode != 200 {
+		return "", nil
+	}
 
-	pin, err := os.Open(fmt.Sprintf("%s/pin.png", config.TemplatePath))
+	pin, err := os.Open(fmt.Sprintf("%s/image_data/map_pin_blue@2x.png", config.TemplatePath))
 	if err != nil {
 		return "", err
 	}
@@ -106,10 +109,10 @@ func (c Cross) findBackground(config *Config) string {
 			continue
 		}
 		if img, ok := w["image"]; ok && img != "" {
-			return fmt.Sprintf("http://%s/static/img/xbg/%s", config.SiteUrl, img)
+			return fmt.Sprintf("%s/static/img/xbg/%s", config.SiteUrl, img)
 		}
 	}
-	return fmt.Sprintf("http://%s/static/img/xbg/default.jpg", config.SiteUrl)
+	return fmt.Sprintf("%s/static/img/xbg/default.jpg", config.SiteUrl)
 }
 
 func MakeTitle(w io.Writer, bg io.Reader, pin io.Reader, width, height, offsetY int, columnX, columnWidth int, latitude, longitude string, mapWidth int) error {

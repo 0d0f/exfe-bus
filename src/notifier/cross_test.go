@@ -8,13 +8,14 @@ import (
 )
 
 func init() {
+	config.Email.Name = "business tester"
+	config.Email.Domain = "test.com"
+	config.TemplatePath = "../../templates"
 	var err error
-	localTemplate, err = formatter.NewLocalTemplate("../../templates", "en_US")
+	localTemplate, err = formatter.NewLocalTemplate(config.TemplatePath, "en_US")
 	if err != nil {
 		panic(err)
 	}
-	config.Email.Name = "business tester"
-	config.Email.Domain = "test.com"
 }
 
 var localTemplate *formatter.LocalTemplate
