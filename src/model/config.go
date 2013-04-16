@@ -69,10 +69,6 @@ type Config struct {
 		Head     map[string]uint `json:"head"`
 		Tail     map[string]uint `json:"tail"`
 	} `json:"exfe_queue"`
-	ExfeGate struct {
-		Addr string `json:"addr"`
-		Port uint   `json:"port"`
-	} `json:"exfe_gate"`
 
 	Here struct {
 		Threshold       float64 `json:"threshold"`

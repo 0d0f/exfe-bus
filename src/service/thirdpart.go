@@ -11,7 +11,6 @@ import (
 	"gobus"
 	"model"
 	"net/http"
-	"ringcache"
 	"strings"
 	"thirdpart"
 	"thirdpart/_performance"
@@ -32,10 +31,9 @@ type Thirdpart struct {
 	log       *logger.SubLogger
 	config    *model.Config
 	platform  *broker.Platform
-	sendCache *ringcache.RingCache
 }
 
-func NewThirdpart(config *model.Config, streaming *Streaming, platform *broker.Platform) (*Thirdpart, error) {
+func NewThirdpart(config *model.Config, platform *broker.Platform) (*Thirdpart, error) {
 	if config.Thirdpart.MaxStateCache == 0 {
 		return nil, fmt.Errorf("config.Thirdpart.MaxStateCache should be bigger than 0")
 	}
@@ -85,10 +83,6 @@ func NewThirdpart(config *model.Config, streaming *Streaming, platform *broker.P
 		t.AddUpdater(performance)
 	}
 
-	if streaming != nil {
-		t.AddSender(streaming)
-	}
-
 	dropbox_, err := dropbox.New(config)
 	if err != nil {
 		return nil, fmt.Errorf("can't create dropbox: %s", err)
@@ -106,7 +100,6 @@ func NewThirdpart(config *model.Config, streaming *Streaming, platform *broker.P
 		log:       config.Log.SubPrefix("thirdpart"),
 		config:    config,
 		platform:  platform,
-		sendCache: ringcache.New(int(config.Thirdpart.MaxStateCache)),
 	}, nil
 }
 
