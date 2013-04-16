@@ -3,10 +3,33 @@ package main
 import (
 	"broker"
 	"formatter"
+	"github.com/googollee/go-rest"
 	"gobus"
 	"model"
+	"net/http"
 	"notifier"
 )
+
+type V3Notifier struct {
+	rest.Service `prefix:"/v3/notifier"`
+	CrossDigest  rest.Processor `path:"/cross/digest" method:"POST"`
+
+	cross *notifier.Cross
+}
+
+func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *V3Notifier {
+	return &V3Notifier{
+		cross: notifier.NewCross(local, config, platform),
+	}
+}
+
+func (n V3Notifier) HandleCrossDigest(requests []model.CrossDigestRequest) {
+	err := n.cross.V3Digest(requests)
+	if err != nil {
+		n.Error(http.StatusInternalServerError, err)
+		return
+	}
+}
 
 type Notifier struct {
 	conversation *notifier.Conversation

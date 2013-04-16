@@ -127,6 +127,15 @@ func main() {
 			return
 		}
 		log.Info("register Notifier")
+
+		notifierv3 := NewV3Notifier(localTemplate, &config, platform)
+		err = bus.RegisterRestful(notifierv3)
+		if err != nil {
+			log.Crit("gobus launch failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register Notifier v3")
 	}
 
 	go func() {

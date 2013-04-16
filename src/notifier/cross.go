@@ -23,7 +23,7 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config, plat
 	}
 }
 
-func (c Cross) DigestV3(requests []model.CrossDigestRequest) error {
+func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 	if len(requests) == 0 {
 		return fmt.Errorf("len(requests) == 0")
 	}
