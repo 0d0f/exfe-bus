@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/googollee/resize"
+	"github.com/nfnt/resize"
 	"image"
 	"image/draw"
 	"image/jpeg"
