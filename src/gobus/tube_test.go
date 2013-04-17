@@ -42,7 +42,7 @@ func TestTube(t *testing.T) {
 		panic(err)
 	}
 
-	bus, err := NewServer("127.0.0.1:23333", l)
+	bus, err := NewServer("127.0.0.1:12346", l)
 	if err != nil {
 		t.Fatalf("create gobus server fail: %s", err)
 	}
@@ -58,8 +58,8 @@ func TestTube(t *testing.T) {
 
 	config := `
 	{
-	    "bus://update": {"_default": "http://127.0.0.1:23333/update"},
-	    "bus://stream": {"_default": "http://127.0.0.1:23333/stream"}
+	    "bus://update": {"_default": "http://127.0.0.1:12346/update"},
+	    "bus://stream": {"_default": "http://127.0.0.1:12346/stream"}
 	}`
 
 	var route map[string]map[string]string
