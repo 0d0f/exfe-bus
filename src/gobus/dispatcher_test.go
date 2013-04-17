@@ -77,7 +77,7 @@ func TestDispatcher(t *testing.T) {
 		panic(err)
 	}
 
-	const gobusUrl = "127.0.0.1:12345"
+	const gobusUrl = "127.0.0.1:12347"
 	s, _ := NewServer(gobusUrl, l)
 	test := new(gobusTest)
 	s.Register(test)
