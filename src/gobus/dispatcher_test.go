@@ -2,6 +2,7 @@ package gobus
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/googollee/go-logger"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
