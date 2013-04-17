@@ -17,7 +17,7 @@ func TestHead(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	q = NewHead("hdt", 2, redis)
+	q = NewHead("hdtest", 2, redis)
 
 	tomb := ServRepository(log.SubPrefix("serv"), q, func(key string, data [][]byte) {
 		assert.Equal(t, key, "test1")
