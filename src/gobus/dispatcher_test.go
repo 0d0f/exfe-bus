@@ -86,7 +86,7 @@ func TestDispatcher(t *testing.T) {
 
 	config := `
 	{
-	    "bus://add": {"_default": "http://127.0.0.1:12345/add"}
+	    "bus://add": {"_default": "http://127.0.0.1:12347/add"}
 	}`
 
 	var route map[string]map[string]string
