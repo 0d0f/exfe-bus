@@ -1,9 +1,15 @@
 package model
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"github.com/googollee/resize"
+	"image"
+	"image/draw"
+	"image/jpeg"
+	_ "image/png"
+	"io"
 	"net/http"
 )
 
@@ -90,19 +96,48 @@ func (i Invitation) IsUpdateBy(userId int64) bool {
 	return i.UpdateBy.UserID == userId
 }
 
-func (i Invitation) Avatar() string {
+func (i Invitation) Avatar(x, y int) string {
 	resp, err := http.Get(i.Identity.Avatar)
 	if err != nil {
 		return ""
 	}
 	defer resp.Body.Close()
 
-	b, err := ioutil.ReadAll(resp.Body)
+	resized, err := innerResize(resp.Body, x, y)
 	if err != nil {
 		return ""
 	}
 
-	return base64.StdEncoding.EncodeToString(b)
+	buf := bytes.NewBuffer(nil)
+	err = jpeg.Encode(buf, resized, &jpeg.Options{70})
+	if err != nil {
+		return ""
+	}
+
+	return base64.StdEncoding.EncodeToString(buf.Bytes())
+}
+
+func innerResize(r io.Reader, x int, y int) (image.Image, error) {
+	img, _, err := image.Decode(r)
+	if err != nil {
+		return nil, err
+	}
+	tryX := x
+	tryY := tryX * img.Bounds().Dy() / img.Bounds().Dx()
+	var offset image.Point
+	if tryY < y {
+		tryY = y
+		tryX = tryY * img.Bounds().Dx() / img.Bounds().Dy()
+		offset = image.Pt((tryX-x)/2, 0)
+	} else {
+		offset = image.Pt(0, (tryY-y)/2)
+	}
+
+	img = resize.Resize(uint(tryX), uint(tryY), img, resize.Lanczos3)
+	ret := image.NewRGBA(image.Rect(0, 0, x, y))
+	draw.Draw(ret, ret.Bounds(), img, offset, draw.Src)
+
+	return ret, nil
 }
 
 type OAuthToken struct {

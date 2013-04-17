@@ -54,7 +54,7 @@ func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 		to.Provider = poster
 		arg["To"] = to
 
-		text, err := GenerateContent(c.localTemplate, "cross_summary_v3", poster, to.Language, arg)
+		text, err := GenerateContent(c.localTemplate, "cross_digest_v3", poster, to.Language, arg)
 		if err != nil {
 			c.config.Log.Crit("%s with arg(%+v)", err, cross)
 			continue
