@@ -98,14 +98,14 @@ func TestDispatcher(t *testing.T) {
 	{
 		var reply int
 		err = dispatcher.Do("bus://add", "POST", AddArgs{2, 4}, &reply)
-		assert.Equal(t, err, nil)
+		assert.Equal(t, err, nil, fmt.Sprintf("error: %s", err))
 		assert.Equal(t, reply, 6)
 	}
 
 	{
 		var reply int
 		err = dispatcher.DoWithTicket("abc", "bus://add", "POST", AddArgs{2, 4}, &reply)
-		assert.Equal(t, err, nil)
+		assert.Equal(t, err, nil, fmt.Sprintf("error: %s", err))
 		assert.Equal(t, reply, 6)
 	}
 }
