@@ -5,6 +5,7 @@ import (
 	"github.com/googollee/go-logger"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
+	"time"
 )
 
 type gobusTest struct {
@@ -59,6 +60,7 @@ func TestGobus(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	go s.ListenAndServe()
+	time.Sleep(time.Second / 3)
 
 	json := new(JSON)
 	client := NewClient(json)

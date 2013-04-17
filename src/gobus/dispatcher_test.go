@@ -6,6 +6,7 @@ import (
 	"github.com/googollee/go-logger"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestTable(t *testing.T) {
@@ -77,16 +78,17 @@ func TestDispatcher(t *testing.T) {
 		panic(err)
 	}
 
-	const gobusUrl = "127.0.0.1:12347"
+	const gobusUrl = "127.0.0.1:12345"
 	s, _ := NewServer(gobusUrl, l)
 	test := new(gobusTest)
 	s.Register(test)
 
 	go s.ListenAndServe()
+	time.Sleep(time.Second / 3)
 
 	config := `
 	{
-	    "bus://add": {"_default": "http://127.0.0.1:12347/add"}
+	    "bus://add": {"_default": "http://127.0.0.1:12345/add"}
 	}`
 
 	var route map[string]map[string]string
