@@ -5,6 +5,7 @@ import (
 	"github.com/googollee/go-logger"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
+	"time"
 )
 
 type TubeTest1 struct {
@@ -53,6 +54,7 @@ func TestTube(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	go bus.ListenAndServe()
+	time.Sleep(time.Second / 3)
 
 	config := `
 	{
