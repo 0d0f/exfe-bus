@@ -55,9 +55,9 @@ case "$1" in
 	;;
 	restart)
 	if is_running; then
-		$0 start
-	else
 		${daemon_ctl} --restart
+	else
+		$0 start
 	fi
 	;;
 	status)
