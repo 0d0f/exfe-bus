@@ -1,6 +1,6 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:          exfe_bot
+# Provides:          exfe_queue
 # Required-Start:    $local_fs $network $named $syslog $time
 # Required-Stop:     $local_fs $network $named $syslog $time
 # Default-Start:     2 3 4 5
@@ -13,12 +13,12 @@
 # remove links: update-rc.d -f ss-server remove
 
 user="www-data:www-data"
-cmd="/exfe/exfebus/bin/bot -config=/exfe/exfebus/exfe.json -syslog=true"
+cmd="/exfe/exfebus/bin/queue -config=/exfe/exfebus/exfe.json -syslog=true"
 
 name=`basename $0`
-pid_file="/var/run/www/${name}.pid"
-stdout_log="/var/log/${name}.log"
-stderr_log="/var/log/${name}.err"
+pid_file="/var/run/exfebus/${name}.pid"
+stdout_log="/var/log/exfebus/${name}.log"
+stderr_log="/var/log/exfebus/${name}.err"
 
 daemon_ctl="daemon -n ${name} -F ${pid_file}"
 

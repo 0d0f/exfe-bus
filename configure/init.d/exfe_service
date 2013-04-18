@@ -16,9 +16,9 @@ user="www-data:www-data"
 cmd="/exfe/exfebus/bin/service -config=/exfe/exfebus/exfe.json -syslog=true"
 
 name=`basename $0`
-pid_file="/var/run/www/${name}.pid"
-stdout_log="/var/log/${name}.log"
-stderr_log="/var/log/${name}.err"
+pid_file="/var/run/exfebus/${name}.pid"
+stdout_log="/var/log/exfebus/${name}.log"
+stderr_log="/var/log/exfebus/${name}.err"
 
 daemon_ctl="daemon -n ${name} -F ${pid_file}"
 
