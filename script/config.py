@@ -3,7 +3,7 @@
 import json
 import sys
 
-with open('/usr/local/etc/gobus/exfe.json') as fp:
+with open('/exfe/exfebus/exfe.json') as fp:
     config = json.load(fp)
 
 if len(sys.argv) > 1:
