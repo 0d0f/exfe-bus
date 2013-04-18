@@ -1,4 +1,0 @@
-{{$title := .Cross.Title | limit 30}}
-{{$time := .Cross.Time.StringInZone .Timezone}}
-{{$place := .Cross.Place.Title | limit 30}}
-{{if not .IsCreator}}{{.By.Name}} invites you to "{{$title}}"{{if $time}}, {{$time}}{{end}}{{if $place}} at {{$place}}{{end}}.{{end}}
