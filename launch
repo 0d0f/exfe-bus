@@ -2,7 +2,7 @@
 
 git checkout -f HEAD
 
-if [ "$1" == "" ]
+if [ "$1" = "" ]
 then
 	vimdiff exfe.json exfe.json.example
 	git add exfe.json

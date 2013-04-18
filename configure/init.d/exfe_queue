@@ -26,6 +26,12 @@ is_running() {
 	${daemon_ctl} --running
 }
 
+for p in /var/log/exfebus /var/run/exfebus
+do
+	mkdir -p ${p}
+	chown ${user} ${p}
+done
+
 case "$1" in
 	start)
 	if is_running; then
