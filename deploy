@@ -3,7 +3,7 @@
 TARGET="$1"
 TAG="$2"
 
-if [ "${TARGET}" == "" ]
+if [ "${TARGET}" = "" ]
 then
 	echo need target
 	exit -1
