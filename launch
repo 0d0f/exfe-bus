@@ -12,6 +12,7 @@ do
 	service exfe_$i stop
 done
 
+sleep 1s
 git checkout -f HEAD
 
 for i in service queue bot
