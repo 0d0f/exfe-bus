@@ -1,7 +1,5 @@
 #!/bin/sh
 
-git checkout -f HEAD
-
 if [ "$1" = "" ]
 then
 	vimdiff exfe.json exfe.json.example
@@ -11,5 +9,12 @@ fi
 
 for i in service queue bot
 do
-	service exfe_$i restart
+	service exfe_$i stop
+done
+
+git checkout -f HEAD
+
+for i in service queue bot
+do
+	service exfe_$i start
 done
