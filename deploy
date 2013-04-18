@@ -1,0 +1,25 @@
+#!/bin/sh
+
+TARGET="$1"
+TAG="$2"
+
+if [ "${TARGET}" == "" ]
+then
+	echo need target
+	exit -1
+fi
+
+git clone ${TARGET} stage.tmp
+
+mkdir -p stage.tmp/bin
+cp ./bin/* stage.tmp/bin
+cp -R ./script/* stage.tmp/bin
+cp -R ./templates stage.tmp/
+cp -R ./exfe.json.example stage.tmp/
+cp -R ./configure stage.tmp/
+cp ./launch stage.tmp/
+
+cd stage.tmp
+git add .
+git commit -m "${TAG}"
+git push

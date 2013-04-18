@@ -1,7 +1,0 @@
-#!/bin/sh
-
-BIN={{bin_name}}
-
-cd /usr/local/etc/gobus
-PATH=/usr/local/bin:$PATH exfe_${BIN} -syslog -config="/usr/local/etc/gobus/exfe.json" -pid="/var/run/gobus/exfe_${BIN}.pid" >/dev/null 2>&1
-
