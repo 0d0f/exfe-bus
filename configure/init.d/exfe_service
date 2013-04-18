@@ -13,7 +13,7 @@
 # remove links: update-rc.d -f ss-server remove
 
 user="www-data:www-data"
-cmd="service -config=/exfe/exfebus/exfe.json -syslog=true"
+cmd="service -config=/exfe/exfebus/exfe.json"
 
 name=`basename $0`
 pid_file="/var/run/exfebus/${name}.pid"
