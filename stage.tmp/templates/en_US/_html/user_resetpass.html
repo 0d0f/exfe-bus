@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    </head>
+    <body>
+        <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 14px; line-height: 20px; color: #333333; font-weight: normal; width: 640px; padding: 20px; background-color: #fbfbfb;">
+            <tr>
+                <td>
+                    Hi, <span style="color: #191919;">{{.UserName | html}}</span>
+                </td>
+            </tr>
+            <tr><td height="20"></td></tr>
+            <tr>
+                <td>
+                    You just requested to reset your forgotten <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a> password.
+                </td>
+            </tr>
+            <tr><td height="20"></td></tr>
+            <tr>
+                <td>
+                    Please click here to set new password: <a style="color:#333333; text-decoration: underline;" href="{{.Link}}">{{.Link | limit 30}}</a><br />
+                    This single-use link will be expired in 1 day.
+                </td>
+            </tr>
+            <tr><td height="40"></td></tr>
+            <tr>
+                <td style="font-size: 11px; line-height: 13px; color: #666666;">
+                    This email is sent to <a style="color: #666666; text-decoration: none; font-style: italic;" href="mailto:{{.To.ExternalID }}">{{.To.ExternalID | html }}</a> per forgot password request on <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a>.
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

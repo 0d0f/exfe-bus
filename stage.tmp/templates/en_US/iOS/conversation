@@ -1,0 +1,3 @@
+{{sub . "_default/conversation"}}
+
+{"cid":{{.Cross.ID}},"t":"c"}

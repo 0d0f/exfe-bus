@@ -1,0 +1,3 @@
+{{sub . "_default/cross_invitation"}}
+
+{"cid":{{.Cross.ID}},"t":"i"}

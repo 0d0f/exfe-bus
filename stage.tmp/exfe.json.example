@@ -1,0 +1,122 @@
+{
+  "site_url": "",
+  "site_api": "",
+  "site_img": "",
+  "app_url": "",
+  "template_path": "",
+  "default_lang": "en_US",
+  "access_domain": "api.exfe.com",
+
+  "test": false,
+  "db": {
+    "addr": "127.0.0.1",
+    "port": 3306,
+    "username": "root",
+    "password": "",
+    "db_name": "exfe_services",
+    "max_connections": 5,
+    "heart_beat_in_second": 60
+  },
+  "redis": {
+    "netaddr": "",
+    "db": 0,
+    "password": "",
+    "max_connections": 5,
+    "heart_beat_in_second": 60
+  },
+  "email": {
+    "host": "smtp.gmail.com",
+    "username": "x@0d0f.com",
+    "password": "",
+    "name": "[DEV]EXFE ·X·",
+    "prefix": "x",
+    "domain": "0d0f.com",
+    "idle_timeout_in_sec": 30,
+    "interval_in_sec": 10
+  },
+  "aws": {
+    "s3": {
+      "key": "",
+      "secret": "",
+      "domain": "s3.amazonaws.com",
+      "bucket_prefix": "exfe"
+    }
+  },
+
+  "dispatcher": {
+    "bus://exfe_service/notifier/conversation": {"_default": "http://127.0.0.1:23333/notifier/conversation"},
+    "bus://exfe_service/thirdpart/message": {"_default": "http://127.0.0.1:23333/thirdpart/message"},
+    "bus://exfe_service/thirdpart/photographers": {"_default": "http://127.0.0.1:23333/thirdpart/photographers"},
+    "bus://exfe_queue/head10": {"_default": "http://127.0.0.1:23334/head10"},
+    "bus://exfe_queue/instant": {"_default": "http://127.0.0.1:23334/instant"}
+  },
+
+  "exfe_service": {
+    "addr": "127.0.0.1",
+    "port": 23333,
+    "services": {"token": true, "iom":true, "thirdpart":true, "notifier":true, "live": true}
+  },
+  "exfe_queue": {
+    "addr": "127.0.0.1",
+    "port": 23334,
+    "priority": {"instant":0, "urgent":233, "normal":600},
+    "head": {"Head2":233, "Head10":600},
+    "tail": {"Tail10":600}
+  },
+
+  "here": {
+    "threshold": 0.001,
+    "sign_threshold": 1.0,
+    "timeout_in_second": 60
+  },
+  "thirdpart": {
+    "max_state_cache": 1000,
+    "twitter": {
+      "client_token": "",
+      "client_secret": "",
+      "access_token": "",
+      "access_secret": "",
+      "screen_name": ""
+    },
+    "apn": {
+      "cert": "apns_dev_cert.pem",
+      "key": "apns_dev_key.pem",
+      "server": "gateway.sandbox.push.apple.com:2195",
+      "rootca": "root.ca",
+      "timeout_in_minutes": 20
+    },
+    "gcm": {
+      "key": ""
+    },
+    "sms": {
+      "all_to_imsg": false,
+      "twilio": {
+        "url": "https://{sid}:{token}@api.twilio.com/2010-04-01/Accounts/{sid}/SMS/Messages.json",
+        "from_phone": "+123"
+      },
+      "duancaiwang": {
+        "url": "http://6956-24f8e.sms-api.63810.com/api/SmsSend/user/{user}/hash/{hash}/encode/utf-8/smstype/notify"
+      }
+    },
+    "imessage": {
+      "address": "http://www.kufuwu.com:1888/socket.io/",
+      "origin": "http://www.kufuwu.com/p.html",
+      "channel": "1"
+    },
+    "dropbox": {
+      "key": "",
+      "secret": ""
+    },
+    "photostream": {
+      "domain": "p04-sharedstreams.icloud.com"
+    }
+  },
+  "bot": {
+    "email": {
+      "imap_host": "",
+      "imap_user": "",
+      "imap_password": "",
+      "timeout_in_second": 5
+    }
+  }
+}
