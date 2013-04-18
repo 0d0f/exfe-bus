@@ -9,6 +9,7 @@ then
 	exit -1
 fi
 
+rm -f stage.tmp
 git clone ${TARGET} stage.tmp
 
 mkdir -p stage.tmp/bin
