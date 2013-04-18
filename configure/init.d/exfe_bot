@@ -13,7 +13,7 @@
 # remove links: update-rc.d -f ss-server remove
 
 user="www-data:www-data"
-cmd="bot -config=/exfe/exfebus/exfe.json"
+cmd="/exfe/exfebus/bin/bot -config=/exfe/exfebus/exfe.json"
 
 name=`basename $0`
 pid_file="/var/run/exfebus/${name}.pid"
@@ -38,7 +38,7 @@ case "$1" in
 		echo "Already started"
 	else
 		echo "Starting $name"
-		sudo PATH=/exfe/exfebus/bin:$PATH ${daemon_ctl} -X "${cmd}" -r -U -O ${stdout_log} -E ${stderr_log} -u ${user}
+		sudo ${daemon_ctl} -X "${cmd}" -r -U -O ${stdout_log} -E ${stderr_log} -u ${user}
 		if ! is_running; then
 			echo "Unable to start, see $stdout_log and $stderr_log"
 			exit 1
