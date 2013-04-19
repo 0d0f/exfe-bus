@@ -9,18 +9,13 @@ then
 	exit -1
 fi
 
-rm -Rf stage.tmp
-git clone ${TARGET} stage.tmp
+cp ./bin/* ${TARGET}/bin
+cp -R ./script/* ${TARGET}/bin
+cp -R ./templates ${TARGET}/
+cp -R ./exfe.json.example ${TARGET}/
+cp -R ./configure ${TARGET}/
+cp ./launch ${TARGET}/
 
-mkdir -p stage.tmp/bin
-cp ./bin/* stage.tmp/bin
-cp -R ./script/* stage.tmp/bin
-cp -R ./templates stage.tmp/
-cp -R ./exfe.json.example stage.tmp/
-cp -R ./configure stage.tmp/
-cp ./launch stage.tmp/
-
-cd stage.tmp
+cd ${TARGET}
 git add .
 git commit -m "${TAG}"
-git push
