@@ -1,3 +1,2 @@
 # m h  dom mon dow   command
-
-* 1 * * * /root/exfebus/script/clear.sh > /var/log/gobus/clear.log
+* 1 * * * /exfe/exfebus/bin/clear.sh > /var/log/exfebus/clear.log
