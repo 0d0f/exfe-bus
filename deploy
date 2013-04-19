@@ -18,4 +18,4 @@ cp ./launch ${TARGET}/
 
 cd ${TARGET}
 git add .
-git commit -m "${TAG}"
+git commit -m "${TAG}" || echo "no commit"
