@@ -1,10 +1,8 @@
 package delayrepo
 
 import (
-	"broker"
 	"fmt"
 	"github.com/stretchrcom/testify/assert"
-	"model"
 	"testing"
 	"time"
 )
@@ -24,16 +22,9 @@ func (r *RepoTester) OnError(err error) {
 }
 
 func TestRepository(t *testing.T) {
-	config := new(model.Config)
-	config.Redis.MaxConnections = 1
-	config.Redis.Netaddr = "127.0.0.1:6379"
-	redis, err := broker.NewRedisPool(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	repo := new(RepoTester)
-	timer, err := NewTimer(Always, "delay:test", redis)
+	s := newFakeStorage()
+	timer, err := NewTimer(Always, s)
 	if err != nil {
 		t.Fatal(err)
 	}

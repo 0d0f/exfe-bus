@@ -1,24 +1,87 @@
 package delayrepo
 
 import (
-	"broker"
 	"fmt"
 	"github.com/stretchrcom/testify/assert"
-	"model"
+	"sort"
 	"testing"
 	"time"
 )
 
-func TestTimer(t *testing.T) {
-	config := new(model.Config)
-	config.Redis.MaxConnections = 1
-	config.Redis.Netaddr = "127.0.0.1:6379"
-	redis, err := broker.NewRedisPool(config)
-	if err != nil {
-		t.Fatal(err)
-	}
+type timeData struct {
+	timer int64
+	key   string
+}
 
-	strategy, err := NewTimer(Always, "delay:test", redis)
+type timeDatas []timeData
+
+func (s timeDatas) Len() int {
+	return len(s)
+}
+
+func (s timeDatas) Less(i, j int) bool {
+	return s[i].timer < s[j].timer
+}
+
+func (s timeDatas) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+type FakeStorage struct {
+	timer timeDatas
+	array map[string][][]byte
+}
+
+func newFakeStorage() *FakeStorage {
+	return &FakeStorage{
+		timer: make(timeDatas, 0),
+		array: make(map[string][][]byte),
+	}
+}
+
+func (s *FakeStorage) Save(ontime int64, key string, data []byte) error {
+	exist := false
+	for i := range s.timer {
+		if s.timer[i].key == key {
+			s.timer[i].timer = ontime
+			exist = true
+			break
+		}
+	}
+	if !exist {
+		s.timer = append(s.timer, timeData{
+			timer: ontime,
+			key:   key,
+		})
+	}
+	sort.Sort(s.timer)
+	s.array[key] = append(s.array[key], data)
+	return nil
+}
+
+func (s *FakeStorage) Load(key string) ([][]byte, error) {
+	return s.array[key], nil
+}
+
+func (s *FakeStorage) Ontime(key string) (int64, error) {
+	for i := range s.timer {
+		if s.timer[i].key == key {
+			return s.timer[i].timer, nil
+		}
+	}
+	return 0, nil
+}
+
+func (s *FakeStorage) Next() (string, error) {
+	if len(s.timer) == 0 {
+		return "", nil
+	}
+	return s.timer[0].key, nil
+}
+
+func TestTimer(t *testing.T) {
+	s := newFakeStorage()
+	strategy, err := NewTimer(Always, s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,16 +116,22 @@ func TestTimer(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%v", data), "[[97] [98] [99]]")
 }
 
-func TestTimerUpdate(t *testing.T) {
-	config := new(model.Config)
-	config.Redis.MaxConnections = 1
-	config.Redis.Netaddr = "127.0.0.1:6379"
-	redis, err := broker.NewRedisPool(config)
+func TestEmptyTimer(t *testing.T) {
+	s := newFakeStorage()
+	strategy, err := NewTimer(Always, s)
 	if err != nil {
 		t.Fatal(err)
 	}
+	wait, err := strategy.NextWakeup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, wait, 0)
+}
 
-	strategy, err := NewTimer(Always, "delay:test", redis)
+func TestTimerUpdate(t *testing.T) {
+	s := newFakeStorage()
+	strategy, err := NewTimer(Always, s)
 	if err != nil {
 		t.Fatal(err)
 	}

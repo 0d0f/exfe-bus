@@ -15,30 +15,29 @@ const (
 	Never
 )
 
-type Timer struct {
-	redis      *broker.RedisPool
-	updateType updateType
-	prefix     string
-	timerKey   string
+type TimerStorage interface {
+	Save(ontime int64, key string, data []byte) error
+	Load(key string) ([][]byte, error)
+	Ontime(key string) (int64, error)
+	Next() (string, error)
 }
 
-func NewTimer(updateType updateType, prefix string, redis *broker.RedisPool) (*Timer, error) {
-	switch updateType {
-	case Always:
-	case Never:
-	default:
-		return nil, fmt.Errorf("invalid update type: %s", updateType)
+type RedisStorage struct {
+	redis    *broker.RedisPool
+	prefix   string
+	timerKey string
+}
+
+func NewTimerStorage(prefix string, redis *broker.RedisPool) *RedisStorage {
+	return &RedisStorage{
+		redis:    redis,
+		prefix:   prefix,
+		timerKey: fmt.Sprintf("%s:timer", prefix),
 	}
-	return &Timer{
-		redis:      redis,
-		updateType: updateType,
-		prefix:     prefix,
-		timerKey:   fmt.Sprintf("%s:timer", prefix),
-	}, nil
 }
 
-func (t *Timer) Push(ontime int64, key string, data []byte) (err error) {
-	err = t.redis.Do(func(i multiplexer.Instance) {
+func (s *RedisStorage) Save(ontime int64, key string, data []byte) (err error) {
+	e := s.redis.Do(func(i multiplexer.Instance) {
 		r := i.(*broker.RedisInstance_)
 		r.Conn.SetDeadline(time.Now().Add(broker.NetworkTimeout))
 
@@ -46,11 +45,11 @@ func (t *Timer) Push(ontime int64, key string, data []byte) (err error) {
 		if err != nil {
 			return
 		}
-		err = r.Redis.Send("RPUSH", fmt.Sprintf("%s:storage:%s", t.prefix, key), data)
+		err = r.Redis.Send("RPUSH", fmt.Sprintf("%s:storage:%s", s.prefix, key), data)
 		if err != nil {
 			return
 		}
-		err = r.Redis.Send("ZADD", t.timerKey, ontime, key)
+		err = r.Redis.Send("ZADD", s.timerKey, ontime, key)
 		if err != nil {
 			return
 		}
@@ -59,40 +58,19 @@ func (t *Timer) Push(ontime int64, key string, data []byte) (err error) {
 			return
 		}
 	})
+	if e != nil {
+		err = e
+	}
 	return
 }
 
-func (t *Timer) Pop() (string, [][]byte, error) {
-	var err error
-	var key string
+func (s *RedisStorage) Load(key string) (data [][]byte, err error) {
 	var reply []interface{}
-	err = t.redis.Do(func(i multiplexer.Instance) {
+	e := s.redis.Do(func(i multiplexer.Instance) {
 		r := i.(*broker.RedisInstance_)
 		r.Conn.SetDeadline(time.Now().Add(broker.NetworkTimeout))
 
-		reply, err = redis.Values(r.Redis.Do("ZRANGEBYSCORE", t.timerKey, "-inf", "+inf", "LIMIT", 0, 1, "WITHSCORES"))
-		if err != nil {
-			return
-		}
-		if len(reply) == 0 {
-			return
-		}
-
-		key, err = redis.String(reply[0], nil)
-		if err != nil {
-			return
-		}
-		var ontime int64
-		ontime, err = redis.Int64(reply[1], nil)
-		if err != nil {
-			return
-		}
-
-		if ontime > time.Now().Unix() {
-			return
-		}
-
-		storageKey := fmt.Sprintf("%s:storage:%s", t.prefix, key)
+		storageKey := fmt.Sprintf("%s:storage:%s", s.prefix, key)
 		reply, err = redis.Values(r.Redis.Do("LRANGE", storageKey, 0, -1))
 		if err != nil {
 			return
@@ -101,7 +79,7 @@ func (t *Timer) Pop() (string, [][]byte, error) {
 		if err != nil {
 			return
 		}
-		err = r.Redis.Send("ZREM", t.timerKey, key)
+		err = r.Redis.Send("ZREM", s.timerKey, key)
 		if err != nil {
 			return
 		}
@@ -114,41 +92,106 @@ func (t *Timer) Pop() (string, [][]byte, error) {
 			return
 		}
 	})
-
-	if err != nil || len(reply) == 9 {
-		return "", nil, err
+	if e != nil {
+		err = e
+	}
+	if err != nil || len(reply) == 0 {
+		return
 	}
 
-	ret := make([][]byte, len(reply))
+	data = make([][]byte, len(reply))
 	for i, d := range reply {
-		ret[i], err = redis.Bytes(d, nil)
+		data[i], err = redis.Bytes(d, nil)
 		if err != nil {
-			return "", nil, err
+			return
 		}
 	}
-	return key, ret, nil
+
+	return
 }
 
-func (t *Timer) NextWakeup() (time.Duration, error) {
-	var err error
-	var reply []interface{}
-	err = t.redis.Do(func(i multiplexer.Instance) {
+func (s *RedisStorage) Ontime(key string) (ontime int64, err error) {
+	e := s.redis.Do(func(i multiplexer.Instance) {
 		r := i.(*broker.RedisInstance_)
 		r.Conn.SetDeadline(time.Now().Add(broker.NetworkTimeout))
 
-		reply, err = redis.Values(r.Redis.Do("ZRANGEBYSCORE", t.timerKey, "-inf", "+inf", "LIMIT", 0, 1, "WITHSCORES"))
+		ontime, err = redis.Int64(r.Redis.Do("ZSCORE", s.timerKey, key))
 	})
+	if e != nil {
+		err = e
+	}
+	if err == redis.ErrNil {
+		ontime, err = 0, nil
+	}
+	return
+}
+
+func (s *RedisStorage) Next() (key string, err error) {
+	var reply []interface{}
+	e := s.redis.Do(func(i multiplexer.Instance) {
+		r := i.(*broker.RedisInstance_)
+		r.Conn.SetDeadline(time.Now().Add(broker.NetworkTimeout))
+
+		reply, err = redis.Values(r.Redis.Do("ZRANGEBYSCORE", s.timerKey, "-inf", "+inf", "LIMIT", 0, 1, "WITHSCORES"))
+	})
+	if e != nil {
+		err = e
+	}
 	if err != nil || len(reply) == 0 {
-		return -1, err
+		return
 	}
 
-	ontime, err := redis.Int64(reply[1], nil)
+	key, err = redis.String(reply[0], nil)
+
+	return
+}
+
+type Timer struct {
+	updateType updateType
+	storage    TimerStorage
+}
+
+func NewTimer(updateType updateType, storage TimerStorage) (*Timer, error) {
+	switch updateType {
+	case Always:
+	case Never:
+	default:
+		return nil, fmt.Errorf("invalid update type: %s", updateType)
+	}
+	return &Timer{
+		updateType: updateType,
+		storage:    storage,
+	}, nil
+}
+
+func (t *Timer) Push(ontime int64, key string, data []byte) error {
+	return t.storage.Save(ontime, key, data)
+}
+
+func (t *Timer) Pop() (string, [][]byte, error) {
+	key, err := t.storage.Next()
+	if err != nil {
+		return "", nil, err
+	}
+	data, err := t.storage.Load(key)
+	if err != nil {
+		return "", nil, err
+	}
+	return key, data, nil
+}
+
+func (t *Timer) NextWakeup() (time.Duration, error) {
+	key, err := t.storage.Next()
 	if err != nil {
 		return -1, err
 	}
-	ret := time.Unix(ontime, 0).Sub(time.Now())
-	if ret < 0 {
-		ret = 0
+	ontime, err := t.storage.Ontime(key)
+	if err != nil {
+		return -1, err
 	}
-	return ret, nil
+	next := time.Unix(ontime, 0).Sub(time.Now())
+	if next < 0 {
+		next = 0
+	}
+	return next, nil
 }
