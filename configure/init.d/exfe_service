@@ -14,8 +14,8 @@
 
 user="www-data:www-data"
 cmd="/exfe/exfebus/bin/service -config=/exfe/exfebus/exfe.json"
+name="exfe_service"
 
-name=`basename $0`
 pid_file="/var/run/exfebus/${name}.pid"
 stdout_log="/var/log/exfebus/${name}.log"
 stderr_log="/var/log/exfebus/${name}.err"
