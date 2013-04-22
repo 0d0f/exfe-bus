@@ -27,11 +27,7 @@ type LiveService struct {
 	broadcast map[string]*broadcast.Broadcast
 }
 
-func NewLive(config *model.Config) (http.Handler, error) {
-	platform, err := broker.NewPlatform(config)
-	if err != nil {
-		return nil, err
-	}
+func NewLive(config *model.Config, platform *broker.Platform) (*LiveService, error) {
 	service := &LiveService{
 		config:    config,
 		here:      here.New(config.Here.Threshold, config.Here.SignThreshold, time.Duration(config.Here.TimeoutInSecond)*time.Second),
@@ -60,7 +56,7 @@ func NewLive(config *model.Config) (http.Handler, error) {
 		}
 	}()
 
-	return rest.New(service)
+	return service, nil
 }
 
 func (h LiveService) HandleCard(data here.Data) []string {

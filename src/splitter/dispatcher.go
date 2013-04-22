@@ -12,14 +12,14 @@ type Splitter struct {
 
 	Split rest.Processor `path:"" method:"POST"`
 
-	client *gobus.Dispatcher
-	config *model.Config
+	dispatcher *gobus.Dispatcher
+	config     *model.Config
 }
 
-func NewSplitter(client *gobus.Dispatcher, config *model.Config) *Splitter {
+func NewSplitter(config *model.Config, dispatcher *gobus.Dispatcher) *Splitter {
 	return &Splitter{
-		client: client,
-		config: config,
+		dispatcher: dispatcher,
+		config:     config,
 	}
 }
 
@@ -27,7 +27,7 @@ func (d Splitter) HandleSplit(pack BigPack) {
 	for p := range pack.Each() {
 		url := fmt.Sprintf("bus://exfe/v3/queue/%s/%s/%s", p.MergeKey, p.Method, p.Service)
 		var reply interface{}
-		err := d.client.Do(url, "POST", p.Data, &reply)
+		err := d.dispatcher.Do(url, "POST", p.Data, &reply)
 		if err != nil {
 			d.config.Log.Err("|dispatcher|%s|%s|%v|", url, err, p.Data)
 		}

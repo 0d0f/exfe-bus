@@ -46,10 +46,10 @@ func main() {
 	}
 	dispatcher := gobus.NewDispatcher(table)
 
-	url := fmt.Sprintf("%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
-	log.Info("start at %s", url)
+	addr := fmt.Sprintf("%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
+	log.Info("start at %s", addr)
 
-	bus, err := gobus.NewServer(url, log)
+	bus, err := gobus.NewServer(addr, log)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)
@@ -63,49 +63,41 @@ func main() {
 		os.Exit(-1)
 		return
 	}
-	log.Info("register status")
+	log.Info("register Status")
+
+	register := func(name string, service interface{}, err error) {
+		if err != nil {
+			log.Crit("create %s failed: %s", name, err)
+			os.Exit(-1)
+			return
+		}
+		err = bus.RegisterRestful(service)
+		if err != nil {
+			log.Crit("regiest %s failed: %s", name, err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register %s", name)
+	}
 
 	if config.ExfeService.Services.Live {
-		live, err := NewLive(&config)
-		if err != nil {
-			log.Crit("create live failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		err = bus.RegisterRestful(live)
-		if err != nil {
-			log.Crit("regiest live failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register live")
+		live, err := NewLive(&config, platform)
+		register("live", live, err)
 	}
 
 	if config.ExfeService.Services.Token {
 		token, err := NewToken(&config, db)
-		if err != nil {
-			log.Crit("create token failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		err = bus.RegisterRestful(token)
-		if err != nil {
-			log.Crit("regiest token failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register Token")
+		register("token", token, err)
 	}
 
 	if config.ExfeService.Services.Splitter {
-		splitter := splitter.NewSplitter(dispatcher, &config)
-		err = bus.RegisterRestful(splitter)
-		if err != nil {
-			log.Crit("regiest splitter failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register splitter")
+		splitter := splitter.NewSplitter(&config, dispatcher)
+		register("splitter", splitter, nil)
+	}
+
+	if config.ExfeService.Services.Notifier {
+		notifier := NewV3Notifier(localTemplate, &config, platform)
+		register("notifier", notifier, nil)
 	}
 
 	if config.ExfeService.Services.Iom {
@@ -146,15 +138,6 @@ func main() {
 			return
 		}
 		log.Info("register Notifier")
-
-		notifierv3 := NewV3Notifier(localTemplate, &config, platform)
-		err = bus.RegisterRestful(notifierv3)
-		if err != nil {
-			log.Crit("gobus launch failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register Notifier v3")
 	}
 
 	go func() {
