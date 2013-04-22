@@ -20,7 +20,7 @@ type Queue struct {
 	timeout    time.Duration
 	dispatcher *gobus.Dispatcher
 
-	Timer rest.Processor `path:"/timer" method:"POST"`
+	Timer rest.Processor `path:"/timer/:merge_key/:method/*" method:"POST"`
 	timer *delayrepo.Timer
 }
 
@@ -49,7 +49,7 @@ func (q *Queue) Do(key string, data [][]byte) {
 		q.config.Log.Err("pop error key: %s", key)
 		return
 	}
-	method, service, mergeKey := splits[0], splits[1], splits[2]
+	method, service, mergeKey := splits[0], "bus://"+splits[1], splits[2]
 
 	args := make([]interface{}, 0)
 	for _, d := range data {
@@ -59,7 +59,7 @@ func (q *Queue) Do(key string, data [][]byte) {
 			q.config.Log.Err("can't unmarshal %s(%+v)", err, d)
 			continue
 		}
-		if mergeKey != "" {
+		if mergeKey != "-" {
 			args = append(args, arg)
 		} else {
 			var reply interface{}
@@ -70,7 +70,7 @@ func (q *Queue) Do(key string, data [][]byte) {
 			}
 		}
 	}
-	if mergeKey != "" {
+	if mergeKey != "-" {
 		var reply interface{}
 		err := q.dispatcher.Do(service, method, args, &reply)
 		if err != nil {
@@ -96,10 +96,12 @@ type QueueData struct {
 }
 
 // example:
-// > curl -v "http://127.0.0.1:23334/v3/queue/timer?method=POST&service=bus%3A%2F%2Fexfe_service%2Fmessage&merge_key=123" -d '{"type":"always","ontime":1366615888,"data":{"abc":3}}'
+// POST to bus://exfe_service/message with merge_key 123, always send on 1366615888, data is {"abc":123}
+// > curl -v "http://127.0.0.1:23334/v3/queue/timer/123/POST/exfe_service/message" -d '{"type":"always","ontime":1366615888,"data":{"abc":123}}'
+//
+// if no merge(send one by one), set merge_key to "-"
 func (q Queue) HandleTimer(push QueueData) {
-	query := q.Request().URL.Query()
-	method, service, mergeKey := query.Get("method"), query.Get("service"), query.Get("merge_key")
+	method, service, mergeKey := q.Vars()["method"], q.Vars()[""], q.Vars()["merge_key"]
 	if method == "" {
 		q.Error(http.StatusBadRequest, fmt.Errorf("need method"))
 		return
