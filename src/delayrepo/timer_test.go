@@ -1,6 +1,7 @@
 package delayrepo
 
 import (
+	"broker"
 	"fmt"
 	"github.com/stretchrcom/testify/assert"
 	"sort"
@@ -39,7 +40,7 @@ func newFakeStorage() *FakeStorage {
 	}
 }
 
-func (s *FakeStorage) Save(ontime int64, key string, data []byte) error {
+func (s *FakeStorage) Save(iupdate broker.UpdateType, ontime int64, key string, data []byte) error {
 	exist := false
 	for i := range s.timer {
 		if s.timer[i].key == key {
@@ -81,25 +82,25 @@ func (s *FakeStorage) Next() (string, error) {
 
 func TestTimer(t *testing.T) {
 	s := newFakeStorage()
-	strategy, err := NewTimer(Always, s)
+	timer, err := NewTimer(s)
 	if err != nil {
 		t.Fatal(err)
 	}
 	ontime := time.Now().Add(time.Second).Unix()
-	err = strategy.Push(ontime, "123", []byte("a"))
+	err = timer.push(broker.Always, ontime, "123", []byte("a"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = strategy.Push(ontime, "123", []byte("b"))
+	err = timer.push(broker.Always, ontime, "123", []byte("b"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = strategy.Push(ontime, "123", []byte("c"))
+	err = timer.push(broker.Always, ontime, "123", []byte("c"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	wait, err := strategy.NextWakeup()
+	wait, err := timer.NextWakeup()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +108,7 @@ func TestTimer(t *testing.T) {
 
 	time.Sleep(wait)
 
-	key, data, err := strategy.Pop()
+	key, data, err := timer.pop()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,11 +119,11 @@ func TestTimer(t *testing.T) {
 
 func TestEmptyTimer(t *testing.T) {
 	s := newFakeStorage()
-	strategy, err := NewTimer(Always, s)
+	timer, err := NewTimer(s)
 	if err != nil {
 		t.Fatal(err)
 	}
-	wait, err := strategy.NextWakeup()
+	wait, err := timer.NextWakeup()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,16 +132,16 @@ func TestEmptyTimer(t *testing.T) {
 
 func TestTimerUpdate(t *testing.T) {
 	s := newFakeStorage()
-	strategy, err := NewTimer(Always, s)
+	timer, err := NewTimer(s)
 	if err != nil {
 		t.Fatal(err)
 	}
 	ontime := time.Now().Add(time.Second * 10).Unix()
-	err = strategy.Push(ontime, "123", []byte("a"))
+	err = timer.push(broker.Always, ontime, "123", []byte("a"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	wait, err := strategy.NextWakeup()
+	wait, err := timer.NextWakeup()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,11 +150,11 @@ func TestTimerUpdate(t *testing.T) {
 	}
 
 	ontime = time.Now().Unix()
-	err = strategy.Push(ontime, "123", []byte("b"))
+	err = timer.push(broker.Always, ontime, "123", []byte("b"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	wait, err = strategy.NextWakeup()
+	wait, err = timer.NextWakeup()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +164,7 @@ func TestTimerUpdate(t *testing.T) {
 
 	time.Sleep(wait)
 
-	key, data, err := strategy.Pop()
+	key, data, err := timer.pop()
 	if err != nil {
 		t.Fatal(err)
 	}

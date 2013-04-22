@@ -66,6 +66,137 @@ func (r *RedisPool) Close() error {
 	return r.homo.Close()
 }
 
+type UpdateType string
+
+const (
+	Always UpdateType = "always"
+	Once              = "once"
+)
+
+type QueueRedisStorage struct {
+	redis    *RedisPool
+	prefix   string
+	timerKey string
+}
+
+func NewQueueRedisStorage(prefix string, redis *RedisPool) *QueueRedisStorage {
+	return &QueueRedisStorage{
+		redis:    redis,
+		prefix:   prefix,
+		timerKey: fmt.Sprintf("%s:timer", prefix),
+	}
+}
+
+func (s *QueueRedisStorage) Save(updateType UpdateType, ontime int64, key string, data []byte) (err error) {
+	e := s.redis.Do(func(i multiplexer.Instance) {
+		r := i.(*RedisInstance_)
+		r.Conn.SetDeadline(time.Now().Add(NetworkTimeout))
+
+		err = r.Redis.Send("MULTI")
+		if err != nil {
+			return
+		}
+		err = r.Redis.Send("RPUSH", fmt.Sprintf("%s:storage:%s", s.prefix, key), data)
+		if err != nil {
+			return
+		}
+		err = r.Redis.Send("ZADD", s.timerKey, ontime, key)
+		if err != nil {
+			return
+		}
+		_, err = r.Redis.Do("EXEC")
+		if err != nil {
+			return
+		}
+	})
+	if e != nil {
+		err = e
+	}
+	return
+}
+
+func (s *QueueRedisStorage) Load(key string) (data [][]byte, err error) {
+	var reply []interface{}
+	e := s.redis.Do(func(i multiplexer.Instance) {
+		r := i.(*RedisInstance_)
+		r.Conn.SetDeadline(time.Now().Add(NetworkTimeout))
+
+		storageKey := fmt.Sprintf("%s:storage:%s", s.prefix, key)
+		reply, err = redis.Values(r.Redis.Do("LRANGE", storageKey, 0, -1))
+		if err != nil {
+			return
+		}
+		err = r.Redis.Send("MULTI")
+		if err != nil {
+			return
+		}
+		err = r.Redis.Send("ZREM", s.timerKey, key)
+		if err != nil {
+			return
+		}
+		err = r.Redis.Send("DEL", storageKey)
+		if err != nil {
+			return
+		}
+		_, err = r.Redis.Do("EXEC")
+		if err != nil {
+			return
+		}
+	})
+	if e != nil {
+		err = e
+	}
+	if err != nil || len(reply) == 0 {
+		return
+	}
+
+	data = make([][]byte, len(reply))
+	for i, d := range reply {
+		data[i], err = redis.Bytes(d, nil)
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func (s *QueueRedisStorage) Ontime(key string) (ontime int64, err error) {
+	e := s.redis.Do(func(i multiplexer.Instance) {
+		r := i.(*RedisInstance_)
+		r.Conn.SetDeadline(time.Now().Add(NetworkTimeout))
+
+		ontime, err = redis.Int64(r.Redis.Do("ZSCORE", s.timerKey, key))
+	})
+	if e != nil {
+		err = e
+	}
+	if err == redis.ErrNil {
+		ontime, err = 0, nil
+	}
+	return
+}
+
+func (s *QueueRedisStorage) Next() (key string, err error) {
+	var reply []interface{}
+	e := s.redis.Do(func(i multiplexer.Instance) {
+		r := i.(*RedisInstance_)
+		r.Conn.SetDeadline(time.Now().Add(NetworkTimeout))
+
+		reply, err = redis.Values(r.Redis.Do("ZRANGEBYSCORE", s.timerKey, "-inf", "+inf", "LIMIT", 0, 1, "WITHSCORES"))
+	})
+	if e != nil {
+		err = e
+	}
+	if err != nil || len(reply) == 0 {
+		return
+	}
+
+	key, err = redis.String(reply[0], nil)
+
+	return
+}
+
 // old
 
 type RedisInstance struct {

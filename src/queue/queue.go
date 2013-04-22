@@ -4,10 +4,12 @@ import (
 	"broker"
 	"delayrepo"
 	"encoding/json"
+	"fmt"
 	"github.com/googollee/go-rest"
 	"gobus"
 	"model"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -19,7 +21,7 @@ type Queue struct {
 	dispatcher *gobus.Dispatcher
 
 	Timer rest.Processor `path:"/timer" method:"POST"`
-	timer *delayrepo.Repository
+	timer *delayrepo.Timer
 }
 
 func NewQueue(config *model.Config, redis *broker.RedisPool, dispatcher *gobus.Dispatcher) (*Queue, error) {
@@ -30,36 +32,38 @@ func NewQueue(config *model.Config, redis *broker.RedisPool, dispatcher *gobus.D
 	}
 
 	config.Log.Notice("launching timer")
-	storage := delayrepo.NewTimerStorage("bus:queue", redis)
-	timer, err := delayrepo.NewTimer(delayrepo.Always, storage)
+	storage := broker.NewQueueRedisStorage("bus:v3:queue", redis)
+	timer, err := delayrepo.NewTimer(storage)
 	if err != nil {
 		return nil, err
 	}
-	ret.timer = delayrepo.New(timer, ret, ret.timeout)
-	go ret.timer.Serve()
+	ret.timer = timer
+	go timer.Serve(ret, ret.timeout)
 
 	return ret, nil
 }
 
 func (q *Queue) Do(key string, data [][]byte) {
-	service, method, mergeKey, _, err := model.QueueParseKey(key)
-	if err != nil {
-		q.config.Log.Err("pop error: %s")
+	splits := strings.Split(key, ",")
+	if len(splits) != 3 {
+		q.config.Log.Err("pop error key: %s", key)
+		return
 	}
+	method, service, mergeKey := splits[0], splits[1], splits[2]
 
-	arg := make([]interface{}, 0)
+	args := make([]interface{}, 0)
 	for _, d := range data {
-		var i interface{}
-		err := json.Unmarshal(d, &i)
+		var arg interface{}
+		err := json.Unmarshal(d, &arg)
 		if err != nil {
 			q.config.Log.Err("can't unmarshal %s(%+v)", err, d)
 			continue
 		}
 		if mergeKey != "" {
-			arg = append(arg, d)
+			args = append(args, arg)
 		} else {
-			var i interface{}
-			err := q.dispatcher.Do(service, method, d, &i)
+			var reply interface{}
+			err := q.dispatcher.Do(service, method, arg, &reply)
 			if err != nil {
 				j, _ := json.Marshal(arg)
 				q.config.Log.Err("call %s|%s failed(%s) with %s", service, method, err, string(j))
@@ -67,10 +71,10 @@ func (q *Queue) Do(key string, data [][]byte) {
 		}
 	}
 	if mergeKey != "" {
-		var i interface{}
-		err := q.dispatcher.Do(service, "POST", arg, &i)
+		var reply interface{}
+		err := q.dispatcher.Do(service, method, args, &reply)
 		if err != nil {
-			j, _ := json.Marshal(arg)
+			j, _ := json.Marshal(args)
 			q.config.Log.Err("call %s|%s failed(%s) with %s", service, method, err, string(j))
 		}
 	}
@@ -85,20 +89,32 @@ func (q *Queue) Quit() {
 	q.timer.Quit()
 }
 
-func (q Queue) HandleTimer(push model.QueuePush) {
-	err := push.Init(q.config.ExfeQueue.Priority)
+type QueueData struct {
+	Type   delayrepo.UpdateType `json:"type"`
+	Ontime int64                `json:"ontime"`
+	Data   interface{}          `json:"data"`
+}
+
+func (q Queue) HandleTimer(push QueueData) {
+	query := q.Request().URL.Query()
+	method, service, mergeKey := query.Get("method"), query.Get("service"), query.Get("merge_key")
+	if method == "" {
+		q.Error(http.StatusBadRequest, fmt.Errorf("need method"))
+		return
+	}
+	if service == "" {
+		q.Error(http.StatusBadRequest, fmt.Errorf("need service"))
+		return
+	}
+
+	buf, err := json.Marshal(push.Data)
 	if err != nil {
 		q.Error(http.StatusBadRequest, err)
 		return
 	}
-	for data := range push.Each() {
-		buf, err := json.Marshal(data.Data)
-		if err != nil {
-			q.Error(http.StatusBadRequest, err)
-		}
-		err = q.timer.Push(push.Ontime, data.Key, buf)
-		if err != nil {
-			q.Error(http.StatusInternalServerError, err)
-		}
+	err = q.timer.Push(push.Type, push.Ontime, fmt.Sprintf("%s,%s,%s", method, service, mergeKey), buf)
+	if err != nil {
+		q.Error(http.StatusInternalServerError, err)
+		return
 	}
 }
