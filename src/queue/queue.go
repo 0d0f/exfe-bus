@@ -95,6 +95,8 @@ type QueueData struct {
 	Data   interface{}          `json:"data"`
 }
 
+// example:
+// > curl -v "http://127.0.0.1:23334/v3/queue/timer?method=POST&service=bus%3A%2F%2Fexfe_service%2Fmessage&merge_key=123" -d '{"type":"always","ontime":1366615888,"data":{"abc":3}}'
 func (q Queue) HandleTimer(push QueueData) {
 	query := q.Request().URL.Query()
 	method, service, mergeKey := query.Get("method"), query.Get("service"), query.Get("merge_key")
