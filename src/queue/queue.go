@@ -32,7 +32,7 @@ func NewQueue(config *model.Config, redis *broker.RedisPool, dispatcher *gobus.D
 	}
 
 	config.Log.Notice("launching timer")
-	storage := broker.NewQueueRedisStorage("bus:v3:queue", redis)
+	storage := broker.NewQueueRedisStorage("exfe:v3:queue", redis)
 	timer, err := delayrepo.NewTimer(storage)
 	if err != nil {
 		return nil, err
