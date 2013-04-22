@@ -60,6 +60,7 @@ type Config struct {
 			Thirdpart bool `json:"thirdpart"`
 			Notifier  bool `json:"notifier"`
 			Live      bool `json:"live"`
+			Splitter  bool `json:"splitter"`
 		} `json:"services"`
 	} `json:"exfe_service"`
 	ExfeQueue struct {

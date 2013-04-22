@@ -3,6 +3,7 @@ package gobus
 import (
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 type urls struct {
@@ -80,11 +81,14 @@ func NewDispatcher(table Table) *Dispatcher {
 }
 
 func (d *Dispatcher) DoWithTicket(ticket, addr, method string, arg, reply interface{}) error {
-	url, err := d.table.Find(addr, ticket)
-	if err != nil {
-		return err
+	if !strings.HasPrefix(addr, "http") {
+		url, err := d.table.Find(addr, ticket)
+		if err != nil {
+			return err
+		}
+		addr = url
 	}
-	return d.client.Do(url, method, arg, reply)
+	return d.client.Do(addr, method, arg, reply)
 }
 
 func (d *Dispatcher) Do(addr, method string, arg, reply interface{}) error {

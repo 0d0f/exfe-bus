@@ -48,13 +48,14 @@
     "bus://exfe_service/thirdpart/message": {"_default": "http://127.0.0.1:23333/thirdpart/message"},
     "bus://exfe_service/thirdpart/photographers": {"_default": "http://127.0.0.1:23333/thirdpart/photographers"},
     "bus://exfe_queue/head10": {"_default": "http://127.0.0.1:23334/head10"},
-    "bus://exfe_queue/instant": {"_default": "http://127.0.0.1:23334/instant"}
+    "bus://exfe_queue/instant": {"_default": "http://127.0.0.1:23334/instant"},
+    "bus://exfe/v3/queue": {_default": "http://127.0.0.1:23334/v3/queue"}
   },
 
   "exfe_service": {
     "addr": "127.0.0.1",
     "port": 23333,
-    "services": {"token": true, "iom":true, "thirdpart":true, "notifier":true, "live": true}
+    "services": {"token": true, "iom":true, "thirdpart":true, "notifier":true, "live": true, "splitter": true}
   },
   "exfe_queue": {
     "addr": "127.0.0.1",

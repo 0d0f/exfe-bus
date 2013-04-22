@@ -9,6 +9,7 @@ import (
 	"gobus"
 	"model"
 	"os"
+	"splitter"
 )
 
 func main() {
@@ -37,6 +38,13 @@ func main() {
 		os.Exit(-1)
 		return
 	}
+	table, err := gobus.NewTable(config.Dispatcher)
+	if err != nil {
+		log.Crit("can't create table: %s", err)
+		os.Exit(-1)
+		return
+	}
+	dispatcher := gobus.NewDispatcher(table)
 
 	url := fmt.Sprintf("%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", url)
@@ -64,7 +72,7 @@ func main() {
 			os.Exit(-1)
 			return
 		}
-		err = bus.RegisterPrefix("/v3/live", live)
+		err = bus.RegisterRestful(live)
 		if err != nil {
 			log.Crit("regiest live failed: %s", err)
 			os.Exit(-1)
@@ -87,6 +95,17 @@ func main() {
 			return
 		}
 		log.Info("register Token")
+	}
+
+	if config.ExfeService.Services.Splitter {
+		splitter := splitter.NewSplitter(dispatcher, &config)
+		err = bus.RegisterRestful(splitter)
+		if err != nil {
+			log.Crit("regiest splitter failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		log.Info("register splitter")
 	}
 
 	if config.ExfeService.Services.Iom {

@@ -20,7 +20,7 @@ type Queue struct {
 	timeout    time.Duration
 	dispatcher *gobus.Dispatcher
 
-	Timer rest.Processor `path:"/timer/:merge_key/:method/*service" method:"POST"`
+	Timer rest.Processor `path:"/:merge_key/:method/*service" method:"POST"`
 	timer *delayrepo.Timer
 }
 
@@ -97,7 +97,7 @@ type QueueData struct {
 
 // example:
 // POST to bus://exfe_service/message with merge_key 123, always send on 1366615888, data is {"abc":123}
-// > curl -v "http://127.0.0.1:23334/v3/queue/timer/123/POST/exfe_service/message" -d '{"type":"always","ontime":1366615888,"data":{"abc":123}}'
+// > curl -v "http://127.0.0.1:23334/v3/queue/123/POST/exfe_service/message" -d '{"type":"always","ontime":1366615888,"data":{"abc":123}}'
 //
 // if no merge(send one by one), set merge_key to "-"
 func (q Queue) HandleTimer(push QueueData) {
