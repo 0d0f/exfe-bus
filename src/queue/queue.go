@@ -20,7 +20,7 @@ type Queue struct {
 	timeout    time.Duration
 	dispatcher *gobus.Dispatcher
 
-	Timer rest.Processor `path:"/timer/:merge_key/:method/*" method:"POST"`
+	Timer rest.Processor `path:"/timer/:merge_key/:method/*service" method:"POST"`
 	timer *delayrepo.Timer
 }
 
@@ -101,7 +101,7 @@ type QueueData struct {
 //
 // if no merge(send one by one), set merge_key to "-"
 func (q Queue) HandleTimer(push QueueData) {
-	method, service, mergeKey := q.Vars()["method"], q.Vars()[""], q.Vars()["merge_key"]
+	method, service, mergeKey := q.Vars()["method"], q.Vars()["service"], q.Vars()["merge_key"]
 	if method == "" {
 		q.Error(http.StatusBadRequest, fmt.Errorf("need method"))
 		return
