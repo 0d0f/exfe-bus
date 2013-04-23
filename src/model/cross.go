@@ -41,7 +41,7 @@ func (c Cross) String() string {
 }
 
 func (c Cross) Ics(config *Config, to Recipient) string {
-	url := fmt.Sprintf("%s/v2/ics/crosses/%d?token=%s", config.SiteApi, c.ID, to.Data["invitation_token"])
+	url := fmt.Sprintf("%s/v2/ics/crosses/%d?token=%s", config.SiteApi, c.ID, to.Token)
 	resp, err := http.Get(url)
 	if err != nil {
 		return ""
@@ -93,11 +93,11 @@ func (c Cross) Timezone(to Recipient) string {
 }
 
 func (c Cross) Link(to Recipient, config *Config) string {
-	return fmt.Sprintf("%s/#!token=%s", config.SiteUrl, to.Data["invitation_token"])
+	return fmt.Sprintf("%s/#!token=%s", config.SiteUrl, to.Token)
 }
 
 func (c Cross) PublicLink(to Recipient, config *Config) string {
-	token := to.Data["invitation_token"]
+	token := to.Token
 	if len(token) > 5 {
 		token = token[1:5]
 	}

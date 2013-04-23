@@ -43,27 +43,13 @@ func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 		"Cross":  cross,
 		"Config": c.config,
 	}
-	for _, identityId := range to.IdentityIds {
-		id, poster, err := identityId.Split()
-		if err != nil {
-			c.config.Log.Crit("%s", err)
-			continue
-		}
-		to.ExternalID = id
-		to.ExternalUsername = id
-		to.Provider = poster
-		arg["To"] = to
-
-		text, err := GenerateContent(c.localTemplate, "cross_digest_v3", poster, to.Language, arg)
-		if err != nil {
-			c.config.Log.Crit("%s with arg(%+v)", err, cross)
-			continue
-		}
-		_, err = c.platform.Send(to, text)
-		if err != nil {
-			c.config.Log.Debug("summary send failed: %s", err)
-			continue
-		}
+	text, err := GenerateContent(c.localTemplate, "cross_digest_v3", to.Provider, to.Language, arg)
+	if err != nil {
+		return err
+	}
+	_, err = c.platform.Send(to, text)
+	if err != nil {
+		return err
 	}
 	return nil
 }
