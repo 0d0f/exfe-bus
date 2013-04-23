@@ -49,7 +49,7 @@ func (q *Queue) Do(key string, data [][]byte) {
 		q.config.Log.Err("pop error key: %s", key)
 		return
 	}
-	method, service, mergeKey := splits[0], "bus://"+splits[1], splits[2]
+	method, service, mergeKey := splits[0], "http://"+splits[1], splits[2]
 
 	args := make([]interface{}, 0)
 	for _, d := range data {
@@ -63,19 +63,19 @@ func (q *Queue) Do(key string, data [][]byte) {
 			args = append(args, arg)
 		} else {
 			var reply interface{}
-			err := q.dispatcher.Do(service, method, arg, &reply)
+			_, err := broker.RestHttp(method, service, arg, &reply)
 			if err != nil {
 				j, _ := json.Marshal(arg)
-				q.config.Log.Err("call %s|%s failed(%s) with %s", service, method, err, string(j))
+				q.config.Log.Err("|queue|%s|%s|%s|%s", method, service, err, string(j))
 			}
 		}
 	}
 	if mergeKey != "-" {
 		var reply interface{}
-		err := q.dispatcher.Do(service, method, args, &reply)
+		_, err := broker.RestHttp(method, service, args, &reply)
 		if err != nil {
 			j, _ := json.Marshal(args)
-			q.config.Log.Err("call %s|%s failed(%s) with %s", service, method, err, string(j))
+			q.config.Log.Err("|queue|%s|%s|%s|%s", method, service, err, string(j))
 		}
 	}
 }
