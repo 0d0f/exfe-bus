@@ -114,6 +114,12 @@ func (q Queue) HandleTimer(data string) {
 		q.Error(http.StatusBadRequest, fmt.Errorf("invalid ontime: %s", ontimeStr))
 		return
 	}
+	if ontime == 0 {
+		ontime = time.Now().Unix()
+	}
+	if mergeKey == "-" {
+		mergeKey = fmt.Sprintf("-%d-", ontime)
+	}
 
 	err = q.timer.Push(delayrepo.UpdateType(updateType), ontime, fmt.Sprintf("%s,%s,%s", method, service, mergeKey), []byte(data))
 	if err != nil {
