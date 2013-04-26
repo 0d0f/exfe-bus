@@ -12,6 +12,7 @@ type Card struct {
 	Avatar     string           `json:"avatar"`
 	Bio        string           `json:"bio"`
 	Identities []model.Identity `json:"identities"`
+	Timestamp  int64            `json:"timestamp"`
 }
 
 type Data struct {
