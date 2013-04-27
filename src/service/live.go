@@ -113,8 +113,7 @@ func (h LiveService) HandleStreaming(s rest.Stream) {
 	h.Header().Set("Cache-Control", "no-cache")
 	token := h.Request().URL.Query().Get("token")
 	if !h.here.Exist(token) {
-		h.WriteHeader(http.StatusForbidden)
-		s.Write("invalid token")
+		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
 		return
 	}
 	c := make(chan interface{})
