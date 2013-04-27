@@ -56,10 +56,11 @@ func (q *Queue) Do(key string, datas [][]byte) {
 		return
 	}
 	method, service, mergeKey := splits[0], "http://"+splits[1], splits[2]
+	needMerge := mergeKey[0] != '-'
 
 	args := []byte("[")
 	for _, data := range datas {
-		if mergeKey != "-" {
+		if needMerge {
 			args = append(args, data...)
 			args = append(args, []byte(",")...)
 		} else {
@@ -71,7 +72,7 @@ func (q *Queue) Do(key string, datas [][]byte) {
 			}
 		}
 	}
-	if mergeKey != "-" && len(args) > 1 {
+	if needMerge && len(args) > 1 {
 		args[len(args)-1] = byte(']')
 		resp, err := broker.Http(method, service, "application/json", args)
 		if err != nil {
