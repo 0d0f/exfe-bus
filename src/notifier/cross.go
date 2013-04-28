@@ -43,7 +43,7 @@ func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 		"Cross":  cross,
 		"Config": c.config,
 	}
-	text, err := GenerateContent(c.localTemplate, "cross_digest_v3", to.Provider, to.Language, arg)
+	text, err := GenerateContent(c.localTemplate, "v3_cross_digest", to.Provider, to.Language, arg)
 	if err != nil {
 		return err
 	}
