@@ -56,7 +56,7 @@ func (c Cross) Ics(config *Config, to Recipient) string {
 	return base64.StdEncoding.EncodeToString(b)
 }
 
-func (c Cross) TitleBackground(config *Config) (string, error) {
+func (c Cross) TitleBackground(config *Config, hasRibbon bool) (string, error) {
 	bgUrl := c.findBackground(config)
 	if bgUrl == "" {
 		return "", nil
@@ -70,8 +70,13 @@ func (c Cross) TitleBackground(config *Config) (string, error) {
 		return "", nil
 	}
 
+	ribbon := config.Ribbon
+	if !hasRibbon {
+		ribbon = nil
+	}
+
 	buf := bytes.NewBuffer(nil)
-	err = MakeTitle(buf, bg.Body, config.Pin, nil, 640, 150, 199, 50, 2, c.Place.Lat, c.Place.Lng, 80)
+	err = MakeTitle(buf, bg.Body, config.Pin, ribbon, 640, 150, 199, 50, 2, c.Place.Lat, c.Place.Lng, 80)
 	if err != nil {
 		return "", nil
 	}
