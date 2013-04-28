@@ -2,12 +2,13 @@ package main
 
 import (
 	"broker"
-	"bytes"
 	"fmt"
 	"formatter"
 	"github.com/googollee/go-rest"
 	"gobus"
-	"io/ioutil"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"model"
 	"net/http"
 	"notifier"
@@ -22,24 +23,24 @@ type V3Notifier struct {
 }
 
 func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) (*V3Notifier, error) {
-	pin, err := os.Open(fmt.Sprintf("%s/image_data/map_pin_blue@2x.png", config.TemplatePath))
+	pin, err := os.Open(fmt.Sprintf("%s/image_data/map_pin_blue.png", config.TemplatePath))
 	if err != nil {
 		return nil, err
 	}
-	b, err := ioutil.ReadAll(pin)
+	defer pin.Close()
+	config.Pin, _, err = image.Decode(pin)
 	if err != nil {
 		return nil, err
 	}
-	config.Pin = bytes.NewBuffer(b)
-	ribbon, err := os.Open(fmt.Sprintf("%s/image_data/ribbon_280@2x.png", config.TemplatePath))
+	ribbon, err := os.Open(fmt.Sprintf("%s/image_data/ribbon_280.png", config.TemplatePath))
 	if err != nil {
 		return nil, err
 	}
-	b, err = ioutil.ReadAll(ribbon)
+	defer ribbon.Close()
+	config.Ribbon, _, err = image.Decode(ribbon)
 	if err != nil {
 		return nil, err
 	}
-	config.Ribbon = bytes.NewBuffer(b)
 
 	return &V3Notifier{
 		cross: notifier.NewCross(local, config, platform),

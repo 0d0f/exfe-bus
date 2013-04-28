@@ -71,7 +71,7 @@ func (c Cross) TitleBackground(config *Config) (string, error) {
 	}
 
 	buf := bytes.NewBuffer(nil)
-	err = MakeTitle(buf, bg.Body, config.Pin, 640, 150, 199, 60, 2, c.Place.Lat, c.Place.Lng, 80)
+	err = MakeTitle(buf, bg.Body, config.Pin, nil, 640, 150, 199, 50, 2, c.Place.Lat, c.Place.Lng, 80)
 	if err != nil {
 		return "", nil
 	}
@@ -110,7 +110,7 @@ func (c Cross) findBackground(config *Config) string {
 	return fmt.Sprintf("%s/static/img/xbg/default.jpg", config.SiteUrl)
 }
 
-func MakeTitle(w io.Writer, bg io.Reader, pin io.Reader, width, height, offsetY int, columnX, columnWidth int, latitude, longitude string, mapWidth int) error {
+func MakeTitle(w io.Writer, bg io.Reader, pin image.Image, ribbon image.Image, width, height, offsetY int, columnX, columnWidth int, latitude, longitude string, mapWidth int) error {
 	img, _, err := image.Decode(bg)
 	if err != nil {
 		return err
@@ -131,25 +131,25 @@ func MakeTitle(w io.Writer, bg io.Reader, pin io.Reader, width, height, offsetY 
 	}
 
 	draw.Draw(out, out.Bounds(), image.NewUniform(color.RGBA{0, 0, 0, 51}), image.Pt(0, 0), draw.Over)
+
+	if ribbon != nil {
+		draw.Draw(out, image.Rect(0, 6, ribbon.Bounds().Dx(), ribbon.Bounds().Dy()+6), ribbon, image.Pt(0, 0), draw.Over)
+	}
+
 	rect = image.Rect(columnX, 0, columnX+columnWidth, height)
 	draw.Draw(out, rect, image.NewUniform(color.RGBA{0x40, 0x40, 0x40, 0xff / 4}), image.Pt(0, 0), draw.Over)
 
 	if latitude != "" && longitude != "" {
-		pinImage, _, err := image.Decode(pin)
-		if err != nil {
-			return err
-		}
-
 		pinTopMargin := 10
-		pinPoint := image.Pt(mapWidth/2, pinImage.Bounds().Dy()+pinTopMargin)
+		pinPoint := image.Pt(mapWidth/2, pin.Bounds().Dy()+pinTopMargin)
 		img, rect, err = GetMap(latitude, longitude, mapWidth, height, pinPoint)
 		if err != nil {
 			return err
 		}
 		draw.Draw(out, image.Rect(width-mapWidth, 0, width, height), img, rect.Min, draw.Src)
 
-		pinPoint.X, pinPoint.Y = width-mapWidth/2-pinImage.Bounds().Dx()/2, pinTopMargin
-		draw.Draw(out, image.Rect(pinPoint.X, pinPoint.Y, width, height), pinImage, image.Pt(0, 0), draw.Over)
+		pinPoint.X, pinPoint.Y = width-mapWidth/2-pin.Bounds().Dx()/2, pinTopMargin
+		draw.Draw(out, image.Rect(pinPoint.X, pinPoint.Y, width, height), pin, image.Pt(0, 0), draw.Over)
 	}
 
 	err = jpeg.Encode(w, out, &jpeg.Options{70})
