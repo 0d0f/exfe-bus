@@ -13,7 +13,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 )
 
 type UpdateInfo struct {
@@ -71,13 +70,8 @@ func (c Cross) TitleBackground(config *Config) (string, error) {
 		return "", nil
 	}
 
-	pin, err := os.Open(fmt.Sprintf("%s/image_data/map_pin_blue@2x.png", config.TemplatePath))
-	if err != nil {
-		return "", err
-	}
-
 	buf := bytes.NewBuffer(nil)
-	err = MakeTitle(buf, bg.Body, pin, 640, 150, 199, 60, 2, c.Place.Lat, c.Place.Lng, 80)
+	err = MakeTitle(buf, bg.Body, config.Pin, 640, 150, 199, 60, 2, c.Place.Lat, c.Place.Lng, 80)
 	if err != nil {
 		return "", nil
 	}
