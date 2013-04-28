@@ -40,6 +40,7 @@ func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 	}
 
 	arg := map[string]interface{}{
+		"To":     to,
 		"Cross":  cross,
 		"Config": c.config,
 	}
