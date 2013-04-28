@@ -137,6 +137,9 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 		if i.Name()[0] == '.' {
 			continue
 		}
+		if i.Name() == "image_data" {
+			continue
+		}
 		template := NewTemplate(i.Name())
 		err := parseDirTemplate(template, fmt.Sprintf("%s/%s", path, i.Name()), "")
 		if err != nil {
@@ -184,9 +187,6 @@ func parseDirTemplate(t *template.Template, dir, name string) error {
 	}
 	for _, fi := range fis {
 		n := fi.Name()
-		if n == "image_data" {
-			continue
-		}
 		if name != "" {
 			n = fmt.Sprintf("%s/%s", name, fi.Name())
 		}

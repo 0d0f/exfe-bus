@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bytes"
 	"github.com/googollee/go-logger"
 )
 
@@ -127,5 +128,7 @@ type Config struct {
 		} `json:"email"`
 	} `json:"bot"`
 
-	Log *logger.Logger `json:"-"`
+	Log    *logger.Logger `json:"-"`
+	Pin    *bytes.Buffer  `json:"-"`
+	Ribbon *bytes.Buffer  `json:"-"`
 }

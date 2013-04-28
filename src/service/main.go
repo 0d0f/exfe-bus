@@ -96,8 +96,8 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Notifier {
-		notifier := NewV3Notifier(localTemplate, &config, platform)
-		register("notifier", notifier, nil)
+		notifier, err := NewV3Notifier(localTemplate, &config, platform)
+		register("notifier", notifier, err)
 	}
 
 	if config.ExfeService.Services.Iom {

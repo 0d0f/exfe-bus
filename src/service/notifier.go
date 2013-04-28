@@ -2,13 +2,16 @@ package main
 
 import (
 	"broker"
+	"bytes"
 	"fmt"
 	"formatter"
 	"github.com/googollee/go-rest"
 	"gobus"
+	"io/ioutil"
 	"model"
 	"net/http"
 	"notifier"
+	"os"
 )
 
 type V3Notifier struct {
@@ -18,10 +21,29 @@ type V3Notifier struct {
 	cross *notifier.Cross
 }
 
-func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *V3Notifier {
+func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) (*V3Notifier, error) {
+	pin, err := os.Open(fmt.Sprintf("%s/image_data/map_pin_blue@2x.png", config.TemplatePath))
+	if err != nil {
+		return nil, err
+	}
+	b, err := ioutil.ReadAll(pin)
+	if err != nil {
+		return nil, err
+	}
+	config.Pin = bytes.NewBuffer(b)
+	ribbon, err := os.Open(fmt.Sprintf("%s/image_data/ribbon_280@2x.png", config.TemplatePath))
+	if err != nil {
+		return nil, err
+	}
+	b, err = ioutil.ReadAll(ribbon)
+	if err != nil {
+		return nil, err
+	}
+	config.Ribbon = bytes.NewBuffer(b)
+
 	return &V3Notifier{
 		cross: notifier.NewCross(local, config, platform),
-	}
+	}, nil
 }
 
 func (n V3Notifier) HandleCrossDigest(requests []model.CrossDigestRequest) {
