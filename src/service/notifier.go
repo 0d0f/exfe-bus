@@ -16,8 +16,9 @@ import (
 )
 
 type V3Notifier struct {
-	rest.Service `prefix:"/v3/notifier"`
-	CrossDigest  rest.Processor `path:"/cross/digest" method:"POST"`
+	rest.Service    `prefix:"/v3/notifier"`
+	CrossDigest     rest.Processor `path:"/cross/digest" method:"POST"`
+	CrossInvitation rest.Processor `path:"/cross/invitation" method:"POST"`
 
 	cross *notifier.Cross
 }
@@ -53,6 +54,14 @@ func (n V3Notifier) HandleCrossDigest(requests []model.CrossDigestRequest) {
 		return
 	}
 	err := n.cross.V3Digest(requests)
+	if err != nil {
+		n.Error(http.StatusInternalServerError, err)
+		return
+	}
+}
+
+func (n V3Notifier) HandleCrossInvitation(invitation model.CrossInvitation) {
+	err := n.cross.V3Invitation(invitation)
 	if err != nil {
 		n.Error(http.StatusInternalServerError, err)
 		return

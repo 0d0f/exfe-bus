@@ -1,4 +1,3 @@
-test.cmd
 *.yaml
 *.json
 apns_dev_*.pem
