@@ -28,7 +28,25 @@ func (e Exfee) V3Rsvp(updates []model.RsvpUpdate) error {
 	}
 
 	to := arg.To
-	text, err := GenerateContent(e.localTemplate, "v3_cross_digest", to.Provider, to.Language, arg)
+	text, err := GenerateContent(e.localTemplate, "v3_exfee_rsvp", to.Provider, to.Language, arg)
+	if err != nil {
+		return err
+	}
+	_, err = e.platform.Send(to, text)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e Exfee) V3Conversation(updates []model.ConversationUpdate) error {
+	arg, err := ArgFromUpdates(updates, e.config)
+	if err != nil {
+		return err
+	}
+
+	to := arg.To
+	text, err := GenerateContent(e.localTemplate, "v3_exfee_conversation", to.Provider, to.Language, arg)
 	if err != nil {
 		return err
 	}
@@ -125,4 +143,47 @@ Bys:
 		}
 	}
 	return ret, nil
+}
+
+type ConversationArg struct {
+	model.ThirdpartTo
+	Posts []*model.Post
+}
+
+func ArgFromConversations(updates []model.ConversationUpdate, config *model.Config) (*ConversationArg, error) {
+	if updates == nil && len(updates) == 0 {
+		return nil, fmt.Errorf("no update info")
+	}
+
+	to := updates[0].To
+	posts := make([]*model.Post, len(updates))
+
+	for i, update := range updates {
+		if !to.Equal(&update.To) {
+			return nil, fmt.Errorf("updates not send to same recipient: %s, %s", to, update.To)
+		}
+		posts[i] = &updates[i].Post
+	}
+
+	ret := &ConversationArg{
+		Posts: posts,
+	}
+	ret.To = to
+	err := ret.Parse(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
+func (a ConversationArg) Link() string {
+	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
+}
+
+func (a ConversationArg) Timezone() string {
+	if a.To.Timezone != "" {
+		return a.To.Timezone
+	}
+	return "+00:00"
 }

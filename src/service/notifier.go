@@ -16,13 +16,14 @@ import (
 )
 
 type V3Notifier struct {
-	rest.Service    `prefix:"/v3/notifier"`
-	CrossDigest     rest.Processor `path:"/cross/digest" method:"POST"`
-	CrossInvitation rest.Processor `path:"/cross/invitation" method:"POST"`
-	UserWelcome     rest.Processor `path:"/user/welcome" method:"POST"`
-	UserVerify      rest.Processor `path:"/user/verify" method:"POST"`
-	UserReset       rest.Processor `path:"/user/reset" method:"POST"`
-	ExfeeRsvp       rest.Processor `path:/exfee/rsvp" method:"POST"`
+	rest.Service      `prefix:"/v3/notifier"`
+	CrossDigest       rest.Processor `path:"/cross/digest" method:"POST"`
+	CrossInvitation   rest.Processor `path:"/cross/invitation" method:"POST"`
+	UserWelcome       rest.Processor `path:"/user/welcome" method:"POST"`
+	UserVerify        rest.Processor `path:"/user/verify" method:"POST"`
+	UserReset         rest.Processor `path:"/user/reset" method:"POST"`
+	ExfeeRsvp         rest.Processor `path:"/exfee/rsvp" method:"POST"`
+	ExfeeConversation rest.Processor `path:"/exfee/conversation" method:"POST"`
 
 	cross *notifier.Cross
 	user  *notifier.User
@@ -104,6 +105,14 @@ func (n V3Notifier) HandleExfeeRsvp(updates []model.RsvpUpdate) {
 	err := n.exfee.V3Rsvp(updates)
 	if err != nil {
 		n.Error(http.StatusInternalServerError, n.GetError(7, err.Error()))
+		return
+	}
+}
+
+func (n V3Notifier) HandleExfeeConversation(updates []model.ConversationUpdate) {
+	err := n.exfee.V3Conversation(updates)
+	if err != nil {
+		n.Error(http.StatusInternalServerError, n.GetError(8, err.Error()))
 		return
 	}
 }

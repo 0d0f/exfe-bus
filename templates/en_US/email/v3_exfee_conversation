@@ -1,0 +1,17 @@
+Content-Type: multipart/alternative; boundary="alternativesplitter"
+{{$post := index .Posts 0}}References: <{{.Config.Email.Prefix}}+e{{$post.ExfeeId}}@exfe.com>
+To: =?utf-8?B?{{.To.Name | base64}}?= <{{.To.ExternalUsername}}>
+From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <{{.Config.Email.Prefix}}+e{{$post.ExfeeID}}@{{.Config.Email.Domain}}>
+Subject: =?utf-8?B?{{"Conversations" | base64}}?=
+
+--alternativesplitter
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+
+{{sub . "_markdown/v3_exfee_conversation.txt" | base64 | column 80 "\r\n"}}
+--alternativesplitter
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: base64
+
+{{sub . "_html/v3_exfee_conversation.html" | base64 | column 80 "\r\n"}}
+--alternativesplitter--
