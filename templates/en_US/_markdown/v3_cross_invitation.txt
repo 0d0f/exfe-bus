@@ -1,4 +1,4 @@
-{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}{{$link := .Cross.Link .To .Config}}·X· digest today.
+{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}{{$link := .Cross.Link .To .Config}}{{if .IsCreator}}You just gathered a ·X·.{{else}}{{.By.Name}} gathers you.{{end}}
 
 ## {{.Cross.Title}}{{$titleUpdate := index .Cross.Updated "title"}}{{if $titleUpdate}} (updated){{end}}
 {{.Cross.Description}}{{$descUpdate := index .Cross.Updated "description"}}{{if $descUpdate}} (updated){{end}}
