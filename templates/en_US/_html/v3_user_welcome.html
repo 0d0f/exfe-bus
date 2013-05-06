@@ -7,19 +7,21 @@
 <body style="font-family:Helvetica Neue,Helvetica,Arial,sans-serif; max-width:640px; background-color:white; margin:0; padding:0; color:#333333; font-size:14px; line-height:20px; font-weight:400;">
 	<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
 		<tbody>
-			<tr><td style="padding:20px 30px 20px 30px;">Hi, SteveE.</td></tr>
+			<tr><td style="padding:20px 30px 20px 30px;">Hi, {{.To.Name | html}}</td></tr>
 			<tr><td style="font-size:21px; line-height:25px; padding:0 30px 0 30px;">Welcome to <a href="abc" style="color:#3A6EA5; text-decoration:none;">EXFE</a></td></tr>
 			<tr><td style="padding:0 30px 20px 30px;">A utility for gathering with friends.</tr></td>
+			{{if .NeedVerify}}
 			<tr><td style="padding:0 20px 0 20px;">
 				<table>
 					<tbody>
-						<tr><td width="600px" height="36px" style="color:white; background-color:#3A6EA5; padding:0 10px 0 10px;">Please click this link to complete registration: <a href="https://exfe.com/#tk=aabbcc" style="color:white;">https://exfe.com/#tk=c87...625f7</a></td></tr>
+						<tr><td width="600px" height="36px" style="color:white; background-color:#3A6EA5; padding:0 10px 0 10px;">Please click this link to complete registration: <a href="{{.Link}}" style="color:white;">{{.Link | limit 30 | html}}</a></td></tr>
 					</tbody>
 				</table>
 			</td></tr>
+			{{end}}
 			<tr><td style="padding:20px 30px 20px 30px;"><span style="color:#3A6EA5;">·X·</span> (cross) is a gathering of people. We save you from calling up every one RSVP, losing in endless emails and messages off the point.</td></tr>
 			<tr><td style="padding:0 30px 30px 30px;"><span style="color:#3A6EA5;">EXFE</span> your friends. Gather a <span style="color:#3A6EA5;">·X·</span>.</td></tr>
-			<tr><td><table width="640px" height="200px" style="background:url(rome_mail.jpg);">
+			<tr><td><table width="640px" height="200px" style="background:url(cid:rome_mail_jpg);">
 				<tbody>
 					<tr><td colspan="2" style="font-size:21px; padding:30px 30px 20px 30px; vertical-align:top;">“Rome wasn’t built in a day.”</td></tr>
 					<tr>
@@ -28,7 +30,7 @@
 					</tr>
 				</tbody>
 			</table></td></tr>
-			<tr><td style="padding:8px 30px 8px 30px; font-size:10px; color:#7F7F7F; background-color:#EEEEEE;">This email is sent to <span style="font-style:italic">steve@0d0f.com</span> per identity registration request on <a href="abc" style="color:#3A6EA5; text-decoration:none;">EXFE</a>. Report <a href="abc" style="color:#7F7F7F;">spam</a>?</td></tr>
+			<tr><td style="padding:8px 30px 8px 30px; font-size:10px; color:#7F7F7F; background-color:#EEEEEE;">This email is sent to <span style="font-style:italic">{{.To.ExternalUsername | html }}</span> per identity registration request on <a href="{{.Config.SiteUrl}}" style="color:#3A6EA5; text-decoration:none;">EXFE</a>.<!-- Report <a href="abc" style="color:#7F7F7F;">spam</a>?--></td></tr>
 		</tbody>
 	</table>
 </body>

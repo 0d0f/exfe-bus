@@ -19,8 +19,12 @@ type V3Notifier struct {
 	rest.Service    `prefix:"/v3/notifier"`
 	CrossDigest     rest.Processor `path:"/cross/digest" method:"POST"`
 	CrossInvitation rest.Processor `path:"/cross/invitation" method:"POST"`
+	UserWelcome     rest.Processor `path:"/user/welcome" method:"POST"`
+	UserVerify      rest.Processor `path:"/user/verify" method:"POST"`
+	UserReset       rest.Processor `path:"/user/reset" method:"POST"`
 
 	cross *notifier.Cross
+	user  *notifier.User
 }
 
 func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) (*V3Notifier, error) {
@@ -45,6 +49,7 @@ func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platfor
 
 	return &V3Notifier{
 		cross: notifier.NewCross(local, config, platform),
+		user:  notifier.NewUser(local, config, platform),
 	}, nil
 }
 
@@ -62,6 +67,30 @@ func (n V3Notifier) HandleCrossDigest(requests []model.CrossDigestRequest) {
 
 func (n V3Notifier) HandleCrossInvitation(invitation model.CrossInvitation) {
 	err := n.cross.V3Invitation(invitation)
+	if err != nil {
+		n.Error(http.StatusInternalServerError, err)
+		return
+	}
+}
+
+func (n V3Notifier) HandleUserWelcome(arg model.UserWelcome) {
+	err := n.user.V3Welcome(arg)
+	if err != nil {
+		n.Error(http.StatusInternalServerError, err)
+		return
+	}
+}
+
+func (n V3Notifier) HandleUserVerify(arg model.UserVerify) {
+	err := n.user.V3Verify(arg)
+	if err != nil {
+		n.Error(http.StatusInternalServerError, err)
+		return
+	}
+}
+
+func (n V3Notifier) HandleUserReset(arg model.UserVerify) {
+	err := n.user.V3ResetPassword(arg)
 	if err != nil {
 		n.Error(http.StatusInternalServerError, err)
 		return

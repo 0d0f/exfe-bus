@@ -148,3 +148,13 @@ func (p PlainText) Unmarshal(r io.Reader, v interface{}) error {
 func (p PlainText) Marshal(w io.Writer, v interface{}) error {
 	return fmt.Errorf("not implement")
 }
+
+type TextError string
+
+func (t TextError) Error() string {
+	return string(t)
+}
+
+func (p PlainText) Error(code int, message string) error {
+	return TextError(fmt.Sprintf("(%d)%s", code, message))
+}
