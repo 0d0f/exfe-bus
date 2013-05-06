@@ -4,21 +4,26 @@ import (
 	"fmt"
 )
 
+type RsvpUpdate struct {
+	To       Recipient `json:"to"`
+	By       Identity  `json:"by"`
+	Exfee    Exfee     `json:"exfee"`
+	OldExfee Exfee     `json:"old_exfee"`
+}
+
 type Exfee struct {
 	ID          uint64       `json:"id,omitempty"`
 	Name        string       `json:"name,omitempty"`
 	Invitations []Invitation `json:"invitations"`
 
-	Accepted   []Invitation `json:"-"`
-	Declined   []Invitation `json:"-"`
-	Interested []Invitation `json:"-"`
-	Pending    []Invitation `json:"-"`
+	Accepted []Invitation `json:"-"`
+	Declined []Invitation `json:"-"`
+	Pending  []Invitation `json:"-"`
 }
 
 func (e *Exfee) Parse() {
 	e.Accepted = make([]Invitation, 0)
 	e.Declined = make([]Invitation, 0)
-	e.Interested = make([]Invitation, 0)
 	e.Pending = make([]Invitation, 0)
 
 	for _, i := range e.Invitations {
@@ -27,9 +32,7 @@ func (e *Exfee) Parse() {
 			e.Accepted = append(e.Accepted, i)
 		case RsvpDeclined:
 			e.Declined = append(e.Declined, i)
-		case RsvpInterested:
-			e.Interested = append(e.Interested, i)
-		case RsvpNoresponse:
+		default:
 			e.Pending = append(e.Pending, i)
 		}
 	}

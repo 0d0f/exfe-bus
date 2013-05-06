@@ -1,0 +1,8 @@
+# {{.Exfee.Name}}
+{{if .NewAccepted}}
+· Accepted: {{range for .NewAccepted}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}{{if .OldAccepted}} and {{len .OldAccepted}} {{len .OldAccepted | plural "other" "others"}}{{end}}.{{end}}{{if .NewInvited}}
+· Newly invited: {{range for .NewInvited}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}{{if .NewDeclined}}
+· Unavailable: {{range for .NewDeclined}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}{{if .Removed}}
+· Removed: {{range for .Removed}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}
+
+# Reply this email directly as conversation. #

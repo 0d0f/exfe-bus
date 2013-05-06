@@ -153,15 +153,6 @@ func (c *Cross) getInvitationContent(arg model.CrossInvitation) (string, error) 
 	return text, nil
 }
 
-func in(id *model.Invitation, ids []model.Invitation) bool {
-	for _, i := range ids {
-		if id.Identity.SameUser(i.Identity) {
-			return true
-		}
-	}
-	return false
-}
-
 type SummaryArg struct {
 	model.ThirdpartTo
 	OldCross *model.Cross     `json:"-"`
@@ -232,11 +223,11 @@ Bys:
 			ret.NewDeclined = append(ret.NewDeclined, i)
 		}
 	}
-	for _, i := range ret.Cross.Exfee.Interested {
-		if !in(&i, ret.OldCross.Exfee.Interested) {
-			ret.NewInterested = append(ret.NewInterested, i)
-		}
-	}
+	// for _, i := range ret.Cross.Exfee.Interested {
+	// 	if !in(&i, ret.OldCross.Exfee.Interested) {
+	// 		ret.NewInterested = append(ret.NewInterested, i)
+	// 	}
+	// }
 	for _, i := range ret.Cross.Exfee.Pending {
 		if !in(&i, ret.OldCross.Exfee.Pending) {
 			ret.NewPending = append(ret.NewPending, i)
