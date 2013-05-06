@@ -121,7 +121,6 @@ func TestExfeeParse(t *testing.T) {
 	assert.Equal(t, e.Accepted[0].ID, uint64(11))
 	assert.Equal(t, e.Declined[0].ID, uint64(33))
 	assert.Equal(t, e.Pending[0].ID, uint64(22))
-	assert.Equal(t, e.Interested[0].ID, uint64(44))
 	assert.Equal(t, e.CountPeople(e.Accepted), 3)
 }
 

@@ -20,8 +20,7 @@ Time
 
 
 {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} Invited:{{range .Cross.Exfee.Accepted}}
-+ {{.Identity.Name}}{{if not .Identity.UserID}} {{.Identity.ExternalID}}{{end}}{{if .Host}} (Host){{end}}{{if .Mates}} with {{.Mates}} people{{end}}{{end}}{{range .Cross.Exfee.Interested}}
-· {{.Identity.Name}}{{if not .Identity.UserID}} {{.Identity.ExternalID}}{{end}}{{if .Host}} (Host){{end}}{{if .Mates}} with {{.Mates}} people{{end}}{{end}}{{range .Cross.Exfee.Pending}}
++ {{.Identity.Name}}{{if not .Identity.UserID}} {{.Identity.ExternalID}}{{end}}{{if .Host}} (Host){{end}}{{if .Mates}} with {{.Mates}} people{{end}}{{end}}{{range .Cross.Exfee.Pending}}
 · {{.Identity.Name}}{{if not .Identity.UserID}} {{.Identity.ExternalID}}{{end}}{{if .Host}} (Host){{end}}{{if .Mates}} with {{.Mates}} people{{end}}{{end}}{{range .Cross.Exfee.Declined}}
 · {{.Identity.Name}}{{if not .Identity.UserID}} {{.Identity.ExternalID}}{{end}}{{if .Host}} (Host){{end}}{{if .Mates}} with {{.Mates}} people{{end}}{{end}}
 
