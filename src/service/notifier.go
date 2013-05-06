@@ -22,9 +22,11 @@ type V3Notifier struct {
 	UserWelcome     rest.Processor `path:"/user/welcome" method:"POST"`
 	UserVerify      rest.Processor `path:"/user/verify" method:"POST"`
 	UserReset       rest.Processor `path:"/user/reset" method:"POST"`
+	ExfeeRsvp       rest.Processor `path:/exfee/rsvp" method:"POST"`
 
 	cross *notifier.Cross
 	user  *notifier.User
+	exfee *notifier.Exfee
 }
 
 func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) (*V3Notifier, error) {
@@ -50,6 +52,7 @@ func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platfor
 	return &V3Notifier{
 		cross: notifier.NewCross(local, config, platform),
 		user:  notifier.NewUser(local, config, platform),
+		exfee: notifier.NewExfee(local, config, platform),
 	}, nil
 }
 
@@ -93,6 +96,14 @@ func (n V3Notifier) HandleUserReset(arg model.UserVerify) {
 	err := n.user.V3ResetPassword(arg)
 	if err != nil {
 		n.Error(http.StatusInternalServerError, n.GetError(6, err.Error()))
+		return
+	}
+}
+
+func (n V3Notifier) HandleExfeeRsvp(updates []model.RsvpUpdate) {
+	err := n.exfee.V3Rsvp(updates)
+	if err != nil {
+		n.Error(http.StatusInternalServerError, n.GetError(7, err.Error()))
 		return
 	}
 }
