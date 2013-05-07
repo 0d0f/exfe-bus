@@ -127,7 +127,7 @@ func TestEmptyTimer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, wait, 0)
+	assert.Equal(t, wait < 0, true)
 }
 
 func TestTimerUpdate(t *testing.T) {
