@@ -50,6 +50,7 @@ func (t *Timer) Serve(handler Handler, timeout time.Duration) {
 		if next < 0 {
 			next = timeout
 		}
+		fmt.Println(next)
 		select {
 		case <-t.tomb.Dying():
 			return
@@ -126,8 +127,5 @@ func (t *Timer) NextWakeup() (time.Duration, error) {
 		return -1, err
 	}
 	next := time.Unix(ontime, 0).Sub(time.Now())
-	if next < 0 {
-		next = 0
-	}
 	return next, nil
 }
