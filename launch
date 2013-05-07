@@ -7,12 +7,5 @@ fi
 
 for i in service queue bot
 do
-	service exfe_$i stop
-done
-
-sleep 1s
-
-for i in service queue bot
-do
-	service exfe_$i start
+	service exfe_$i restart
 done

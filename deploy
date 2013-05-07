@@ -10,12 +10,12 @@ then
 fi
 
 rm -Rf ${TARGET}/bin/* ${TARGET}/templates
-cp ./bin/* ${TARGET}/bin
-cp -R ./script/* ${TARGET}/bin
-cp -R ./templates ${TARGET}/
-cp -R ./exfe.json.example ${TARGET}/
-cp -R ./configure ${TARGET}/
-cp ./launch ${TARGET}/
+cp -f ./bin/* ${TARGET}/bin
+cp -Rf ./script/* ${TARGET}/bin
+cp -Rf ./templates ${TARGET}/
+cp -Rf ./exfe.json.example ${TARGET}/
+cp -Rf ./configure ${TARGET}/
+cp -f ./launch ${TARGET}/
 
 cd ${TARGET}
 git add -u
