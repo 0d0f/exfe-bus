@@ -28,6 +28,27 @@ type Identity struct {
 	OAuthToken       string `json:"oauth_token,omitempty"`
 }
 
+func (i Identity) GetAvatar(x, y int) string {
+	resp, err := http.Get(i.Avatar)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	resized, err := innerResize(resp.Body, x, y)
+	if err != nil {
+		return ""
+	}
+
+	buf := bytes.NewBuffer(nil)
+	err = jpeg.Encode(buf, resized, &jpeg.Options{70})
+	if err != nil {
+		return ""
+	}
+
+	return base64.StdEncoding.EncodeToString(buf.Bytes())
+}
+
 func (i Identity) Equal(other Identity) bool {
 	if i.ID == other.ID {
 		return true
@@ -94,27 +115,6 @@ func (i Invitation) IsPending() bool {
 
 func (i Invitation) IsUpdateBy(userId int64) bool {
 	return i.UpdateBy.UserID == userId
-}
-
-func (i Invitation) Avatar(x, y int) string {
-	resp, err := http.Get(i.Identity.Avatar)
-	if err != nil {
-		return ""
-	}
-	defer resp.Body.Close()
-
-	resized, err := innerResize(resp.Body, x, y)
-	if err != nil {
-		return ""
-	}
-
-	buf := bytes.NewBuffer(nil)
-	err = jpeg.Encode(buf, resized, &jpeg.Options{70})
-	if err != nil {
-		return ""
-	}
-
-	return base64.StdEncoding.EncodeToString(buf.Bytes())
 }
 
 func innerResize(r io.Reader, x int, y int) (image.Image, error) {

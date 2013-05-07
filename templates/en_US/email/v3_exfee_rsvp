@@ -1,5 +1,5 @@
 Content-Type: multipart/mixed; boundary="mixsplitter"
-References: <{{.Config.Email.Prefix}}+{{.Cross.ID}}@exfe.com>
+References: <{{.Config.Email.Prefix}}+{{.Exfee.ID}}@exfe.com>
 To: =?utf-8?B?{{.To.Name | base64}}?= <{{.To.ExternalUsername}}>
 From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <{{.Config.Email.Prefix}}+e{{.Exfee.ID}}@{{.Config.Email.Domain}}>
 Subject: =?utf-8?B?{{.Exfee.Name | base64}}?=

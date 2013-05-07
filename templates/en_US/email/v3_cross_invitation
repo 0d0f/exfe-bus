@@ -40,7 +40,7 @@ Content-Type: image/jpeg; name="i{{.Identity.ID}}.jpg"
 Content-Transfer-Encoding: base64
 Content-ID: <i{{.Identity.ID}}>
 
-{{.Avatar 48 38 | column 80 "\r\n"}}
+{{.Identity.GetAvatar 48 38 | column 80 "\r\n"}}
 
 {{end}}
 --mixsplitter

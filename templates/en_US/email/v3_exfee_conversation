@@ -1,8 +1,11 @@
-Content-Type: multipart/alternative; boundary="alternativesplitter"
-{{$post := index .Posts 0}}References: <{{.Config.Email.Prefix}}+e{{$post.ExfeeId}}@exfe.com>
+Content-Type: multipart/mixed; boundary="mixsplitter"
+{{$post := index .Posts 0}}References: <{{.Config.Email.Prefix}}+e{{$post.ExfeeID}}@exfe.com>
 To: =?utf-8?B?{{.To.Name | base64}}?= <{{.To.ExternalUsername}}>
 From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <{{.Config.Email.Prefix}}+e{{$post.ExfeeID}}@{{.Config.Email.Domain}}>
 Subject: =?utf-8?B?{{"Conversations" | base64}}?=
+
+--mixsplitter
+Content-Type: multipart/alternative; boundary="alternativesplitter"
 
 --alternativesplitter
 Content-Type: text/plain; charset=utf-8
@@ -15,3 +18,13 @@ Content-Transfer-Encoding: base64
 
 {{sub . "_html/v3_exfee_conversation.html" | base64 | column 80 "\r\n"}}
 --alternativesplitter--
+{{range .Bys}}
+--mixsplitter
+Content-Type: image/jpeg; name="i{{.ID}}.jpg"
+Content-Transfer-Encoding: base64
+Content-ID: <i{{.ID}}>
+
+{{.GetAvatar 30 30 | column 80 "\r\n"}}
+
+{{end}}
+--mixsplitter--

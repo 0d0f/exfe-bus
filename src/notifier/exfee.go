@@ -40,7 +40,7 @@ func (e Exfee) V3Rsvp(updates []model.RsvpUpdate) error {
 }
 
 func (e Exfee) V3Conversation(updates []model.ConversationUpdate) error {
-	arg, err := ArgFromUpdates(updates, e.config)
+	arg, err := ArgFromConversations(updates, e.config)
 	if err != nil {
 		return err
 	}
@@ -186,4 +186,23 @@ func (a ConversationArg) Timezone() string {
 		return a.To.Timezone
 	}
 	return "+00:00"
+}
+
+func (a ConversationArg) Bys() []*model.Identity {
+	var ret []*model.Identity
+	for _, post := range a.Posts {
+		fmt.Println(post)
+		isSame := false
+		for _, i := range ret {
+			if i.SameUser(post.By) {
+				isSame = true
+				break
+			}
+		}
+		if !isSame {
+			ret = append(ret, &post.By)
+		}
+	}
+	fmt.Println(ret)
+	return ret
 }
