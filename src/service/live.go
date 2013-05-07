@@ -67,12 +67,12 @@ func (h LiveService) HandleCard(data here.Data) []string {
 	token := h.Request().URL.Query().Get("token")
 	if token == "" {
 		token = fmt.Sprintf("%04d", rand.Int31n(10000))
-		if h.here.Exist(token) {
+		if h.here.Exist(token) != nil {
 			h.Error(http.StatusNotFound, fmt.Errorf("please wait and try again."))
 			return nil
 		}
 		data.Card.Id = fmt.Sprintf("%032d", rand.Int31())
-	} else if !h.here.Exist(token) {
+	} else if h.here.Exist(token) == nil {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
 		return nil
 	}
@@ -112,7 +112,8 @@ func (h LiveService) HandleStreaming(s rest.Stream) {
 	h.Header().Set("Access-Control-Allow-Credentials", "true")
 	h.Header().Set("Cache-Control", "no-cache")
 	token := h.Request().URL.Query().Get("token")
-	if !h.here.Exist(token) {
+	group := h.here.Exist(token)
+	if group == nil {
 		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
 		return
 	}
@@ -128,6 +129,11 @@ func (h LiveService) HandleStreaming(s rest.Stream) {
 		close(c)
 	}()
 
+	cards := make([]here.Card, 0)
+	for _, d := range group.Data {
+		cards = append(cards, d.Card)
+	}
+	s.Write(cards)
 	for {
 		d := <-c
 		cards, ok := d.([]here.Card)

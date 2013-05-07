@@ -7,7 +7,7 @@ import (
 
 type findArg struct {
 	token string
-	ret   chan bool
+	ret   chan *Group
 }
 
 type Here struct {
@@ -42,8 +42,17 @@ func (h *Here) Serve() {
 				h.update <- *group
 			}
 		case arg := <-h.find:
-			_, ok := h.cluster.TokenGroup[arg.token]
-			arg.ret <- ok
+			key, ok := h.cluster.TokenGroup[arg.token]
+			if !ok {
+				arg.ret <- nil
+				continue
+			}
+			group, ok := h.cluster.Groups[key]
+			if !ok {
+				arg.ret <- nil
+				continue
+			}
+			arg.ret <- group
 		case <-time.After(h.timeout):
 		}
 		groups := h.cluster.Clear()
@@ -68,11 +77,13 @@ func (h *Here) Add(data *Data) error {
 	return nil
 }
 
-func (h *Here) Exist(token string) bool {
+func (h *Here) Exist(token string) *Group {
 	arg := findArg{
 		token: token,
-		ret:   make(chan bool),
+		ret:   make(chan *Group),
 	}
 	h.find <- arg
-	return <-arg.ret
+	ret := <-arg.ret
+	close(arg.ret)
+	return ret
 }
