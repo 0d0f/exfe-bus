@@ -58,6 +58,7 @@ func (c Cross) Ics(config *Config, to Recipient) string {
 
 func (c Cross) TitleBackground(config *Config, hasRibbon bool) (string, error) {
 	bgUrl := c.findBackground(config)
+	fmt.Println(bgUrl)
 	if bgUrl == "" {
 		return "", nil
 	}
@@ -118,6 +119,7 @@ func (c Cross) findBackground(config *Config) string {
 func MakeTitle(w io.Writer, bg io.Reader, pin image.Image, ribbon image.Image, width, height, offsetY int, columnX, columnWidth int, latitude, longitude string, mapWidth int) error {
 	img, _, err := image.Decode(bg)
 	if err != nil {
+		fmt.Println("bg error: %s", err)
 		return err
 	}
 	if y := img.Bounds().Dy() - offsetY; height > y {
@@ -149,6 +151,7 @@ func MakeTitle(w io.Writer, bg io.Reader, pin image.Image, ribbon image.Image, w
 		pinPoint := image.Pt(mapWidth/2, pin.Bounds().Dy()+pinTopMargin)
 		img, rect, err = GetMap(latitude, longitude, mapWidth, height, pinPoint)
 		if err != nil {
+			fmt.Println("map error: %s", err)
 			return err
 		}
 		draw.Draw(out, image.Rect(width-mapWidth, 0, width, height), img, rect.Min, draw.Src)
