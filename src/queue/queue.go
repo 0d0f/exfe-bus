@@ -26,8 +26,9 @@ type Queue struct {
 	timeout    time.Duration
 	dispatcher *gobus.Dispatcher
 
-	Timer rest.Processor `path:"/:merge_key/:method/*service" method:"POST"`
-	timer *delayrepo.Timer
+	Push   rest.Processor `path:"/:merge_key/:method/*service" method:"POST"`
+	Delete rest.Processor `path:"/:merge_key/:method/*service" method:"DELETE"`
+	timer  *delayrepo.Timer
 }
 
 func NewQueue(config *model.Config, redis *broker.RedisPool, dispatcher *gobus.Dispatcher) (*Queue, error) {
@@ -39,12 +40,12 @@ func NewQueue(config *model.Config, redis *broker.RedisPool, dispatcher *gobus.D
 
 	config.Log.Notice("launching timer")
 	storage := broker.NewQueueRedisStorage("exfe:v3:queue", redis)
-	timer, err := delayrepo.NewTimer(storage)
+	timer, err := delayrepo.NewTimer(storage, ret.timeout)
 	if err != nil {
 		return nil, err
 	}
 	ret.timer = timer
-	go timer.Serve(ret, ret.timeout)
+	go timer.Serve(ret)
 
 	return ret, nil
 }
@@ -97,7 +98,7 @@ func (q *Queue) Quit() {
 // > curl -v "http://127.0.0.1:23334/v3/queue/123/POST/exfe_service/message?update=always&ontime=1366615888" -d '{"abc":123}'
 //
 // if no merge(send one by one), set merge_key to "-"
-func (q Queue) HandleTimer(data string) {
+func (q Queue) HandlePush(data string) {
 	method, service, mergeKey := q.Vars()["method"], q.Vars()["service"], q.Vars()["merge_key"]
 	if method == "" {
 		q.Error(http.StatusBadRequest, fmt.Errorf("need method"))
@@ -105,6 +106,10 @@ func (q Queue) HandleTimer(data string) {
 	}
 	if service == "" {
 		q.Error(http.StatusBadRequest, fmt.Errorf("need service"))
+		return
+	}
+	if mergeKey == "" {
+		q.Error(http.StatusBadRequest, fmt.Errorf("invalid mergeKey: (empty)"))
 		return
 	}
 
@@ -118,11 +123,30 @@ func (q Queue) HandleTimer(data string) {
 	if ontime == 0 {
 		ontime = time.Now().Unix()
 	}
-	if mergeKey == "-" {
-		mergeKey = fmt.Sprintf("-%d-", ontime)
-	}
 
 	err = q.timer.Push(delayrepo.UpdateType(updateType), ontime, fmt.Sprintf("%s,%s,%s", method, service, mergeKey), []byte(data))
+	if err != nil {
+		q.Error(http.StatusInternalServerError, err)
+		return
+	}
+}
+
+func (q Queue) HandleDelete() {
+	method, service, mergeKey := q.Vars()["method"], q.Vars()["service"], q.Vars()["merge_key"]
+	if method == "" {
+		q.Error(http.StatusBadRequest, fmt.Errorf("need method"))
+		return
+	}
+	if service == "" {
+		q.Error(http.StatusBadRequest, fmt.Errorf("need service"))
+		return
+	}
+	if mergeKey == "" {
+		q.Error(http.StatusBadRequest, fmt.Errorf("invalid mergeKey: (empty)"))
+		return
+	}
+
+	err := q.timer.Delete(fmt.Sprintf("%s,%s,%s", method, service, mergeKey))
 	if err != nil {
 		q.Error(http.StatusInternalServerError, err)
 		return

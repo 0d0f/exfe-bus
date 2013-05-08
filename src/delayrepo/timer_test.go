@@ -61,7 +61,15 @@ func (s *FakeStorage) Save(iupdate broker.UpdateType, ontime int64, key string, 
 }
 
 func (s *FakeStorage) Load(key string) ([][]byte, error) {
-	return s.array[key], nil
+	ret := s.array[key]
+	delete(s.array, key)
+	for i := range s.timer {
+		if s.timer[i].key == key {
+			s.timer = append(s.timer[:i], s.timer[i+1:]...)
+			break
+		}
+	}
+	return ret, nil
 }
 
 func (s *FakeStorage) Ontime(key string) (int64, error) {
@@ -82,7 +90,7 @@ func (s *FakeStorage) Next() (string, error) {
 
 func TestTimer(t *testing.T) {
 	s := newFakeStorage()
-	timer, err := NewTimer(s)
+	timer, err := NewTimer(s, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +112,6 @@ func TestTimer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println("waiting:", wait)
 
 	time.Sleep(wait)
 
@@ -119,7 +126,7 @@ func TestTimer(t *testing.T) {
 
 func TestEmptyTimer(t *testing.T) {
 	s := newFakeStorage()
-	timer, err := NewTimer(s)
+	timer, err := NewTimer(s, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,12 +134,12 @@ func TestEmptyTimer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, wait < 0, true)
+	assert.Equal(t, wait, time.Second)
 }
 
 func TestTimerUpdate(t *testing.T) {
 	s := newFakeStorage()
-	timer, err := NewTimer(s)
+	timer, err := NewTimer(s, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,4 +178,44 @@ func TestTimerUpdate(t *testing.T) {
 
 	assert.Equal(t, key, "123")
 	assert.Equal(t, fmt.Sprintf("%v", data), "[[97] [98]]")
+}
+
+func TestTimerDelete(t *testing.T) {
+	s := newFakeStorage()
+	timer, err := NewTimer(s, time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ontime := time.Now().Add(time.Second * 10).Unix()
+	err = timer.push(broker.Always, ontime, "123", []byte("a"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = timer.push(broker.Always, ontime, "123", []byte("b"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wait, err := timer.NextWakeup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if wait < time.Second {
+		t.Fatalf("wait too short: %s", wait)
+	}
+
+	timer.delete("123")
+
+	wait, err = timer.NextWakeup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, wait, time.Second, "wait: %s", wait)
+
+	key, data, err := timer.pop()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, key, "")
+	assert.Equal(t, fmt.Sprintf("%v", data), "[]")
 }

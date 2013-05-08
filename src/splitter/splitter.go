@@ -13,7 +13,8 @@ import (
 type Splitter struct {
 	rest.Service `prefix:"/v3/splitter"`
 
-	Split rest.Processor `path:"" method:"POST"`
+	Split  rest.Processor `path:"" method:"POST"`
+	Delete rest.Processor `path:"" method:"DELETE"`
 
 	dispatcher *gobus.Dispatcher
 	config     *model.Config
@@ -38,13 +39,26 @@ func (s Splitter) HandleSplit(pack BigPack) {
 			return
 		}
 
-		go func() {
-			resp, err := broker.Http("POST", url, "plain/text", b)
-			if err != nil {
-				s.config.Log.Err("|splitter|%s|%s|%s|", url, err, string(b))
-			} else {
-				resp.Body.Close()
-			}
-		}()
+		resp, err := broker.Http("POST", url, "plain/text", b)
+		if err != nil {
+			s.config.Log.Err("|splitter|%s|%s|%s|", url, err, string(b))
+		} else {
+			resp.Body.Close()
+		}
+	}
+}
+
+func (s Splitter) HandleDelete(pack BigPack) {
+	for _, to := range pack.Recipients {
+		mergeKey := fmt.Sprintf("%s_%d", pack.MergeKey, to.IdentityID)
+
+		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.config.ExfeQueue.Addr, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Type)
+
+		resp, err := broker.Http("DELETE", url, "plain/text", nil)
+		if err != nil {
+			s.config.Log.Err("|splitter|%s|%s|", url, err)
+		} else {
+			resp.Body.Close()
+		}
 	}
 }

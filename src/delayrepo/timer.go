@@ -27,19 +27,23 @@ type TimerStorage interface {
 }
 
 type Timer struct {
-	storage TimerStorage
-	pushArg chan pushArg
-	tomb    tomb.Tomb
+	storage   TimerStorage
+	pushArg   chan pushArg
+	deleteArg chan deleteArg
+	timeout   time.Duration
+	tomb      tomb.Tomb
 }
 
-func NewTimer(storage TimerStorage) (*Timer, error) {
+func NewTimer(storage TimerStorage, timeout time.Duration) (*Timer, error) {
 	return &Timer{
-		storage: storage,
-		pushArg: make(chan pushArg),
+		storage:   storage,
+		pushArg:   make(chan pushArg),
+		deleteArg: make(chan deleteArg),
+		timeout:   timeout,
 	}, nil
 }
 
-func (t *Timer) Serve(handler Handler, timeout time.Duration) {
+func (t *Timer) Serve(handler Handler) {
 	defer t.tomb.Done()
 
 	for {
@@ -47,10 +51,6 @@ func (t *Timer) Serve(handler Handler, timeout time.Duration) {
 		if err != nil {
 			handler.OnError(fmt.Errorf("next wake up failed: %s", err))
 		}
-		if next < 0 {
-			next = timeout
-		}
-		fmt.Println(next)
 		select {
 		case <-t.tomb.Dying():
 			return
@@ -61,10 +61,13 @@ func (t *Timer) Serve(handler Handler, timeout time.Duration) {
 				continue
 			}
 			if len(data) > 0 {
-				handler.Do(key, data)
+				go handler.Do(key, data)
 			}
 		case p := <-t.pushArg:
 			err = t.push(p.updateType, p.ontime, p.key, p.data)
+			p.err <- err
+		case p := <-t.deleteArg:
+			err = t.delete(p.key)
 			p.err <- err
 		}
 	}
@@ -98,7 +101,25 @@ func (t *Timer) Push(updateType UpdateType, ontime int64, key string, data []byt
 		err:        make(chan error),
 	}
 	t.pushArg <- arg
-	return <-arg.err
+	err := <-arg.err
+	close(arg.err)
+	return err
+}
+
+type deleteArg struct {
+	key string
+	err chan error
+}
+
+func (t *Timer) Delete(key string) error {
+	arg := deleteArg{
+		key: key,
+		err: make(chan error),
+	}
+	t.deleteArg <- arg
+	err := <-arg.err
+	close(arg.err)
+	return err
 }
 
 func (t *Timer) push(updateType broker.UpdateType, ontime int64, key string, data []byte) error {
@@ -117,14 +138,22 @@ func (t *Timer) pop() (string, [][]byte, error) {
 	return key, data, nil
 }
 
+func (t *Timer) delete(key string) error {
+	_, err := t.storage.Load(key)
+	return err
+}
+
 func (t *Timer) NextWakeup() (time.Duration, error) {
 	key, err := t.storage.Next()
 	if err != nil {
-		return -1, err
+		return t.timeout, err
+	}
+	if key == "" {
+		return t.timeout, nil
 	}
 	ontime, err := t.storage.Ontime(key)
 	if err != nil {
-		return -1, err
+		return t.timeout, err
 	}
 	next := time.Unix(ontime, 0).Sub(time.Now())
 	return next, nil
