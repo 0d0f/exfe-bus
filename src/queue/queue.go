@@ -56,7 +56,7 @@ func (q *Queue) Do(key string, datas [][]byte) {
 		q.config.Log.Err("pop error key: %s", key)
 		return
 	}
-	method, service, mergeKey := splits[0], splits[1], splits[2]
+	method, service, mergeKey := splits[0], "http://"+splits[1], splits[2]
 	needMerge := mergeKey[0] != '-'
 
 	args := []byte("[")
@@ -95,7 +95,7 @@ func (q *Queue) Quit() {
 
 // example:
 // POST to bus://exfe_service/message with merge_key 123, always send on 1366615888, data is {"abc":123}
-// > curl -v "http://127.0.0.1:23334/v3/queue/123/POST/http://exfe_service/message?update=always&ontime=1366615888" -d '{"abc":123}'
+// > curl -v "http://127.0.0.1:23334/v3/queue/123/POST/exfe_service/message?update=always&ontime=1366615888" -d '{"abc":123}'
 //
 // if no merge(send one by one), set merge_key to "-"
 func (q Queue) HandlePush(data string) {
