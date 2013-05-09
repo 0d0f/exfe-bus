@@ -42,12 +42,14 @@ func (s Splitter) HandleSplit(pack BigPack) {
 			return
 		}
 
-		resp, err := broker.Http("POST", url, "plain/text", b)
-		if err != nil {
-			s.config.Log.Err("|splitter|POST|%s|%s|%s|", url, err, string(b))
-		} else {
-			resp.Body.Close()
-		}
+		go func() {
+			resp, err := broker.Http("POST", url, "plain/text", b)
+			if err != nil {
+				s.config.Log.Err("|splitter|POST|%s|%s|%s|", url, err, string(b))
+			} else {
+				resp.Body.Close()
+			}
+		}()
 	}
 }
 
@@ -57,11 +59,13 @@ func (s Splitter) HandleDelete(pack BigPack) {
 
 		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s", s.config.ExfeQueue.Addr, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service)
 
-		resp, err := broker.Http("DELETE", url, "plain/text", nil)
-		if err != nil {
-			s.config.Log.Err("|splitter|DELETE|%s|%s|", url, err)
-		} else {
-			resp.Body.Close()
-		}
+		go func() {
+			resp, err := broker.Http("DELETE", url, "plain/text", nil)
+			if err != nil {
+				s.config.Log.Err("|splitter|DELETE|%s|%s|", url, err)
+			} else {
+				resp.Body.Close()
+			}
+		}()
 	}
 }
