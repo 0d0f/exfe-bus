@@ -34,6 +34,9 @@ func NewSplitter(config *model.Config, dispatcher *gobus.Dispatcher) *Splitter {
 func (s Splitter) HandleSplit(pack BigPack) {
 	for _, to := range pack.Recipients {
 		mergeKey := fmt.Sprintf("%s_%d", pack.MergeKey, to.IdentityID)
+		if pack.MergeKey == "-" {
+			mergeKey = "-"
+		}
 		pack.Data["to"] = to
 
 		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Type)
@@ -55,6 +58,9 @@ func (s Splitter) HandleSplit(pack BigPack) {
 func (s Splitter) HandleDelete(pack BigPack) {
 	for _, to := range pack.Recipients {
 		mergeKey := fmt.Sprintf("%s_%d", pack.MergeKey, to.IdentityID)
+		if pack.MergeKey == "-" {
+			mergeKey = "-"
+		}
 
 		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s", s.config.ExfeQueue.Addr, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service)
 
