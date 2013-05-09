@@ -1,0 +1,2 @@
+{{range .Posts}}{{.By.Name}}: {{.Content | limit 60}}
+{{end}}

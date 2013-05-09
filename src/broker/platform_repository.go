@@ -147,6 +147,7 @@ func (p *Platform) FindCross(id int64, query url.Values) (model.Cross, error) {
 	if len(query) > 0 {
 		url += query.Encode()
 	}
+	fmt.Println(url)
 	var ret model.Cross
 	resp, err := http.Get(url)
 	if err != nil {

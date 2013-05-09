@@ -60,7 +60,7 @@ func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
 	to := invitation.To
 
 	query := make(url.Values)
-	query.Set("user_id", fmt.Sprint("%d", to.UserID))
+	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
 	cross, err := c.platform.FindCross(invitation.CrossId, query)
 	if err != nil {
 		return err
