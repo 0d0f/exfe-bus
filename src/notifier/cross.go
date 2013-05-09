@@ -58,6 +58,15 @@ func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
 	invitation.Config = c.config
 	to := invitation.To
+
+	query := make(url.Values)
+	query.Set("user_id", fmt.Sprint("%d", to.UserID))
+	cross, err := c.platform.FindCross(invitation.CrossId, query)
+	if err != nil {
+		return err
+	}
+	invitation.Cross = cross
+
 	text, err := GenerateContent(c.localTemplate, "v3_cross_invitation", to.Provider, to.Language, invitation)
 	if err != nil {
 		return err
