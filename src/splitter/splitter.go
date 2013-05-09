@@ -16,14 +16,18 @@ type Splitter struct {
 	Split  rest.Processor `path:"" method:"POST"`
 	Delete rest.Processor `path:"" method:"DELETE"`
 
-	dispatcher *gobus.Dispatcher
-	config     *model.Config
+	queueSite string
+	config    *model.Config
 }
 
 func NewSplitter(config *model.Config, dispatcher *gobus.Dispatcher) *Splitter {
+	site := config.ExfeQueue.Addr
+	if site == "0.0.0.0" || site == "" {
+		site = "127.0.0.1"
+	}
 	return &Splitter{
-		dispatcher: dispatcher,
-		config:     config,
+		queueSite: site,
+		config:    config,
 	}
 }
 
@@ -32,7 +36,7 @@ func (s Splitter) HandleSplit(pack BigPack) {
 		mergeKey := fmt.Sprintf("%s_%d", pack.MergeKey, to.IdentityID)
 		pack.Data["to"] = to
 
-		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.config.ExfeQueue.Addr, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Type)
+		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Type)
 		b, err := json.Marshal(pack.Data)
 		if err != nil {
 			s.Error(http.StatusBadRequest, err)
