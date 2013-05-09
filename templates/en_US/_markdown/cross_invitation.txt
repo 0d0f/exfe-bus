@@ -1,33 +1,20 @@
-{{if .IsCreator}}You're gathering this ·X·.{{else}}Invitation from {{.By.Name}}.{{end}}
+{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}{{$link := .Cross.Link .To .Config}}{{if .IsCreator}}You just gathered a ·X·.{{else}}{{.By.Name}} gathers you.{{end}}
 
+## {{.Cross.Title}}{{$titleUpdate := index .Cross.Updated "title"}}{{if $titleUpdate}} (updated){{end}}
+{{.Cross.Description}}{{$descUpdate := index .Cross.Updated "description"}}{{if $descUpdate}} (updated){{end}}
+{{$link}}
 
-{{.Cross.Title}}
-=======
-{{.Link}}
-{{$time := .Cross.Time.StringInZone .Timezone}}{{if $time}}
-{{$time}}
-======={{else}}
-Time
-=======
+{{if $time}}## {{$time}}{{$timeUpdate := index .Cross.Updated "time"}}{{if $timeUpdate}} (updated){{end}}{{else}}## Time
+  To be decied.{{end}}
+
+{{if .Cross.Place.Title}}## {{.Cross.Place.Title}}{{$placeUpdate := index .Cross.Updated "place"}}{{if $placeUpdate}} (updated){{end}}
+ {{.Cross.Place.Description}}{{else}}## Place
   To be decided.{{end}}
 
-{{if .Cross.Place.Title}}{{.Cross.Place.Title}}{{else}}Place{{end}}
-=======
-  {{if .Cross.Place.Description}}{{.Cross.Place.Description}}{{else}}To be decided.{{end}}
+## Exfee {{.Cross.Exfee.AcceptedCount}}/{{.Cross.Exfee.TotalCount}} accepted
+{{range .Cross.Exfee.Invitations}}{{if .IsAccepted}} + {{.Identity.Name}}  {{.Identity.ExternalUsername}}@{{.Identity.Provider}}
+{{end}}{{end}}{{range .Cross.Exfee.Invitations}}{{if .IsPending}} . {{.Identity.Name}}  {{.Identity.ExternalUsername}}@{{.Identity.Provider}}
+{{end}}{{end}}{{range .Cross.Exfee.Invitations}}{{if .IsDeclined}} - {{.Identity.Name}}  {{.Identity.ExternalUsername}}@{{.Identity.Provider}}
+{{end}}{{end}}
 
-
-{{if .ToIn .Cross.Exfee.Accepted}}You've been CONFIRMED to attend. Check it out: {{.Link}}{{else}}I'm in. Check it out: {{.Config.SiteUrl}}/?token={{.To.Token}}&rsvp=accept{{end}}
-
-
-{{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} Invited:{{range .Cross.Exfee.Accepted}}
-+ {{.Identity.Name}}{{if not .Identity.UserID}} {{.Identity.ExternalID}}{{end}}{{if .Host}} (Host){{end}}{{if .Mates}} with {{.Mates}} people{{end}}{{end}}{{range .Cross.Exfee.Pending}}
-· {{.Identity.Name}}{{if not .Identity.UserID}} {{.Identity.ExternalID}}{{end}}{{if .Host}} (Host){{end}}{{if .Mates}} with {{.Mates}} people{{end}}{{end}}{{range .Cross.Exfee.Declined}}
-· {{.Identity.Name}}{{if not .Identity.UserID}} {{.Identity.ExternalID}}{{end}}{{if .Host}} (Host){{end}}{{if .Mates}} with {{.Mates}} people{{end}}{{end}}
-
-{{if .Cross.Description}}
-Description
--------
-  {{.Cross.Description}}{{if .LongDescription}}...{{ end }}
-
-{{end}}
 # Reply this email directly as conversation. #

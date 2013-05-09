@@ -1,25 +1,16 @@
-Updates of ·X·{{if .IsTitleChanged}} “{{.OldCross.Title}}”{{end}} by {{.ListBy 3 ", " }}.
+# {{.Cross.Title}} {{if .IsTitleChanged}}(Updated){{end}}{{if .IsTimeChanged}}
+{{$tz := .Timezone}}{{$time := .Cross.Time.StringInZone $tz}}
+{{if $time}}## {{$time}} (updated){{else}}## Time (updated)
+  To be decied.{{end}}{{end}}{{if .IsPlaceChanged}}
 
-{{if .IsTitleChanged}}*{{ end }}{{.Cross.Title}}{{if .IsTitleChanged}}*{{end}}
-=======
-{{.Link}}
-
-{{$time := .Cross.Time.StringInZone .To.Timezone}}{{if $time}}{{if .IsTimeChanged}}*{{end}}{{$time}}{{if .IsTimeChanged}}*{{end}}
-======={{else}}{{if .IsTimeChanged}}*{{end}}Time{{if .IsTimeChanged}}*{{end}}
-=======
-  To be decided.{{end}}
-
-{{if .Cross.Place.Title}}{{if .IsPlaceChanged}}*{{end}}{{.Cross.Place.Title}}{{if .IsPlaceChanged}}*{{end}}
-======={{if .Cross.Place.Description}}
-  {{if .IsPlaceChanged}}*{{end}}{{.Cross.Place.Description}}{{if .IsPlaceChanged}}*{{end}}{{end}}{{else}}
-{{if .IsPlaceChanged}}*{{end}}Place{{if .IsPlaceChanged}}*{{end}}
-=======
-  {{if .IsPlaceChanged}}*{{end}}To be decided.{{if .IsPlaceChanged}}*{{end}}{{end}}
-
+{{if .Cross.Place.Title}}## {{.Cross.Place.Title}} (updated)
+ {{.Cross.Place.Description}}{{else}}## Place (updated)
+  To be decided.{{end}}{{end}}{{if .IsExfeeChanged}}
+  
 {{if .NewAccepted}}
-· {{.Cross.Exfee.CountPeople .Cross.Exfee.Accepted}} Accepted: {{range for .NewAccepted}}{{.V.Identity.Name}}{{if not .Last}}, {{end}}{{end}}{{if .OldAccepted}} and {{.TotalOldAccepted}} others{{end}}.{{end}}{{if .NewDeclined}}
-· Unavailable: {{range for .NewDeclined}}{{.V.Identity.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}{{if .NewInvited}}
-· Newly invited: {{range for .NewInvited}}{{.V.Identity.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}{{if .Removed}}
-· Removed: {{range for .Removed}}{{.V.Identity.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}
+· Accepted: {{range for .NewAccepted}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}{{if .OldAccepted}} and {{len .OldAccepted}} {{len .OldAccepted | plural "other" "others"}}{{end}}.{{end}}{{if .NewInvited}}
+· Newly invited: {{range for .NewInvited}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}{{if .NewDeclined}}
+· Unavailable: {{range for .NewDeclined}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}{{if .Removed}}
+· Removed: {{range for .Removed}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}{{end}}
 
 # Reply this email directly as conversation. #

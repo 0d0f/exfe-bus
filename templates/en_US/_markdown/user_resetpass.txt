@@ -2,6 +2,6 @@ Hi, {{.UserName}}.
 
 You just requested to reset your forgotten EXFE password.
 
-Please click here to set new password: {{.Link}} (This single-use link will be expired in 1 day.)
+Please click this link to reset password: {{.Link}} (This single-use link will be expired in 1 day.)
 
-This email is sent to {{.To.ExternalID}} per forgot password request on EXFE( {{.Config.SiteUrl}} ).
+This email is sent to {{.To.ExternalUsername}} per forgot password request on EXFE( {{.Config.SiteUrl}} ).

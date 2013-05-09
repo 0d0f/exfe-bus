@@ -1,164 +1,122 @@
-{{$time := .Cross.Time.StringInZone .Timezone}}<!DOCTYPE html>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
-    <head>
-        <title></title>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <style>
-            .exfe_mail_identity_name {
-                color: #3a6ea5;
-            }
-            .exfe_mail_msg_identity_name {
-                color: #666666;
-            }
-            .exfe_mail_msg_at {
-                font-size: 12px;
-                color: #999999;
-            }
-            .exfe_mail_msg_time {
-                font-size: 12px;
-                color: #666666;
-            }
-        </style>
-    </head>
-    <body>
-        <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 20px; color: #191919; font-weight: normal; width: 640px; padding: 20px; background-color: #fbfbfb;">
-            <tr>
-                <td colspan="5" style="color: #333333;">
-                    <a href="{{.Link}}" style="color: #333333; text-decoration: none;">Updates of <span style="color: #3a6ea5;">·X·</span>{{if .IsTitleChanged}} “<span style="color: #191919;">{{.OldCross.Title | html}}</span>”{{end}} by {{.ListBy 3 ", " | html}}.</a>
-                </td>
-            </tr>
-            <tr><td colspan="5" height="10"></td></tr>
-            <tr>
-                <td colspan="5" style="font-size: 20px; line-height: 26px;">
-                    <a href="{{.Link}}" style="color:{{if .IsTitleChanged}}#3a6ea5{{else}}#333333{{end}}; text-decoration: none; font-weight: lighter;">
-                        {{.Cross.Title | html}}
-                    </a>
-                </td>
-            </tr>
-            <tr><td colspan="5" height="10"></td></tr>
-            <tr>
-                <td valign="top" width="180">
-                    {{if $time}}
-                    <p style="font-size: 20px; line-height: 26px; margin: 0;">
-                        <a href="{{.Link}}" style="color: {{if .IsTimeChanged}}#3a6ea5{{else}}#333333{{end}}; text-decoration: none;">{{$time | html}}({{.Timezone}})</a>
-                    </p>
-                    {{else}}
-                    <p style="font-size: 20px; line-height: 26px; margin: 0;">
-                        <a href="{{.Link}}" style="color: {{if .IsTimeChanged}}#3a6ea5{{else}}#333333{{end}}; text-decoration: none;">Time</a>
-                    </p>
-                    <p style="margin: 0;">
-                        <a href="{{.Link}}" style="color: {{if .IsTimeChanged}}#3a6ea5{{else}}#191919{{end}}; text-decoration: none;">To be decided</a>
-                    </p>
-                    {{ end }}
-                </td>
-                <td width="10"></td>
-                <td valign="top" width="190" style="word-break: break-all;">
-                    {{if .Cross.Place.Title}}
-                    <p style="font-size: 20px; line-height: 26px; margin: 0;">
-                        <a href="{{.Link}}" style="color: {{ if .IsPlaceChanged }}#3a6ea5{{ else }}#333333{{ end }}; text-decoration: none;">{{ .Cross.Place.Title | html }}</a>
-                    </p>
-                    <p style="margin: 0;">{{$desc := .Cross.Place.Description}}
-                        <a href="{{.Link}}" style="color: {{if .IsPlaceChanged}}#3a6ea5{{else}}#191919{{end}}; text-decoration: none;">{{replace "\n" "<br />" $desc | html}}</a>
-                    </p>
-                    {{else}}
-                    <p style="font-size: 20px; line-height: 26px; margin: 0;">
-                        <a href="{{.Link}}" style="color: {{if .IsPlaceChanged}}#3a6ea5{{else}}#333333{{end}}; text-decoration: none;">Place</a>
-                    </p>
-                    <p style="margin: 0;">
-                        <a href="{{.Link}}" style="color: {{if .IsPlaceChanged}}#3a6ea5{{else}}#191919{{end}}; text-decoration: none;">To be decided</a>
-                    </p> 
-                    {{end}}
-                </td>
-                <td width="10"></td>
-                <td valign="top" width="210">
-                    {{if .Cross.Place.Lng}}
-                    <a href="{{.Link}}"><img src="https://maps.googleapis.com/maps/api/staticmap?center={{.Cross.Place.Lat}},{{.Cross.Place.Lng}}&markers=icon%3ahttp%3A%2F%2Fimg.exfe.com%2Fweb%2Fmap_pin_blue.png%7C{{.Cross.Place.Lat}},{{.Cross.Place.Lng}}&zoom=13&size=210x105&maptype=road&sensor=false" /></a>
-                    {{end}}
-                </td>
-            </tr>
-            <tr><td colspan="5" height="10"></td></tr>
-            <tr>
-                <td colspan="5">
-                    <table border="0" cellpadding="0" cellspacing="0" style="font-family: Verdana; font-size: 13px; line-height: 20px; color: #191919; font-weight: normal; width: 100%; background-color: #fbfbfb;">
-                    	{{if .NewAccepted}}
-                        <tr>
-                            <td width="15"><img src="{{.Config.SiteImg}}/email/rsvp_accepted_12_blue.png" /></td>
-                            <td>
-                                <a href="{{.Link}}" style="color: #191919; text-decoration: none;">
-                                    <p style="margin: 0;">
-                                        <span class="exfe_mail_identity_name">{{.Cross.Exfee.CountPeople .Cross.Exfee.Accepted | html }}</span> Accepted: {{range for .NewAccepted}}<span class='exfe_mail_identity_name'>{{.V.Identity.Name | html}}</span>{{if not .Last}}, {{end}}{{end}}{{if .OldAccepted}}, and {{.TotalOldAccepted | html}} others{{end}}.
-                                    </p>
-                                </a>
-                            </td>
-                        </tr>
-                        {{end}}
-                        {{if .NewDeclined}}
-                        <tr>
-                            <td width="15"><img src="{{.Config.SiteImg}}/email/rsvp_declined_12.png" /></td>
-                            <td>
-                                <a href="{{.Link}}" style="color: #191919; text-decoration: none;">
-                                    <p style="margin: 0;">
-                                        Unavailable: {{range for .NewDeclined}}{{.V.Identity.Name | html}}{{if not .Last}}, {{end}}{{end}}
-                                    </p>
-                                </a>
-                            </td>
-                        </tr>
-                        {{end}}
-                        {{if .NewInvited}}
-                        <tr>
-                            <td width="15"><img src="{{.Config.SiteImg}}/email/plus_12_blue.png" /></td>
-                            <td>
-                                <a href="{{.Link}}" style="color: #191919; text-decoration: none;">
-                                    <p style="margin: 0;">
-                                        Newly invited: {{range for .NewInvited}}{{if equal .V.RsvpStatus "ACCEPTED"}}<span class="exfe_mail_identity_name">{{.V.Identity.Name | html}}</span>{{else}}{{.V.Identity.Name | html}}{{end}}{{if not .Last}}, {{end}}{{end}}.
-                                    </p>
-                                </a>
-                            </td>
-                        </tr>
-                        {{end}}
-                        {{if .Removed}}
-                        <tr>
-                            <td width="15"><img src="{{.Config.SiteImg}}/email/minus_12.png" /></td>
-                            <td>
-                                <a href="{{.Link}}" style="color: #191919; text-decoration: none;">
-                                    <p style="margin: 0;">
-                                        Removed: {{range for .Removed}}{{.V.Identity.Name | html}}{{if not .Last}}, {{end}}{{end}}.
-                                    </p>
-                                </a>
-                            </td>
-                        </tr>
-                        {{end}}
-                    </table>
-                </td>
-            </tr>
-            <tr><td colspan="5" height="10"></td></tr>
-            <tr>
-                <td colspan="5">
-                    {{$api := .Config.SiteApi}}
-                    {{range .Cross.Exfee.Invitations}}
-                    <img style="padding-right: 5px;" width="40" height="40" alt="{{replace `"` `\"` .Identity.Name}}" title="{{replace `"` `\"` .Identity.Name}}" src="{{$api}}/v2/avatar/render?resolution=2x&url={{.Identity.Avatar | base64 | urlquery}}&width=40&height=40{{if not .IsAccepted}}&alpha=0.33{{end}}{{if .Host}}&ishost=true{{end}}{{if .Mates}}&mates={{.Mates}}{{end}}">
-                    {{end}}
-                </td>
-            </tr>
-            <tr><td colspan="5" height="10"></td></tr>
-            <tr>
-                <td colspan="5">
-                    <a href="{{.Link}}" style="color: {{if .IsDescriptionChanged}}#3a6ea5{{else}}#333333{{end}}; text-decoration: none;">{{limit 233 .Cross.Description | html | replace "\n" "<br />"}}</a>
-                </td>
-            </tr>
-            <tr><td colspan="5" height="20"></td></tr>
-            <tr>
-                <td colspan="5" style="font-size: 11px; line-height: 15px; color: #7F7F7F;">
-                    Reply this email directly as conversation, or try <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.AppUrl}}">EXFE</a> app.
-                    <br />
-                    <span style="color: #B2B2B2">This update is sent from <a style="color: #3a6ea5; text-decoration: none;" href="{{.Config.SiteUrl}}">EXFE</a> automatically. <a style="color: #E6E6E6; text-decoration: none;" href="{{.Config.SiteUrl}}/mute/cross?token={{.To.Token}}">Unsubscribe?</a>
-                    <!--
-                    You can change
-                    <a style="color: #B2B2B2; text-decoration: undeline;" href="">notification preference</a>.
-                    -->
-                    </span>
-                </td>
-            </tr>
-        </table>
-    </body>
+<head>
+	<title></title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+{{$link := .Link}}
+<body style="font-family:Helvetica Neue,Helvetica,Arial,sans-serif; max-width:640px; margin:0; padding:0; color:#333333; font-size:14px; line-height:20px; font-weight:400;">
+	<table cellpadding="0" cellspacing="0" style="width:100%; background-color:#FAFAFA; border-spacing:0; border-collapse:collapse;">
+		<tbody>
+			{{if .IsTitleChanged}}
+			<tr>
+				<td width="30px"></td>
+				<td style="color: #E52E53; font-size:10px; line-height:12px;"><span style="color:#E52E53;">Updated</span></td>
+			</tr>
+			{{end}}			
+			<tr>
+				<td width="30px"></td>
+				<td style="padding: 10px 0 10px 0; font-size:18px; line-height:24px;"><a href="{{$link}}" style="color:#333333; text-decoration: none;">{{.Cross.Title | html}}</a></td>
+			</tr>
+			{{if .IsDescriptionChanged}}
+			<tr>
+				<td width="30px"></td>
+				<td style="color: #E52E53; font-size:10px; line-height:12px;"><span style="color:#E52E53;">Updated</span></td>
+			</tr>
+			<tr>
+				<td width="30px"></td>
+				<td style="padding: 10px 0 10px 0;"><a href="{{$link}}" style="color:#333333; text-decoration: none;">{{.Cross.Description | html}}</a></td>
+			</tr>
+			{{end}}
+			{{if .IsTimeChanged}}{{$tz := .Timezone}}{{$time := .Cross.Time.StringInZone $tz}}
+			<tr>
+				<td width="30px"></td>
+				<td style="color: #E52E53; font-size:10px; line-height:12px;"><span style="color:#E52E53;">Updated</span></td>
+			</tr>
+			{{if $time}}
+			<tr>
+				<td width="30px"></td>
+				<td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;"><a href="{{$link}}" style="color:#3A6EA5; text-decoration: none;">{{$time | html}}</a></td>
+			</tr>
+			<tr>
+				<td width="30px"></td>
+				<td></td>
+			</tr>
+			{{else}}
+			<tr>
+				<td width="30px"></td>
+				<td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;"><a href="{{$link}}" style="color:#3A6EA5; text-decoration: none;">Time</a></td>
+			</tr>
+			<tr>
+				<td width="30px"></td>
+				<td><a href="{{$link}}" style="color:#333333; text-decoration: none;">To be decided</a></td>
+			</tr>
+			{{end}}
+			{{end}}
+			{{if .IsPlaceChanged}}
+			<tr>
+				<td width="30px"></td>
+				<td style="color: #E52E53; font-size:10px; line-height:12px;"><span style="color:#E52E53;">Updated</span></td>
+			</tr>
+			{{if .Cross.Place.Title}}
+			<tr>
+				<td width="30px"></td>
+				<td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;"><a href="{{$link}}" style="color:#3A6EA5; text-decoration: none;">{{.Cross.Place.Title | html | replace "\n" "<br />"}}</a></td>
+			</tr>
+			<tr>
+				<td width="30px"></td>
+				<tr><td><a href="{{$link}}" style="color:#333333; text-decoration: none;">{{.Cross.Place.Description | html | replace "\n" "<br />"}}</a></td>
+			</tr>
+			{{else}}
+			<tr>
+				<td width="30px"></td>
+				<td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;"><a href="{{$link}}" style="color:#3A6EA5; text-decoration: none;">Place</a></td>
+			</tr>
+			<tr>
+				<td width="30px"></td>
+				<td><a href="{{$link}}" style="color:#333333; text-decoration: none;">To be decided</a></td>
+			</tr>
+			{{end}}
+			{{end}}
+			{{if .IsExfeeChanged}}
+			<tr>
+				<td width="30px"></td>
+				<td style="color: #E52E53; font-size:10px; line-height:12px;"><span style="color:#E52E53;">Updated</span></td>
+			</tr>
+			{{if .NewAccepted}}
+			<tr>
+				<td width="30px"><img src="cid:rsvp_dot_accepted_2x_png" style="width: 12px; height: 12px; padding-left: 14px;"/></td>
+				<td><a href="{{$link}}" style="color:#333333; text-decoration: none;">Accepted: {{range for .NewAccepted}}<span style="font-weight:500; color:#3A6EA5;">{{.V.Name}}</span>{{if not .Last}}, {{end}}{{end}}{{if .OldAccepted}} and {{len .OldAccepted}} {{len .OldAccepted | plural "other" "others"}}{{end}}</a></td>
+			</tr>
+			{{end}}
+			{{if .NewInvited}}
+			<tr>
+				<td width="30px"><img src="cid:rsvp_dot_pending_2x_png" style="width: 12px; height: 12px; padding-left: 14px;"/></td>
+				<td><a href="{{$link}}" style="color:#333333; text-decoration: none;">Newly invited: {{range for .NewInvited}}<span style="font-weight:500;">{{.V.Name}} </span>{{if not .Last}}, {{end}}{{end}}</a></td>
+			</tr>
+			{{end}}
+			{{if .NewDeclined}}
+			<tr>
+				<td width="30px"><img src="cid:rsvp_dot_unavailable_2x_png" style="width: 12px; height: 12px; padding-left: 14px;"/></td>
+				<td><a href="{{$link}}" style="color:#333333; text-decoration: none;">Unavailable: {{range for .NewDeclined}}<span style="font-weight:500;">{{.V.Name}}</span>{{if not .Last}}, {{end}}{{end}}</a></td>
+			</tr>
+			{{end}}
+			{{if .Removed}}
+			<tr>
+				<td width="30px"><span style="padding-left: 17px">-</span></td>
+				<td><a href="{{$link}}" style="color:#333333; text-decoration: none;">Removed: {{range for .Removed}}<span style="font-weight:500;"><del>{{.V.Name}}</del></span>{{if not .Last}}, {{end}}{{end}}</a></td>
+			</tr>
+			{{end}}
+			{{end}}
+			<tr style="vertical-align:top">
+				<td width="30px"></td>
+				<td height="30px">&nbsp;</td>
+			</tr>
+			<tr color="#7F7F7F" bgcolor="#EEEEEE">
+				<td width="30px"></td>
+				<td style="color:#7F7F7F; font-size:11px; line-height:13px; padding:8px 0 8px 0;">Reply this email as group conversation, ‘cc’ people to invite. Get <a href="{{.Config.AppUrl}}" style="color:#3A6EA5; text-decoration:none;">EXFE</a> app <span style="font-style: italic">free</span> to engage easier.<br />This email is generated by EXFE automatically. <a href="{{.Config.SiteUrl}}/mute/cross?token={{.To.Token}}" style="color:#7F7F7F;">Unsubscribe</a><!-- further updates or <a href="/preference" style="color:#7F7F7F;">change notification preference</a>-->.</td>
+			</tr>
+		</tbody>
+	</table>
+</body>
 </html>

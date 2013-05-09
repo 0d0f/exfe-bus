@@ -1,4 +1,0 @@
-{{$timezone := .Timezone}}{{range .Posts}}· {{.By.Name}} at {{.CreatedAtInZone $timezone}} said:
-    {{.Content}}
-{{end}}
-# Reply this email directly as conversation. #

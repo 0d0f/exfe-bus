@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-rest"
-	"gobus"
 	"model"
 	"net/http"
 )
@@ -20,7 +19,7 @@ type Splitter struct {
 	config    *model.Config
 }
 
-func NewSplitter(config *model.Config, dispatcher *gobus.Dispatcher) *Splitter {
+func NewSplitter(config *model.Config) *Splitter {
 	site := config.ExfeQueue.Addr
 	if site == "0.0.0.0" || site == "" {
 		site = "127.0.0.1"

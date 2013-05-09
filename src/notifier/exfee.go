@@ -28,7 +28,7 @@ func (e Exfee) V3Conversation(updates []model.ConversationUpdate) error {
 	}
 
 	to := arg.To
-	text, err := GenerateContent(e.localTemplate, "v3_exfee_conversation", to.Provider, to.Language, arg)
+	text, err := GenerateContent(e.localTemplate, "exfee_conversation", to.Provider, to.Language, arg)
 	if err != nil {
 		return err
 	}

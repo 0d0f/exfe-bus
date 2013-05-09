@@ -44,7 +44,37 @@ func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 		"Cross":  cross,
 		"Config": c.config,
 	}
-	text, err := GenerateContent(c.localTemplate, "v3_cross_digest", to.Provider, to.Language, arg)
+	text, err := GenerateContent(c.localTemplate, "cross_digest", to.Provider, to.Language, arg)
+	if err != nil {
+		return err
+	}
+	_, err = c.platform.Send(to, text)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c Cross) V3Remind(requests []model.CrossDigestRequest) error {
+	if len(requests) == 0 {
+		return fmt.Errorf("len(requests) == 0")
+	}
+	to := requests[len(requests)-1].To
+	crossId := requests[0].CrossId
+
+	query := make(url.Values)
+	query.Set("user_id", fmt.Sprint("%d", to.UserID))
+	cross, err := c.platform.FindCross(crossId, query)
+	if err != nil {
+		return err
+	}
+
+	arg := map[string]interface{}{
+		"To":     to,
+		"Cross":  cross,
+		"Config": c.config,
+	}
+	text, err := GenerateContent(c.localTemplate, "cross_digest", to.Provider, to.Language, arg)
 	if err != nil {
 		return err
 	}
@@ -67,7 +97,7 @@ func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
 	}
 	invitation.Cross = cross
 
-	text, err := GenerateContent(c.localTemplate, "v3_cross_invitation", to.Provider, to.Language, invitation)
+	text, err := GenerateContent(c.localTemplate, "cross_invitation", to.Provider, to.Language, invitation)
 	if err != nil {
 		return err
 	}
@@ -105,7 +135,7 @@ func (c Cross) V3Summary(updates []model.CrossUpdate) error {
 	}
 
 	to = arg.To
-	text, err := GenerateContent(c.localTemplate, "v3_cross_summary", to.Provider, to.Language, arg)
+	text, err := GenerateContent(c.localTemplate, "cross_summary", to.Provider, to.Language, arg)
 	if err != nil {
 		return err
 	}
@@ -123,90 +153,6 @@ func in(id *model.Invitation, ids []model.Invitation) bool {
 		}
 	}
 	return false
-}
-
-func (c *Cross) Summary(updates model.CrossUpdates) error {
-	if len(updates) == 0 {
-		return fmt.Errorf("len(updates) == 0")
-	}
-
-	to := updates[0].To
-	if to.Provider == "twitter" {
-		c.config.Log.Debug("not send to twitter: %s", to)
-		return nil
-	}
-	selfUpdates := true
-	for _, update := range updates {
-		if !to.SameUser(&update.By) {
-			selfUpdates = false
-		}
-	}
-	if selfUpdates {
-		c.config.Log.Debug("not send with all self updates: %s", to)
-		return nil
-	}
-
-	text, err := c.getSummaryContent(updates)
-	if err != nil {
-		return fmt.Errorf("can't get content: %s", err)
-	}
-
-	if text == "" {
-		return nil
-	}
-
-	_, err = c.platform.Send(to, text)
-	if err != nil {
-		return fmt.Errorf("send error: %s", err)
-	}
-	return nil
-}
-
-func (c *Cross) Invite(invitation model.CrossInvitation) error {
-	text, err := c.getInvitationContent(invitation)
-	if err != nil {
-		return fmt.Errorf("can't get content: %s", err)
-	}
-
-	_, err = c.platform.Send(invitation.To, text)
-	if err != nil {
-		return fmt.Errorf("send error: %s", err)
-	}
-
-	return nil
-}
-
-func (c *Cross) getSummaryContent(updates []model.CrossUpdate) (string, error) {
-	arg, err := SummaryFromUpdates(updates, c.config)
-	if err != nil {
-		return "", err
-	}
-
-	if !arg.IsChanged() {
-		return "", nil
-	}
-
-	text, err := GetContent(c.localTemplate, "cross_summary", arg.To, arg)
-	if err != nil {
-		return "", fmt.Errorf("can't get content: %s", err)
-	}
-
-	return text, nil
-}
-
-func (c *Cross) getInvitationContent(arg model.CrossInvitation) (string, error) {
-	err := arg.Parse(c.config)
-	if err != nil {
-		return "", err
-	}
-	arg.Cross.Exfee.Parse()
-
-	text, err := GetContent(c.localTemplate, "cross_invitation", arg.To, arg)
-	if err != nil {
-		return "", fmt.Errorf("can't get content: %s", err)
-	}
-
-	return text, nil
 }
 
 type SummaryArg struct {

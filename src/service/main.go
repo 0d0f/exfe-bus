@@ -38,13 +38,6 @@ func main() {
 		os.Exit(-1)
 		return
 	}
-	table, err := gobus.NewTable(config.Dispatcher)
-	if err != nil {
-		log.Crit("can't create table: %s", err)
-		os.Exit(-1)
-		return
-	}
-	dispatcher := gobus.NewDispatcher(table)
 
 	addr := fmt.Sprintf("%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", addr)
@@ -91,7 +84,7 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Splitter {
-		splitter := splitter.NewSplitter(&config, dispatcher)
+		splitter := splitter.NewSplitter(&config)
 		register("splitter", splitter, nil)
 	}
 
@@ -127,17 +120,6 @@ func main() {
 			return
 		}
 		log.Info("register Thirdpart")
-	}
-
-	if config.ExfeService.Services.Notifier {
-		notifier := NewNotifier(localTemplate, &config, platform)
-		err = bus.Register(notifier)
-		if err != nil {
-			log.Crit("gobus launch failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		log.Info("register Notifier")
 	}
 
 	go func() {
