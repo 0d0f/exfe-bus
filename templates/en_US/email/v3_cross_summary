@@ -1,8 +1,8 @@
 Content-Type: multipart/mixed; boundary="mixsplitter"
-References: <{{.Config.Email.Prefix}}+{{.Exfee.ID}}@exfe.com>
+References: <{{.Config.Email.Prefix}}+{{.Cross.ID}}@exfe.com>
 To: =?utf-8?B?{{.To.Name | base64}}?= <{{.To.ExternalUsername}}>
-From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <{{.Config.Email.Prefix}}+e{{.Exfee.ID}}@{{.Config.Email.Domain}}>
-Subject: =?utf-8?B?{{.Exfee.Name | base64}}?=
+From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <{{.Config.Email.Prefix}}+{{.Cross.ID}}@{{.Config.Email.Domain}}>
+Subject: =?utf-8?B?{{.Cross.Title | base64}}?=
 
 --mixsplitter
 Content-Type: multipart/alternative; boundary="alternativesplitter"
@@ -11,13 +11,13 @@ Content-Type: multipart/alternative; boundary="alternativesplitter"
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: base64
 
-{{sub . "_markdown/v3_exfee_rsvp.txt" | base64 | column 80 "\r\n"}}
+{{sub . "_markdown/v3_cross_summary.txt" | base64 | column 80 "\r\n"}}
 
 --alternativesplitter
 Content-Type: text/html; charset=utf-8
 Content-Transfer-Encoding: base64
 
-{{sub . "_html/v3_exfee_rsvp.html" | base64 | column 80 "\r\n"}}
+{{sub . "_html/v3_cross_summary.html" | base64 | column 80 "\r\n"}}
 
 --alternativesplitter--
 {{if .NewAccepted}}

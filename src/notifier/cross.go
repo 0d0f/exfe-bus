@@ -69,6 +69,53 @@ func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
 	return nil
 }
 
+func (c Cross) V3Summary(updates []model.CrossUpdate) error {
+	if len(updates) == 0 {
+		return fmt.Errorf("len(updates) == 0")
+	}
+
+	to := updates[0].To
+	selfUpdates := true
+	for _, update := range updates {
+		if !to.SameUser(&update.By) {
+			selfUpdates = false
+		}
+	}
+	if selfUpdates {
+		c.config.Log.Debug("not send with all self updates: %s", to)
+		return nil
+	}
+
+	arg, err := SummaryFromUpdates(updates, c.config)
+	if err != nil {
+		return err
+	}
+
+	if !arg.IsChanged() {
+		return nil
+	}
+
+	to = arg.To
+	text, err := GenerateContent(c.localTemplate, "v3_cross_summary", to.Provider, to.Language, arg)
+	if err != nil {
+		return err
+	}
+	_, err = c.platform.Send(to, text)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func in(id *model.Invitation, ids []model.Invitation) bool {
+	for _, i := range ids {
+		if id.Identity.SameUser(i.Identity) {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *Cross) Summary(updates model.CrossUpdates) error {
 	if len(updates) == 0 {
 		return fmt.Errorf("len(updates) == 0")
