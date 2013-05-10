@@ -4,6 +4,7 @@ import (
 	"broker"
 	"encoding/json"
 	"fmt"
+	"github.com/googollee/go-logger"
 	"github.com/googollee/go-rest"
 	"model"
 	"net/http"
@@ -17,6 +18,7 @@ type Splitter struct {
 
 	queueSite string
 	config    *model.Config
+	log       *logger.SubLogger
 }
 
 func NewSplitter(config *model.Config) *Splitter {
@@ -27,10 +29,15 @@ func NewSplitter(config *model.Config) *Splitter {
 	return &Splitter{
 		queueSite: site,
 		config:    config,
+		log:       config.Log.Sub("splitter"),
 	}
 }
 
 func (s Splitter) HandleSplit(pack BigPack) {
+	log := s.log.SubCode()
+	log.Debug("post to %s,%s,%s,%v", pack.Method, pack.Service, pack.MergeKey, pack.Recipients)
+	defer log.Debug("posted")
+
 	for _, to := range pack.Recipients {
 		mergeKey := fmt.Sprintf("%s_%d", pack.MergeKey, to.IdentityID)
 		pack.Data["to"] = to
@@ -54,6 +61,10 @@ func (s Splitter) HandleSplit(pack BigPack) {
 }
 
 func (s Splitter) HandleDelete(pack BigPack) {
+	log := s.log.SubCode()
+	log.Debug("delete to %s,%s,%s,%v", pack.Method, pack.Service, pack.MergeKey, pack.Recipients)
+	defer log.Debug("deleted")
+
 	for _, to := range pack.Recipients {
 		mergeKey := fmt.Sprintf("%s_%d", pack.MergeKey, to.IdentityID)
 

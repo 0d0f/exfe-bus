@@ -4,6 +4,7 @@ import (
 	"broker"
 	"delayrepo"
 	"fmt"
+	"github.com/googollee/go-logger"
 	"github.com/googollee/go-rest"
 	"gobus"
 	"io"
@@ -23,6 +24,7 @@ type Queue struct {
 	rest.Service `prefix:"/v3/queue" mime:"plain/text"`
 
 	config     *model.Config
+	log        *logger.SubLogger
 	timeout    time.Duration
 	dispatcher *gobus.Dispatcher
 
@@ -34,6 +36,7 @@ type Queue struct {
 func NewQueue(config *model.Config, redis *broker.RedisPool, dispatcher *gobus.Dispatcher) (*Queue, error) {
 	ret := &Queue{
 		config:     config,
+		log:        config.Log.Sub("queue"),
 		timeout:    time.Second * 30,
 		dispatcher: dispatcher,
 	}
@@ -65,9 +68,11 @@ func (q *Queue) Do(key string, datas [][]byte) {
 			args = append(args, data...)
 			args = append(args, []byte(",")...)
 		} else {
+			log := q.log.SubCode()
+			log.Debug("|queue|%s|%s|%s", method, service, string(args))
 			resp, err := broker.Http(method, service, "application/json", data)
 			if err != nil {
-				q.config.Log.Err("|queue|%s|%s|%s|%s", method, service, err, string(data))
+				log.Err("|queue|%s|%s|%s|%s", method, service, err, string(data))
 			} else {
 				resp.Body.Close()
 			}
@@ -75,9 +80,11 @@ func (q *Queue) Do(key string, datas [][]byte) {
 	}
 	if needMerge && len(args) > 1 {
 		args[len(args)-1] = byte(']')
+		log := q.log.SubCode()
+		log.Debug("|queue|%s|%s|%s", method, service, string(args))
 		resp, err := broker.Http(method, service, "application/json", args)
 		if err != nil {
-			q.config.Log.Err("|queue|%s|%s|%s|%s", method, service, err, string(args))
+			log.Err("|queue|%s|%s|%s|%s", method, service, err, string(args))
 		} else {
 			resp.Body.Close()
 		}
