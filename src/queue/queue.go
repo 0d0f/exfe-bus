@@ -3,6 +3,7 @@ package main
 import (
 	"broker"
 	"delayrepo"
+	"encoding/base64"
 	"fmt"
 	"github.com/googollee/go-logger"
 	"github.com/googollee/go-rest"
@@ -11,7 +12,6 @@ import (
 	"io/ioutil"
 	"model"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -120,11 +120,12 @@ func (q Queue) HandlePush(data string) {
 		q.Error(http.StatusBadRequest, q.GetError(3, "invalid mergeKey: (empty)"))
 		return
 	}
-	service, err := url.QueryUnescape(service)
+	b, err := base64.URLEncoding.DecodeString(service)
 	if err != nil {
-		q.Error(http.StatusBadRequest, q.GetError(4, fmt.Sprintf("service invalid: %s", err)))
+		q.Error(http.StatusBadRequest, q.GetError(4, fmt.Sprintf("service(%s) invalid: %s", service, err)))
 		return
 	}
+	service = string(b)
 
 	query := q.Request().URL.Query()
 	updateType, ontimeStr := query.Get("update"), query.Get("ontime")
@@ -158,11 +159,12 @@ func (q Queue) HandleDelete() {
 		q.Error(http.StatusBadRequest, q.GetError(3, "invalid mergeKey: (empty)"))
 		return
 	}
-	service, err := url.QueryUnescape(service)
+	b, err := base64.URLEncoding.DecodeString(service)
 	if err != nil {
-		q.Error(http.StatusBadRequest, q.GetError(4, fmt.Sprintf("service invalid: %s", err)))
+		q.Error(http.StatusBadRequest, q.GetError(4, fmt.Sprintf("service(%s) invalid: %s", service, err)))
 		return
 	}
+	service = string(b)
 
 	err = q.timer.Delete(fmt.Sprintf("%s,%s,%s", method, service, mergeKey))
 	if err != nil {
