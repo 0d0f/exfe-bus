@@ -35,7 +35,7 @@ func NewSplitter(config *model.Config) *Splitter {
 
 func (s Splitter) HandleSplit(pack BigPack) {
 	log := s.log.SubCode()
-	log.Debug("post to %s,%s,%s,%v", pack.Method, pack.Service, pack.MergeKey, pack.Recipients)
+	log.Debug("|post|%s|%s|%s|%s|%d|%v", pack.Method, pack.Service, pack.MergeKey, pack.Type, pack.Ontime, pack.Recipients)
 	defer log.Debug("posted")
 
 	for _, to := range pack.Recipients {
@@ -62,7 +62,7 @@ func (s Splitter) HandleSplit(pack BigPack) {
 
 func (s Splitter) HandleDelete(pack BigPack) {
 	log := s.log.SubCode()
-	log.Debug("delete to %s,%s,%s,%v", pack.Method, pack.Service, pack.MergeKey, pack.Recipients)
+	log.Debug("|delete|%s|%s|%s|%s|%d|%v", pack.Method, pack.Service, pack.MergeKey, pack.Type, pack.Ontime, pack.Recipients)
 	defer log.Debug("deleted")
 
 	for _, to := range pack.Recipients {
