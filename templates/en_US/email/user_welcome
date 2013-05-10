@@ -10,12 +10,12 @@ Content-Type: multipart/alternative; boundary="alternativesplitter"
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: base64
 
-{{sub . "_markdown/v3_user_welcome.txt" | base64 | column 80 "\r\n"}}
+{{sub . "_markdown/user_welcome.txt" | base64 | column 80 "\r\n"}}
 --alternativesplitter
 Content-Type: text/html; charset=utf-8
 Content-Transfer-Encoding: base64
 
-{{sub . "_html/v3_user_welcome.html" | base64 | column 80 "\r\n"}}
+{{sub . "_html/user_welcome.html" | base64 | column 80 "\r\n"}}
 --alternativesplitter--
 
 --mixsplitter
