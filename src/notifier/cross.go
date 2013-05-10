@@ -160,11 +160,11 @@ type SummaryArg struct {
 	Cross    model.Cross      `json:"-"`
 	Bys      []model.Identity `json:"-"`
 
-	NewInvited  []model.Invitation `json:"-"`
-	Removed     []model.Invitation `json:"-"`
-	NewAccepted []model.Invitation `json:"-"`
-	OldAccepted []model.Invitation `json:"-"`
-	NewDeclined []model.Invitation `json:"-"`
+	NewInvited  []model.Identity `json:"-"`
+	Removed     []model.Identity `json:"-"`
+	NewAccepted []model.Identity `json:"-"`
+	OldAccepted []model.Identity `json:"-"`
+	NewDeclined []model.Identity `json:"-"`
 }
 
 func SummaryFromUpdates(updates []model.CrossUpdate, config *model.Config) (*SummaryArg, error) {
@@ -193,11 +193,11 @@ Bys:
 		OldCross: &updates[0].OldCross,
 		Cross:    updates[len(updates)-1].Cross,
 
-		NewInvited:  make([]model.Invitation, 0),
-		Removed:     make([]model.Invitation, 0),
-		NewAccepted: make([]model.Invitation, 0),
-		OldAccepted: make([]model.Invitation, 0),
-		NewDeclined: make([]model.Invitation, 0),
+		NewInvited:  make([]model.Identity, 0),
+		Removed:     make([]model.Identity, 0),
+		NewAccepted: make([]model.Identity, 0),
+		OldAccepted: make([]model.Identity, 0),
+		NewDeclined: make([]model.Identity, 0),
 	}
 	ret.To = to
 	err := ret.Parse(config)
@@ -210,24 +210,24 @@ Bys:
 
 	for _, i := range ret.Cross.Exfee.Accepted {
 		if !in(&i, ret.OldCross.Exfee.Accepted) {
-			ret.NewAccepted = append(ret.NewAccepted, i)
+			ret.NewAccepted = append(ret.NewAccepted, i.Identity)
 		} else {
-			ret.OldAccepted = append(ret.OldAccepted, i)
+			ret.OldAccepted = append(ret.OldAccepted, i.Identity)
 		}
 	}
 	for _, i := range ret.Cross.Exfee.Declined {
 		if !in(&i, ret.OldCross.Exfee.Declined) {
-			ret.NewDeclined = append(ret.NewDeclined, i)
+			ret.NewDeclined = append(ret.NewDeclined, i.Identity)
 		}
 	}
 	for _, i := range ret.Cross.Exfee.Invitations {
 		if !in(&i, ret.OldCross.Exfee.Invitations) {
-			ret.NewInvited = append(ret.NewInvited, i)
+			ret.NewInvited = append(ret.NewInvited, i.Identity)
 		}
 	}
 	for _, i := range ret.OldCross.Exfee.Invitations {
 		if !in(&i, ret.Cross.Exfee.Invitations) {
-			ret.Removed = append(ret.Removed, i)
+			ret.Removed = append(ret.Removed, i.Identity)
 		}
 	}
 	return ret, nil
