@@ -2,7 +2,6 @@ package notifier
 
 import (
 	"broker"
-	"bytes"
 	"fmt"
 	"formatter"
 	"model"
@@ -161,13 +160,11 @@ type SummaryArg struct {
 	Cross    model.Cross      `json:"-"`
 	Bys      []model.Identity `json:"-"`
 
-	NewInvited    []model.Invitation `json:"-"`
-	Removed       []model.Invitation `json:"-"`
-	NewAccepted   []model.Invitation `json:"-"`
-	OldAccepted   []model.Invitation `json:"-"`
-	NewDeclined   []model.Invitation `json:"-"`
-	NewInterested []model.Invitation `json:"-"`
-	NewPending    []model.Invitation `json:"-"`
+	NewInvited  []model.Invitation `json:"-"`
+	Removed     []model.Invitation `json:"-"`
+	NewAccepted []model.Invitation `json:"-"`
+	OldAccepted []model.Invitation `json:"-"`
+	NewDeclined []model.Invitation `json:"-"`
 }
 
 func SummaryFromUpdates(updates []model.CrossUpdate, config *model.Config) (*SummaryArg, error) {
@@ -196,13 +193,11 @@ Bys:
 		OldCross: &updates[0].OldCross,
 		Cross:    updates[len(updates)-1].Cross,
 
-		NewInvited:    make([]model.Invitation, 0),
-		Removed:       make([]model.Invitation, 0),
-		NewAccepted:   make([]model.Invitation, 0),
-		OldAccepted:   make([]model.Invitation, 0),
-		NewDeclined:   make([]model.Invitation, 0),
-		NewInterested: make([]model.Invitation, 0),
-		NewPending:    make([]model.Invitation, 0),
+		NewInvited:  make([]model.Invitation, 0),
+		Removed:     make([]model.Invitation, 0),
+		NewAccepted: make([]model.Invitation, 0),
+		OldAccepted: make([]model.Invitation, 0),
+		NewDeclined: make([]model.Invitation, 0),
 	}
 	ret.To = to
 	err := ret.Parse(config)
@@ -225,16 +220,6 @@ Bys:
 			ret.NewDeclined = append(ret.NewDeclined, i)
 		}
 	}
-	// for _, i := range ret.Cross.Exfee.Interested {
-	// 	if !in(&i, ret.OldCross.Exfee.Interested) {
-	// 		ret.NewInterested = append(ret.NewInterested, i)
-	// 	}
-	// }
-	for _, i := range ret.Cross.Exfee.Pending {
-		if !in(&i, ret.OldCross.Exfee.Pending) {
-			ret.NewPending = append(ret.NewPending, i)
-		}
-	}
 	for _, i := range ret.Cross.Exfee.Invitations {
 		if !in(&i, ret.OldCross.Exfee.Invitations) {
 			ret.NewInvited = append(ret.NewInvited, i)
@@ -255,37 +240,6 @@ func (a *SummaryArg) Timezone() string {
 	return a.Cross.Time.BeginAt.Timezone
 }
 
-func (a *SummaryArg) TotalOldAccepted() int {
-	ret := 0
-	for _, e := range a.OldAccepted {
-		ret += 1 + int(e.Mates)
-	}
-	return ret
-}
-
-func (a *SummaryArg) NeedEmail() bool {
-	if a.IsTitleChanged() {
-		return true
-	}
-	if a.IsTimeChanged() {
-		return true
-	}
-	if a.IsPlaceChanged() {
-		return true
-	}
-	if a.IsDescriptionChanged() {
-		return true
-	}
-	peopleChanged := len(a.NewInvited)
-	peopleChanged += len(a.Removed)
-	peopleChanged += len(a.NewAccepted)
-	peopleChanged += len(a.NewDeclined)
-	if peopleChanged > 0 {
-		return true
-	}
-	return false
-}
-
 func (a *SummaryArg) IsChanged() bool {
 	if a.IsTitleChanged() {
 		return true
@@ -302,19 +256,15 @@ func (a *SummaryArg) IsChanged() bool {
 	if a.IsExfeeChanged() {
 		return true
 	}
-	peopleChanged := len(a.NewInvited)
-	peopleChanged += len(a.Removed)
-	if peopleChanged > 0 {
-		return true
-	}
+
 	return false
 }
 
 func (a *SummaryArg) IsExfeeChanged() bool {
 	peopleChanged := len(a.NewAccepted)
 	peopleChanged += len(a.NewDeclined)
-	peopleChanged += len(a.NewInterested)
-	peopleChanged += len(a.NewPending)
+	peopleChanged += len(a.NewInvited)
+	peopleChanged += len(a.Removed)
 	if peopleChanged > 0 {
 		return true
 	}
@@ -374,42 +324,4 @@ func (a SummaryArg) Link() string {
 
 func (a SummaryArg) PublicLink() string {
 	return fmt.Sprintf("%s/#!%d/%s", a.Config.SiteUrl, a.Cross.ID, a.To.Token[1:5])
-}
-
-func (a *SummaryArg) ListBy(limit int, join string) string {
-	buf := bytes.NewBuffer(nil)
-	for i, by := range a.Bys {
-		if buf.Len() > 0 {
-			buf.WriteString(join)
-		}
-		if i >= limit {
-			buf.WriteString("etc")
-			break
-		}
-		buf.WriteString(by.Name)
-	}
-	return buf.String()
-}
-
-func (a *SummaryArg) NeedShowBy() bool {
-	if len(a.Bys) != 1 {
-		return false
-	}
-	if a.To.SameUser(&a.Bys[0]) {
-		return false
-	}
-	return true
-}
-
-func (a *SummaryArg) ShowBy(ids []model.Invitation) bool {
-	if len(a.Bys) != 1 {
-		return false
-	}
-	if len(ids) != 1 {
-		return false
-	}
-	if a.Bys[0].SameUser(ids[0].Identity) {
-		return false
-	}
-	return true
 }
