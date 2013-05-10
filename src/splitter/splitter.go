@@ -9,6 +9,8 @@ import (
 	"model"
 	"net/http"
 	"sort"
+	"strconv"
+	"time"
 )
 
 type Splitter struct {
@@ -48,6 +50,8 @@ func (s Splitter) HandleSplit(pack BigPack) {
 	log.Debug("|post|%s|%s|%s|%s|%d|%v", pack.Method, pack.Service, pack.MergeKey, pack.Type, pack.Ontime, pack.Recipients)
 	defer log.Debug("posted")
 
+	pack.Ontime = s.speedon(pack.Ontime)
+
 	for _, to := range pack.Recipients {
 		mergeKey := fmt.Sprintf("%s_i%d", pack.MergeKey, to.IdentityID)
 		pack.Data["to"] = to
@@ -75,6 +79,8 @@ func (s Splitter) HandleDelete(pack BigPack) {
 	log.Debug("|delete|%s|%s|%s|%s|%d|%v", pack.Method, pack.Service, pack.MergeKey, pack.Type, pack.Ontime, pack.Recipients)
 	defer log.Debug("deleted")
 
+	pack.Ontime = s.speedon(pack.Ontime)
+
 	for _, to := range pack.Recipients {
 		mergeKey := fmt.Sprintf("%s_i%d", pack.MergeKey, to.IdentityID)
 
@@ -96,10 +102,15 @@ func (s Splitter) speedon(ontime int64) int64 {
 		return ontime
 	}
 	fmt.Println(s.speedDurations)
-	k := fmt.Sprintf("%d", ontime)
+	now := time.Now().Unix()
+	d := ontime - now
 	for i := len(s.speedDurations) - 1; i >= 0; i-- {
-		if k > s.speedDurations[i] {
-			return s.config.Splitter.SpeedOn[s.speedDurations[i]]
+		k, err := strconv.ParseInt(s.speedDurations[i], 10, 64)
+		if err != nil {
+			continue
+		}
+		if d > k {
+			return now + s.config.Splitter.SpeedOn[s.speedDurations[i]]
 		}
 	}
 	return ontime
