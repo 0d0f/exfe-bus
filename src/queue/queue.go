@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"model"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -108,15 +109,20 @@ func (q *Queue) Quit() {
 func (q Queue) HandlePush(data string) {
 	method, service, mergeKey := q.Vars()["method"], q.Vars()["service"], q.Vars()["merge_key"]
 	if method == "" {
-		q.Error(http.StatusBadRequest, fmt.Errorf("need method"))
+		q.Error(http.StatusBadRequest, q.GetError(1, "need method"))
 		return
 	}
 	if service == "" {
-		q.Error(http.StatusBadRequest, fmt.Errorf("need service"))
+		q.Error(http.StatusBadRequest, q.GetError(2, "need service"))
 		return
 	}
 	if mergeKey == "" {
-		q.Error(http.StatusBadRequest, fmt.Errorf("invalid mergeKey: (empty)"))
+		q.Error(http.StatusBadRequest, q.GetError(3, "invalid mergeKey: (empty)"))
+		return
+	}
+	service, err := url.QueryUnescape(service)
+	if err != nil {
+		q.Error(http.StatusBadRequest, q.GetError(4, fmt.Sprintf("service invalid: %s", err)))
 		return
 	}
 
@@ -124,7 +130,7 @@ func (q Queue) HandlePush(data string) {
 	updateType, ontimeStr := query.Get("update"), query.Get("ontime")
 	ontime, err := strconv.ParseInt(ontimeStr, 10, 64)
 	if err != nil {
-		q.Error(http.StatusBadRequest, fmt.Errorf("invalid ontime: %s", ontimeStr))
+		q.Error(http.StatusBadRequest, q.GetError(5, fmt.Sprintf("invalid ontime: %s", ontimeStr)))
 		return
 	}
 	if ontime == 0 {
@@ -133,7 +139,7 @@ func (q Queue) HandlePush(data string) {
 
 	err = q.timer.Push(delayrepo.UpdateType(updateType), ontime, fmt.Sprintf("%s,%s,%s", method, service, mergeKey), []byte(data))
 	if err != nil {
-		q.Error(http.StatusInternalServerError, err)
+		q.Error(http.StatusInternalServerError, q.GetError(7, err.Error()))
 		return
 	}
 }
@@ -141,21 +147,26 @@ func (q Queue) HandlePush(data string) {
 func (q Queue) HandleDelete() {
 	method, service, mergeKey := q.Vars()["method"], q.Vars()["service"], q.Vars()["merge_key"]
 	if method == "" {
-		q.Error(http.StatusBadRequest, fmt.Errorf("need method"))
+		q.Error(http.StatusBadRequest, q.GetError(1, "need method"))
 		return
 	}
 	if service == "" {
-		q.Error(http.StatusBadRequest, fmt.Errorf("need service"))
+		q.Error(http.StatusBadRequest, q.GetError(2, "need service"))
 		return
 	}
 	if mergeKey == "" {
-		q.Error(http.StatusBadRequest, fmt.Errorf("invalid mergeKey: (empty)"))
+		q.Error(http.StatusBadRequest, q.GetError(3, "invalid mergeKey: (empty)"))
+		return
+	}
+	service, err := url.QueryUnescape(service)
+	if err != nil {
+		q.Error(http.StatusBadRequest, q.GetError(4, fmt.Sprintf("service invalid: %s", err)))
 		return
 	}
 
-	err := q.timer.Delete(fmt.Sprintf("%s,%s,%s", method, service, mergeKey))
+	err = q.timer.Delete(fmt.Sprintf("%s,%s,%s", method, service, mergeKey))
 	if err != nil {
-		q.Error(http.StatusInternalServerError, err)
+		q.Error(http.StatusInternalServerError, q.GetError(7, err.Error()))
 		return
 	}
 }
