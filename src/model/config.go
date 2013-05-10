@@ -72,6 +72,9 @@ type Config struct {
 		Tail     map[string]uint `json:"tail"`
 	} `json:"exfe_queue"`
 
+	Splitter struct {
+		SpeedOn map[int64]int64 `json:"speed_on"`
+	}
 	Here struct {
 		Threshold       float64 `json:"threshold"`
 		SignThreshold   float64 `json:"sign_threshold"`
