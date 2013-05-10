@@ -75,6 +75,18 @@ func (i Identity) String() string {
 	return fmt.Sprintf("Identity:(i%d/u%d)", i.ID, i.UserID)
 }
 
+func (i Identity) ScreenId() string {
+	switch i.Provider {
+	case "email":
+		return i.ExternalUsername
+	case "phone":
+		return i.ExternalUsername
+	case "twitter":
+		return "@" + i.ExternalUsername
+	}
+	return i.ExternalUsername + "@" + i.Provider
+}
+
 type RsvpType string
 
 const (

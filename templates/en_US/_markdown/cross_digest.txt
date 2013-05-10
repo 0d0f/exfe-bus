@@ -12,9 +12,9 @@
   To be decided.{{end}}
 
 ## Exfee {{.Cross.Exfee.AcceptedCount}}/{{.Cross.Exfee.TotalCount}} accepted
-{{range .Cross.Exfee.Invitations}}{{if .IsAccepted}} + {{.Identity.Name}}  {{.Identity.ExternalUsername}}@{{.Identity.Provider}}
-{{end}}{{end}}{{range .Cross.Exfee.Invitations}}{{if .IsPending}} . {{.Identity.Name}}  {{.Identity.ExternalUsername}}@{{.Identity.Provider}}
-{{end}}{{end}}{{range .Cross.Exfee.Invitations}}{{if .IsDeclined}} - {{.Identity.Name}}  {{.Identity.ExternalUsername}}@{{.Identity.Provider}}
+{{range .Cross.Exfee.Invitations}}{{if .IsAccepted}} + {{.Identity.Name}}  {{.Identity.ScreenId}}
+{{end}}{{end}}{{range .Cross.Exfee.Invitations}}{{if .IsPending}} . {{.Identity.Name}}  {{.Identity.ScreenId}}
+{{end}}{{end}}{{range .Cross.Exfee.Invitations}}{{if .IsDeclined}} - {{.Identity.Name}}  {{.Identity.ScreenId}}
 {{end}}{{end}}
 
 # Reply this email directly as conversation. #
