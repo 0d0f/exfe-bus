@@ -32,7 +32,7 @@ func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 
 	query := make(url.Values)
 	query.Set("updated_at", updatedAt)
-	query.Set("user_id", fmt.Sprint("%d", to.UserID))
+	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
 	cross, err := c.platform.FindCross(crossId, query)
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func (c Cross) V3Remind(requests []model.CrossDigestRequest) error {
 	crossId := requests[0].CrossId
 
 	query := make(url.Values)
-	query.Set("user_id", fmt.Sprint("%d", to.UserID))
+	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
 	cross, err := c.platform.FindCross(crossId, query)
 	if err != nil {
 		return err
