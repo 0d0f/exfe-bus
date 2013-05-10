@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -14,19 +15,16 @@ func RestHttp(method, url, mime string, arg interface{}, reply interface{}) (int
 	if err != nil {
 		return -1, err
 	}
-	req, err := http.NewRequest(method, url, buf)
+	resp, err := Http(method, url, mime, buf.Bytes())
 	if err != nil {
-		return -1, err
-	}
-	req.Header.Set("Content-Type", mime)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return -1, err
+		if resp != nil {
+			return resp.StatusCode, err
+		} else {
+			return -1, err
+		}
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return resp.StatusCode, fmt.Errorf(resp.Status)
-	}
+
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(reply)
 	if err != nil {
@@ -47,8 +45,12 @@ func Http(method, url, mime string, body []byte) (*http.Response, error) {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
-		return nil, fmt.Errorf(resp.Status)
+		defer resp.Body.Close()
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return resp, fmt.Errorf("(%s)%s", resp.Status, string(b))
 	}
 	return resp, nil
 }
