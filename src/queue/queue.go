@@ -60,7 +60,7 @@ func (q *Queue) Do(key string, datas [][]byte) {
 		q.config.Log.Err("pop error key: %s", key)
 		return
 	}
-	method, service, mergeKey := splits[0], "http://"+splits[1], splits[2]
+	method, service, mergeKey := splits[0], splits[1], splits[2]
 	needMerge := mergeKey[0] != '-'
 
 	args := []byte("[")
