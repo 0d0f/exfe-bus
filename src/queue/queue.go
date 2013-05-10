@@ -70,7 +70,7 @@ func (q *Queue) Do(key string, datas [][]byte) {
 			args = append(args, []byte(",")...)
 		} else {
 			log := q.log.SubCode()
-			log.Debug("|queue|%s|%s|%s", method, service, string(args))
+			log.Debug("|queue|%s|%s", method, service)
 			resp, err := broker.Http(method, service, "application/json", data)
 			if err != nil {
 				log.Err("|queue|%s|%s|%s|%s", method, service, err, string(data))
@@ -82,7 +82,7 @@ func (q *Queue) Do(key string, datas [][]byte) {
 	if needMerge && len(args) > 1 {
 		args[len(args)-1] = byte(']')
 		log := q.log.SubCode()
-		log.Debug("|queue|%s|%s|%s", method, service, string(args))
+		log.Debug("|queue|%s|%s", method, service)
 		resp, err := broker.Http(method, service, "application/json", args)
 		if err != nil {
 			log.Err("|queue|%s|%s|%s|%s", method, service, err, string(args))
