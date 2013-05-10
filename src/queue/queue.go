@@ -190,7 +190,8 @@ func (p PlainText) Unmarshal(r io.Reader, v interface{}) error {
 }
 
 func (p PlainText) Marshal(w io.Writer, v interface{}) error {
-	return fmt.Errorf("not implement")
+	_, err := w.Write([]byte(fmt.Sprintf("%s", v)))
+	return err
 }
 
 type TextError string
