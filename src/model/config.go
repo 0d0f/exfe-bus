@@ -73,7 +73,7 @@ type Config struct {
 	} `json:"exfe_queue"`
 
 	Splitter struct {
-		SpeedOn map[int64]int64 `json:"speed_on"`
+		SpeedOn map[string]int64 `json:"speed_on"`
 	}
 	Here struct {
 		Threshold       float64 `json:"threshold"`

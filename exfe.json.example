@@ -67,7 +67,7 @@
 
   "splitter": {
     "speed_on": null
-  }
+  },
   "here": {
     "threshold": 0.001,
     "sign_threshold": 1.0,

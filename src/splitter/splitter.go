@@ -20,7 +20,7 @@ type Splitter struct {
 	queueSite      string
 	config         *model.Config
 	log            *logger.SubLogger
-	speedDurations Int64Slice
+	speedDurations []string
 }
 
 func NewSplitter(config *model.Config) *Splitter {
@@ -28,11 +28,11 @@ func NewSplitter(config *model.Config) *Splitter {
 	if site == "0.0.0.0" || site == "" {
 		site = "127.0.0.1"
 	}
-	var speedDurations Int64Slice
+	var speedDurations []string
 	if len(config.Splitter.SpeedOn) > 0 {
 		for k := range config.Splitter.SpeedOn {
 			speedDurations = append(speedDurations, k)
-			sort.Sort(speedDurations)
+			sort.Strings(speedDurations)
 		}
 	}
 	return &Splitter{
@@ -96,16 +96,11 @@ func (s Splitter) speedon(ontime int64) int64 {
 		return ontime
 	}
 	fmt.Println(s.speedDurations)
+	k := fmt.Sprintf("%d", ontime)
 	for i := len(s.speedDurations) - 1; i >= 0; i-- {
-		if ontime > s.speedDurations[i] {
+		if k > s.speedDurations[i] {
 			return s.config.Splitter.SpeedOn[s.speedDurations[i]]
 		}
 	}
 	return ontime
 }
-
-type Int64Slice []int64
-
-func (p Int64Slice) Len() int           { return len(p) }
-func (p Int64Slice) Less(i, j int) bool { return p[i] < p[j] }
-func (p Int64Slice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
