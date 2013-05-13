@@ -12,7 +12,7 @@ type RsvpUpdate struct {
 }
 
 type Exfee struct {
-	ID          uint64       `json:"id,omitempty"`
+	ID          int64        `json:"id,omitempty"`
 	Name        string       `json:"name,omitempty"`
 	Invitations []Invitation `json:"invitations"`
 

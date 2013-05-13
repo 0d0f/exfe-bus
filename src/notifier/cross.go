@@ -151,7 +151,7 @@ func (c Cross) V3Conversation(updates []model.ConversationUpdate) error {
 	if err != nil {
 		return err
 	}
-	oldPosts, err := c.platform.GetConversation(arg.Posts[0].ExfeeID, arg.Posts[0].CreatedAt, false, "older", 3)
+	oldPosts, err := c.platform.GetConversation(arg.Cross.Exfee.ID, arg.Posts[0].CreatedAt, false, "older", 3)
 	if err != nil {
 		logger.ERROR("get conversation error: %s", err)
 	} else {

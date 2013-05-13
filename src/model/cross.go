@@ -20,7 +20,7 @@ type UpdateInfo struct {
 }
 
 type Cross struct {
-	ID          uint64                   `json:"id,omitempty"`
+	ID          int64                    `json:"id,omitempty"`
 	By          Identity                 `json:"by_identity,omitempty"`
 	Title       string                   `json:"title,omitempty"`
 	Description string                   `json:"description,omitempty"`
