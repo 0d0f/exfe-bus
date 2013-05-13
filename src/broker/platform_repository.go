@@ -143,12 +143,13 @@ func (p *Platform) FindIdentity(identity model.Identity) (model.Identity, error)
 	return identity, nil
 }
 
-func (p *Platform) GetConversation(exfeeId int64, updatedAt string, clear bool, direction string, quantity int) ([]model.Post, error) {
+func (p *Platform) GetConversation(exfeeId int64, token string, updatedAt string, clear bool, direction string, quantity int) ([]model.Post, error) {
 	query := make(url.Values)
 	query.Set("updated_at", updatedAt)
 	query.Set("clear", fmt.Sprintf("%v", clear))
 	query.Set("direction", direction)
 	query.Set("quantity", fmt.Sprintf("%d", quantity))
+	query.Set("token", token)
 	url := fmt.Sprintf("%s/v2/conversation/%d?%s", p.config.SiteApi, exfeeId, query.Encode())
 
 	logger.DEBUG("get conversation: %s", url)

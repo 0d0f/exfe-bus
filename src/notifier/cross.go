@@ -151,14 +151,14 @@ func (c Cross) V3Conversation(updates []model.ConversationUpdate) error {
 	if err != nil {
 		return err
 	}
-	oldPosts, err := c.platform.GetConversation(arg.Cross.Exfee.ID, arg.Posts[0].CreatedAt, false, "older", 3)
+	to := arg.To
+	oldPosts, err := c.platform.GetConversation(arg.Cross.Exfee.ID, to.Token, arg.Posts[0].CreatedAt, false, "older", 3)
 	if err != nil {
 		logger.ERROR("get conversation error: %s", err)
 	} else {
 		arg.OldPosts = oldPosts
 	}
 
-	to := arg.To
 	text, err := GenerateContent(c.localTemplate, "cross_conversation", to.Provider, to.Language, arg)
 	if err != nil {
 		return err
