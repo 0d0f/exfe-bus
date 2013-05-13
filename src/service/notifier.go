@@ -20,14 +20,13 @@ type V3Notifier struct {
 	CrossRemind       rest.Processor `path:"/cross/remind" method:"POST"`
 	CrossInvitation   rest.Processor `path:"/cross/invitation" method:"POST"`
 	CrossSummary      rest.Processor `path:"/cross/summary" method:"POST"`
+	CrossConversation rest.Processor `path:"/cross/conversation" method:"POST"`
 	UserWelcome       rest.Processor `path:"/user/welcome" method:"POST"`
 	UserVerify        rest.Processor `path:"/user/verify" method:"POST"`
 	UserReset         rest.Processor `path:"/user/reset" method:"POST"`
-	ExfeeConversation rest.Processor `path:"/exfee/conversation" method:"POST"`
 
 	cross *notifier.Cross
 	user  *notifier.User
-	exfee *notifier.Exfee
 }
 
 func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) (*V3Notifier, error) {
@@ -53,7 +52,6 @@ func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platfor
 	return &V3Notifier{
 		cross: notifier.NewCross(local, config, platform),
 		user:  notifier.NewUser(local, config, platform),
-		exfee: notifier.NewExfee(local, config, platform),
 	}, nil
 }
 
@@ -97,6 +95,14 @@ func (n V3Notifier) HandleCrossSummary(updates []model.CrossUpdate) {
 	}
 }
 
+func (n V3Notifier) HandleCrossConversation(updates []model.ConversationUpdate) {
+	err := n.cross.V3Conversation(updates)
+	if err != nil {
+		n.Error(http.StatusInternalServerError, n.GetError(8, err.Error()))
+		return
+	}
+}
+
 func (n V3Notifier) HandleUserWelcome(arg model.UserWelcome) {
 	err := n.user.V3Welcome(arg)
 	if err != nil {
@@ -117,14 +123,6 @@ func (n V3Notifier) HandleUserReset(arg model.UserVerify) {
 	err := n.user.V3ResetPassword(arg)
 	if err != nil {
 		n.Error(http.StatusInternalServerError, n.GetError(6, err.Error()))
-		return
-	}
-}
-
-func (n V3Notifier) HandleExfeeConversation(updates []model.ConversationUpdate) {
-	err := n.exfee.V3Conversation(updates)
-	if err != nil {
-		n.Error(http.StatusInternalServerError, n.GetError(8, err.Error()))
 		return
 	}
 }

@@ -1,8 +1,8 @@
 Content-Type: multipart/mixed; boundary="mixsplitter"
-{{$post := index .Posts 0}}References: <{{.Config.Email.Prefix}}+e{{$post.ExfeeID}}@exfe.com>
+References: <{{.Config.Email.Prefix}}+{{.Cross.ID}}@exfe.com>
 To: =?utf-8?B?{{.To.Name | base64}}?= <{{.To.ExternalUsername}}>
-From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <{{.Config.Email.Prefix}}+e{{$post.ExfeeID}}@{{.Config.Email.Domain}}>
-Subject: =?utf-8?B?{{"Conversations" | base64}}?=
+From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <{{.Config.Email.Prefix}}+{{.Cross.ID}}@{{.Config.Email.Domain}}>
+Subject: =?utf-8?B?{{.Cross.Title | base64}}?=
 
 --mixsplitter
 Content-Type: multipart/alternative; boundary="alternativesplitter"

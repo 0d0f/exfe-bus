@@ -36,9 +36,9 @@ func (p *Post) CreatedAtInZone(timezone string) (string, error) {
 }
 
 type ConversationUpdate struct {
-	To    Recipient `json:"to"`
-	Cross Cross     `json:"cross"`
-	Post  Post      `json:"post"`
+	To      Recipient `json:"to"`
+	CrossId int64     `json:"cross_id"`
+	Post    Post      `json:"post"`
 }
 
 type ConversationUpdates []ConversationUpdate
@@ -47,5 +47,5 @@ func (u ConversationUpdates) String() string {
 	if len(u) == 0 {
 		return "{updates:0}"
 	}
-	return fmt.Sprintf("{to:%s with:%s updates:%d}", u[0].To, u[0].Cross, len(u))
+	return fmt.Sprintf("{to:%s cross:%d updates:%d}", u[0].To, u[0].CrossId, len(u))
 }

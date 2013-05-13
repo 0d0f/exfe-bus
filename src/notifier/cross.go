@@ -145,6 +145,95 @@ func (c Cross) V3Summary(updates []model.CrossUpdate) error {
 	return nil
 }
 
+func (c Cross) V3Conversation(updates []model.ConversationUpdate) error {
+	arg, err := ArgFromConversations(updates, c.config, c.platform)
+	if err != nil {
+		return err
+	}
+
+	to := arg.To
+	text, err := GenerateContent(c.localTemplate, "exfee_conversation", to.Provider, to.Language, arg)
+	if err != nil {
+		return err
+	}
+	_, err = c.platform.Send(to, text)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type ConversationArg struct {
+	model.ThirdpartTo
+	Cross model.Cross
+	Posts []*model.Post
+}
+
+func ArgFromConversations(updates []model.ConversationUpdate, config *model.Config, platform *broker.Platform) (*ConversationArg, error) {
+	if updates == nil && len(updates) == 0 {
+		return nil, fmt.Errorf("no update info")
+	}
+
+	to := updates[0].To
+	posts := make([]*model.Post, len(updates))
+
+	for i, update := range updates {
+		if !to.Equal(&update.To) {
+			return nil, fmt.Errorf("updates not send to same recipient: %s, %s", to, update.To)
+		}
+		posts[i] = &updates[i].Post
+	}
+
+	crossId := updates[0].CrossId
+
+	query := make(url.Values)
+	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
+	cross, err := platform.FindCross(crossId, query)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &ConversationArg{
+		Cross: cross,
+		Posts: posts,
+	}
+	ret.To = to
+	err = ret.Parse(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
+func (a ConversationArg) Link() string {
+	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
+}
+
+func (a ConversationArg) Timezone() string {
+	if a.To.Timezone != "" {
+		return a.To.Timezone
+	}
+	return "+00:00"
+}
+
+func (a ConversationArg) Bys() []*model.Identity {
+	var ret []*model.Identity
+	for _, post := range a.Posts {
+		isSame := false
+		for _, i := range ret {
+			if i.SameUser(post.By) {
+				isSame = true
+				break
+			}
+		}
+		if !isSame {
+			ret = append(ret, &post.By)
+		}
+	}
+	return ret
+}
+
 func in(id *model.Invitation, ids []model.Invitation) bool {
 	for _, i := range ids {
 		if id.Identity.SameUser(i.Identity) {
