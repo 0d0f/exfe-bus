@@ -57,7 +57,7 @@ func (s Splitter) HandleSplit(pack BigPack) {
 	pack.Ontime = s.speedon(pack.Ontime)
 
 	for _, to := range pack.Recipients {
-		mergeKey := fmt.Sprintf("%s_%s@%s", pack.MergeKey, to.ExternalUsername, to.Provider)
+		mergeKey := fmt.Sprintf("%s_i%d", pack.MergeKey, to.IdentityID)
 		pack.Data["to"] = to
 
 		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Update)
@@ -91,7 +91,7 @@ func (s Splitter) HandleDelete(pack BigPack) {
 	pack.Ontime = s.speedon(pack.Ontime)
 
 	for _, to := range pack.Recipients {
-		mergeKey := fmt.Sprintf("%s_%s@%s", pack.MergeKey, to.ExternalUsername, to.Provider)
+		mergeKey := fmt.Sprintf("%s_i%d", pack.MergeKey, to.IdentityID)
 
 		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s", s.config.ExfeQueue.Addr, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service)
 
