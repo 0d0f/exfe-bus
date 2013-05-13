@@ -6,12 +6,13 @@ import (
 	"fmt"
 	l "github.com/googollee/go-logger"
 	"logger"
+	"model"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-func Init(defaultConfig string, config interface{}) (loggerOutput *os.File, quit <-chan os.Signal) {
+func Init(defaultConfig string, config *model.Config) (loggerOutput *os.File, quit <-chan os.Signal) {
 	var pidfile string
 	var configFile string
 	var syslog bool
@@ -52,7 +53,7 @@ func Init(defaultConfig string, config interface{}) (loggerOutput *os.File, quit
 	signal.Notify(sigChan, syscall.SIGTERM)
 	signal.Notify(sigChan, syscall.SIGQUIT)
 
-	logger.SetDebug(true)
+	logger.SetDebug(config.Debug)
 
 	return
 }

@@ -14,6 +14,8 @@ type Config struct {
 	DefaultLang  string `json:"default_lang"`
 	AccessDomain string `json:"access_domain"`
 
+	Debug bool `json:"debug"`
+
 	Test bool `json:"test"`
 	DB   struct {
 		Addr              string `json:"addr"`

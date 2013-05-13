@@ -7,6 +7,8 @@
   "default_lang": "en_US",
   "access_domain": "api.exfe.com",
 
+  "debug": false,
+
   "test": false,
   "db": {
     "addr": "127.0.0.1",
