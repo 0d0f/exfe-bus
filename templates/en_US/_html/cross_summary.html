@@ -25,11 +25,11 @@
 			</tr>
 			<tr>
 				<td width="30px"></td>
-				<td style="padding: 0 0 10px 0;"><a href="{{$link}}" style="color:#333333; text-decoration: none;">{{.Cross.Description | html}}</a></td>
+				<td style="padding: 0;"><a href="{{$link}}" style="color:#333333; text-decoration: none;">{{.Cross.Description | html}}</a></td>
 			</tr>
 			<tr style="vertical-align:top">
 				<td width="30px"></td>
-				<td height="30px">&nbsp;</td>
+				<td height="20px">&nbsp;</td>
 			</tr>
 			{{end}}{{end}}
 			{{if .IsTimeChanged}}{{$tz := .Timezone}}{{$time := .Cross.Time.StringInZone $tz}}
@@ -58,7 +58,7 @@
 			{{end}}
 			<tr style="vertical-align:top">
 				<td width="30px"></td>
-				<td height="30px">&nbsp;</td>
+				<td height="20px">&nbsp;</td>
 			</tr>
 			{{end}}
 			{{if .IsPlaceChanged}}
@@ -87,7 +87,7 @@
 			{{end}}
 			<tr style="vertical-align:top">
 				<td width="30px"></td>
-				<td height="30px">&nbsp;</td>
+				<td height="20px">&nbsp;</td>
 			</tr>
 			{{end}}
 			{{if .IsExfeeChanged}}
@@ -121,7 +121,7 @@
 			{{end}}
 			<tr style="vertical-align:top">
 				<td width="30px"></td>
-				<td height="30px">&nbsp;</td>
+				<td height="20px">&nbsp;</td>
 			</tr>
 			{{end}}
 			<tr color="#7F7F7F" bgcolor="#EEEEEE">
