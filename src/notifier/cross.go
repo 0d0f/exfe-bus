@@ -156,7 +156,9 @@ func (c Cross) V3Conversation(updates []model.ConversationUpdate) error {
 	if err != nil {
 		logger.ERROR("get conversation error: %s", err)
 	} else {
-		arg.OldPosts = oldPosts
+		for i := len(oldPosts) - 1; i >= 0; i-- {
+			arg.OldPosts = append(arg.OldPosts, oldPosts[i])
+		}
 	}
 
 	text, err := GenerateContent(c.localTemplate, "cross_conversation", to.Provider, to.Language, arg)
