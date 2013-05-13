@@ -149,8 +149,7 @@ func (p *Platform) GetConversation(exfeeId int64, token string, updatedAt string
 	query.Set("clear", fmt.Sprintf("%v", clear))
 	query.Set("direction", direction)
 	query.Set("quantity", fmt.Sprintf("%d", quantity))
-	query.Set("token", token)
-	url := fmt.Sprintf("%s/v2/conversation/%d?%s", p.config.SiteApi, exfeeId, query.Encode())
+	url := fmt.Sprintf("%s/v2/Gobus/Conversation/%d?%s", p.config.SiteApi, exfeeId, query.Encode())
 
 	logger.DEBUG("get conversation: %s", url)
 	resp, err := http.Get(url)
