@@ -7,6 +7,7 @@ import (
 	"gobus"
 	"io"
 	"io/ioutil"
+	"logger"
 	"model"
 	"net"
 	"net/http"
@@ -142,12 +143,52 @@ func (p *Platform) FindIdentity(identity model.Identity) (model.Identity, error)
 	return identity, nil
 }
 
+func (p *Platform) GetConversation(exfeeId int64, updatedAt string, clear bool, direction string, quantity int) ([]model.Post, error) {
+	query := make(url.Values)
+	query.Set("updated_at", updatedAt)
+	query.Set("clear", fmt.Sprintf("%s", clear))
+	query.Set("direction", direction)
+	query.Set("quantity", fmt.Sprintf("%d", quantity))
+	url := fmt.Sprintf("%s/v2/conversation/%d?%s", p.config.SiteApi, exfeeId, query.Encode())
+
+	logger.DEBUG("find cross: %s", url)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("get cross failed: %s", resp.Status)
+	}
+
+	var ret struct {
+		Meta struct {
+			Code        int    `json:"code"`
+			ErrorDetail string `json:"errorDetail"`
+			ErrorType   string `json:"errorType"`
+		} `json:"meta"`
+		Response struct {
+			Conversation []model.Post `json:"conversation"`
+		} `json:"response"`
+	}
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&ret)
+	if err != nil {
+		return nil, err
+	}
+	if ret.Meta.Code != 200 {
+		return nil, fmt.Errorf("%s: %s", ret.Meta.ErrorType, ret.Meta.ErrorDetail)
+	}
+	return ret.Response.Conversation, nil
+}
+
 func (p *Platform) FindCross(id int64, query url.Values) (model.Cross, error) {
 	url := fmt.Sprintf("%s/v2/Gobus/Crosses?id=%d&", p.config.SiteApi, id)
 	if len(query) > 0 {
 		url += query.Encode()
 	}
-	fmt.Println(url)
+	logger.DEBUG("find cross: %s", url)
 	var ret model.Cross
 	resp, err := http.Get(url)
 	if err != nil {
@@ -223,7 +264,6 @@ func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Ide
 	arg[to] = id
 	arg["cross"] = cross
 	arg["by_identity"] = by
-	fmt.Println(arg)
 
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
@@ -235,7 +275,7 @@ func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Ide
 	buf = bytes.NewBufferString(str)
 
 	u := fmt.Sprintf("%s/v2/Gobus/XUpdate", p.config.SiteApi)
-	p.config.Log.Debug("bot invite to: %s, arg: %s", u, buf.String())
+	logger.DEBUG("bot cross update: %s, with: %s", u, str)
 	body, code, err := parseResp(client.Post(u, "application/json", buf))
 	if err != nil {
 		return code, fmt.Errorf("error(%s) when send message(%s)", err, buf.String())

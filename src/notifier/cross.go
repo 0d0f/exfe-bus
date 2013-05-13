@@ -4,6 +4,7 @@ import (
 	"broker"
 	"fmt"
 	"formatter"
+	"logger"
 	"model"
 	"net/url"
 )
@@ -150,6 +151,12 @@ func (c Cross) V3Conversation(updates []model.ConversationUpdate) error {
 	if err != nil {
 		return err
 	}
+	oldPosts, err := c.platform.GetConversation(arg.Posts[0].ExfeeID, arg.Posts[0].CreatedAt, false, "older", 3)
+	if err != nil {
+		logger.ERROR("get conversation error: %s", err)
+	} else {
+		arg.OldPosts = oldPosts
+	}
 
 	to := arg.To
 	text, err := GenerateContent(c.localTemplate, "cross_conversation", to.Provider, to.Language, arg)
@@ -165,8 +172,9 @@ func (c Cross) V3Conversation(updates []model.ConversationUpdate) error {
 
 type ConversationArg struct {
 	model.ThirdpartTo
-	Cross model.Cross
-	Posts []*model.Post
+	Cross    model.Cross
+	OldPosts []model.Post
+	Posts    []*model.Post
 }
 
 func ArgFromConversations(updates []model.ConversationUpdate, config *model.Config, platform *broker.Platform) (*ConversationArg, error) {
