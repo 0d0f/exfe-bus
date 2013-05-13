@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"logger"
 	"net/http"
 )
 
@@ -35,6 +36,7 @@ func RestHttp(method, url, mime string, arg interface{}, reply interface{}) (int
 
 func Http(method, url, mime string, body []byte) (*http.Response, error) {
 	buf := bytes.NewBuffer(body)
+	logger.DEBUG(url)
 	req, err := http.NewRequest(method, url, buf)
 	if err != nil {
 		return nil, err
