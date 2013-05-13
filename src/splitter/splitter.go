@@ -60,21 +60,23 @@ func (s Splitter) HandleSplit(pack BigPack) {
 		mergeKey := fmt.Sprintf("%s_i%d", pack.MergeKey, to.IdentityID)
 		pack.Data["to"] = to
 
-		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Update)
+		u := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Update)
 		b, err := json.Marshal(pack.Data)
 		if err != nil {
 			s.Error(http.StatusBadRequest, err)
 			return
 		}
 
+		logger.DEBUG(u)
 		go func(url string, b []byte) {
+			logger.DEBUG(url)
 			resp, err := broker.Http("POST", url, "plain/text", b)
 			if err != nil {
 				logger.ERROR("post %s error: %s, with %s", url, err, string(b))
 			} else {
 				resp.Body.Close()
 			}
-		}(url, b)
+		}(u, b)
 	}
 }
 
@@ -93,7 +95,7 @@ func (s Splitter) HandleDelete(pack BigPack) {
 	for _, to := range pack.Recipients {
 		mergeKey := fmt.Sprintf("%s_i%d", pack.MergeKey, to.IdentityID)
 
-		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s", s.config.ExfeQueue.Addr, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service)
+		u := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s", s.config.ExfeQueue.Addr, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service)
 
 		go func(url string) {
 			resp, err := broker.Http("DELETE", url, "plain/text", nil)
@@ -102,7 +104,7 @@ func (s Splitter) HandleDelete(pack BigPack) {
 			} else {
 				resp.Body.Close()
 			}
-		}(url)
+		}(u)
 	}
 }
 
