@@ -2,6 +2,7 @@ package splitter
 
 import (
 	"broker"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-rest"
@@ -44,8 +45,14 @@ func NewSplitter(config *model.Config) *Splitter {
 }
 
 func (s Splitter) HandleSplit(pack BigPack) {
-	logger.INFO("splitter", "post", pack.Method, pack.Service, pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
-	fl := logger.FUNC(pack.Method, pack.Service, pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
+	b, err := base64.URLEncoding.DecodeString(pack.Service)
+	if err != nil {
+		s.Error(http.StatusBadRequest, s.GetError(4, fmt.Sprintf("service(%s) invalid: %s", pack.Service, err)))
+		return
+	}
+
+	logger.INFO("splitter", "post", pack.Method, string(b), pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
+	fl := logger.FUNC(pack.Method, string(b), pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
 	defer fl.Quit()
 
 	pack.Ontime = s.speedon(pack.Ontime)
@@ -73,8 +80,14 @@ func (s Splitter) HandleSplit(pack BigPack) {
 }
 
 func (s Splitter) HandleDelete(pack BigPack) {
-	logger.INFO("splitter", "delete", pack.Method, pack.Service, pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
-	fl := logger.FUNC(pack.Method, pack.Service, pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
+	b, err := base64.URLEncoding.DecodeString(pack.Service)
+	if err != nil {
+		s.Error(http.StatusBadRequest, s.GetError(4, fmt.Sprintf("service(%s) invalid: %s", pack.Service, err)))
+		return
+	}
+
+	logger.INFO("splitter", "delete", pack.Method, string(b), pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
+	fl := logger.FUNC(pack.Method, string(b), pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
 	defer fl.Quit()
 
 	pack.Ontime = s.speedon(pack.Ontime)

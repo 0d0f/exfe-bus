@@ -61,7 +61,7 @@ func FUNC(arg ...interface{}) *Func {
 	}
 	fmt.Print(ret.prefix, " enter: ")
 	for i := range arg {
-		a := replacer.Replace(fmt.Sprintf("%s", arg[i]))
+		a := replacer.Replace(fmt.Sprintf("%v", arg[i]))
 		fmt.Printf("%s, ", a)
 	}
 	fmt.Println()
