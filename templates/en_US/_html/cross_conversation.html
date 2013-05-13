@@ -12,7 +12,7 @@
 			<tr>
 				<td width="50px" style="padding-top:10px; vertical-align:top;"><img src="cid:i{{.By.ID}}" width="30px" height="30px" style="margin-left:10px;" /></td>
 				<td width="550px" style="padding-top:10px;">
-					<p style="color:#B2B2B2; margin:0;">{{.By.Name | html}}: {{.Content | html | replace "\n" "<br />"}}</p>
+					<p style="margin:0;">{{.By.Name | html}}: {{.Content | html | replace "\n" "<br />"}}</p>
 					<p style="color:#B2B2B2; margin:0; font-size:11px; line-height:15px;">{{.CreatedAtInZone $timezone | html}}</p>
 				</td>
 			</tr>

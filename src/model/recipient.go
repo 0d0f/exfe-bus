@@ -62,5 +62,5 @@ func (r Recipient) ID() string {
 }
 
 func (r Recipient) String() string {
-	return fmt.Sprintf("Recipient:%s(%s)@%s(i%d/u%d/t%s)", r.ExternalUsername, r.ExternalID, r.Provider, r.IdentityID, r.UserID, r.Token)
+	return fmt.Sprintf("%s@%s(u%d)", r.ExternalUsername, r.Provider, r.UserID)
 }
