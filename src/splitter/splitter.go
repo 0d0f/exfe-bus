@@ -56,24 +56,26 @@ func (s Splitter) HandleSplit(pack BigPack) {
 
 	pack.Ontime = s.speedon(pack.Ontime)
 
-	for _, to := range pack.Recipients {
-		mergeKey := fmt.Sprintf("%s_i%d", pack.MergeKey, to.IdentityID)
-		pack.Data["to"] = to
+	go func() {
+		for _, to := range pack.Recipients {
+			mergeKey := fmt.Sprintf("%s_i%d", pack.MergeKey, to.IdentityID)
+			pack.Data["to"] = to
 
-		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Update)
-		b, err := json.Marshal(pack.Data)
-		if err != nil {
-			s.Error(http.StatusBadRequest, err)
-			return
-		}
+			url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Update)
+			b, err := json.Marshal(pack.Data)
+			if err != nil {
+				s.Error(http.StatusBadRequest, err)
+				return
+			}
 
-		resp, err := broker.Http("POST", url, "plain/text", b)
-		if err != nil {
-			logger.ERROR("post %s error: %s, with %s", url, err, string(b))
-		} else {
-			resp.Body.Close()
+			resp, err := broker.Http("POST", url, "plain/text", b)
+			if err != nil {
+				logger.ERROR("post %s error: %s, with %s", url, err, string(b))
+			} else {
+				resp.Body.Close()
+			}
 		}
-	}
+	}()
 }
 
 func (s Splitter) HandleDelete(pack BigPack) {
@@ -88,18 +90,20 @@ func (s Splitter) HandleDelete(pack BigPack) {
 
 	pack.Ontime = s.speedon(pack.Ontime)
 
-	for _, to := range pack.Recipients {
-		mergeKey := fmt.Sprintf("%s_i%d", pack.MergeKey, to.IdentityID)
+	go func() {
+		for _, to := range pack.Recipients {
+			mergeKey := fmt.Sprintf("%s_i%d", pack.MergeKey, to.IdentityID)
 
-		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s", s.config.ExfeQueue.Addr, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service)
+			url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s", s.config.ExfeQueue.Addr, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service)
 
-		resp, err := broker.Http("DELETE", url, "plain/text", nil)
-		if err != nil {
-			logger.ERROR("delete %s error: %s", url, err)
-		} else {
-			resp.Body.Close()
+			resp, err := broker.Http("DELETE", url, "plain/text", nil)
+			if err != nil {
+				logger.ERROR("delete %s error: %s", url, err)
+			} else {
+				resp.Body.Close()
+			}
 		}
-	}
+	}()
 }
 
 func (s Splitter) speedon(ontime int64) int64 {
