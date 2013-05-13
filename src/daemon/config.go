@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/googollee/go-logger"
+	l "github.com/googollee/go-logger"
+	"logger"
 	"os"
 	"os/signal"
 	"syscall"
@@ -41,15 +42,17 @@ func Init(defaultConfig string, config interface{}) (loggerOutput *os.File, quit
 	}
 
 	if syslog {
-		loggerOutput = logger.Syslog
+		loggerOutput = l.Syslog
 	} else {
-		loggerOutput = logger.Stderr
+		loggerOutput = l.Stderr
 	}
 
 	sigChan := make(chan os.Signal)
 	quit = sigChan
 	signal.Notify(sigChan, syscall.SIGTERM)
 	signal.Notify(sigChan, syscall.SIGQUIT)
+
+	logger.SetDebug(true)
 
 	return
 }

@@ -33,13 +33,12 @@ type Server struct {
 	log    *logger.Logger
 }
 
-func NewServer(addr string, log *logger.Logger) (*Server, error) {
+func NewServer(addr string) (*Server, error) {
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 	return &Server{
 		router: router,
 		addr:   addr,
-		log:    log,
 	}, nil
 }
 

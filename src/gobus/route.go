@@ -62,25 +62,17 @@ func (r *Route) HandlerMethod(codec Codec, service interface{}, method string) e
 		var err error
 		var input reflect.Value
 		p := params(req)
-		log := r.server.log.Sub(fmt.Sprintf("%s|%s", req.URL.Path, req.Method))
 		defer func() {
 			pa := recover()
 			if pa != nil {
-				log.Crit("%+v", pa)
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(fmt.Sprintf("%+v", pa)))
 				return
 			}
 			if err != nil {
-				if in == 3 {
-					log.Err("call failed %s, with params(%+v), input(%s)", err, p, input.Interface())
-				} else {
-					log.Err("call failed %s, with params(%+v)", err, p)
-				}
 				w.Write([]byte(err.Error()))
 				return
 			}
-			log.Debug("call ok")
 		}()
 
 		args := []reflect.Value{v, reflect.ValueOf(p)}
@@ -94,9 +86,6 @@ func (r *Route) HandlerMethod(codec Codec, service interface{}, method string) e
 				input = input.Elem()
 			}
 			args = append(args, input)
-			log.Debug("call with params(%+v), input(%s)", p, input.Interface())
-		} else {
-			log.Debug("call with params(%+v)", p)
 		}
 
 		rets := m.Func.Call(args)

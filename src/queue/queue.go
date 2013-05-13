@@ -5,11 +5,10 @@ import (
 	"delayrepo"
 	"encoding/base64"
 	"fmt"
-	"github.com/googollee/go-logger"
 	"github.com/googollee/go-rest"
-	"gobus"
 	"io"
 	"io/ioutil"
+	"logger"
 	"model"
 	"net/http"
 	"strconv"
@@ -24,25 +23,21 @@ func init() {
 type Queue struct {
 	rest.Service `prefix:"/v3/queue" mime:"plain/text"`
 
-	config     *model.Config
-	log        *logger.SubLogger
-	timeout    time.Duration
-	dispatcher *gobus.Dispatcher
+	config  *model.Config
+	timeout time.Duration
 
 	Push   rest.Processor `path:"/:merge_key/:method/*service" method:"POST"`
 	Delete rest.Processor `path:"/:merge_key/:method/*service" method:"DELETE"`
 	timer  *delayrepo.Timer
 }
 
-func NewQueue(config *model.Config, redis *broker.RedisPool, dispatcher *gobus.Dispatcher) (*Queue, error) {
+func NewQueue(config *model.Config, redis *broker.RedisPool) (*Queue, error) {
 	ret := &Queue{
-		config:     config,
-		log:        config.Log.Sub("queue"),
-		timeout:    time.Second * 30,
-		dispatcher: dispatcher,
+		config:  config,
+		timeout: time.Second * 30,
 	}
 
-	config.Log.Notice("launching timer")
+	logger.NOTICE("launching timer")
 	storage := broker.NewQueueRedisStorage("exfe:v3:queue", redis)
 	timer, err := delayrepo.NewTimer(storage, ret.timeout)
 	if err != nil {
@@ -57,7 +52,7 @@ func NewQueue(config *model.Config, redis *broker.RedisPool, dispatcher *gobus.D
 func (q *Queue) Do(key string, datas [][]byte) {
 	splits := strings.Split(key, ",")
 	if len(splits) != 3 {
-		q.config.Log.Err("pop error key: %s", key)
+		logger.ERROR("pop error key: %s", key)
 		return
 	}
 	method, service, mergeKey := splits[0], splits[1], splits[2]
@@ -69,11 +64,10 @@ func (q *Queue) Do(key string, datas [][]byte) {
 			args = append(args, data...)
 			args = append(args, []byte(",")...)
 		} else {
-			log := q.log.SubCode()
-			log.Debug("|queue|%s|%s", method, service)
+			logger.INFO("queue", "pop", method, service)
 			resp, err := broker.Http(method, service, "application/json", data)
 			if err != nil {
-				log.Err("|queue|%s|%s|%s|%s", method, service, err, string(data))
+				logger.INFO("queue_err", method, service, err, string(args))
 			} else {
 				resp.Body.Close()
 			}
@@ -81,11 +75,10 @@ func (q *Queue) Do(key string, datas [][]byte) {
 	}
 	if needMerge && len(args) > 1 {
 		args[len(args)-1] = byte(']')
-		log := q.log.SubCode()
-		log.Debug("|queue|%s|%s", method, service)
+		logger.INFO("queue", "pop", method, service)
 		resp, err := broker.Http(method, service, "application/json", args)
 		if err != nil {
-			log.Err("|queue|%s|%s|%s|%s", method, service, err, string(args))
+			logger.INFO("queue_err", method, service, err, string(args))
 		} else {
 			resp.Body.Close()
 		}
@@ -93,11 +86,11 @@ func (q *Queue) Do(key string, datas [][]byte) {
 }
 
 func (q *Queue) OnError(err error) {
-	q.config.Log.Crit("queue error: %s", err)
+	logger.ERROR("queue error: %s", err)
 }
 
 func (q *Queue) Quit() {
-	q.config.Log.Notice("kill timer")
+	logger.NOTICE("kill timer")
 	q.timer.Quit()
 }
 

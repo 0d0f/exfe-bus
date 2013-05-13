@@ -17,6 +17,12 @@ func SetDebug(d bool) {
 	debug = d
 }
 
+func NOTICE(format string, arg ...interface{}) {
+	fmt.Printf("[NOTIC]%s %s", time.Now().Format("2006-01-02 15:04:05"), getCallerInfo())
+	fmt.Printf(format, arg...)
+	fmt.Println()
+}
+
 func DEBUG(format string, arg ...interface{}) {
 	if !debug {
 		return
@@ -72,7 +78,7 @@ func (f Func) Quit() {
 func INFO(prefix string, arg ...interface{}) {
 	sys, err := syslog.New(syslog.LOG_INFO, prefix)
 	if err != nil {
-		ERROR("can't open syslog")
+		ERROR("can't open syslog: %s", err)
 		return
 	}
 	defer sys.Close()
@@ -82,6 +88,8 @@ func INFO(prefix string, arg ...interface{}) {
 		log += replacer.Replace(fmt.Sprintf("%v|", arg[i]))
 	}
 	sys.Info(log)
+
+	NOTICE("%s:%s", prefix, log)
 }
 
 func init() {

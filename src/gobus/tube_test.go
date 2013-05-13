@@ -2,7 +2,6 @@ package gobus
 
 import (
 	"encoding/json"
-	"github.com/googollee/go-logger"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
 	"time"
@@ -37,12 +36,7 @@ func (t *TubeTest2) Stream(params map[string]string) (int, error) {
 }
 
 func TestTube(t *testing.T) {
-	l, err := logger.New(logger.Stderr, "test tube")
-	if err != nil {
-		panic(err)
-	}
-
-	bus, err := NewServer("127.0.0.1:12346", l)
+	bus, err := NewServer("127.0.0.1:12346")
 	if err != nil {
 		t.Fatalf("create gobus server fail: %s", err)
 	}

@@ -42,7 +42,7 @@ func main() {
 	addr := fmt.Sprintf("%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	log.Info("start at %s", addr)
 
-	bus, err := gobus.NewServer(addr, log)
+	bus, err := gobus.NewServer(addr)
 	if err != nil {
 		log.Crit("gobus launch failed: %s", err)
 		os.Exit(-1)

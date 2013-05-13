@@ -2,7 +2,6 @@ package gobus
 
 import (
 	"fmt"
-	"github.com/googollee/go-logger"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
 	"time"
@@ -47,12 +46,7 @@ func (t *gobusTest) Check(params map[string]string, key string) (string, error) 
 
 func TestGobus(t *testing.T) {
 	addr := "127.0.0.1:1111"
-	l, err := logger.New(logger.Stderr, "test")
-	if err != nil {
-		panic(err)
-	}
-
-	s, err := NewServer(addr, l)
+	s, err := NewServer(addr)
 	assert.Equal(t, err, nil)
 
 	test := new(gobusTest)
