@@ -77,7 +77,7 @@ func NewThirdpart(config *model.Config, platform *broker.Platform) (*Thirdpart, 
 	}
 	t.AddSender(sms_)
 
-	if config.Test {
+	if config.Debug {
 		performance := _performance.New()
 		t.AddSender(performance)
 		t.AddUpdater(performance)

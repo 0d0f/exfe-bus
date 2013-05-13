@@ -16,8 +16,7 @@ type Config struct {
 
 	Debug bool `json:"debug"`
 
-	Test bool `json:"test"`
-	DB   struct {
+	DB struct {
 		Addr              string `json:"addr"`
 		Port              uint   `json:"port"`
 		Username          string `json:"username"`
