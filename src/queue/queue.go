@@ -50,6 +50,9 @@ func NewQueue(config *model.Config, redis *broker.RedisPool) (*Queue, error) {
 }
 
 func (q *Queue) Do(key string, datas [][]byte) {
+	fl := logger.FUNC(key)
+	defer fl.Quit()
+
 	splits := strings.Split(key, ",")
 	if len(splits) != 3 {
 		logger.ERROR("pop error key: %s", key)
@@ -64,10 +67,9 @@ func (q *Queue) Do(key string, datas [][]byte) {
 			args = append(args, data...)
 			args = append(args, []byte(",")...)
 		} else {
-			logger.INFO("queue", "pop", method, service)
 			resp, err := broker.Http(method, service, "application/json", data)
 			if err != nil {
-				logger.INFO("queue_err", method, service, err, string(args))
+				logger.ERROR("%s %s: %s, with %s", method, service, err, string(args))
 			} else {
 				resp.Body.Close()
 			}
@@ -75,10 +77,9 @@ func (q *Queue) Do(key string, datas [][]byte) {
 	}
 	if needMerge && len(args) > 1 {
 		args[len(args)-1] = byte(']')
-		logger.INFO("queue", "pop", method, service)
 		resp, err := broker.Http(method, service, "application/json", args)
 		if err != nil {
-			logger.INFO("queue_err", method, service, err, string(args))
+			logger.ERROR("%s %s: %s, with %s", method, service, err, string(args))
 		} else {
 			resp.Body.Close()
 		}
