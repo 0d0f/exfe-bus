@@ -89,7 +89,9 @@ func INFO(prefix string, arg ...interface{}) {
 	}
 	sys.Info(log)
 
-	NOTICE("%s:%s", prefix, log)
+	fmt.Printf("[NOTIC]%s %s", time.Now().Format("2006-01-02 15:04:05"), getCallerInfo())
+	fmt.Printf("%s:%s", prefix, log)
+	fmt.Println()
 }
 
 func init() {
