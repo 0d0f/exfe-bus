@@ -67,7 +67,6 @@ func (s Splitter) HandleSplit(pack BigPack) {
 			return
 		}
 
-		logger.DEBUG(url)
 		resp, err := broker.Http("POST", url, "plain/text", b)
 		if err != nil {
 			logger.ERROR("post %s error: %s, with %s", url, err, string(b))
