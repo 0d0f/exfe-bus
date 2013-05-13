@@ -18,9 +18,9 @@ func SetDebug(d bool) {
 }
 
 func NOTICE(format string, arg ...interface{}) {
-	fmt.Printf("[NOTIC]%s %s", time.Now().Format("2006-01-02 15:04:05"), getCallerInfo())
-	fmt.Printf(format, arg...)
-	fmt.Println()
+	log := fmt.Sprintf("[NOTIC]%s %s", time.Now().Format("2006-01-02 15:04:05"), getCallerInfo())
+	log += fmt.Sprintf(format, arg...)
+	fmt.Println(log)
 }
 
 func DEBUG(format string, arg ...interface{}) {
@@ -28,15 +28,15 @@ func DEBUG(format string, arg ...interface{}) {
 		return
 	}
 
-	fmt.Printf("[DEBUG]%s %s", time.Now().Format("2006-01-02 15:04:05"), getCallerInfo())
-	fmt.Printf(format, arg...)
-	fmt.Println()
+	log := fmt.Sprintf("[DEBUG]%s %s", time.Now().Format("2006-01-02 15:04:05"), getCallerInfo())
+	log += fmt.Sprintf(format, arg...)
+	fmt.Println(log)
 }
 
 func ERROR(format string, arg ...interface{}) {
-	fmt.Printf("[ERROR]%s %s", time.Now().Format("2006-01-02 15:04:05"), getCallerInfo())
-	fmt.Printf(format, arg...)
-	fmt.Println()
+	log := fmt.Sprintf("[ERROR]%s %s", time.Now().Format("2006-01-02 15:04:05"), getCallerInfo())
+	log += fmt.Sprintf(format, arg...)
+	fmt.Println(log)
 }
 
 type Func struct {
@@ -59,12 +59,12 @@ func FUNC(arg ...interface{}) *Func {
 	} else {
 		ret.prefix = fmt.Sprintf("[FCALL]%s unknown(%08x)", time.Now().Format("2006-01-02 15:04:05"), r)
 	}
-	fmt.Print(ret.prefix, " enter: ")
+	log := fmt.Sprint(ret.prefix, " enter: ")
 	for i := range arg {
 		a := replacer.Replace(fmt.Sprintf("%v", arg[i]))
-		fmt.Printf("%s, ", a)
+		log += fmt.Sprintf("%s, ", a)
 	}
-	fmt.Println()
+	fmt.Println(log)
 	return ret
 }
 
@@ -89,9 +89,9 @@ func INFO(prefix string, arg ...interface{}) {
 	}
 	sys.Info(log)
 
-	fmt.Printf("[NOTIC]%s %s", time.Now().Format("2006-01-02 15:04:05"), getCallerInfo())
-	fmt.Printf("%s:%s", prefix, log)
-	fmt.Println()
+	l := fmt.Sprintf("[NOTIC]%s %s", time.Now().Format("2006-01-02 15:04:05"), getCallerInfo())
+	l += fmt.Sprintf("%s:%s", prefix, log)
+	fmt.Println(l)
 }
 
 func init() {
