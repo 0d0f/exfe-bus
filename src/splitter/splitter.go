@@ -60,8 +60,6 @@ func (s Splitter) HandleSplit(pack BigPack) {
 		mergeKey := fmt.Sprintf("%s_i%d", pack.MergeKey, to.IdentityID)
 		pack.Data["to"] = to
 
-		logger.DEBUG(mergeKey)
-
 		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Update)
 		b, err := json.Marshal(pack.Data)
 		if err != nil {
@@ -70,6 +68,7 @@ func (s Splitter) HandleSplit(pack BigPack) {
 		}
 
 		go func() {
+			log.DEBUG(url)
 			resp, err := broker.Http("POST", url, "plain/text", b)
 			if err != nil {
 				logger.ERROR("post %s error: %s, with %s", url, err, string(b))
