@@ -8,7 +8,7 @@ type Pack struct {
 	MergeKey string
 	Method   string
 	Service  string
-	Type     string
+	Update   string
 	Ontime   int64
 	Data     map[string]interface{}
 }
@@ -18,7 +18,7 @@ type BigPack struct {
 	MergeKey   string                 `json:"merge_key"`
 	Method     string                 `json:"method"`
 	Service    string                 `json:"service"`
-	Type       string                 `json:"type"`
+	Update     string                 `json:"update"`
 	Ontime     int64                  `json:"ontime"`
 	Data       map[string]interface{} `json:"data"`
 }

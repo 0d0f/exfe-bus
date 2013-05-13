@@ -4,8 +4,8 @@ import (
 	"broker"
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-logger"
 	"github.com/googollee/go-rest"
+	"logger"
 	"model"
 	"net/http"
 	"sort"
@@ -21,7 +21,6 @@ type Splitter struct {
 
 	queueSite      string
 	config         *model.Config
-	log            *logger.SubLogger
 	speedDurations []string
 }
 
@@ -40,15 +39,14 @@ func NewSplitter(config *model.Config) *Splitter {
 	return &Splitter{
 		queueSite:      site,
 		config:         config,
-		log:            config.Log.Sub("splitter"),
 		speedDurations: speedDurations,
 	}
 }
 
 func (s Splitter) HandleSplit(pack BigPack) {
-	log := s.log.SubCode()
-	log.Debug("|post|%s|%s|%s|%s|%d|%v", pack.Method, pack.Service, pack.MergeKey, pack.Type, pack.Ontime, pack.Recipients)
-	defer log.Debug("posted")
+	logger.INFO("splitter", "post", pack.Method, pack.Service, pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
+	fl := logger.FUNC(pack.Method, pack.Service, pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
+	defer fl.Quit()
 
 	pack.Ontime = s.speedon(pack.Ontime)
 
@@ -56,7 +54,7 @@ func (s Splitter) HandleSplit(pack BigPack) {
 		mergeKey := fmt.Sprintf("%s_i%d", pack.MergeKey, to.IdentityID)
 		pack.Data["to"] = to
 
-		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Type)
+		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Update)
 		b, err := json.Marshal(pack.Data)
 		if err != nil {
 			s.Error(http.StatusBadRequest, err)
@@ -66,7 +64,7 @@ func (s Splitter) HandleSplit(pack BigPack) {
 		go func() {
 			resp, err := broker.Http("POST", url, "plain/text", b)
 			if err != nil {
-				s.config.Log.Err("|splitter|POST|%s|%s|%s|", url, err, string(b))
+				logger.INFO("splitter_err", "post", url, err, string(b))
 			} else {
 				resp.Body.Close()
 			}
@@ -75,9 +73,9 @@ func (s Splitter) HandleSplit(pack BigPack) {
 }
 
 func (s Splitter) HandleDelete(pack BigPack) {
-	log := s.log.SubCode()
-	log.Debug("|delete|%s|%s|%s|%s|%d|%v", pack.Method, pack.Service, pack.MergeKey, pack.Type, pack.Ontime, pack.Recipients)
-	defer log.Debug("deleted")
+	logger.INFO("splitter", "delete", pack.Method, pack.Service, pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
+	fl := logger.FUNC(pack.Method, pack.Service, pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
+	defer fl.Quit()
 
 	pack.Ontime = s.speedon(pack.Ontime)
 
@@ -89,7 +87,7 @@ func (s Splitter) HandleDelete(pack BigPack) {
 		go func() {
 			resp, err := broker.Http("DELETE", url, "plain/text", nil)
 			if err != nil {
-				s.config.Log.Err("|splitter|DELETE|%s|%s|", url, err)
+				logger.INFO("splitter_err", "delete", url, err)
 			} else {
 				resp.Body.Close()
 			}
