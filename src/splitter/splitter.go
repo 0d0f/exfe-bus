@@ -51,7 +51,6 @@ func (s Splitter) HandleSplit(pack BigPack) {
 		return
 	}
 
-	logger.INFO("splitter", "post", pack.Method, string(b), pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
 	fl := logger.FUNC(pack.Method, string(b), pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
 	defer fl.Quit()
 
@@ -71,7 +70,7 @@ func (s Splitter) HandleSplit(pack BigPack) {
 		go func() {
 			resp, err := broker.Http("POST", url, "plain/text", b)
 			if err != nil {
-				logger.INFO("splitter_err", "post", url, err, string(b))
+				logger.ERROR("post %s error: %s, with %s", url, err, string(b))
 			} else {
 				resp.Body.Close()
 			}
@@ -86,7 +85,6 @@ func (s Splitter) HandleDelete(pack BigPack) {
 		return
 	}
 
-	logger.INFO("splitter", "delete", pack.Method, string(b), pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
 	fl := logger.FUNC(pack.Method, string(b), pack.MergeKey, pack.Update, pack.Ontime, pack.Recipients)
 	defer fl.Quit()
 
@@ -100,7 +98,7 @@ func (s Splitter) HandleDelete(pack BigPack) {
 		go func() {
 			resp, err := broker.Http("DELETE", url, "plain/text", nil)
 			if err != nil {
-				logger.INFO("splitter_err", "delete", url, err)
+				logger.ERROR("delete %s error: %s", url, err)
 			} else {
 				resp.Body.Close()
 			}
