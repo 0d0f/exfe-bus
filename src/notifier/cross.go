@@ -74,7 +74,7 @@ func (c Cross) V3Remind(requests []model.CrossDigestRequest) error {
 		"Cross":  cross,
 		"Config": c.config,
 	}
-	text, err := GenerateContent(c.localTemplate, "cross_digest", to.Provider, to.Language, arg)
+	text, err := GenerateContent(c.localTemplate, "cross_remind", to.Provider, to.Language, arg)
 	if err != nil {
 		return err
 	}
