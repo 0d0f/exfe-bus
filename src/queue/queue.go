@@ -122,7 +122,6 @@ func (q Queue) HandlePush(data string) {
 	service = string(b)
 	fl := logger.FUNC(method, service, mergeKey)
 	defer fl.Quit()
-	logger.DEBUG(q.Request().URL.String())
 
 	query := q.Request().URL.Query()
 	updateType, ontimeStr := query.Get("update"), query.Get("ontime")
