@@ -114,7 +114,13 @@ func (q Queue) HandlePush(data string) {
 		q.Error(http.StatusBadRequest, q.GetError(3, "invalid mergeKey: (empty)"))
 		return
 	}
-	b, err := base64.URLEncoding.DecodeString(service)
+	b, err := base64.URLEncoding.DecodeString(mergeKey)
+	if err != nil {
+		q.Error(http.StatusBadRequest, q.GetError(4, fmt.Sprintf("merge key(%s) invalid: %s", mergeKey, err)))
+		return
+	}
+	mergeKey = string(b)
+	b, err = base64.URLEncoding.DecodeString(service)
 	if err != nil {
 		q.Error(http.StatusBadRequest, q.GetError(4, fmt.Sprintf("service(%s) invalid: %s", service, err)))
 		return
@@ -155,7 +161,13 @@ func (q Queue) HandleDelete() {
 		q.Error(http.StatusBadRequest, q.GetError(3, "invalid mergeKey: (empty)"))
 		return
 	}
-	b, err := base64.URLEncoding.DecodeString(service)
+	b, err := base64.URLEncoding.DecodeString(mergeKey)
+	if err != nil {
+		q.Error(http.StatusBadRequest, q.GetError(4, fmt.Sprintf("merge key(%s) invalid: %s", mergeKey, err)))
+		return
+	}
+	mergeKey = string(b)
+	b, err = base64.URLEncoding.DecodeString(service)
 	if err != nil {
 		q.Error(http.StatusBadRequest, q.GetError(4, fmt.Sprintf("service(%s) invalid: %s", service, err)))
 		return
