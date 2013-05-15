@@ -68,6 +68,7 @@ func (c Cross) V3Remind(requests []model.CrossDigestRequest) error {
 	if err != nil {
 		return err
 	}
+	cross.Updated = nil
 
 	arg := map[string]interface{}{
 		"To":     to,
