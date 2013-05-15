@@ -18,5 +18,9 @@ func GenerateContent(localTemplate *formatter.LocalTemplate, template string, po
 		return "", fmt.Errorf("template(%s/%s) failed: %s", lang, templateName, err)
 	}
 
+	if ret.Len() == 0 {
+		return "", fmt.Errorf("no need send")
+	}
+
 	return ret.String(), nil
 }
