@@ -338,6 +338,10 @@ Bys:
 	return ret, nil
 }
 
+func (a *SummaryArg) NeedShowBy() bool {
+	return true
+}
+
 func (a *SummaryArg) Timezone() string {
 	if a.To.Timezone != "" {
 		return a.To.Timezone
