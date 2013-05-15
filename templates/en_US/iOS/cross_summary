@@ -20,12 +20,11 @@
 {{else}}{{range for .Removed}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Identity.Name}}\){{end}} left \("{{$title}}"\){{if .ShowBy .Removed}}, removed by \({{$by}}\){{end}}. {{$link}}
 {{end}}
 {{end}}
-{{if .IsExfeeChanged}}
-{{$NoAccepted := not .NewAccepted}}
-{{$NoDeclined := not .NewDeclined}}
-{{if .NewAccepted}}{{range for .NewAccepted}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Identity.Name | replace `\` `\\`}}\){{end}} accepted \("{{$title}}"\), {{end}}{{if $NoAccepted}} in \("{{$title}}"\){{end}}, {{end}}{{if .NewDeclined}}{{range for .NewDeclined}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Identity.Name | replace `\` `\\`}}\){{end}} {{len .NewDeclined | plural "is" "are"}} unavailable{{if and $NoAccepted $NoInterested}} for \("{{$title}}"\){{end}}, {{end}}{{if and $NoAccepted $NoInterested | and $NoDeclined}} for \("{{$title}}"\){{end}}, {{end}}{{.Cross.Exfee.CountPeople .Cross.Exfee.Accepted}} of {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} accepted. {{$link}}
-{{if .ToIn .NewAccepted | and .NeedShowBy}}\({{$by}}\) set you accepted on \("{{$title}}"\). {{$link}}{{end}}
-{{if .ToIn .NewDeclined | and .NeedShowBy}}\({{$by}}\) set you unavailable for \("{{$title}}"\). {{$link}}{{end}}
+{{if .IsExfeeChanged}}{{if .NewAccepted}}
+· Accepted: {{range for .NewAccepted}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}{{if .OldAccepted}} and {{len .OldAccepted}} {{len .OldAccepted | plural "other" "others"}}{{end}}.{{end}}{{if .NewInvited}}
+· Newly invited: {{range for .NewInvited}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}{{if .NewDeclined}}
+· Unavailable: {{range for .NewDeclined}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}{{if .Removed}}
+· Removed: {{range for .Removed}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}.{{end}}
 {{end}}
 
 {"cid":{{.Cross.ID}},"t":"u"}
