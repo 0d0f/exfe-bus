@@ -4,6 +4,7 @@ import (
 	"broker"
 	"daemon"
 	"fmt"
+	logger_ "github.com/googollee/go-logger"
 	"gobus"
 	"launchpad.net/tomb"
 	"logger"
@@ -13,7 +14,14 @@ import (
 
 func main() {
 	var config model.Config
-	_, quit := daemon.Init("exfe.json", &config)
+	output, quit := daemon.Init("exfe.json", &config)
+	log, err := logger_.New(output, "service bus")
+	if err != nil {
+		panic(err)
+		return
+	}
+	config.Log = log
+
 	tombs := make([]*tomb.Tomb, 0)
 
 	addr := fmt.Sprintf("%s:%d", config.ExfeQueue.Addr, config.ExfeQueue.Port)
