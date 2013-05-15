@@ -114,13 +114,7 @@ func (c Cross) V3Summary(updates []model.CrossUpdate) error {
 	}
 
 	to := updates[0].To
-	selfUpdates := true
-	for _, update := range updates {
-		if !to.SameUser(&update.By) {
-			selfUpdates = false
-		}
-	}
-	if selfUpdates {
+	if to.SameUser(&updates[0].By) {
 		c.config.Log.Debug("not send with all self updates: %s", to)
 		return nil
 	}
@@ -151,7 +145,18 @@ func (c Cross) V3Conversation(updates []model.ConversationUpdate) error {
 	if err != nil {
 		return err
 	}
+	needSend := false
 	to := arg.To
+	for _, update := range updates {
+		if !to.SameUser(&update.Post.By) {
+			needSend = true
+		}
+	}
+	if !needSend {
+		c.config.Log.Debug("not send with all self updates: %s", to)
+		return nil
+	}
+
 	oldPosts, err := c.platform.GetConversation(arg.Cross.Exfee.ID, to.Token, arg.Posts[0].CreatedAt, false, "older", 2)
 	if err != nil {
 		logger.ERROR("get conversation error: %s", err)
