@@ -13,17 +13,17 @@
 {{if .IsPlaceDescChanged}}\("{{$title}}"\) place details updated{{if .NeedShowBy}}, set by \({{$by}}\){{end}}. {{$link}}{{end}}
 {{if .IsDescriptionChanged}}\("{{$title}}"\) description updated{{if .NeedShowBy}}, set by \({{$by}}\){{end}}. {{$link}}{{end}}
 {{end}}
-{{if .NewInvited}}{{range for .NewInvited}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Identity.Name}}\){{end}} {{len .NewInvited | plural "is" "are"}} invited to \("{{$title}}"\) by {{.ListBy 2 ", " | replace `\` `\\`}}. {{$link}}{{end}}
+{{if .NewInvited}}{{range for .NewInvited}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Name}}\){{end}} {{len .NewInvited | plural "is" "are"}} invited to \("{{$title}}"\) by {{.ListBy 2 ", " | replace `\` `\\`}}. {{$link}}{{end}}
 {{if .Removed}}
 {{if .ToIn .Removed}}
 {{if .NeedShowBy}}You've been removed from \("{{$title}}"\) by \({{$by}}\). {{$link}}{{else}}You just quit \("{{$title}}"\). {{$link}}{{end}}
-{{else}}{{range for .Removed}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Identity.Name}}\){{end}} left \("{{$title}}"\){{if .ShowBy .Removed}}, removed by \({{$by}}\){{end}}. {{$link}}
+{{else}}{{range for .Removed}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Name}}\){{end}} left \("{{$title}}"\){{if .ShowBy .Removed}}, removed by \({{$by}}\){{end}}. {{$link}}
 {{end}}
 {{end}}
 {{if .IsExfeeChanged}}
 {{$NoAccepted := not .NewAccepted}}
 {{$NoDeclined := not .NewDeclined}}
-{{if .NewAccepted}}{{range for .NewAccepted}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Identity.Name | replace `\` `\\`}}\){{end}} accepted \("{{$title}}"\), {{end}}{{if .NewDeclined}}{{range for .NewDeclined}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Identity.Name | replace `\` `\\`}}\){{end}} {{len .NewDeclined | plural "is" "are"}} unavailable{{if $NoAccepted}} for \("{{$title}}"\){{end}}, {{end}}{{.Cross.Exfee.CountPeople .Cross.Exfee.Accepted}} of {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} accepted. {{$link}}
+{{if .NewAccepted}}{{range for .NewAccepted}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Name | replace `\` `\\`}}\){{end}} accepted \("{{$title}}"\), {{end}}{{if .NewDeclined}}{{range for .NewDeclined}}{{if not .First}}{{if not .Last}}, {{else}} and {{end}}{{end}}\({{.V.Name | replace `\` `\\`}}\){{end}} {{len .NewDeclined | plural "is" "are"}} unavailable{{if $NoAccepted}} for \("{{$title}}"\){{end}}, {{end}}{{.Cross.Exfee.CountPeople .Cross.Exfee.Accepted}} of {{.Cross.Exfee.CountPeople .Cross.Exfee.Invitations}} accepted. {{$link}}
 {{if .ToIn .NewAccepted | and .NeedShowBy}}\({{$by}}\) set you accepted on \("{{$title}}"\). {{$link}}{{end}}
 {{if .ToIn .NewInterested | and .NeedShowBy}}\({{$by}}\) set you interested in \("{{$title}}"\). {{$link}}{{end}}
 {{if .ToIn .NewDeclined | and .NeedShowBy}}\({{$by}}\) set you unavailable for \("{{$title}}"\). {{$link}}{{end}}
