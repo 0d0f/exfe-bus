@@ -109,7 +109,7 @@ func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
 	return nil
 }
 
-func (c Cross) V3Summary(updates []model.CrossUpdate) error {
+func (c Cross) V3Update(updates []model.CrossUpdate) error {
 	if len(updates) == 0 {
 		return fmt.Errorf("len(updates) == 0")
 	}
@@ -130,7 +130,7 @@ func (c Cross) V3Summary(updates []model.CrossUpdate) error {
 	}
 
 	to = arg.To
-	text, err := GenerateContent(c.localTemplate, "cross_summary", to.Provider, to.Language, arg)
+	text, err := GenerateContent(c.localTemplate, "cross_update", to.Provider, to.Language, arg)
 	if err != nil {
 		return err
 	}

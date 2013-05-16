@@ -19,7 +19,8 @@ type V3Notifier struct {
 	CrossDigest       rest.Processor `path:"/cross/digest" method:"POST"`
 	CrossRemind       rest.Processor `path:"/cross/remind" method:"POST"`
 	CrossInvitation   rest.Processor `path:"/cross/invitation" method:"POST"`
-	CrossSummary      rest.Processor `path:"/cross/summary" method:"POST"`
+	CrossUpdate       rest.Processor `path:"/cross/update" method:"POST"`
+	CrossSummary      rest.Processor `path:"/cross/summary" method:"POST" func:"HandleCrossUpdate`
 	CrossConversation rest.Processor `path:"/cross/conversation" method:"POST"`
 	UserWelcome       rest.Processor `path:"/user/welcome" method:"POST"`
 	UserVerify        rest.Processor `path:"/user/verify" method:"POST"`
@@ -87,8 +88,8 @@ func (n V3Notifier) HandleCrossInvitation(invitation model.CrossInvitation) {
 	}
 }
 
-func (n V3Notifier) HandleCrossSummary(updates []model.CrossUpdate) {
-	err := n.cross.V3Summary(updates)
+func (n V3Notifier) HandleCrossUpdate(updates []model.CrossUpdate) {
+	err := n.cross.V3Update(updates)
 	if err != nil {
 		n.Error(http.StatusInternalServerError, n.GetError(7, err.Error()))
 		return
