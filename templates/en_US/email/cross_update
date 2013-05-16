@@ -1,0 +1,45 @@
+Content-Type: multipart/mixed; boundary="mixsplitter"
+References: <{{.Config.Email.Prefix}}+{{.Cross.ID}}@exfe.com>
+To: =?utf-8?B?{{.To.Name | base64}}?= <{{.To.ExternalUsername}}>
+From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <{{.Config.Email.Prefix}}+{{.Cross.ID}}@{{.Config.Email.Domain}}>
+Subject: =?utf-8?B?{{.Cross.Title | base64}}?=
+
+--mixsplitter
+Content-Type: multipart/alternative; boundary="alternativesplitter"
+
+--alternativesplitter
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+
+{{sub . "_markdown/cross_update.txt" | base64 | column 80 "\r\n"}}
+
+--alternativesplitter
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: base64
+
+{{sub . "_html/cross_update.html" | base64 | column 80 "\r\n"}}
+
+--alternativesplitter--
+{{if .NewAccepted}}
+--mixsplitter
+Content-Type: image/png; name="rsvp_dot_accepted_2x.png"
+Content-Transfer-Encoding: base64
+Content-ID: <rsvp_dot_accepted_2x_png>
+
+{{"iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAMAAADXqc3KAAABL1BMVEX///////8AAAAXFxcUFBQVFRUAAAAgICAcHBwYGBgAAAArKysrcboaGhqVuNsaGhoZGRkvc7zB1eo+fcB1odEUFB0VFRsVFRXA0+j4+Pj6+vokGCQtcrvw8PCwsLBSUlLZ2dn19fU+fsHd3d0XFxfFxcV0odF3o9Dr6+sWFhp0dHQnJyebm5taWlo8e7/19fWOjo76+vrj4+O8vLzn5+e+vr6lpaX6+vqkpKeAgID9/f3w8PD7+/svdLyVt9r9/f329vb7+/vp6enr6+uXuNvs7Oza2tra2toZGRlycnW/v7/o6Oj8/Pz29vbk5OS4uLhycnIaGhoXFxcXFxeCgoIYGBgYGBgqc8AreMoqd8cqdsUreMkrecwqdsYqdcMreswpcb0qc8EqdcQres0pcLu5HRAvAAAAV3RSTlMAlAILDSQFCAkVAwb9J7oeNPqo7ssaMAypkY8V/Hs6WnGC7YcWd8vKflBhDSlS8JItjmU5aTdEkENYjomP+ruSkY6JibqHiYpHaYOOk5KNgWlGQkxYS0EGnJGrAAABU0lEQVR4Xp2SVXeDQBCFOywLbCAJFnf3uru722Kxtv//N5RS2pDTt97H+c7s3bkzM/8Ww/EokUA8x0yXxc7Scmlzu7S40hEDKCR0c+Ar1xVCv3WUXwBV13aUckOFgzzyCSPMp+FYGtHxmI6kCKTnhW8jMdOEyAcdWP2+NaAfEWhmRK+BXQdVom+mbRi2+UYlFVbZrxaOFEEfDUzDGQ4dwxyM6lCsci7goyegUct2hu/vQ8e26CxsRXkXILwGyrhvuHWXGP1xFvYwckEinJoGCqTCrAcOoRx8SoMjDyBcg0bQXIcaRp75BiSD303Cs2fOEbkSHHAXKjLhvAFxbx8ik0hSPcx6mYgk3p4DtT6bVTQ9CXPtOBH9EGNy4RR8nRXkmMD8xB6Ln19cXl3f3N7dP8RjaLIQgWD58anVenmVMRFCwdWy1SgOh3GUsCLz5xhYNnAMn2GKRKC9p+VvAAAAAElFTkSuQmCC" | column 80 "\r\n"}}
+{{end}}{{if .NewInvited}}
+--mixsplitter
+Content-Type: image/png; name="rsvp_dot_pending_2x.png"
+Content-Transfer-Encoding: base64
+Content-ID: <rsvp_dot_pending_2x_png>
+
+{{"iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABoUlEQVR42u2VzWrCQBSF+wLdtn0Psf6t6iZ0VZG+Sp5ARMRV8xYSs1GfQNGNID6DDhjxF38yaAZu76FmI5pkWropDXwQMufMmUxu7twR0a/yH/DzgFQq9ZjJZJ4ZgymcMfh5AmPfDsjlcvfMSzabfQ8DGmi1Atj4wLxhglqtZo5Go8Z2uxW+73un00ny/WQ4HNoYgwZvBU+sAKwGBhhbrdaH+rroBqrdbltBCLyRAcG2NJtNi1dMcYA22K7QAHw0CKvVqslboRiKiYIH3mQy+XQzANUC0WAwaByPR9KBPQ68mCMswIBosVgIKSXpsFwuXXjT6fRrWEABot1uJz3PIx0Oh4N/DihGBnAZyv1+TzrAE1RT5BZNp9MJvwXp4LquOAcYYVWUgKjX69m8ItKh3+/b8GKOyDKtVCrmZrNRDMVEwQPvZX+61ibyENq2ba3Xa4qD4zgWPPBqtYp6vW5x+anVakXXwBg0Wq0iaHZBSKlUMrvdriOEcOfzuT+bzeR4PBadTqdRLpc1m51+uwb5qHYdCnoLfn/8oUzx8sD5+2fyJ56gWUQHkDo5AAAAAElFTkSuQmCC" | column 80 "\r\n"}}
+{{end}}{{if .NewDeclined}}
+--mixsplitter
+Content-Type: image/png; name="rsvp_dot_unavailable_2x.png"
+Content-Transfer-Encoding: base64
+Content-ID: <rsvp_dot_unavailable_2x_png>
+
+{{"iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAMAAADXqc3KAAABLFBMVEX///////8AAAAXFxcUFBQVFRUgICCurq4rKysAAAAcHBwYGBgAAADV1dUZGRkaGhoaGhqvr7Dn5+cVFRXIyMgUFB0VFRvl5eX4+Pivr6+0tLS0tLTr6+ubm5vw8PDFxcWwsLBSUlL6+vr19fUkGCT19fXZ2dm1tbV0dHQXFxeOjo7IyMknJydaWloWFhrd3d3Jycm1tbXj4+Ovr6/w8PD9/f3n5+f7+/ukpKe8vLz6+vr9/f36+vqlpaXT09O+vr729vbp6en7+/vr6+vs7OyAgIDa2tra2toZGRlycnW/v7/o6Oj8/Pz29vbk5OS4uLhycnIaGhoXFxcXFxeCgoIYGBgYGBizs7O8vLy+vr64uLi6urq7u7u5ubm2traxsbG0tLSurq63t7e/v78DXadgAAAAV3RSTlMAlAILDSQI/QYDCRUFujQnHvqoDMsaMKmR/O7wfil7dzpaj4IVknHtYRYtyw1SUIfK7mX6iZJpj0M5jo6QRLs3kYmOiYdYiYpHaYOOk5KNgWlGQkxYS0Gps4SnAAABT0lEQVR4Xp2S1XblMAxFR7Gd5Mbhy8xcZmbGYQcv/v8/NJNJ23T1redRe9lHOtK3L4uTeZRMIl7mPpbFhd2t5v52c+14QYyhhFSuQKRKWUq81VFtD8xUYd3orphwVkMR4aRBAxRhzCYTNhYUaAyk/0ZiqwTKlI0c33dGbKpAqSWGxngHTIHNXM+yPHfGBBMOMRcAmXYgNR65lh3IckfjIXT6cgB4/QIKzPFsez63bc9hRdjQ+QAgcgDGxLeCekAsf5KHTYICkNRyH4EBOQ2H4BS68a9W4TwEiFRhJW6egipBofklZOPtZuF3aC5TdTk+4BEsq1QOBySLJ/FIcosEh5mINNNrgzks5o3VVBbavQwVoxDTav0KIl3X1bTEvcaeztzc3t0/PD49f/+RSaP3hUiUqD9/LS39+asSKiXiq8V9nWga0SkWuU/HgHHsGF4AwelESm8/8v0AAAAASUVORK5CYII=" | column 80 "\r\n"}}
+{{end}}
+--mixsplitter--

@@ -1,2 +1,2 @@
-{{range .Posts}}{{.By.Name}}: {{.Content | limit 60}}
-{{end}}
+{{range .Posts}}{{.By.Name}}: {{.Content}}
+{{end}}{{.Config.SiteUrl}}/?token={{.To.Token}}

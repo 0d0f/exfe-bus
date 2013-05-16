@@ -1,0 +1,1 @@
+{{$time := .Cross.Time.StringInZone .Timezone}}Digest: "{{.Cross.Title}}"{{if $time}}, {{$time}}{{end}}{{if .Cross.Place.Title}} at {{.Cross.Place.Title}}{{end}}. {{.Config.SiteUrl}}/?token={{.To.Token}}

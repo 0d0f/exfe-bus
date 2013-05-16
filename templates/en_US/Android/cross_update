@@ -1,0 +1,3 @@
+{{sub . "_default/cross_update"}}
+
+{"cid":{{.Cross.ID}},"t":"u"}

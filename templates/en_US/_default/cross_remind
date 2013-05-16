@@ -1,1 +1,1 @@
-{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}{{$link := .Cross.Link .To .Config}}Reminding: "{{.Cross.Title}}" at {{$time}}. {{$link}}
+{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}Reminding: "{{.Cross.Title}}" at {{$time}}. {{.Config.SiteUrl}}/?token={{.To.Token}}

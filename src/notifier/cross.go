@@ -270,6 +270,7 @@ type SummaryArg struct {
 	NewAccepted []model.Identity `json:"-"`
 	OldAccepted []model.Identity `json:"-"`
 	NewDeclined []model.Identity `json:"-"`
+	NewPending  []model.Identity `json:"-"`
 }
 
 func SummaryFromUpdates(updates []model.CrossUpdate, config *model.Config) (*SummaryArg, error) {
@@ -303,6 +304,7 @@ Bys:
 		NewAccepted: make([]model.Identity, 0),
 		OldAccepted: make([]model.Identity, 0),
 		NewDeclined: make([]model.Identity, 0),
+		NewPending:  make([]model.Identity, 0),
 	}
 	ret.To = to
 	err := ret.Parse(config)
@@ -323,6 +325,11 @@ Bys:
 	for _, i := range ret.Cross.Exfee.Declined {
 		if !in(&i, ret.OldCross.Exfee.Declined) {
 			ret.NewDeclined = append(ret.NewDeclined, i.Identity)
+		}
+	}
+	for _, i := range ret.Cross.Exfee.Pending {
+		if !in(&i, ret.OldCross.Exfee.Pending) {
+			ret.NewDeclined = append(ret.NewPending, i.Identity)
 		}
 	}
 	for _, i := range ret.Cross.Exfee.Invitations {
@@ -380,6 +387,31 @@ func (a *SummaryArg) IsExfeeChanged() bool {
 	return false
 }
 
+func (a *SummaryArg) IsRsvpComboChanged() []model.Identity {
+	count := 0
+	var ret []model.Identity
+	if len(a.NewAccepted) > 0 {
+		count++
+		ret = append(ret, a.NewAccepted...)
+	}
+	if len(a.NewDeclined) > 0 {
+		count++
+		ret = append(ret, a.NewDeclined...)
+	}
+	if len(a.NewPending) > 0 {
+		count++
+		ret = append(ret, a.NewPending...)
+	}
+	if len(a.Removed) > 0 {
+		count++
+		ret = append(ret, a.Removed...)
+	}
+	if count > 1 {
+		return ret
+	}
+	return nil
+}
+
 func (a *SummaryArg) IsTimeChanged() bool {
 	oldtime, _ := a.OldCross.Time.StringInZone(a.To.Timezone)
 	time, _ := a.Cross.Time.StringInZone(a.To.Timezone)
@@ -408,9 +440,6 @@ func (a *SummaryArg) IsDescriptionChanged() bool {
 
 func (a *SummaryArg) IsComboChanged() bool {
 	changedNumber := 0
-	if a.IsTimeChanged() {
-		changedNumber++
-	}
 	if a.IsTimeChanged() {
 		changedNumber++
 	}
