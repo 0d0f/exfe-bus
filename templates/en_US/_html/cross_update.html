@@ -97,19 +97,19 @@
 			</tr>
 			{{if .NewAccepted}}
 			<tr>
-				<td width="30px"><img src="cid:rsvp_dot_accepted_2x_png" style="width: 12px; height: 12px; padding-left: 14px;"/></td>
+				<td width="30px"><img src="{{.Config.SiteUrl}}/static/img/rsvp_dot_accepted@2x.png" style="width: 12px; height: 12px; padding-left: 14px;"/></td>
 				<td><a href="{{$link}}" style="color:#333333; text-decoration: none;">Accepted: {{range for .NewAccepted}}<span style="font-weight:500; color:#3A6EA5;">{{.V.Name}}</span>{{if not .Last}}, {{end}}{{end}}{{if .OldAccepted}} and {{len .OldAccepted}} {{len .OldAccepted | plural "other" "others"}}{{end}}</a></td>
 			</tr>
 			{{end}}
 			{{if .NewInvited}}
 			<tr>
-				<td width="30px"><img src="cid:rsvp_dot_pending_2x_png" style="width: 12px; height: 12px; padding-left: 14px;"/></td>
+				<td width="30px"><img src="{{.Config.SiteUrl}}/static/img/rsvp_dot_pending@2x.png" style="width: 12px; height: 12px; padding-left: 14px;"/></td>
 				<td><a href="{{$link}}" style="color:#333333; text-decoration: none;">Newly invited: {{range for .NewInvited}}<span style="font-weight:500;">{{.V.Name}} </span>{{if not .Last}}, {{end}}{{end}}</a></td>
 			</tr>
 			{{end}}
 			{{if .NewDeclined}}
 			<tr>
-				<td width="30px"><img src="cid:rsvp_dot_unavailable_2x_png" style="width: 12px; height: 12px; padding-left: 14px;"/></td>
+				<td width="30px"><img src="{{.Config.SiteUrl}}/static/img/rsvp_dot_unavailable@2x.png" style="width: 12px; height: 12px; padding-left: 14px;"/></td>
 				<td><a href="{{$link}}" style="color:#333333; text-decoration: none;">Unavailable: {{range for .NewDeclined}}<span style="font-weight:500;">{{.V.Name}}</span>{{if not .Last}}, {{end}}{{end}}</a></td>
 			</tr>
 			{{end}}

@@ -9,7 +9,7 @@
 	<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
 		<tbody>
 			<tr><td colspan="3">
-				<table cellpadding="0" cellspacing="0" style="display:inline-block; width:100%; border-spacing:0; vertical-align:top; background-image:url(cid:title_bg_jpg); background-color:#545454;">
+				<table cellpadding="0" cellspacing="0" style="display:inline-block; width:100%; border-spacing:0; vertical-align:top; background-image:url({{.Config.SiteApi}}/v3/mails/titleimage?background={{.Cross.Background .Config | base64url}}&lat={{.Cross.Place.Lat}}&lng={{.Cross.Place.Lng}}&ribbon=false); background-color:#545454;">
 					<tbody>
 						<tr>
 							<td style="width:50px; height:100%; vertical-align:top; text-align:right;"></td>
@@ -40,7 +40,7 @@
 				</td>
 			</tr>
 			<tr>
-				<td style="width:40px; height:100%; padding:15px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:time_30blue_2x_png" width="30px" height="30px" /></td>
+				<td style="width:40px; height:100%; padding:15px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/time_30blue@2x.png" width="30px" height="30px" /></td>
 				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
 				<td style="padding:5px 10px 20px 10px;">
 					<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
@@ -58,7 +58,7 @@
 				</td>
 			</tr>
 			<tr>
-				<td style="width:40px; height:100%; padding:15px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:place_30blue_2x_png" width="30px" height="30px" /></td>
+				<td style="width:40px; height:100%; padding:15px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/place_30blue@2x.png" width="30px" height="30px" /></td>
 				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
 				<td style="padding:5px 10px 20px 10px;">
 					<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
@@ -80,13 +80,13 @@
 				{{$updateByMe := $me.IsUpdateBy $me.Identity.UserID}}
 				<td style="width:40px; height:100%; padding:25px 10px 0 0; vertical-align:top; text-align:right;">
 					{{if $me.IsAccepted}}
-					<img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:rsvp_accepted_26blue_2x_png" width="30px" height="30px" />
+					<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_accepted_26blue@2x@2x.png" width="30px" height="30px" />
 					{{end}}
 					{{if $me.IsDeclined}}
-					<img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:rsvp_unavailable_26g5_2x_png" width="30px" height="30px" />
+					<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_unavailable_26g5@2x@2x.png" width="30px" height="30px" />
 					{{end}}
 					{{if $me.IsPending}}
-					<img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:rsvp_pending_26g5_2x_png" width="30px" height="30px" />
+					<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_pending_26g5@2x@2x.png" width="30px" height="30px" />
 					{{end}}
 				</td>
 				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
@@ -109,14 +109,14 @@
 				</td>
 			</tr>
 			<tr>
-				<td style="width:40px; height:100%; padding:5px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:exfee_30blue_2x_png" width="30px" height="30px" /></td>
+				<td style="width:40px; height:100%; padding:5px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/exfee_30blue@2x.png" width="30px" height="30px" /></td>
 				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
 				<td style="padding:5px 10px 5px 10px;">
 					<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
 						<tbody>
 							<tr><td height="30px"><a href="{{$link}}" style="color:#333333; text-decoration: none;"><span style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">Exfees&nbsp;&nbsp;{{.Cross.Exfee.AcceptedCount}}</span>/{{.Cross.Exfee.TotalCount}} accepted</a></td></tr>
 							<!--
-							<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">Updated</td></tr>
+							<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;"></td></tr>
 							<tr><td>Accepted: <span style="font-weight:500;" style="color:#3A6EA5;">Dave</span>, <span style="font-weight:500;" style="color:#3A6EA5;">Two33</span> and 3 others</td></tr>
 							<tr><td>Newly invited: <span style="font-weight:500;">Joe </span></td></tr>
 							<tr><td>Unavailable: <span style="font-weight:500;">dm.</span></td></tr>
@@ -129,7 +129,7 @@
 			{{range .Cross.Exfee.Invitations}}
 			{{if .IsAccepted}}
 			<tr style="vertical-align:top;">
-				<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:i{{.Identity.ID}}" width="24px" height="19px" style="vertical-align:top;" /></td>
+				<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/v2/avatar/render?url={{.Identity.Avatar | base64url}}&width=24&height=19&resolution=2x" width="24px" height="19px" style="vertical-align:top;" /></td>
 				<td style="width:2px; height:100%; background-color:#3784D5; vertical-align:top;"></td>
 				<td style="padding:0 10px;">
 					<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
@@ -144,7 +144,7 @@
 			{{range .Cross.Exfee.Invitations}}
 			{{if .IsPending}}
 			<tr style="vertical-align:top;">
-				<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:i{{.Identity.ID}}" width="24px" height="19px" style="vertical-align:top;" /></td>
+				<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/v2/avatar/render?url={{.Identity.Avatar | base64url}}&width=24&height=19&resolution=2x" width="24px" height="19px" style="vertical-align:top;" /></td>
 				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
 				<td style="padding:0 10px;">
 					<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
@@ -159,7 +159,7 @@
 			{{range .Cross.Exfee.Invitations}}
 			{{if .IsDeclined}}
 			<tr style="vertical-align:top;">
-				<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="cid:i{{.Identity.ID}}" width="24px" height="19px" style="vertical-align:top;" /></td>
+				<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/v2/avatar/render?url={{.Identity.Avatar | base64url}}&width=24&height=19&resolution=2x" width="24px" height="19px" style="vertical-align:top;" /></td>
 				<td style="width:2px; height:100%; background-color:#7F7F7F; vertical-align:top;"></td>
 				<td style="padding:0 10px;">
 					<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
