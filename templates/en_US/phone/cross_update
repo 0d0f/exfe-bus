@@ -2,7 +2,7 @@
 {{else}}{{if .IsTitleChanged}}"{{.OldCross.Title}}" updated to "{{.Cross.Title}}".
 {{end}}{{if .IsTimeChanged}}"{{.Cross.Title}}" updated: {{if $time}}{{$time}}{{else}}time to be decided{{end}}.
 {{end}}{{if .IsPlaceTitleChanged}}"{{.Cross.Title}}" updated: {{if .Cross.Place.Title}}{{.Cross.Place.Title}}{{else}}place to be decided{{end}}.
-{{end}}{{if .IsPlaceDescChanged}}"{{.Cross.Title}}" at "{{.Cross.Place.Title}}" detail updated.
+{{end}}{{if .IsPlaceDescChanged}}"{{.Cross.Title}}" at {{.Cross.Place.Title}} detail updated.
 {{end}}{{if .IsDescriptionChanged}}"{{.Cross.Title}}" description updated.
 {{end}}{{end}}{{if .IsRsvpComboChanged}}"{{.Cross.Title}}" updated. {{range for .IsRsvpComboChanged}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}} responsed.
 {{else}}{{if .NewAccepted}}"{{.Cross.Title}}" updated. {{range for .NewAccepted}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}} accepted.
