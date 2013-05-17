@@ -15,7 +15,7 @@
 			</tr>
 			{{end}}			
 			<tr>
-				<td width="30px"></td>
+				<td width="30px"><img src="{{.Config.SiteApi}}/v2/crosses/{{.Cross.ID}}/touch?user_id={{.To.UserID}}" /></td>
 				<td style="padding: 10px 0 10px 0; font-size:18px; line-height:24px;"><a href="{{$link}}" style="color:#333333; text-decoration: none;">{{.Cross.Title | html}}</a></td>
 			</tr>
 			{{if .IsDescriptionChanged}}{{if .Cross.Description}}

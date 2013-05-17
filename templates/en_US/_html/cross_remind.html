@@ -12,7 +12,7 @@
 				<table cellpadding="0" cellspacing="0" style="display:inline-block; width:100%; border-spacing:0; vertical-align:top; background-image:url({{.Config.SiteApi}}/v3/mails/titleimage?background={{.Cross.Background .Config | base64url}}&lat={{.Cross.Place.Lat}}&lng={{.Cross.Place.Lng}}&ribbon=false); background-color:#545454;">
 					<tbody>
 						<tr>
-							<td style="width:50px; height:100%; vertical-align:top; text-align:right;"></td>
+							<td style="width:50px; height:100%; vertical-align:top; text-align:right;"><img src="{{.Config.SiteApi}}/v2/crosses/{{.Cross.ID}}/touch?user_id={{.To.UserID}}" /></td>
 							<td style="width:2px; height:100%; vertical-align:top;"></td>
 							<td style="padding:5px 10px 5px 10px; max-width:498px;">
 								<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
