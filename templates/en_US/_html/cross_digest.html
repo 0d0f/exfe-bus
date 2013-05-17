@@ -80,13 +80,13 @@
 				{{$updateByMe := $me.IsUpdateBy $me.Identity.UserID}}
 				<td style="width:40px; height:100%; padding:25px 10px 0 0; vertical-align:top; text-align:right;">
 					{{if $me.IsAccepted}}
-					<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_accepted_26blue@2x@2x.png" width="30px" height="30px" />
+					<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_accepted_26blue@2x.png" width="30px" height="30px" />
 					{{end}}
 					{{if $me.IsDeclined}}
-					<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_unavailable_26g5@2x@2x.png" width="30px" height="30px" />
+					<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_unavailable_26g5@2x.png" width="30px" height="30px" />
 					{{end}}
 					{{if $me.IsPending}}
-					<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_pending_26g5@2x@2x.png" width="30px" height="30px" />
+					<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_pending_26g5@2x.png" width="30px" height="30px" />
 					{{end}}
 				</td>
 				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
