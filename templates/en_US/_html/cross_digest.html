@@ -126,10 +126,11 @@
 					</table>
 				</td>
 			</tr>
+			{{$site := .Config.SiteUrl}}
 			{{range .Cross.Exfee.Invitations}}
 			{{if .IsAccepted}}
 			<tr style="vertical-align:top;">
-				<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/v2/avatar/render?url={{.Identity.Avatar | base64url}}&width=24&height=19&resolution=2x" width="24px" height="19px" style="vertical-align:top;" /></td>
+				<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{$site}}/v2/avatar/render?url={{.Identity.Avatar | base64url}}&width=24&height=19&resolution=2x" width="24px" height="19px" style="vertical-align:top;" /></td>
 				<td style="width:2px; height:100%; background-color:#3784D5; vertical-align:top;"></td>
 				<td style="padding:0 10px;">
 					<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
@@ -144,7 +145,7 @@
 			{{range .Cross.Exfee.Invitations}}
 			{{if .IsPending}}
 			<tr style="vertical-align:top;">
-				<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/v2/avatar/render?url={{.Identity.Avatar | base64url}}&width=24&height=19&resolution=2x" width="24px" height="19px" style="vertical-align:top;" /></td>
+				<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{$site}}/v2/avatar/render?url={{.Identity.Avatar | base64url}}&width=24&height=19&resolution=2x" width="24px" height="19px" style="vertical-align:top;" /></td>
 				<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
 				<td style="padding:0 10px;">
 					<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
@@ -159,7 +160,7 @@
 			{{range .Cross.Exfee.Invitations}}
 			{{if .IsDeclined}}
 			<tr style="vertical-align:top;">
-				<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/v2/avatar/render?url={{.Identity.Avatar | base64url}}&width=24&height=19&resolution=2x" width="24px" height="19px" style="vertical-align:top;" /></td>
+				<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{$site}}/v2/avatar/render?url={{.Identity.Avatar | base64url}}&width=24&height=19&resolution=2x" width="24px" height="19px" style="vertical-align:top;" /></td>
 				<td style="width:2px; height:100%; background-color:#7F7F7F; vertical-align:top;"></td>
 				<td style="padding:0 10px;">
 					<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
