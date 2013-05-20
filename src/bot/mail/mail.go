@@ -7,8 +7,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"formatter"
-	"github.com/googollee/go-logger"
 	"launchpad.net/tomb"
+	"logger"
 	"model"
 	"net"
 	"net/mail"
@@ -25,17 +25,14 @@ type Worker struct {
 	Tomb tomb.Tomb
 
 	config   *model.Config
-	log      *logger.SubLogger
 	templ    *formatter.LocalTemplate
 	platform *broker.Platform
 	saver    MessageIDSaver
 }
 
 func New(config *model.Config, templ *formatter.LocalTemplate, platform *broker.Platform, saver MessageIDSaver) (*Worker, error) {
-
 	return &Worker{
 		config:   config,
-		log:      config.Log.SubPrefix("mail"),
 		templ:    templ,
 		platform: platform,
 		saver:    saver,
@@ -50,7 +47,6 @@ func (w *Worker) Daemon() {
 	for true {
 		select {
 		case <-w.Tomb.Dying():
-			w.log.Notice("quitted")
 			return
 		case <-time.After(timeout):
 			w.process()
@@ -61,7 +57,7 @@ func (w *Worker) Daemon() {
 func (w *Worker) process() {
 	conn, imapConn, err := w.login()
 	if err != nil {
-		w.log.Err("can't connect to %s: %s", w.config.Bot.Email.IMAPHost, err)
+		logger.ERROR("can't connect to %s: %s", w.config.Bot.Email.IMAPHost, err)
 		return
 	}
 	defer imapConn.Logout(broker.NetworkTimeout)
@@ -69,13 +65,13 @@ func (w *Worker) process() {
 
 	_, err = imapConn.Select("INBOX", false)
 	if err != nil {
-		w.log.Err("can't select INBOX: %s", err)
+		logger.ERROR("can't select INBOX: %s", err)
 		return
 	}
 
 	cmd, err := imap.Wait(imapConn.Search("UNSEEN"))
 	if err != nil {
-		w.log.Err("can't seach UNSEEN: %s", err)
+		logger.ERROR("can't seach UNSEEN: %s", err)
 		return
 	}
 	var ids []uint32
@@ -90,13 +86,13 @@ func (w *Worker) process() {
 
 		msg, err := w.getMail(imapConn, id)
 		if err != nil {
-			w.log.Err("can't get mail %d: %s", id, err)
+			logger.ERROR("can't get mail %d: %s", id, err)
 			errorIds = append(errorIds, id)
 			continue
 		}
 		parser, err := NewParser(msg, w.config)
 		if err != nil {
-			w.log.Err("parse mail %d failed: %s", id, err)
+			logger.ERROR("parse mail %d failed: %s", id, err)
 			errorIds = append(errorIds, id)
 			continue
 		}
@@ -109,7 +105,7 @@ func (w *Worker) process() {
 		if to == "" {
 			crossID, exist, err := w.saver.Check(parser.referenceIDs)
 			if err != nil {
-				w.log.Crit("saver check %s failed: %s", id, err)
+				logger.ERROR("saver check %s failed: %s", id, err)
 				errorIds = append(errorIds, id)
 				continue
 			}
@@ -120,7 +116,7 @@ func (w *Worker) process() {
 		if to == "" && parser.event != nil {
 			crossID, exist, err := w.saver.Check([]string{parser.event.ID})
 			if err != nil {
-				w.log.Crit("saver check %s failed: %s", id, err)
+				logger.ERROR("saver check %s failed: %s", id, err)
 				errorIds = append(errorIds, id)
 				continue
 			}
@@ -136,7 +132,7 @@ func (w *Worker) process() {
 				if code < 500 {
 					w.sendHelp(code, err, parser)
 				} else {
-					w.log.Err("can't gather (%s) with: %+v", err, cross)
+					logger.ERROR("can't gather (%s) with: %+v", err, cross)
 				}
 				errorIds = append(errorIds, id)
 				continue
@@ -147,7 +143,7 @@ func (w *Worker) process() {
 			if post != "" && !fromCalendar {
 				_, err := w.platform.BotPostConversation(parser.from.Address, post, parser.Date(), parser.addrList, to, toID)
 				if err != nil {
-					w.log.Err("%s can't post %s with: %s", parser.from.Address, post, err)
+					logger.ERROR("%s can't post %s with: %s", parser.from.Address, post, err)
 					errorIds = append(errorIds, id)
 					continue
 				}
@@ -162,7 +158,7 @@ func (w *Worker) process() {
 			if cross.Place != nil || cross.Time != nil || len(cross.Exfee.Invitations) != 0 {
 				_, err = w.platform.BotCrossUpdate(to, toID, cross, cross.By)
 				if err != nil {
-					w.log.Err("%s can't update %s %s: %s", parser.from.Address, to, toID, err)
+					logger.ERROR("%s can't update %s %s: %s", parser.from.Address, to, toID, err)
 					errorIds = append(errorIds, id)
 					continue
 				}
@@ -171,19 +167,19 @@ func (w *Worker) process() {
 		if to == "cross_id" {
 			err = w.saver.Save(parser.GetIDs(), toID)
 			if err != nil {
-				w.log.Crit("saver save %s failed: %s", id, err)
+				logger.ERROR("saver save %s failed: %s", id, err)
 			}
 		}
 		okIds = append(okIds, id)
 	}
 	if err := w.copy(imapConn, okIds, "posted"); err != nil {
-		w.log.Err("can't copy %v to posted: %s", errorIds, err)
+		logger.ERROR("can't copy %v to posted: %s", errorIds, err)
 	}
 	if err := w.copy(imapConn, errorIds, "error"); err != nil {
-		w.log.Err("can't copy %v to error: %s", errorIds, err)
+		logger.ERROR("can't copy %v to error: %s", errorIds, err)
 	}
 	if err := w.delete(imapConn, ids); err != nil {
-		w.log.Err("can't remove %v from inbox: %s", ids, err)
+		logger.ERROR("can't remove %v from inbox: %s", ids, err)
 	}
 }
 
@@ -255,7 +251,6 @@ func (w *Worker) getMail(conn *imap.Client, id uint32) (*mail.Message, error) {
 }
 
 func (w *Worker) sendHelp(code int, err error, parser *Parser) error {
-	w.log.Info("|help|%s|", parser.from.Address)
 	buf := bytes.NewBuffer(nil)
 	type Email struct {
 		From      *mail.Address
@@ -276,7 +271,7 @@ func (w *Worker) sendHelp(code int, err error, parser *Parser) error {
 	}
 	err = w.templ.Execute(buf, "en_US", "email/conversation_reply", email)
 	if err != nil {
-		w.log.Crit("template(conversation_reply.email) failed: %s", err)
+		logger.ERROR("template(conversation_reply.email) failed: %s", err)
 	}
 
 	to := model.Recipient{

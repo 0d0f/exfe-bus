@@ -5,29 +5,25 @@ import (
 	"broker"
 	"daemon"
 	"formatter"
-	"github.com/googollee/go-logger"
 	"launchpad.net/tomb"
+	"logger"
 	"model"
 )
 
 func main() {
 	var config model.Config
-	output, quit := daemon.Init("exfe.json", &config)
+	_, quit := daemon.Init("exfe.json", &config)
+	logger.SetDebug(config.Debug)
 
-	log, err := logger.New(output, "bot")
-	if err != nil {
-		panic(err)
-	}
-	log.Notice("start")
-	config.Log = log
+	logger.NOTICE("bot start")
 	platform, err := broker.NewPlatform(&config)
 	if err != nil {
-		log.Crit("create platform failed: %s", err)
+		logger.ERROR("create platform failed: %s", err)
 		return
 	}
 	templ, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
 	if err != nil {
-		log.Crit("create local template failed: %s", err)
+		logger.ERROR("create local template failed: %s", err)
 		return
 	}
 
@@ -37,18 +33,18 @@ func main() {
 	var tombs []*tomb.Tomb
 	mail, err := mail.New(&config, templ, platform, saver)
 	if err != nil {
-		log.Crit("create mail bot failed: %s", err)
+		logger.ERROR("create mail bot failed: %s", err)
 		return
 	}
 	tombs = append(tombs, &mail.Tomb)
 	go mail.Daemon()
 
 	<-quit
-	log.Notice("quiting...")
+	logger.NOTICE("bot quiting...")
 
 	for _, tomb := range tombs {
 		tomb.Kill(nil)
 		tomb.Wait()
 	}
-	log.Notice("quit")
+	logger.NOTICE("quit")
 }
