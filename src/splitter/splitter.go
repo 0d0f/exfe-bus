@@ -58,6 +58,7 @@ func (s Splitter) HandleSplit(pack BigPack) {
 
 	for _, to := range pack.Recipients {
 		mergeKey := fmt.Sprintf("%s_%s@%s", pack.MergeKey, to.ExternalUsername, to.Provider)
+		logger.DEBUG("mergekey:", mergeKey)
 		mergeKey = base64.URLEncoding.EncodeToString([]byte(mergeKey))
 		pack.Data["to"] = to
 
@@ -69,6 +70,7 @@ func (s Splitter) HandleSplit(pack BigPack) {
 		}
 
 		go func(url string, bytes []byte) {
+			logger.DEBUG("splited:", url)
 			resp, err := broker.Http("POST", url, "plain/text", b)
 			if err != nil {
 				logger.ERROR("post %s error: %s, with %s", url, err, string(bytes))
