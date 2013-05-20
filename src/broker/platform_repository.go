@@ -298,7 +298,7 @@ func (p *Platform) BotPostConversation(from, post, createdAt string, exclude []*
 		ex[i] = fmt.Sprintf("%s@email", addr.Address)
 	}
 	params.Add("exclude", strings.Join(ex, ","))
-	p.config.Log.Debug("bot post to: %s, post content: %s\n", u, params.Encode())
+	logger.DEBUG("bot post to: %s, post content: %s\n", u, params.Encode())
 
 	body, code, err := parseResp(client.PostForm(u, params))
 	if err != nil {
@@ -314,7 +314,7 @@ func (p *Platform) GetIdentity(identities []model.Identity) ([]model.Identity, e
 		Identities []model.Identity `json:"identities"`
 	}
 	u := fmt.Sprintf("%s/v2/identities/get", p.config.SiteApi)
-	p.config.Log.Debug("get identities: %d", len(identities))
+	logger.DEBUG("get identities: %d", len(identities))
 	b, err := json.Marshal(Arg{identities})
 	if err != nil {
 		return nil, err
