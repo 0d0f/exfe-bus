@@ -4,6 +4,7 @@ if [ "$1" = "" ]
 then
 	vimdiff exfe.json exfe.json.example
 fi
+
 for i in service queue bot
 do
 	service exfe_$i restart
