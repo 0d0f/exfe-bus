@@ -105,7 +105,6 @@ func (q *Queue) Quit() {
 //
 // if no merge(send one by one), set merge_key to "-"
 func (q Queue) HandlePush(data string) {
-	logger.DEBUG(q.Request().URL.Path)
 	method, service, mergeKey := q.Vars()["method"], q.Vars()["service"], q.Vars()["merge_key"]
 	if method == "" {
 		q.Error(http.StatusBadRequest, q.GetError(1, "need method"))
