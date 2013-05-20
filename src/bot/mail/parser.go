@@ -245,8 +245,7 @@ func (h *Parser) GetCross() (cross model.Cross) {
 				ExternalID:       addr.Address,
 				ExternalUsername: addr.Address,
 			},
-			By:         cross.By,
-			RsvpStatus: model.RsvpNoresponse,
+			By: cross.By,
 		})
 	}
 	return
