@@ -105,7 +105,7 @@ type Invitation struct {
 	Identity   Identity `json:"identity,omitempty"`
 	RsvpStatus RsvpType `json:"rsvp_status,omitempty"`
 	By         Identity `json:"by_identity,omitempty"`
-	UpdateBy   Identity `json:"update_by,omitempty"`
+	UpdatedBy  Identity `json:"updated_by,omitempty"`
 	Via        string   `json:"via,omitempty"`
 }
 
@@ -125,8 +125,8 @@ func (i Invitation) IsPending() bool {
 	return !i.IsAccepted() && !i.IsDeclined()
 }
 
-func (i Invitation) IsUpdateBy(userId int64) bool {
-	return i.UpdateBy.UserID == userId
+func (i Invitation) IsUpdatedBy(userId int64) bool {
+	return i.UpdatedBy.UserID == userId
 }
 
 func innerResize(r io.Reader, x int, y int) (image.Image, error) {

@@ -77,7 +77,7 @@
 			</tr>
 			<tr>
 				{{$me := .Cross.Exfee.FindUser .To.UserID}}
-				{{$updateByMe := $me.IsUpdateBy $me.Identity.UserID}}
+				{{$updatedByMe := $me.IsUpdatedBy $me.Identity.UserID}}
 				<td style="width:40px; height:100%; padding:25px 10px 0 0; vertical-align:top; text-align:right;">
 					{{if $me.IsAccepted}}
 					<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_accepted_26blue@2x.png" width="30px" height="30px" />
@@ -95,13 +95,13 @@
 						<tbody>
 							<tr><td>Your participation status is:</td></tr>
 							{{if $me.IsAccepted}}
-							<tr><td height="30px" style="line-height:30px; color:#7F7F7F;"><a href="{{$link}}" style="color:#333333; text-decoration: none;"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:5px 20px; vertical-align:top; margin-right:8px;">Accepted</span>{{if not $updateByMe}} set by {{$me.By.Name}}{{end}}</a></td></tr>
+							<tr><td height="30px" style="line-height:30px; color:#7F7F7F;"><a href="{{$link}}" style="color:#333333; text-decoration: none;"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:5px 20px; vertical-align:top; margin-right:8px;">Accepted</span>{{if not $updatedByMe}} set by {{$me.By.Name}}{{end}}</a></td></tr>
 							{{end}}
 							{{if $me.IsDeclined}}
-							<tr><td height="30px" style="line-height:30px; color:#7F7F7F;"><a href="{{$link}}" style="color:#333333; text-decoration: none;"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:5px 20px; vertical-align:top; margin-right:8px;">Declined</span>{{if not $updateByMe}} set by {{$me.By.Name}}{{end}}</a></td></tr>
+							<tr><td height="30px" style="line-height:30px; color:#7F7F7F;"><a href="{{$link}}" style="color:#333333; text-decoration: none;"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:5px 20px; vertical-align:top; margin-right:8px;">Declined</span>{{if not $updatedByMe}} set by {{$me.By.Name}}{{end}}</a></td></tr>
 							{{end}}
 							{{if $me.IsPending}}
-							<tr><td height="30px" style="line-height:30px; color:#7F7F7F;"><a href="{{$link}}" style="color:#333333; text-decoration: none;"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:5px 20px; vertical-align:top; margin-right:8px;">Pending</span>{{if not $updateByMe}} set by {{$me.By.Name}}{{end}}</a></td></tr>
+							<tr><td height="30px" style="line-height:30px; color:#7F7F7F;"><a href="{{$link}}" style="color:#333333; text-decoration: none;"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:5px 20px; vertical-align:top; margin-right:8px;">Pending</span>{{if not $updatedByMe}} set by {{$me.By.Name}}{{end}}</a></td></tr>
 							{{end}}
 							<tr><td><a href="{{$link}}" style="color:#7F7F7F;">Check and change</a><span style="color:#7F7F7F;"> details on web.</span></td></tr>
 						</tbody>
