@@ -163,15 +163,19 @@ func (l *LocalTemplate) IsExist(lang, name string) bool {
 
 func (l *LocalTemplate) Execute(wr io.Writer, lang, name string, data interface{}) error {
 	t, ok := l.templates[lang]
-	if !ok {
-		t, ok = l.templates[l.defaultLang]
+	if ok {
+		err := t.ExecuteTemplate(wr, name, data)
+		if err == nil {
+			return nil
+		}
 	}
+	t, ok = l.templates[l.defaultLang]
 	if !ok {
 		return fmt.Errorf("can't find lang %s or default %s", lang, l.defaultLang)
 	}
 	err := t.ExecuteTemplate(wr, name, data)
 	if err != nil {
-		return fmt.Errorf("execute %s error: %s", lang, err)
+		return err
 	}
 	return nil
 }
