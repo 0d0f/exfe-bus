@@ -22,6 +22,18 @@ func TestParsePlain(t *testing.T) {
 		output string
 	}
 	var tests = []Test{
+		// 		{`这是回复
+
+		// 2013/5/21 googollee <googollee@163.com>
+
+		// > 这是描述
+		// >
+		// >
+		// >
+
+		// -- 
+		// 新的理论从少数人的主张到一统天下，并不是因为这个理论说服了别人抛弃旧观点，而是因为一代人的逝去。
+		// `, "这是回复"},
 		{"测试普通邮件\n\n在 2013-03-19 13:10:34，\"Googol Lee\" <googollee@gmail.com> 写道：\n\n测试普通邮件回复", "测试普通邮件"},
 	}
 	for i, test := range tests {
