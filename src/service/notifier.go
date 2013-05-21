@@ -20,7 +20,6 @@ type V3Notifier struct {
 	CrossRemind       rest.Processor `path:"/cross/remind" method:"POST"`
 	CrossInvitation   rest.Processor `path:"/cross/invitation" method:"POST"`
 	CrossUpdate       rest.Processor `path:"/cross/update" method:"POST"`
-	CrossSummary      rest.Processor `path:"/cross/summary" method:"POST" func:"HandleCrossUpdate"`
 	CrossConversation rest.Processor `path:"/cross/conversation" method:"POST"`
 	UserWelcome       rest.Processor `path:"/user/welcome" method:"POST"`
 	UserVerify        rest.Processor `path:"/user/verify" method:"POST"`
