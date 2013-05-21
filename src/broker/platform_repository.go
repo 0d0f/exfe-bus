@@ -237,7 +237,7 @@ func (p *Platform) BotCrossGather(cross model.Cross) (uint64, int, error) {
 	buf = bytes.NewBufferString(str)
 
 	u := fmt.Sprintf("%s/v2/Gobus/Gather", p.config.SiteApi)
-	p.config.Log.Debug("bot gather to: %s, cross: %s", u, buf.String())
+	logger.DEBUG("bot gather to: %s, cross: %s", u, buf.String())
 	body, code, err := parseResp(client.Post(u, "application/json", buf))
 	if err != nil {
 		return 0, code, fmt.Errorf("error(%s) when send message(%s)", err, buf.String())
@@ -252,7 +252,7 @@ func (p *Platform) BotCrossGather(cross model.Cross) (uint64, int, error) {
 	decoder := json.NewDecoder(body)
 	err = decoder.Decode(&ret)
 	if err != nil {
-		p.config.Log.Crit("can't parse gather return: %s", err)
+		logger.ERROR("can't parse gather return: %s", err)
 		return 0, 500, err
 	}
 
