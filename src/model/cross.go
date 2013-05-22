@@ -41,7 +41,7 @@ func (c Cross) String() string {
 }
 
 func (c Cross) Ics(config *Config, to Recipient) string {
-	url := fmt.Sprintf("%s/v2/ics/crosses?token=%s", config.SiteApi, c.ID, to.Token)
+	url := fmt.Sprintf("%s/v2/ics/crosses?token=%s", config.SiteApi, to.Token)
 	logger.DEBUG("ics: %s", url)
 	resp, err := http.Get(url)
 	if err != nil {
