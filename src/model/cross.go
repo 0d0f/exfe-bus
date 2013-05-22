@@ -12,6 +12,7 @@ import (
 	_ "image/png"
 	"io"
 	"io/ioutil"
+	"logger"
 	"net/http"
 )
 
@@ -41,6 +42,7 @@ func (c Cross) String() string {
 
 func (c Cross) Ics(config *Config, to Recipient) string {
 	url := fmt.Sprintf("%s/v2/ics/crosses/%d?token=%s", config.SiteApi, c.ID, to.Token)
+	logger.DEBUG("ics: %s", url)
 	resp, err := http.Get(url)
 	if err != nil {
 		return ""

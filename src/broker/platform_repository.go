@@ -351,6 +351,23 @@ func (p *Platform) GetIdentity(identities []model.Identity) ([]model.Identity, e
 	return ret.Response.Identities, nil
 }
 
+func (p *Platform) GetIcs(id int64, token string) (string, error) {
+	url := fmt.Sprintf("%s/v2/ics/crosses/%d?token=%s", p.config.SiteApi, id, token)
+	resp, err := client.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", err
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 func parseResp(resp *http.Response, err error) (io.ReadCloser, int, error) {
 	if err != nil {
 		return nil, 500, err
