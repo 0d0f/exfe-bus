@@ -110,7 +110,6 @@ func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
 }
 
 func (c Cross) V3Update(updates []model.CrossUpdate) error {
-	logger.DEBUG("enter update")
 	if len(updates) == 0 {
 		return fmt.Errorf("len(updates) == 0")
 	}
