@@ -351,7 +351,7 @@ func (p *Platform) GetIdentity(identities []model.Identity) ([]model.Identity, e
 	return ret.Response.Identities, nil
 }
 
-func (p *Platform) GetIcs(id int64, token string) (string, error) {
+func (p *Platform) GetIcs(token string) (string, error) {
 	url := fmt.Sprintf("%s/v2/ics/crosses?token=%s", p.config.SiteApi, token)
 	resp, err := client.Get(url)
 	if err != nil {
