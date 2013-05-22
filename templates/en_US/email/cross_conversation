@@ -18,13 +18,4 @@ Content-Transfer-Encoding: base64
 
 {{sub . "_html/cross_conversation.html" | base64 | column 80 "\r\n"}}
 --alternativesplitter--
-{{range .Bys}}
---mixsplitter
-Content-Type: image/jpeg; name="i{{.ID}}.jpg"
-Content-Transfer-Encoding: base64
-Content-ID: <i{{.ID}}>
-
-{{.GetAvatar 30 30 | column 80 "\r\n"}}
-
-{{end}}
 --mixsplitter--
