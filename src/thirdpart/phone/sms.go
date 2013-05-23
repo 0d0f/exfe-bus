@@ -3,6 +3,7 @@ package sms
 import (
 	"fmt"
 	"formatter"
+	"logger"
 	"model"
 	"strings"
 	"thirdpart"
@@ -40,6 +41,7 @@ func (s *Sms) Send(to *model.Recipient, text string) (id string, err error) {
 	if s.imsg != nil {
 		id, err = s.imsg.Send(to, text)
 		if err == nil {
+			logger.NOTICE("%s sent from imessage", *to)
 			return
 		}
 	}
