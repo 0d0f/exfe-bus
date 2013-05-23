@@ -12,9 +12,12 @@ type RsvpUpdate struct {
 }
 
 type Exfee struct {
-	ID          int64        `json:"id,omitempty"`
-	Name        string       `json:"name,omitempty"`
-	Invitations []Invitation `json:"invitations"`
+	ID            int64        `json:"id,omitempty"`
+	Name          string       `json:"name,omitempty"`
+	Invitations   []Invitation `json:"invitations"`
+	ItemsCount    int          `json:"items"`
+	TotalCount    int          `json:"total"`
+	AcceptedCount int          `json:"accepted"`
 
 	Accepted []Invitation `json:"-"`
 	Declined []Invitation `json:"-"`
@@ -38,20 +41,6 @@ func (e *Exfee) Parse() {
 	}
 }
 
-func (e Exfee) TotalCount() int {
-	return len(e.Invitations)
-}
-
-func (e Exfee) AcceptedCount() int {
-	ret := 0
-	for _, i := range e.Invitations {
-		if i.RsvpStatus == RsvpAccepted {
-			ret++
-		}
-	}
-	return ret
-}
-
 func (e Exfee) FindUser(userId int64) *Invitation {
 	for i := range e.Invitations {
 		if e.Invitations[i].Identity.UserID == userId {
@@ -59,14 +48,6 @@ func (e Exfee) FindUser(userId int64) *Invitation {
 		}
 	}
 	return nil
-}
-
-func (e Exfee) CountPeople(invitations []Invitation) int {
-	ret := 0
-	for _, i := range invitations {
-		ret += 1 + int(i.Mates)
-	}
-	return ret
 }
 
 func (e Exfee) Equal(other *Exfee) bool {

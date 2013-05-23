@@ -1,11 +1,12 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+{{$link := .Cross.Link .To .Config}}
 <html>
 <head>
 	<title></title>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 </head>
-<body style="font-family:Helvetica Neue,Helvetica,Arial,sans-serif; max-width:640px; margin:0; padding:0; color:#333333; font-size:13px; line-height:20px; font-weight:400;">
-	<table cellpadding="0" cellspacing="0" style="width:100%; background-color:#FAFAFA; border-spacing:0; border-collapse:collapse;">
+<body style="font-family:Helvetica Neue,Helvetica,Arial,sans-serif; background-color:white; margin:0; padding:0; color:#333333; font-size:13px; line-height:20px; font-weight:400;">
+	<table cellpadding="0" cellspacing="0" align="center" style="max-width:640px; background-color:#FAFAFA; border-spacing:0; border-collapse:collapse; border:1px solid #E6E6E6; background:#FAFAFA;">
 		<tbody>
 			{{$timezone := .Timezone}}{{$url := .Link}}
 			{{$site := .Config.SiteUrl}}
@@ -13,8 +14,8 @@
 			<tr>
 				<td width="50px" style="padding-top:10px; vertical-align:top;"><img src="{{$site}}/v2/avatar/render?url={{.By.Avatar | base64url}}&width=24&height=19&resolution=2x" width="30px" height="30px" style="margin-left:10px;" /></td>
 				<td width="550px" style="padding-top:10px;">
-					<p style="color:#B2B2B2; margin:0;">{{.By.Name | html}}: {{.Content | html | replace "\n" "<br />"}}</p>
-					<p style="color:#B2B2B2; margin:0; font-size:11px; line-height:15px;">{{.CreatedAtInZone $timezone | html}}</p>
+					<a href="{{$link}}" style="text-decoration:none; color:#B2B2B2; margin:0;">{{.By.Name | html}}: {{.Content | html | replace "\n" "<br />"}}</a>
+					<a href="{{$link}}" style="text-decoration:none; color:#B2B2B2; margin:0; font-size:11px; line-height:15px;">{{.CreatedAtInZone $timezone | html}}</a>
 				</td>
 			</tr>
 			{{end}}
@@ -22,8 +23,8 @@
 			<tr>
 				<td width="50px" style="padding-top:10px; vertical-align:top;"><img src="{{$site}}/v2/avatar/render?url={{.By.Avatar | base64url}}&width=24&height=19&resolution=2x" width="30px" height="30px" style="margin-left:10px;" /></td>
 				<td width="550px" style="padding-top:10px;">
-					<p style="margin:0;">{{.By.Name | html}}: {{.Content | html | replace "\n" "<br />"}}</p>
-					<p style="color:#B2B2B2; margin:0; font-size:11px; line-height:15px;">{{.CreatedAtInZone $timezone | html}}</p>
+					<a href="{{$link}}" style="text-decoration:none; color:#333333; margin:0;">{{.By.Name | html}}: {{.Content | html | replace "\n" "<br />"}}</a>
+					<a href="{{$link}}" style="text-decoration:none; color:#B2B2B2; margin:0; font-size:11px; line-height:15px;">{{.CreatedAtInZone $timezone | html}}</a>
 				</td>
 			</tr>
 			{{end}}
