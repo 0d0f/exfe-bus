@@ -108,7 +108,7 @@
 			<td style="padding:0 10px;">
 				<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
 					<tr><td height="20px" style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
-						{{.Identity.Name}}&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7F7F7F; font-size:12px; font-style:italic;">{{.Identity.ScreenId}}</span>
+						{{.Identity.Name | limit 15 | html}}&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7F7F7F; font-size:12px; font-style:italic;">{{.Identity.ScreenId | html}}</span>
 					</td></tr>
 				</tbody></table>
 			</td>
@@ -123,7 +123,7 @@
 			<td style="padding:0 10px;">
 				<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
 					<tr><td height="20px" style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
-						{{.Identity.Name}}&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7F7F7F; font-size:12px; font-style:italic;">{{.Identity.ScreenId}}</span>
+						{{.Identity.Name | limit 15 | html}}&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7F7F7F; font-size:12px; font-style:italic;">{{.Identity.ScreenId | html}}</span>
 					</td></tr>
 				</tbody></table>
 			</td>
@@ -138,7 +138,7 @@
 			<td style="padding:0 10px;">
 				<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
 					<tr><td height="20px" style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
-						{{.Identity.Name}}&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7F7F7F; font-size:12px; font-style:italic;">{{.Identity.ScreenId}}</span>
+						{{.Identity.Name | limit 15 | html}}&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7F7F7F; font-size:12px; font-style:italic;">{{.Identity.ScreenId | html}}</span>
 					</td></tr>
 				</tbody></table>
 			</td>
