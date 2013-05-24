@@ -70,7 +70,7 @@ func (q *Queue) Do(key string, datas [][]byte) {
 			go func() {
 				resp, err := broker.Http(method, service, "application/json", data)
 				if err != nil {
-					logger.ERROR("%s %s: %s, with %s", method, service, err, string(args))
+					logger.ERROR("%s %s: %s, with %s", method, service, err, string(data))
 				} else {
 					resp.Body.Close()
 				}
