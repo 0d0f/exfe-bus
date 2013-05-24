@@ -98,13 +98,13 @@
 					<tbody>
 						<tr><td>Your participation status is:</td></tr>
 						{{if $me.IsAccepted}}
-						<tr><td height="35px" style="line-height:35px; color:#7F7F7F;"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:7px 20px; vertical-align:top; margin-right:8px;">Accepted</span>{{if not $updatedByMe}}<span style="font-size:12px"> set by {{$me.By.Name}}</span>{{end}}</td></tr>
+						<tr><td height="35px"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:7px 20px; vertical-align:top; margin-right:8px;">Accepted</span>{{if not $updatedByMe}}<span style="font-size:12px"> set by {{$me.By.Name}}</span>{{end}}</td></tr>
 						{{end}}
 						{{if $me.IsDeclined}}
-						<tr><td height="35px" style="line-height:35px; color:#7F7F7F;"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:7px 20px; vertical-align:top; margin-right:8px;">Declined</span>{{if not $updatedByMe}}<span style="font-size:12px"> set by {{$me.By.Name}}</span>{{end}}</td></tr>
+						<tr><td height="35px"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:7px 20px; vertical-align:top; margin-right:8px;">Declined</span>{{if not $updatedByMe}}<span style="font-size:12px"> set by {{$me.By.Name}}</span>{{end}}</td></tr>
 						{{end}}
 						{{if $me.IsPending}}
-						<tr><td height="35px" style="line-height:35px; color:#7F7F7F;"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:7px 20px; vertical-align:top; margin-right:8px;">Pending</span>{{if not $updatedByMe}}<span style="font-size:12px"> set by {{$me.By.Name}}</span>{{end}}</td></tr>
+						<tr><td height="35px"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:7px 20px; vertical-align:top; margin-right:8px;">Pending</span>{{if not $updatedByMe}}<span style="font-size:12px"> set by {{$me.By.Name}}</span>{{end}}</td></tr>
 						{{end}}
 						<tr><td style="font-size:12px; color:#7F7F7F;"><span style="text-decoration:underline;">Check and change</span> details on web.</td></tr>
 					</tbody>
