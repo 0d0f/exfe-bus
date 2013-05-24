@@ -12,11 +12,11 @@
 			<tr><td style="padding:0 30px 20px 30px;">A utility for gathering with friends.</tr></td>
 			{{if .NeedVerify}}
 			<tr><td style="padding:0 20px 0 20px;">
-				<table>
+				<a href="{{.Link}}" style="text-decoration:none;"><table>
 					<tbody>
-						<tr><td width="600px" height="36px" style="color:white; background-color:#3A6EA5; padding:0 10px 0 10px;"><a href="{{.Link}}" style="color:white; text-decoration:none;">Please click this link to complete registration: <span style="text-decoration:underline;">{{.Link | limit 35 | html}}</span></a></td></tr>
+						<tr><td width="600px" height="36px" style="color:white; background-color:#3A6EA5; padding:0 10px 0 10px;">Please click this link to complete registration: <span style="text-decoration:underline;">{{.Link | limit 40 | html}}</span></td></tr>
 					</tbody>
-				</table>
+				</table></a>
 			</td></tr>
 			{{end}}
 			<tr><td style="padding:20px 30px 20px 30px;"><span style="color:#3A6EA5;">·X·</span> (cross) is a gathering of people. We save you from calling up every one RSVP, losing in endless emails and messages off the point.</td></tr>

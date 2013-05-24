@@ -10,11 +10,11 @@
 			<tr><td style="padding:20px 30px 20px 30px;">Hi, {{.UserName | html}}</td></tr>
 			<tr><td style="padding:0 30px 20px 30px;">You just requested to reset your forgotten <a href="{{.Config.SiteUrl}}" style="color:#3A6EA5; text-decoration:none;">EXFE</a> password.</tr></td>
 			<tr><td style="padding:0 20px 0 20px;">
-				<table>
+				<a href="{{.Link}}" style="text-decoration:none;"><table>
 					<tbody>
-						<tr><td width="600px" height="36px" style="color:white; background-color:#3A6EA5; padding:0 10px 0 10px;"><a href="{{.Link}}" style="color:white; text-decoration:none;">Please click this link to reset password: <span style="text-decoration:underline;">{{.Link | limit 35 | html}}</span></a></td></tr>
+						<tr><td width="600px" height="36px" style="color:white; background-color:#3A6EA5; padding:0 10px 0 10px;">Please click this link to reset password: <span style="text-decoration:underline;">{{.Link | limit 40 | html}}</span></td></tr>
 					</tbody>
-				</table>
+				</table></a>
 			</td></tr>
 			<tr><td style="padding:0 30px 20px 30px;">This single-use link will be expired in 1 day.</td></tr>
 			<tr><td style="padding:8px 30px 8px 30px; font-size:10px; color:#7F7F7F; background-color:#EEEEEE;">This email is sent to <span style="font-style:italic">{{.To.ExternalUsername | html}}</span> per forgot password request on <a href="{{.Config.SiteUrl}}" style="color:#3A6EA5; text-decoration:none;">EXFE</a>.<!-- Report <a href="abc" style="color:#7F7F7F;">spam</a>?--></td></tr>

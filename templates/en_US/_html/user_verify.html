@@ -11,10 +11,10 @@
             <tr><td style="padding:0 30px 20px 30px;">Your email steve@0d0f.com has been requested for verification{{if .UserName}} by {{.UserName | html}}{{end}} on <a href="{{.Config.SiteUrl}}" style="color:#3A6EA5; text-decoration:none;">EXFE</a></tr></td>
             <tr><td style="padding:0 20px 0 20px;">
                 <table>
-                    <tbody>
-                        <tr><td width="600px" height="36px" style="color:white; background-color:#3A6EA5; padding:0 10px 0 10px;"><a href="{{.Link}}" style="color:white; text-decoration:none;">Please click this link to complete verification: <span style="text-decoration:underline;">{{.Link | limit 35 | html }}</span></a></td></tr>
+                    <a href="{{.Link}}" style="text-decoration:none;"><tbody>
+                        <tr><td width="600px" height="36px" style="color:white; background-color:#3A6EA5; padding:0 10px 0 10px;">Please click this link to complete verification: <span style="text-decoration:underline;">{{.Link | limit 40 | html }}</span></td></tr>
                     </tbody>
-                </table>
+                </table></a>
             </td></tr>
             <tr><td style="padding:0 30px 20px 30px;">Do NOT open the link if you didn’t request.</td></tr>
             <tr><td style="padding:0 30px 30px 30px;"><span style="color:#3A6EA5;">EXFE</span> is a utility for gathering with friends. We save you from calling up every one RSVP, losing in endless emails and messages off the point.</td></tr>
