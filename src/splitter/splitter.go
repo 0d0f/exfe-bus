@@ -47,7 +47,7 @@ func NewSplitter(config *model.Config) *Splitter {
 func (s Splitter) HandleSplit(pack BigPack) {
 	b, err := base64.URLEncoding.DecodeString(pack.Service)
 	if err != nil {
-		s.Error(http.StatusBadRequest, s.GetError(4, fmt.Sprintf("service(%s) invalid: %s", pack.Service, err)))
+		s.Error(http.StatusBadRequest, s.DetailError(4, "service(%s) invalid: %s", pack.Service, err))
 		return
 	}
 
@@ -82,7 +82,7 @@ func (s Splitter) HandleSplit(pack BigPack) {
 func (s Splitter) HandleDelete(pack BigPack) {
 	b, err := base64.URLEncoding.DecodeString(pack.Service)
 	if err != nil {
-		s.Error(http.StatusBadRequest, s.GetError(4, fmt.Sprintf("service(%s) invalid: %s", pack.Service, err)))
+		s.Error(http.StatusBadRequest, s.DetailError(4, "service(%s) invalid: %s", pack.Service, err))
 		return
 	}
 

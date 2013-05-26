@@ -57,24 +57,24 @@ func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platfor
 
 func (n V3Notifier) HandleCrossDigest(requests []model.CrossDigestRequest) {
 	if len(requests) == 0 {
-		n.Error(http.StatusBadRequest, n.GetError(1, "no request"))
+		n.Error(http.StatusBadRequest, n.DetailError(1, "no request"))
 		return
 	}
 	err := n.cross.V3Digest(requests)
 	if err != nil {
-		n.Error(http.StatusInternalServerError, n.GetError(2, err.Error()))
+		n.Error(http.StatusInternalServerError, n.DetailError(2, "%s", err))
 		return
 	}
 }
 
 func (n V3Notifier) HandleCrossRemind(requests []model.CrossDigestRequest) {
 	if len(requests) == 0 {
-		n.Error(http.StatusBadRequest, n.GetError(1, "no request"))
+		n.Error(http.StatusBadRequest, n.DetailError(1, "no request"))
 		return
 	}
 	err := n.cross.V3Remind(requests)
 	if err != nil {
-		n.Error(http.StatusInternalServerError, n.GetError(2, err.Error()))
+		n.Error(http.StatusInternalServerError, n.DetailError(2, "%s", err))
 		return
 	}
 }
@@ -82,7 +82,7 @@ func (n V3Notifier) HandleCrossRemind(requests []model.CrossDigestRequest) {
 func (n V3Notifier) HandleCrossInvitation(invitation model.CrossInvitation) {
 	err := n.cross.V3Invitation(invitation)
 	if err != nil {
-		n.Error(http.StatusInternalServerError, n.GetError(3, err.Error()))
+		n.Error(http.StatusInternalServerError, n.DetailError(3, "%s", err))
 		return
 	}
 }
@@ -90,7 +90,7 @@ func (n V3Notifier) HandleCrossInvitation(invitation model.CrossInvitation) {
 func (n V3Notifier) HandleCrossUpdate(updates []model.CrossUpdate) {
 	err := n.cross.V3Update(updates)
 	if err != nil {
-		n.Error(http.StatusInternalServerError, n.GetError(7, err.Error()))
+		n.Error(http.StatusInternalServerError, n.DetailError(7, "%s", err))
 		return
 	}
 }
@@ -98,7 +98,7 @@ func (n V3Notifier) HandleCrossUpdate(updates []model.CrossUpdate) {
 func (n V3Notifier) HandleCrossConversation(updates []model.ConversationUpdate) {
 	err := n.cross.V3Conversation(updates)
 	if err != nil {
-		n.Error(http.StatusInternalServerError, n.GetError(8, err.Error()))
+		n.Error(http.StatusInternalServerError, n.DetailError(8, "%s", err))
 		return
 	}
 }
@@ -106,7 +106,7 @@ func (n V3Notifier) HandleCrossConversation(updates []model.ConversationUpdate) 
 func (n V3Notifier) HandleUserWelcome(arg model.UserWelcome) {
 	err := n.user.V3Welcome(arg)
 	if err != nil {
-		n.Error(http.StatusInternalServerError, n.GetError(4, err.Error()))
+		n.Error(http.StatusInternalServerError, n.DetailError(4, "%s", err))
 		return
 	}
 }
@@ -114,7 +114,7 @@ func (n V3Notifier) HandleUserWelcome(arg model.UserWelcome) {
 func (n V3Notifier) HandleUserVerify(arg model.UserVerify) {
 	err := n.user.V3Verify(arg)
 	if err != nil {
-		n.Error(http.StatusInternalServerError, n.GetError(5, err.Error()))
+		n.Error(http.StatusInternalServerError, n.DetailError(5, "%s", err))
 		return
 	}
 }
@@ -122,7 +122,7 @@ func (n V3Notifier) HandleUserVerify(arg model.UserVerify) {
 func (n V3Notifier) HandleUserReset(arg model.UserVerify) {
 	err := n.user.V3ResetPassword(arg)
 	if err != nil {
-		n.Error(http.StatusInternalServerError, n.GetError(6, err.Error()))
+		n.Error(http.StatusInternalServerError, n.DetailError(6, "%s", err))
 		return
 	}
 }
