@@ -70,7 +70,6 @@ func NewPlatform(config *model.Config) (*Platform, error) {
 
 func (p *Platform) Send(to model.Recipient, text string) (string, error) {
 	url := fmt.Sprintf("http://%s:%d/v3/poster/%s/%s", p.config.ExfeService.Addr, p.config.ExfeService.Port, to.Provider, to.ExternalUsername)
-	fmt.Println(url)
 	buf := bytes.NewBufferString(text)
 	resp, err := client.Post(url, "plain/text", buf)
 	if err != nil {
