@@ -71,7 +71,7 @@ func (a *Apn) Send(to *model.Recipient, text string) (string, error) {
 			payload := apns.Payload{}
 			payload.Aps.Alert = content
 			payload.Aps.Badge = 1
-			payload.Aps.Sound = ""
+			payload.Aps.Sound = "default"
 			if data != nil {
 				payload.SetCustom("args", data)
 			}
@@ -81,7 +81,10 @@ func (a *Apn) Send(to *model.Recipient, text string) (string, error) {
 				Payload:     &payload,
 			}
 
-			logger.DEBUG("%s: %s(%s) %+v", to.ExternalID, payload.Aps.Alert, id, data)
+			{
+				b, err := json.Marshal(notification)
+				logger.DEBUG("%s: %s %s", to.ExternalID, string(b), err)
+			}
 			err := a.broker.Send(&notification)
 			if err != nil {
 				return ids, fmt.Errorf("send %d error: %s", id, err)
