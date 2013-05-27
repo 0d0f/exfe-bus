@@ -25,12 +25,12 @@
 				<tbody>
 					<tr><td colspan="2" style="font-size:21px; padding:30px 30px 20px 30px; vertical-align:top;">“Rome wasn’t built in a day.”</td></tr>
 					<tr>
-						<td width="300px" style="padding:0 0 0 30px; vertical-align:top;"><span style="color:#3A6EA5;">EXFE</span> [ˈɛksfi] is still in pilot period. We’re building up blocks, consequently something buggy or awkward may happen. Apologies for any trouble you may encounter. Any feedback, please email feedback@exfe.com.<br />Much appreciated.</td>
+						<td width="300px" style="padding:0 0 0 30px; vertical-align:top;"><span style="color:#3A6EA5;">EXFE</span> [ˈɛksfi] is still in pilot period. We’re building up blocks, consequently something buggy or awkward may happen. Apologies for any trouble you may encounter. Any feedback, please email <a href="mailto:feedback@exfe.com" style="font-style:italic; color:#333333; text-decoration:none;">feedback@exfe.com</a>.<br />Much appreciated.</td>
 						<td></td>
 					</tr>
 				</tbody>
 			</table></td></tr>
-			<tr><td style="padding:8px 30px 8px 30px; font-size:10px; color:#7F7F7F; background-color:#EEEEEE;">This email is sent to <span style="font-style:italic">{{.To.ExternalUsername | html }}</span> per identity registration request on <a href="{{.Config.SiteUrl}}" style="color:#3A6EA5; text-decoration:none;">EXFE</a>.<!-- Report <a href="abc" style="color:#7F7F7F;">spam</a>?--></td></tr>
+			<tr><td style="padding:8px 30px 8px 30px; font-size:10px; color:#7F7F7F; background-color:#EEEEEE;">This email is sent to <a href="mailto:{{.To.ExternalUsername}}" style="font-style:italic; color:#7F7F7F; text-decoration:none;">{{.To.ExternalUsername | html }}</a> per identity registration request on <a href="{{.Config.SiteUrl}}" style="color:#3A6EA5; text-decoration:none;">EXFE</a>.<!-- Report <a href="abc" style="color:#7F7F7F;">spam</a>?--></td></tr>
 		</tbody>
 	</table>
 </body>
