@@ -8,7 +8,7 @@
     <table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse; border:1px solid #E6E6E6; background:#FAFAFA;">
         <tbody>
             <tr><td style="padding:20px 30px 20px 30px;">Hi, {{.To.Name | html}}</td></tr>
-            <tr><td style="padding:0 30px 20px 30px;">Your email {{.To.ExternalUsername}} has been requested for verification{{if .UserName}} by {{.UserName | html}}{{end}} on <a href="{{.Config.SiteUrl}}" style="color:#3A6EA5; text-decoration:none;">EXFE</a></tr></td>
+            <tr><td style="padding:0 30px 20px 30px;">Your email <a href="mailto:{{.To.ExternalUsername}}"  style="font-style:italic; color:#333333; text-decoration:none;">{{.To.ExternalUsername | html}}</a> has been requested for verification{{if .UserName}} by {{.UserName | html}}{{end}} on <a href="{{.Config.SiteUrl}}" style="color:#3A6EA5; text-decoration:none;">EXFE</a></tr></td>
             <tr><td style="padding:0 20px 0 20px;">
                 <a href="{{.Link}}" style="text-decoration:none;"><table>
                     <tbody>
