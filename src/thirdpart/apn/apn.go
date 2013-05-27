@@ -69,10 +69,7 @@ func (a *Apn) Send(to *model.Recipient, text string) (string, error) {
 			ids = fmt.Sprintf("%s,%d", ids, id)
 
 			payload := apns.Payload{}
-			payload.Aps.Alert = content
-			payload.Aps.AlertStruct = &apns.Alert{
-				Body: content,
-			}
+			payload.Aps.Alert.Body = content
 			payload.Aps.Badge = 1
 			payload.Aps.Sound = "default"
 			if data != nil {
