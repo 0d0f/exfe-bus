@@ -72,7 +72,7 @@ func TestSend(t *testing.T) {
 			t.Errorf("got: %d, expect: %d", got, expect)
 		}
 		for i, r := range results {
-			if got, expect := broker.notifications[i].Payload.Aps.Alert, r; got != expect {
+			if got, expect := broker.notifications[i].Payload.Aps.Alert.Body, r; got != expect {
 				t.Errorf("%d got: %s, expect: %s", i, got, expect)
 			}
 		}
@@ -91,7 +91,7 @@ func TestSend(t *testing.T) {
 			t.Errorf("got: %d, expect: %d", got, expect)
 		}
 		for i, r := range results {
-			if got, expect := broker.notifications[i].Payload.Aps.Alert, r; got != expect {
+			if got, expect := broker.notifications[i].Payload.Aps.Alert.Body, r; got != expect {
 				t.Errorf("%d got: %s, expect: %s", i, got, expect)
 			}
 		}
@@ -111,7 +111,7 @@ func TestSend(t *testing.T) {
 			t.Errorf("got: %d, expect: %d", got, expect)
 		}
 		for i, r := range results {
-			if got, expect := broker.notifications[i].Payload.Aps.Alert, r; got != expect {
+			if got, expect := broker.notifications[i].Payload.Aps.Alert.Body, r; got != expect {
 				t.Errorf("%d got: %s, expect %s", i, got, expect)
 			}
 		}
@@ -132,7 +132,7 @@ aadfdafdas https://exfe.com/fdafa`+"\n"+dataStr)
 			t.Errorf("got: %d, expect: %d", got, expect)
 		}
 		for i, r := range results {
-			if got, expect := broker.notifications[i].Payload.Aps.Alert, r; got != expect {
+			if got, expect := broker.notifications[i].Payload.Aps.Alert.Body, r; got != expect {
 				t.Errorf("%d got: %s, expect %s", i, got, expect)
 			}
 		}
