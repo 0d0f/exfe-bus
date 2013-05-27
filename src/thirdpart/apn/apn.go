@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"formatter"
 	"github.com/virushuo/Go-Apns"
+	"logger"
 	"model"
 	"regexp"
 	"strings"
@@ -80,6 +81,7 @@ func (a *Apn) Send(to *model.Recipient, text string) (string, error) {
 				Payload:     &payload,
 			}
 
+			logger.DEBUG("%s: %s(%s) %+v", to.ExternalID, payload.Aps.Alert, id, data)
 			err := a.broker.Send(&notification)
 			if err != nil {
 				return ids, fmt.Errorf("send %d error: %s", id, err)
