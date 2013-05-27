@@ -70,6 +70,9 @@ func (a *Apn) Send(to *model.Recipient, text string) (string, error) {
 
 			payload := apns.Payload{}
 			payload.Aps.Alert = content
+			payload.Aps.AlertStruct = &apns.Alert{
+				Body: content,
+			}
 			payload.Aps.Badge = 1
 			payload.Aps.Sound = "default"
 			if data != nil {
