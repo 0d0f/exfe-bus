@@ -93,6 +93,11 @@ func main() {
 		register("notifier", notifier, err)
 	}
 
+	if config.ExfeService.Services.Thirdpart {
+		poster, err := registerThirdpart(&config, platform)
+		register("poster", poster, err)
+	}
+
 	if config.ExfeService.Services.Iom {
 		iom := NewIom(&config, redis)
 

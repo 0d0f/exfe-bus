@@ -69,18 +69,22 @@ func NewPlatform(config *model.Config) (*Platform, error) {
 }
 
 func (p *Platform) Send(to model.Recipient, text string) (string, error) {
-	arg := model.ThirdpartSend{
-		To:   to,
-		Text: text,
-	}
-
-	var ids string
-	err := p.dispatcher.DoWithTicket(to.Provider, "bus://exfe_service/thirdpart/message", "POST", &arg, &ids)
-
+	url := fmt.Sprintf("http://%s:%d/v3/poster/%s/%s", p.config.ExfeService.Addr, p.config.ExfeService.Port, to.Provider, to.ExternalUsername)
+	fmt.Println(url)
+	buf := bytes.NewBufferString(text)
+	resp, err := client.Post(url, "plain/text", buf)
 	if err != nil {
 		return "", err
 	}
-	return ids, nil
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("%s", string(body))
+	}
+	return string(body), nil
 }
 
 // func (p *Platform) PostMessage(userId int64, identityId model.IdentityId, text string) (string, error) {

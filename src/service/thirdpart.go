@@ -26,6 +26,59 @@ import (
 	"time"
 )
 
+func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdpart.Poster, error) {
+	poster, err := thirdpart.NewPoster()
+	if err != nil {
+		return nil, err
+	}
+
+	if config.Thirdpart.MaxStateCache == 0 {
+		return nil, fmt.Errorf("config.Thirdpart.MaxStateCache should be bigger than 0")
+	}
+
+	twitterBroker := broker.NewTwitter(config.Thirdpart.Twitter.ClientToken, config.Thirdpart.Twitter.ClientSecret)
+	apns_, err := apns.New(config.Thirdpart.Apn.Cert, config.Thirdpart.Apn.Key, config.Thirdpart.Apn.Server, time.Duration(config.Thirdpart.Apn.TimeoutInMinutes)*time.Minute)
+	if err != nil {
+		return nil, fmt.Errorf("can't connect apn: %s", err)
+	}
+	gcms_ := gcms.New(config.Thirdpart.Gcm.Key)
+	helper := thirdpart.NewHelper(config)
+
+	twitter_ := twitter.New(config, twitterBroker, helper)
+	poster.Add(twitter_)
+
+	facebook_ := facebook.New(helper)
+	poster.Add(facebook_)
+
+	email_ := email.New(helper)
+	poster.Add(email_)
+
+	apn_ := apn.New(apns_, getApnErrorHandler(config.Log.SubPrefix("apn error")))
+	poster.Add(apn_)
+
+	gcm_ := gcm.New(gcms_)
+	poster.Add(gcm_)
+
+	imsg_, err := imessage.New(config)
+	if err != nil {
+		return nil, fmt.Errorf("can't connect imessage: %s", err)
+	}
+	poster.Add(imsg_)
+
+	sms_, err := sms.New(config, imsg_)
+	if err != nil {
+		return nil, fmt.Errorf("can't create sms: %s", err)
+	}
+	poster.Add(sms_)
+
+	if config.Debug {
+		performance := _performance.New()
+		poster.Add(performance)
+	}
+
+	return poster, nil
+}
+
 type Thirdpart struct {
 	thirdpart *thirdpart.Thirdpart
 	log       *logger.SubLogger
@@ -105,14 +158,12 @@ func NewThirdpart(config *model.Config, platform *broker.Platform) (*Thirdpart, 
 
 func (t *Thirdpart) SetRoute(route gobus.RouteCreater) error {
 	json := new(gobus.JSON)
-	route().Methods("POST").Path("/thirdpart/message").HandlerMethod(json, t, "Send")
 	route().Methods("POST").Path("/thirdpart/identity").HandlerMethod(json, t, "UpdateIdentity")
 	route().Methods("POST").Path("/thirdpart/friends").HandlerMethod(json, t, "UpdateFriends")
 	route().Methods("POST").Path("/thirdpart/photographers").HandlerMethod(json, t, "GrabPhotos")
 	route().Methods("POST").Path("/thirdpart/photographers/photos").HandlerMethod(json, t, "GetPhotos")
 
 	// old
-	route().Methods("POST").Path("/Thirdpart").Queries("method", "Send").HandlerMethod(json, t, "Send")
 	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateIdentity").HandlerMethod(json, t, "UpdateIdentity")
 	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateFriends").HandlerMethod(json, t, "UpdateFriends")
 

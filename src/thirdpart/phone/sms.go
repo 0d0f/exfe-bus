@@ -6,17 +6,17 @@ import (
 	"logger"
 	"model"
 	"strings"
-	"thirdpart"
+	"thirdpart/imsg"
 	"unicode/utf8"
 )
 
 type Sms struct {
 	senders map[string]Sender
 	config  *model.Config
-	imsg    thirdpart.Sender
+	imsg    *imessage.IMessage
 }
 
-func New(config *model.Config, imsg thirdpart.Sender) (*Sms, error) {
+func New(config *model.Config, imsg *imessage.IMessage) (*Sms, error) {
 	ret := &Sms{
 		senders: make(map[string]Sender),
 		config:  config,
@@ -39,10 +39,12 @@ func (s *Sms) Provider() string {
 
 func (s *Sms) Send(to *model.Recipient, text string) (id string, err error) {
 	if s.imsg != nil {
-		id, err = s.imsg.Send(to, text)
-		if err == nil {
-			logger.NOTICE("%s sent from imessage", *to)
-			return
+		if ok, e := s.imsg.Check(to.ExternalUsername); e == nil && ok {
+			id, err = s.imsg.Send(to, text)
+			if err == nil {
+				logger.NOTICE("%s sent from imessage", *to)
+				return
+			}
 		}
 	}
 
