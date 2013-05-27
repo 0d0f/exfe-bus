@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"formatter"
 	"github.com/virushuo/Go-Apns"
-	"logger"
 	"model"
 	"regexp"
 	"strings"
