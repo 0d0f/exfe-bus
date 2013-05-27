@@ -81,10 +81,6 @@ func (a *Apn) Send(to *model.Recipient, text string) (string, error) {
 				Payload:     &payload,
 			}
 
-			{
-				b, err := json.Marshal(notification)
-				logger.DEBUG("%s: %s %s", to.ExternalID, string(b), err)
-			}
 			err := a.broker.Send(&notification)
 			if err != nil {
 				return ids, fmt.Errorf("send %d error: %s", id, err)
