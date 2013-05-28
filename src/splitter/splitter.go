@@ -59,6 +59,11 @@ func (s Splitter) HandleSplit(pack BigPack) {
 	for _, to := range pack.Recipients {
 		mergeKey := fmt.Sprintf("%s_%s@%s", pack.MergeKey, to.ExternalUsername, to.Provider)
 		mergeKey = base64.URLEncoding.EncodeToString([]byte(mergeKey))
+		if to.Provider == "facebook" {
+			to.ExternalID = fmt.Sprintf("%s@facebook.com", to.ExternalUsername)
+			to.ExternalUsername = to.ExternalID
+			to.Provider = "email"
+		}
 		pack.Data["to"] = to
 
 		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Update)

@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"model"
 	"net/http"
-	"strings"
 	"thirdpart"
 )
 
@@ -27,13 +26,7 @@ func (f *Facebook) Provider() string {
 }
 
 func (f *Facebook) Send(to *model.Recipient, text string) (string, error) {
-	name := to.ExternalUsername
-	if name == "" {
-		name = to.ExternalID
-	}
-	email := fmt.Sprintf("%s@facebook.com", name)
-	text = strings.Replace(text, "to_email_address", email, -1)
-	return f.helper.SendEmail(email, text)
+	return f.helper.SendEmail(to.ExternalUsername, text)
 }
 
 func (f *Facebook) UpdateFriends(to *model.Recipient) error {
