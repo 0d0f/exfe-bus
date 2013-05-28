@@ -10,16 +10,16 @@ import (
 )
 
 type FakeBroker struct {
-	errChan       chan apns.NotificationError
+	errChan       chan error
 	notifications []*apns.Notification
 }
 
 func (b *FakeBroker) Reset() {
 	b.notifications = make([]*apns.Notification, 0)
-	b.errChan = make(chan apns.NotificationError)
+	b.errChan = make(chan error)
 }
 
-func (b *FakeBroker) GetErrorChan() <-chan apns.NotificationError {
+func (b *FakeBroker) GetErrorChan() <-chan error {
 	return b.errChan
 }
 
@@ -28,7 +28,7 @@ func (b *FakeBroker) Send(n *apns.Notification) error {
 	return nil
 }
 
-func errHandler(err apns.NotificationError) {
+func errHandler(err error) {
 	fmt.Println(err)
 }
 
