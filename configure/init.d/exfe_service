@@ -18,7 +18,7 @@ name="exfe_service"
 
 pid_file="/var/run/exfebus/${name}.pid"
 stdout_log="/var/log/exfebus/${name}.log"
-stderr_log="/var/log/exfebus/${name}.err"
+stderr_log="/var/log/exfebus/${name}.error.log"
 
 daemon_ctl="daemon -n ${name} -F ${pid_file}"
 
