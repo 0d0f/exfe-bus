@@ -12,7 +12,7 @@ import (
 
 type Broker interface {
 	Send(n *apns.Notification) error
-	GetErrorChan() <-chan apns.NotificationError
+	GetErrorChan() <-chan error
 }
 
 type sendArg struct {
@@ -25,7 +25,7 @@ type Apn struct {
 	id     uint32
 }
 
-type ErrorHandler func(apns.NotificationError)
+type ErrorHandler func(err error)
 
 func New(broker Broker, errorHandler ErrorHandler) *Apn {
 	go listenError(broker.GetErrorChan(), errorHandler)
@@ -97,7 +97,7 @@ type ExfePush struct {
 	T   string `json:"t"`
 }
 
-func listenError(errChan <-chan apns.NotificationError, h ErrorHandler) {
+func listenError(errChan <-chan error, h ErrorHandler) {
 	for {
 		h(<-errChan)
 	}

@@ -279,7 +279,7 @@ func (t *Thirdpart) sendCallback(recipient model.Recipient, err error) {
 }
 
 func getApnErrorHandler(log *logger.SubLogger) apn.ErrorHandler {
-	return func(err apns.NotificationError) {
+	return func(err error) {
 		log.Err("%s", err)
 	}
 }
