@@ -57,13 +57,9 @@ func (s Splitter) HandleSplit(pack BigPack) {
 	pack.Ontime = s.speedon(pack.Ontime)
 
 	for _, to := range pack.Recipients {
+		to = specialProvider(to)
 		mergeKey := fmt.Sprintf("%s_%s@%s", pack.MergeKey, to.ExternalUsername, to.Provider)
 		mergeKey = base64.URLEncoding.EncodeToString([]byte(mergeKey))
-		if to.Provider == "facebook" {
-			to.ExternalID = fmt.Sprintf("%s@facebook.com", to.ExternalUsername)
-			to.ExternalUsername = to.ExternalID
-			to.Provider = "email"
-		}
 		pack.Data["to"] = to
 
 		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Update)
@@ -97,6 +93,7 @@ func (s Splitter) HandleDelete(pack BigPack) {
 	pack.Ontime = s.speedon(pack.Ontime)
 
 	for _, to := range pack.Recipients {
+		to = specialProvider(to)
 		mergeKey := fmt.Sprintf("%s_%s@%s", pack.MergeKey, to.ExternalUsername, to.Provider)
 		mergeKey = base64.URLEncoding.EncodeToString([]byte(mergeKey))
 
@@ -111,6 +108,19 @@ func (s Splitter) HandleDelete(pack BigPack) {
 			}
 		}(url)
 	}
+}
+
+func specialProvider(to model.Recipient) model.Recipient {
+	switch to.Provider {
+	case "facebook":
+		to.ExternalID = fmt.Sprintf("%s@facebook.com", to.ExternalUsername)
+		to.ExternalUsername = to.ExternalID
+		to.Provider = "email"
+	case "google":
+		to.ExternalID = to.ExternalUsername
+		to.Provider = "email"
+	}
+	return to
 }
 
 func (s Splitter) speedon(ontime int64) int64 {
