@@ -33,7 +33,21 @@ type Recipient struct {
 }
 
 func (r Recipient) Equal(other *Recipient) bool {
-	return r.IdentityID == other.IdentityID && r.UserID == other.UserID
+	if r.UserID == other.UserID {
+		return true
+	}
+	if r.IdentityID == other.IdentityID {
+		return true
+	}
+	if r.Provider == other.Provider {
+		if r.ExternalID == other.ExternalID {
+			return true
+		}
+		if r.ExternalUsername == other.ExternalUsername {
+			return true
+		}
+	}
+	return false
 }
 
 func (r Recipient) SameUser(other *Identity) bool {
