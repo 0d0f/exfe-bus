@@ -96,7 +96,7 @@ func (w *Worker) process() {
 			errorIds = append(errorIds, id)
 			continue
 		}
-		if strings.HasSuffix(parser.from.Address, "googolemail.com") {
+		if strings.HasSuffix(parser.from.Address, "googlemail.com") {
 			errorIds = append(errorIds, id)
 			continue
 		}

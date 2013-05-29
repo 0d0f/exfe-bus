@@ -78,11 +78,13 @@ func (im *IMessage) Check(to string) (ret bool, err error) {
 		if err != nil {
 			return
 		}
+		fmt.Printf("%+v\n", msg)
 		var resp Response
 		err = msg.ReadArguments(&resp)
 		if err != nil {
 			return
 		}
+		fmt.Printf("%+v\n", resp)
 		ret = resp.Head.Status == 0
 	})
 	return
@@ -91,6 +93,7 @@ func (im *IMessage) Check(to string) (ret bool, err error) {
 func (i *IMessage) Post(id, text string) (string, error) {
 	text = strings.Trim(text, " \r\n")
 	ok, err := i.Check(id)
+	fmt.Println(ok, err)
 	if err != nil {
 		return "", err
 	}
