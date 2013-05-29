@@ -50,6 +50,18 @@ func (c Cross) Ics(config *Config, to Recipient) string {
 	return base64.StdEncoding.EncodeToString(b)
 }
 
+func (c Cross) Background(config *Config) string {
+	for _, w := range c.Widgets {
+		if t, ok := w["type"].(string); !ok || t != "Background" {
+			continue
+		}
+		if img, ok := w["image"]; ok && img != "" {
+			return fmt.Sprintf("%s/static/img/xbg/%s", config.SiteUrl, img)
+		}
+	}
+	return fmt.Sprintf("%s/static/img/xbg/default.jpg", config.SiteUrl)
+}
+
 func (c Cross) Timezone(to Recipient) string {
 	if to.Timezone != "" {
 		return to.Timezone
