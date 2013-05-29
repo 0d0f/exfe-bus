@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/mrjones/oauth"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -62,6 +63,16 @@ func Http(method, url, mime string, body []byte) (io.ReadCloser, error) {
 
 func HttpForm(url string, params url.Values) (io.ReadCloser, error) {
 	return HttpResponse(HttpClient.PostForm(url, params))
+}
+
+type OAuth struct {
+	*oauth.Consumer
+}
+
+func NewOAuth(client, secret string, provider oauth.ServiceProvider) OAuth {
+	consumer := oauth.NewConsumer(client, secret, provider)
+	consumer.HttpClient = HttpClient
+	return OAuth{consumer}
 }
 
 func HttpResponse(resp *http.Response, err error) (io.ReadCloser, error) {
