@@ -1,17 +1,16 @@
 package dropbox
 
 import (
+	"broker"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-aws/s3"
-	"github.com/googollee/go-logger"
 	"github.com/mrjones/oauth"
 	"io"
-	"io/ioutil"
+	"logger"
 	"model"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -19,9 +18,8 @@ import (
 )
 
 type Dropbox struct {
-	consumer *oauth.Consumer
-	bucket   *s3.Bucket
-	log      *logger.SubLogger
+	oauth  broker.OAuth
+	bucket *s3.Bucket
 }
 
 func New(config *model.Config) (*Dropbox, error) {
@@ -30,7 +28,6 @@ func New(config *model.Config) (*Dropbox, error) {
 		AuthorizeTokenUrl: "https://www.dropbox.com/1/oauth/authorize",
 		AccessTokenUrl:    "https://api.dropbox.com/1/oauth/access_token",
 	}
-	consumer := oauth.NewConsumer(config.Thirdpart.Dropbox.Key, config.Thirdpart.Dropbox.Secret, provider)
 	aws := s3.New(config.AWS.S3.Domain, config.AWS.S3.Key, config.AWS.S3.Secret)
 	aws.SetACL(s3.ACLPublicRead)
 	aws.SetLocationConstraint(s3.LC_AP_SINGAPORE)
@@ -39,9 +36,8 @@ func New(config *model.Config) (*Dropbox, error) {
 		return nil, err
 	}
 	return &Dropbox{
-		consumer: consumer,
-		bucket:   bucket,
-		log:      config.Log.SubPrefix("dropbox"),
+		oauth:  broker.NewOAuth(config.Thirdpart.Dropbox.Key, config.Thirdpart.Dropbox.Secret, provider),
+		bucket: bucket,
 	}, nil
 }
 
@@ -61,19 +57,12 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 	}
 	path := escapePath(albumID)
 	path = fmt.Sprintf("https://api.dropbox.com/1/metadata/dropbox%s", path)
-	resp, err := d.consumer.Get(path, nil, &token)
+	resp, err := broker.HttpResponse(d.oauth.Get(path, nil, &token))
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-		return nil, fmt.Errorf("%s: %s", resp.Status, body)
-	}
-	decoder := json.NewDecoder(resp.Body)
+	defer resp.Close()
+	decoder := json.NewDecoder(resp)
 	var list folderList
 	err = decoder.Decode(&list)
 	if err != nil {
@@ -82,7 +71,7 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 	ret := make([]model.Photo, 0)
 	for _, c := range list.Contents {
 		if !c.ThumbExists {
-			d.log.Info("%s %s is not picture.", to, c.Path)
+			logger.DEBUG("%s %s is not picture.", to, c.Path)
 			continue
 		}
 		caption := c.Path[strings.LastIndex(c.Path, "/"):]
@@ -104,7 +93,7 @@ func (d *Dropbox) Grab(to model.Recipient, albumID string) ([]model.Photo, error
 
 		thumb, big, err := d.savePic(c, to, &token)
 		if err != nil {
-			d.log.Info("%s %s can't save: %s", to, c.Path, err)
+			logger.ERROR("%s %s can't save: %s", to, c.Path, err)
 			continue
 		}
 		photo.Images.Preview.Url = thumb
@@ -132,25 +121,19 @@ func (d *Dropbox) Get(to model.Recipient, pictureIDs []string) ([]string, error)
 	var ret []string
 	for _, id := range pictureIDs {
 		url := fmt.Sprintf("https://api-content.dropbox.com/1/thumbnails/dropbox%s", escapePath(id))
-		resp, err := d.consumer.Get(url, map[string]string{"size": "l"}, &token)
+		resp, err := d.oauth.Get(url, map[string]string{"size": "l"}, &token)
+		reader, err := broker.HttpResponse(resp, err)
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				return nil, err
-			}
-			return nil, fmt.Errorf("%s: %s", resp.Status, body)
-		}
+		defer reader.Close()
 		mime := resp.Header.Get("Content-Type")
 		if spliter := strings.Index(mime, ";"); spliter > 0 {
 			mime = mime[:spliter]
 		}
 		buf := bytes.NewBuffer(nil)
 		encoder := base64.NewEncoder(base64.StdEncoding, buf)
-		_, err = io.Copy(encoder, resp.Body)
+		_, err = io.Copy(encoder, reader)
 		if err != nil {
 			return nil, err
 		}
@@ -177,18 +160,12 @@ func (d *Dropbox) savePic(c content, to model.Recipient, token *oauth.AccessToke
 }
 
 func (d *Dropbox) saveFile(from, size, to, mime string, token *oauth.AccessToken) (string, error) {
-	resp, err := d.consumer.Get(from, map[string]string{"size": size}, token)
+	resp, err := d.oauth.Get(from, map[string]string{"size": size}, token)
+	reader, err := broker.HttpResponse(resp, err)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return "", err
-		}
-		return "", fmt.Errorf("%s: %s", resp.Status, body)
-	}
+	defer reader.Close()
 	length, err := strconv.Atoi(resp.Header.Get("Content-Length"))
 	if err != nil {
 		return "", err
@@ -199,7 +176,7 @@ func (d *Dropbox) saveFile(from, size, to, mime string, token *oauth.AccessToken
 		return "", err
 	}
 	object.SetDate(time.Now())
-	err = object.SaveReader(resp.Body, int64(length))
+	err = object.SaveReader(reader, int64(length))
 	if err != nil {
 		return "", err
 	}
