@@ -1,1 +1,1 @@
-{{sub "phone/cross_remind" .}}
+{{sub . "phone/cross_remind"}}

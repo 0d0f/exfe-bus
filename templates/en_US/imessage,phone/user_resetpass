@@ -1,1 +1,1 @@
-{{sub "phone/user_resetpass" .}}
+{{sub . "phone/user_resetpass"}}

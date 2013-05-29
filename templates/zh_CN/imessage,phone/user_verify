@@ -1,1 +1,1 @@
-{{sub "phone/user_verify" .}}
+{{sub . "phone/user_verify"}}

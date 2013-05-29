@@ -1,1 +1,1 @@
-{{sub "phone/user_welcome" .}}
+{{sub . "phone/user_welcome"}}

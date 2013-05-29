@@ -1,1 +1,1 @@
-{{sub "phone/cross_invitation" .}}
+{{sub . "phone/cross_invitation"}}

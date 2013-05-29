@@ -1,1 +1,1 @@
-{{sub "phone/cross_digest" .}}
+{{sub . "phone/cross_digest"}}
