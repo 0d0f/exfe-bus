@@ -1,11 +1,11 @@
-package sms
+package phone
 
 import (
+	"broker"
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-logger"
 	"model"
-	"net/http"
 	"net/url"
 )
 
@@ -33,39 +33,31 @@ type duancaiwangReply struct {
 	ID      int     `json:"msg_id"`
 }
 
-func (t *DuanCaiWang) Send(phone string, contents []string) (string, error) {
+func (t *DuanCaiWang) Send(phone string, content string) (string, error) {
 	phone = phone[3:]
 	params := make(url.Values)
 	params.Add("mobile", phone)
-	ret := ""
-	for _, content := range contents {
-		params.Add("content", content)
-		resp, err := http.PostForm(t.url, params)
-		if err != nil {
-			return "", fmt.Errorf("send to %s failed: %s", phone, err)
-		}
-		defer resp.Body.Close()
-		decoder := json.NewDecoder(resp.Body)
-		var reply duancaiwangReply
-		err = decoder.Decode(&reply)
-		if err != nil {
-			t.log.Err("send to %s reply decode failed: %s", phone, err)
-		}
-		if resp.StatusCode != 200 || !reply.Result {
-			if reply.Msg == nil {
-				return "", fmt.Errorf("send to %s response: %s(%+v)", phone, resp.Status, reply)
-			} else {
-				return "", fmt.Errorf("send to %s response: %s(%+v)", phone, *reply.Msg, reply)
-			}
-		}
-		if reply.Active != nil {
-			ret += fmt.Sprintf(",%d-%d", *reply.Active, reply.ID)
+	params.Add("content", content)
+	resp, err := broker.HttpForm(t.url, params)
+	if err != nil {
+		return "", fmt.Errorf("send to %s failed: %s", phone, err)
+	}
+	defer resp.Close()
+	decoder := json.NewDecoder(resp)
+	var reply duancaiwangReply
+	err = decoder.Decode(&reply)
+	if err != nil {
+		t.log.Err("send to %s reply decode failed: %s", phone, err)
+	}
+	if !reply.Result {
+		if reply.Msg == nil {
+			return "", fmt.Errorf("send to %s response: %+v", phone, reply)
 		} else {
-			ret += fmt.Sprintf(",%d", reply.ID)
+			return "", fmt.Errorf("send to %s response: %s(%+v)", phone, *reply.Msg, reply)
 		}
 	}
-	if len(ret) > 0 {
-		ret = ret[1:]
+	if reply.Active != nil {
+		return fmt.Sprintf("%d-%d", *reply.Active, reply.ID), nil
 	}
-	return ret, nil
+	return fmt.Sprintf("%d", reply.ID), nil
 }

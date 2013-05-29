@@ -4,9 +4,26 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
+
+var HttpClient *http.Client
+
+func init() {
+	HttpClient = http.DefaultClient
+}
+
+type HttpError struct {
+	Code    int
+	Message string
+}
+
+func (e HttpError) Error() string {
+	return fmt.Sprintf("%d: %s", e.Code, e.Message)
+}
 
 func RestHttp(method, url, mime string, arg interface{}, reply interface{}) (int, error) {
 	buf := bytes.NewBuffer(nil)
@@ -17,30 +34,37 @@ func RestHttp(method, url, mime string, arg interface{}, reply interface{}) (int
 	}
 	resp, err := Http(method, url, mime, buf.Bytes())
 	if err != nil {
-		if resp != nil {
-			return resp.StatusCode, err
-		} else {
-			return -1, err
+		if e, ok := err.(HttpError); ok {
+			return e.Code, err
 		}
+		return -1, err
 	}
-	defer resp.Body.Close()
+	defer resp.Close()
 
-	decoder := json.NewDecoder(resp.Body)
+	decoder := json.NewDecoder(resp)
 	err = decoder.Decode(reply)
 	if err != nil {
-		return resp.StatusCode, err
+		return -2, err
 	}
-	return resp.StatusCode, nil
+	return http.StatusOK, nil
 }
 
-func Http(method, url, mime string, body []byte) (*http.Response, error) {
+func Http(method, url, mime string, body []byte) (io.ReadCloser, error) {
 	buf := bytes.NewBuffer(body)
 	req, err := http.NewRequest(method, url, buf)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", mime)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := HttpClient.Do(req)
+	return HttpResponse(resp, err)
+}
+
+func HttpForm(url string, params url.Values) (io.ReadCloser, error) {
+	return HttpResponse(HttpClient.PostForm(url, params))
+}
+
+func HttpResponse(resp *http.Response, err error) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +74,7 @@ func Http(method, url, mime string, body []byte) (*http.Response, error) {
 		if err != nil {
 			return nil, err
 		}
-		return resp, fmt.Errorf("(%s)%s", resp.Status, string(b))
+		return nil, HttpError{resp.StatusCode, string(b)}
 	}
-	return resp, nil
+	return resp.Body, nil
 }

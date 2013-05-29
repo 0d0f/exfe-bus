@@ -72,7 +72,7 @@ func (q *Queue) Do(key string, datas [][]byte) {
 				if err != nil {
 					logger.ERROR("%s %s: %s, with %s", method, service, err, string(data))
 				} else {
-					resp.Body.Close()
+					resp.Close()
 				}
 			}()
 		}
@@ -84,7 +84,7 @@ func (q *Queue) Do(key string, datas [][]byte) {
 			if err != nil {
 				logger.ERROR("%s %s: %s, with %s", method, service, err, string(args))
 			} else {
-				resp.Body.Close()
+				resp.Close()
 			}
 		}()
 	}

@@ -5,7 +5,7 @@ import (
 	"github.com/googollee/go-rest"
 	"io"
 	"io/ioutil"
-	"model"
+	// "model"
 	"net/http"
 )
 
@@ -15,14 +15,15 @@ func init() {
 
 type IPoster interface {
 	Provider() string
-	// Post(userId string, text string) (messageId string, err error)
-	Send(to *model.Recipient, text string) (messageId string, err error)
+
+	Post(userId string, text string) (messageId string, err error)
+	// Send(to *model.Recipient, text string) (messageId string, err error)
 }
 
 type Poster struct {
 	rest.Service `prefix:"/v3/poster" mime:"plain/text"`
 
-	Post rest.Processor `path:"/:channel/*id" method:"POST"`
+	Post rest.Processor `path:"/:provider/*id" method:"POST"`
 
 	posters map[string]IPoster
 }
@@ -39,20 +40,21 @@ func (m *Poster) Add(poster IPoster) {
 }
 
 func (m Poster) HandlePost(text string) string {
-	channel := m.Vars()["channel"]
+	provider := m.Vars()["provider"]
 	id := m.Vars()["id"]
-	poster, ok := m.posters[channel]
+	poster, ok := m.posters[provider]
 	if !ok {
-		m.Error(http.StatusBadRequest, m.DetailError(1, "invalid channel: %s", channel))
+		m.Error(http.StatusBadRequest, m.DetailError(1, "invalid provider: %s", provider))
 		return ""
 	}
 
-	to := &model.Recipient{
-		ExternalUsername: id,
-		ExternalID:       id,
-		Provider:         channel,
-	}
-	ret, err := poster.Send(to, text)
+	// to := &model.Recipient{
+	// 	ExternalUsername: id,
+	// 	ExternalID:       id,
+	// 	Provider:         provider,
+	// }
+	// ret, err := poster.Send(to, text)
+	ret, err := poster.Post(id, text)
 	if err != nil {
 		m.Error(http.StatusInternalServerError, m.DetailError(2, "%s", err))
 	}

@@ -19,7 +19,7 @@ import (
 	"thirdpart/email"
 	"thirdpart/facebook"
 	"thirdpart/gcm"
-	"thirdpart/imsg"
+	"thirdpart/imessage"
 	"thirdpart/phone"
 	"thirdpart/photostream"
 	"thirdpart/twitter"
@@ -36,7 +36,6 @@ func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdp
 		return nil, fmt.Errorf("config.Thirdpart.MaxStateCache should be bigger than 0")
 	}
 
-	twitterBroker := broker.NewTwitter(config.Thirdpart.Twitter.ClientToken, config.Thirdpart.Twitter.ClientSecret)
 	apns_, err := apns.New(config.Thirdpart.Apn.Cert, config.Thirdpart.Apn.Key, config.Thirdpart.Apn.Server, time.Duration(config.Thirdpart.Apn.TimeoutInMinutes)*time.Minute)
 	if err != nil {
 		return nil, fmt.Errorf("can't connect apn: %s", err)
@@ -44,7 +43,7 @@ func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdp
 	gcms_ := gcms.New(config.Thirdpart.Gcm.Key)
 	helper := thirdpart.NewHelper(config)
 
-	twitter_ := twitter.New(config, twitterBroker, helper)
+	twitter_ := twitter.New(config, helper)
 	poster.Add(twitter_)
 
 	facebook_ := facebook.New(helper)
@@ -65,11 +64,14 @@ func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdp
 	}
 	poster.Add(imsg_)
 
-	sms_, err := sms.New(config, imsg_)
+	phone_, err := phone.New(config)
 	if err != nil {
-		return nil, fmt.Errorf("can't create sms: %s", err)
+		return nil, fmt.Errorf("can't create phone: %s", err)
 	}
-	poster.Add(sms_)
+	poster.Add(phone_)
+
+	imsgPhone := phone.NewIMsgPhone(phone_, imsg_)
+	poster.Add(imsgPhone)
 
 	if config.Debug {
 		performance := _performance.New()
@@ -91,48 +93,18 @@ func NewThirdpart(config *model.Config, platform *broker.Platform) (*Thirdpart, 
 		return nil, fmt.Errorf("config.Thirdpart.MaxStateCache should be bigger than 0")
 	}
 
-	twitterBroker := broker.NewTwitter(config.Thirdpart.Twitter.ClientToken, config.Thirdpart.Twitter.ClientSecret)
-	apns_, err := apns.New(config.Thirdpart.Apn.Cert, config.Thirdpart.Apn.Key, config.Thirdpart.Apn.Server, time.Duration(config.Thirdpart.Apn.TimeoutInMinutes)*time.Minute)
-	if err != nil {
-		return nil, fmt.Errorf("can't connect apn: %s", err)
-	}
-	gcms_ := gcms.New(config.Thirdpart.Gcm.Key)
 	helper := thirdpart.NewHelper(config)
 
 	t := thirdpart.New(config)
 
-	twitter_ := twitter.New(config, twitterBroker, helper)
-	t.AddSender(twitter_)
+	twitter_ := twitter.New(config, helper)
 	t.AddUpdater(twitter_)
 
 	facebook_ := facebook.New(helper)
-	t.AddSender(facebook_)
 	t.AddUpdater(facebook_)
-
-	email_ := email.New(helper)
-	t.AddSender(email_)
-
-	apn_ := apn.New(apns_, getApnErrorHandler(config.Log.SubPrefix("apn error")))
-	t.AddSender(apn_)
-
-	gcm_ := gcm.New(gcms_)
-	t.AddSender(gcm_)
-
-	imsg_, err := imessage.New(config)
-	if err != nil {
-		return nil, fmt.Errorf("can't connect imessage: %s", err)
-	}
-	t.AddSender(imsg_)
-
-	sms_, err := sms.New(config, imsg_)
-	if err != nil {
-		return nil, fmt.Errorf("can't create sms: %s", err)
-	}
-	t.AddSender(sms_)
 
 	if config.Debug {
 		performance := _performance.New()
-		t.AddSender(performance)
 		t.AddUpdater(performance)
 	}
 
@@ -168,25 +140,6 @@ func (t *Thirdpart) SetRoute(route gobus.RouteCreater) error {
 	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateFriends").HandlerMethod(json, t, "UpdateFriends")
 
 	return nil
-}
-
-// 发信息给to，如果是私人信息，就发送private的内容，如果是公开信息，就发送public的内容。info内是相关的应用信息。
-//
-// 例子：
-//
-//   > curl http://127.0.0.1:23333/thirdpart/message -d '{"to":{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1},"text":"content"}'
-//
-func (t *Thirdpart) Send(params map[string]string, arg model.ThirdpartSend) (string, error) {
-	if arg.To.ExternalID == "" {
-		go func() {
-			err := t.thirdpart.UpdateIdentity(&arg.To)
-			if err != nil {
-				t.config.Log.Crit("update %s identity error: %s", arg.To, err)
-			}
-		}()
-	}
-	id, err := t.thirdpart.Send(&arg.To, arg.Text)
-	return id, err
 }
 
 // 同步更新to在第三方网站的个人信息（头像，bio之类）

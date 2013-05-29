@@ -74,7 +74,7 @@ func (s Splitter) HandleSplit(pack BigPack) {
 			if err != nil {
 				logger.ERROR("post %s error: %s, with %s", url, err, string(bytes))
 			} else {
-				resp.Body.Close()
+				resp.Close()
 			}
 		}(url, b)
 	}
@@ -104,7 +104,7 @@ func (s Splitter) HandleDelete(pack BigPack) {
 			if err != nil {
 				logger.ERROR("delete %s error: %s", url, err)
 			} else {
-				resp.Body.Close()
+				resp.Close()
 			}
 		}(url)
 	}

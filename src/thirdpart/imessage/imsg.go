@@ -3,7 +3,6 @@ package imessage
 import (
 	"broker"
 	"fmt"
-	"formatter"
 	"github.com/googollee/go-logger"
 	"github.com/googollee/go-multiplexer"
 	"github.com/googollee/go-socket.io"
@@ -89,71 +88,51 @@ func (im *IMessage) Check(to string) (ret bool, err error) {
 	return
 }
 
-func (i *IMessage) Send(to *model.Recipient, text string) (id string, err error) {
-	phone := to.ExternalID
-
-	lines := strings.Split(text, "\n")
-	contents := make([]string, 0)
-	for _, line := range lines {
-		line = strings.Trim(line, " \n\r\t")
-		if line == "" {
-			continue
-		}
-
-		cutter, err := formatter.CutterParse(line, imsgLen)
-		if err != nil {
-			return "", fmt.Errorf("parse cutter error: %s", err)
-		}
-
-		for _, content := range cutter.Limit(300) {
-			contents = append(contents, content)
-		}
+func (i *IMessage) Post(id, text string) (string, error) {
+	text = strings.Trim(text, " \r\n")
+	ok, err := i.Check(id)
+	if err != nil {
+		return "", err
 	}
-	return i.SendMessage(phone, contents)
+	if !ok {
+		return "", fmt.Errorf("%s is not iMessage", id)
+	}
+	return i.SendMessage(id, text)
 }
 
-func imsgLen(content string) int {
-	return len([]byte(content))
-}
-
-func (im *IMessage) SendMessage(to string, contents []string) (id string, err error) {
-	im.conn.Do(func(i multiplexer.Instance) {
+func (im *IMessage) SendMessage(to string, content string) (id string, err error) {
+	err = im.conn.Do(func(i multiplexer.Instance) {
 		imsg, ok := i.(*IMessageConn)
 		if !ok {
 			err = fmt.Errorf("instance %+v is not *IMessageConn", i)
 			return
 		}
-		for _, content := range contents {
-			req := Request{
-				To:      to,
-				Channel: im.getChannel(),
-				Action:  "2",
-				Message: content,
-			}
-			err = imsg.conn.Emit(true, "send", req)
-			if err != nil {
-				return
-			}
-			var msg socketio.Message
-			err = imsg.conn.Receive(&msg)
-			if err != nil {
-				return
-			}
-			var resp Response
-			err = msg.ReadArguments(&resp)
-			if err != nil {
-				return
-			}
-			if resp.Head.Status != 0 {
-				err = fmt.Errorf("%s", resp.Head.Err)
-				return
-			}
-			id += "," + resp.Head.ID
+		req := Request{
+			To:      to,
+			Channel: im.getChannel(),
+			Action:  "2",
+			Message: content,
 		}
+		err = imsg.conn.Emit(true, "send", req)
+		if err != nil {
+			return
+		}
+		var msg socketio.Message
+		err = imsg.conn.Receive(&msg)
+		if err != nil {
+			return
+		}
+		var resp Response
+		err = msg.ReadArguments(&resp)
+		if err != nil {
+			return
+		}
+		if resp.Head.Status != 0 {
+			err = fmt.Errorf("%s", resp.Head.Err)
+			return
+		}
+		id = resp.Head.ID
 	})
-	if len(id) > 0 {
-		id = id[1:]
-	}
 	return
 }
 

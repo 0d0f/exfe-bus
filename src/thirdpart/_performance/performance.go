@@ -23,7 +23,7 @@ func (p Performance) Provider() string {
 	return "_performance"
 }
 
-func (p *Performance) Send(to *model.Recipient, text string) (string, error) {
+func (p *Performance) Post(id, text string) (string, error) {
 	lines := strings.Split(text, "\n")
 	key, value := lines[0], lines[1]
 	switch key {

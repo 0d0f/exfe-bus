@@ -4,29 +4,32 @@ import (
 	"broker"
 	"encoding/json"
 	"fmt"
-	"formatter"
-	"io"
+	"github.com/mrjones/oauth"
+	"logger"
 	"model"
-	"regexp"
 	"strings"
 	"thirdpart"
-	"unicode/utf8"
 )
 
-type Twitter struct {
-	broker      broker.Twitter
-	accessToken model.OAuthToken
-	helper      thirdpart.Helper
-	config      *model.Config
+const twitterApiBase = "https://api.twitter.com/1.1/"
+
+var provider = oauth.ServiceProvider{
+	RequestTokenUrl:   "http://api.twitter.com/oauth/request_token",
+	AuthorizeTokenUrl: "https://api.twitter.com/oauth/authorize",
+	AccessTokenUrl:    "https://api.twitter.com/oauth/access_token",
 }
 
-const twitterApiBase = "https://api.twitter.com/1.1/"
-const provider = "twitter"
+type Twitter struct {
+	token  *oauth.AccessToken
+	oauth  broker.OAuth
+	helper thirdpart.Helper
+	config *model.Config
+}
 
-func New(config *model.Config, broker broker.Twitter, helper thirdpart.Helper) *Twitter {
+func New(config *model.Config, helper thirdpart.Helper) *Twitter {
 	return &Twitter{
-		broker: broker,
-		accessToken: model.OAuthToken{
+		oauth: broker.NewOAuth(config.Thirdpart.Twitter.ClientToken, config.Thirdpart.Twitter.ClientSecret, provider),
+		token: &oauth.AccessToken{
 			Token:  config.Thirdpart.Twitter.AccessToken,
 			Secret: config.Thirdpart.Twitter.AccessSecret,
 		},
@@ -36,111 +39,83 @@ func New(config *model.Config, broker broker.Twitter, helper thirdpart.Helper) *
 }
 
 func (t *Twitter) Provider() string {
-	return provider
+	return "twitter"
 }
 
 type twitterReply struct {
-	IDstr     string      `json:"id_str"`
+	Id        string      `json:"id_str"`
 	Recipient twitterInfo `json:"recipient"`
 }
 
-func (t *Twitter) Send(to *model.Recipient, text string) (string, error) {
+func (t *Twitter) Post(id, text string) (string, error) {
 	text = strings.Trim(text, " \n\r")
 	lastEnter := strings.LastIndex(text, "\n")
 	privateMessage := text[:lastEnter]
 	publicMessage := text[lastEnter+1:]
-	ids, err := t.sendPrivate(to, privateMessage)
+	id, err := t.sendPrivate(id, privateMessage)
 	if err != nil {
-		ids, err = t.sendPublic(to, publicMessage)
+		id, err = t.sendPublic(id, publicMessage)
 	}
 
 	if err != nil {
 		return "", err
 	}
-
-	if ids != "" {
-		ids = ids[1:]
-	}
-	return ids, nil
+	return id, nil
 }
 
-func (t *Twitter) sendPrivate(to *model.Recipient, message string) (string, error) {
-	k, v := t.identity(to)
-	params := map[string]string{k: v}
-	var resp io.ReadCloser
-	ids := ""
-	for _, line := range strings.Split(message, "\n") {
-		line = strings.Trim(line, " \r\n\t")
-		if line == "" {
-			continue
-		}
-		cutter, err := formatter.CutterParse(line, twitterLen)
-		if err != nil {
-			return "", fmt.Errorf("parse %s private message failed: %s", to, err)
-		}
-		for i, content := range cutter.Limit(140) {
-			params["text"] = content
-			resp, err = t.broker.Do(t.accessToken, "POST", "direct_messages/new.json", params)
-			if err != nil {
-				return "", err
-			}
-			defer resp.Close()
-			decoder := json.NewDecoder(resp)
-			var reply twitterReply
-			err = decoder.Decode(&reply)
-			if err != nil {
-				return "", fmt.Errorf("parse %s reply error: %s", to, err)
-			}
-			ids = fmt.Sprintf("%s,%s", ids, reply.IDstr)
-			if i == 0 {
-				go func() {
-					err := t.helper.UpdateIdentity(to, reply.Recipient)
-					if err != nil {
-						t.config.Log.Crit("can't update %s identity: %s", to, err)
-					}
-				}()
-			}
-		}
+func (t *Twitter) sendPrivate(id, text string) (string, error) {
+	text = strings.Trim(text, " \n\r")
+	params := map[string]string{
+		"screen_name": id,
+		"text":        text,
 	}
-	return ids, nil
+	resp, err := broker.HttpResponse(t.oauth.Post(twitterApiBase+"direct_messages/new.json", params, t.token))
+	if err != nil {
+		return "", fmt.Errorf("send to %s@twitter fail: %s", id, err)
+	}
+	defer resp.Close()
+	decoder := json.NewDecoder(resp)
+	var reply twitterReply
+	err = decoder.Decode(&reply)
+	if err != nil {
+		return "", fmt.Errorf("parse %s@twitter reply error: %s", id, err)
+	}
+	go func() {
+		to := &model.Recipient{
+			ExternalUsername: id,
+			Provider:         "twitter",
+		}
+		err := t.helper.UpdateIdentity(to, reply.Recipient)
+		if err != nil {
+			logger.ERROR("can't update %s@twitter identity: %s", id, err)
+		}
+	}()
+	return reply.Id, nil
 }
 
-func (t *Twitter) sendPublic(to *model.Recipient, message string) (string, error) {
-	ids := ""
-	params := make(map[string]string)
-	var resp io.ReadCloser
-	for _, line := range strings.Split(message, "\n") {
-		line = strings.Trim(line, " \r\n\t")
-		if line == "" {
-			continue
-		}
-		cutter, err := formatter.CutterParse(line, twitterLen)
-		if err != nil {
-			return "", fmt.Errorf("parse %s public message failed: %s", to, err)
-		}
-		for _, content := range cutter.Limit(140 - len(to.ExternalUsername) - 2) {
-			params["status"] = fmt.Sprintf("@%s %s", to.ExternalUsername, content)
-			resp, err = t.broker.Do(t.accessToken, "POST", "statuses/update.json", params)
-			if err != nil {
-				return "", fmt.Errorf("send to %s fail: %s", to, err)
-			}
-			defer resp.Close()
-			decoder := json.NewDecoder(resp)
-			var reply twitterReply
-			err = decoder.Decode(&reply)
-			if err != nil {
-				return "", fmt.Errorf("parse %s reply error: %s", to, err)
-			}
-			ids = fmt.Sprintf("%s,%s", ids, reply.IDstr)
-		}
+func (t *Twitter) sendPublic(id, text string) (string, error) {
+	text = strings.Trim(text, " \n\r")
+	params := map[string]string{
+		"status": fmt.Sprintf("@s %s", id, text),
 	}
-	return ids, nil
+	resp, err := broker.HttpResponse(t.oauth.Post(twitterApiBase+"statuses/update.json", params, t.token))
+	if err != nil {
+		return "", fmt.Errorf("send to %s@twitter fail: %s", id, err)
+	}
+	defer resp.Close()
+	decoder := json.NewDecoder(resp)
+	var reply twitterReply
+	err = decoder.Decode(&reply)
+	if err != nil {
+		return "", fmt.Errorf("parse %s@twitter reply error: %s", id, err)
+	}
+	return reply.Id, nil
 }
 
 func (t *Twitter) UpdateIdentity(to *model.Recipient) error {
 	k, v := t.identity(to)
 	params := map[string]string{k: v}
-	resp, err := t.broker.Do(t.accessToken, "GET", "users/show.json", params)
+	resp, err := broker.HttpResponse(t.oauth.Get(twitterApiBase+"users/show.json", params, t.token))
 	if err != nil {
 		return fmt.Errorf("get %s users/show(%v) failed: %s", to, params, err)
 	}
@@ -165,9 +140,13 @@ func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 		return fmt.Errorf("can't convert %s's AuthData: %s", to, err)
 	}
 
+	token := &oauth.AccessToken{
+		Token:  access.Token,
+		Secret: access.Secret,
+	}
 	k, v := t.identity(to)
 	params := map[string]string{k: v}
-	resp, err := t.broker.Do(access, "GET", "friends/ids.json", params)
+	resp, err := broker.HttpResponse(t.oauth.Get(twitterApiBase+"friends/ids.json", params, token))
 	if err != nil {
 		return fmt.Errorf("get %s friends/ids(%v) failed: %s", to, params, err)
 	}
@@ -188,7 +167,7 @@ func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 		}
 
 		params := map[string]string{"user_id": join(ids, ",")}
-		resp, err := t.broker.Do(access, "GET", "users/lookup.json", params)
+		resp, err := broker.HttpResponse(t.oauth.Get(twitterApiBase+"users/lookup.json", params, token))
 		if err != nil {
 			return fmt.Errorf("get %s users/lookup.json(%v) fail: %s", to, params, err)
 		}
@@ -219,18 +198,6 @@ func (t *Twitter) identity(id *model.Recipient) (key, value string) {
 	return "screen_name", id.ExternalUsername
 }
 
-type twitterIdentityToken struct {
-	Token  string `json:"oauth_token"`
-	Secret string `json:"oauth_token_secret"`
-}
-
-func (t twitterIdentityToken) ToToken() *thirdpart.Token {
-	return &thirdpart.Token{
-		Token:  t.Token,
-		Secret: t.Secret,
-	}
-}
-
 type twitterIDs struct {
 	Previous string   `json:"previous_cursor_str"`
 	Next     string   `json:"next_cursor_str"`
@@ -250,7 +217,7 @@ func (i twitterInfo) ExternalID() string {
 }
 
 func (i twitterInfo) Provider() string {
-	return provider
+	return "twitter"
 }
 
 func (i twitterInfo) ExternalUsername() string {
@@ -281,13 +248,4 @@ func join(a []uint64, spliter string) string {
 		ret = fmt.Sprintf("%s,%d", ret, i)
 	}
 	return ret
-}
-
-var urlRegex = regexp.MustCompile(`(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?`)
-
-const twitterUrl = "http://t.co/12345678"
-
-func twitterLen(content string) int {
-	content = urlRegex.ReplaceAllString(content, twitterUrl)
-	return utf8.RuneCountInString(content)
 }
