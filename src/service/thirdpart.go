@@ -137,7 +137,9 @@ func (t *Thirdpart) SetRoute(route gobus.RouteCreater) error {
 
 	// old
 	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateIdentity").HandlerMethod(json, t, "UpdateIdentity")
+	route().Methods("POST").Path("/Thirdpart/UpdateIdentity").HandlerMethod(json, t, "UpdateIdentity")
 	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateFriends").HandlerMethod(json, t, "UpdateFriends")
+	route().Methods("POST").Path("/Thirdpart/UpdateFriends").HandlerMethod(json, t, "UpdateFriends")
 
 	return nil
 }
