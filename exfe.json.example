@@ -6,6 +6,7 @@
   "template_path": "",
   "default_lang": "en_US",
   "access_domain": "api.exfe.com",
+  "proxy": "",
 
   "debug": false,
 

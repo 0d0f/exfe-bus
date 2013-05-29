@@ -16,6 +16,10 @@ func main() {
 	var config model.Config
 	output, quit := daemon.Init("exfe.json", &config)
 
+	if config.Proxy != "" {
+		broker.SetProxy(config.Proxy)
+	}
+
 	log, err := logger.New(output, "service bus")
 	if err != nil {
 		panic(err)

@@ -13,6 +13,7 @@ type Config struct {
 	TemplatePath string `json:"template_path"`
 	DefaultLang  string `json:"default_lang"`
 	AccessDomain string `json:"access_domain"`
+	Proxy        string `json:"proxy"`
 
 	Debug bool `json:"debug"`
 

@@ -9,12 +9,30 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 var HttpClient *http.Client
 
 func init() {
 	HttpClient = http.DefaultClient
+}
+
+func SetProxy(host string) {
+	transport := &http.Transport{
+		Proxy: func(r *http.Request) (*url.URL, error) {
+			sites := []string{"twitter.com", "facebook.com", "dropbox.com"}
+			for _, site := range sites {
+				if strings.HasSuffix(r.URL.Host, site) {
+					return &url.URL{Host: host}, nil
+				}
+			}
+			return nil, nil
+		},
+	}
+	HttpClient = &http.Client{
+		Transport: transport,
+	}
 }
 
 type HttpError struct {
