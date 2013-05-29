@@ -29,6 +29,9 @@ func (g *GCM) Provider() string {
 func (g *GCM) Post(id, text string) (string, error) {
 	text = strings.Trim(text, " \r\n")
 	last := strings.LastIndex(text, "\n")
+	if last != -1 {
+		return "", nil
+	}
 	dataStr := text[last+1:]
 	var data map[string]string
 	err := json.Unmarshal([]byte(dataStr), &data)

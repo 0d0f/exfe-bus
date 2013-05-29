@@ -40,6 +40,9 @@ func (a *Apn) Provider() string {
 func (a *Apn) Post(id, text string) (string, error) {
 	text = strings.Trim(text, " \r\n")
 	last := strings.LastIndex(text, "\n")
+	if last == -1 {
+		return "", nil
+	}
 	dataStr := text[last+1:]
 	var data interface{}
 	err := json.Unmarshal([]byte(dataStr), &data)
