@@ -1,0 +1,1 @@
+{{if .NeedVerify}}欢迎使用EXFE。请打开此链接确认： {{.Config.SiteUrl}}/?t={{.To.Token}} *如果您未使用EXFE，请勿点击链接*{{end}}

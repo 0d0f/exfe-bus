@@ -1,11 +1,11 @@
 package facebook
 
 import (
+	"broker"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"logger"
 	"model"
-	"net/http"
 	"thirdpart"
 )
 
@@ -36,20 +36,14 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 	}
 	url := fmt.Sprintf("https://graph.facebook.com/%s/friends?access_token=%s", to.ExternalID, idToken.Token)
 	for {
-		resp, err := http.Get(url)
+		resp, err := broker.HttpResponse(broker.Http("GET", url, "", nil))
 		if err != nil {
 			return fmt.Errorf("facebook get friends from %s error: %s", url, err)
 		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("facebook get body from %s fail: %s", url, err)
-		}
-		if resp.StatusCode != 200 {
-			return fmt.Errorf("facebook get friends from %s fail: (%s) %s", url, resp.Status, string(body))
-		}
+		defer resp.Close()
 		var friends facebookFriendsReply
-		err = json.Unmarshal(body, &friends)
+		decoder := json.NewDecoder(resp)
+		err = decoder.Decode(&friends)
 		if err != nil {
 			return fmt.Errorf("facebook get friends json error: %s", err)
 		}
@@ -60,11 +54,11 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 		for _, friend := range friends.Data {
 			user, err := f.getInfo(idToken, friend.Id)
 			if err != nil {
-				f.helper.Log().Err("can't get %s facebook infomation: %s", friend.Id, err)
+				logger.ERROR("can't get %s facebook infomation: %s", friend.Id, err)
 				continue
 			}
 			if user.ExternalUsername() == "" {
-				f.helper.Log().Err("facebook user %d doesn't have username, ignored", friend.Id)
+				logger.ERROR("facebook user %d doesn't have username, ignored", friend.Id)
 				continue
 			}
 			users = append(users, user)
@@ -96,20 +90,14 @@ func (f *Facebook) UpdateIdentity(to *model.Recipient) error {
 
 func (f Facebook) getInfo(idToken *facebookIdentityToken, id string) (*facebookUser, error) {
 	url := fmt.Sprintf("https://graph.facebook.com/%s?access_token=%s", id, idToken.Token)
-	resp, err := http.Get(url)
+	resp, err := broker.HttpResponse(broker.Http("GET", url, "", nil))
 	if err != nil {
 		return nil, fmt.Errorf("facebook get %s info from %s error: %s", id, url, err)
 	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("facebook get %s info body from %s fail: %s", id, url, err)
-	}
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("facebook get %s info from %s fail: (%s) %s", id, url, resp.Status, string(body))
-	}
+	defer resp.Close()
 	var user facebookUser
-	err = json.Unmarshal(body, &user)
+	decoder := json.NewDecoder(resp)
+	err = decoder.Decode(&user)
 	if err != nil {
 		return nil, fmt.Errorf("facebook get %s info json error: %s", id, err)
 	}

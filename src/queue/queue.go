@@ -68,7 +68,7 @@ func (q *Queue) Do(key string, datas [][]byte) {
 			args = append(args, []byte(",")...)
 		} else {
 			go func() {
-				resp, err := broker.Http(method, service, "application/json", data)
+				resp, err := broker.HttpResponse(broker.Http(method, service, "application/json", data))
 				if err != nil {
 					logger.ERROR("%s %s: %s, with %s", method, service, err, string(data))
 				} else {
@@ -80,7 +80,7 @@ func (q *Queue) Do(key string, datas [][]byte) {
 	if needMerge && len(args) > 1 {
 		args[len(args)-1] = byte(']')
 		go func() {
-			resp, err := broker.Http(method, service, "application/json", args)
+			resp, err := broker.HttpResponse(broker.Http(method, service, "application/json", args))
 			if err != nil {
 				logger.ERROR("%s %s: %s, with %s", method, service, err, string(args))
 			} else {

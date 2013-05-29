@@ -33,7 +33,7 @@ func RestHttp(method, url, mime string, arg interface{}, reply interface{}) (int
 	if err != nil {
 		return -1, err
 	}
-	resp, err := Http(method, url, mime, buf.Bytes())
+	resp, err := HttpResponse(Http(method, url, mime, buf.Bytes()))
 	if err != nil {
 		if e, ok := err.(HttpError); ok {
 			return e.Code, err
@@ -50,15 +50,16 @@ func RestHttp(method, url, mime string, arg interface{}, reply interface{}) (int
 	return http.StatusOK, nil
 }
 
-func Http(method, url, mime string, body []byte) (io.ReadCloser, error) {
+func Http(method, url, mime string, body []byte) (*http.Response, error) {
 	buf := bytes.NewBuffer(body)
 	req, err := http.NewRequest(method, url, buf)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", mime)
-	resp, err := HttpClient.Do(req)
-	return HttpResponse(resp, err)
+	if mime != "" {
+		req.Header.Set("Content-Type", mime)
+	}
+	return HttpClient.Do(req)
 }
 
 func HttpForm(url string, params url.Values) (io.ReadCloser, error) {

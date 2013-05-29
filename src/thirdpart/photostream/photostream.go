@@ -1,15 +1,13 @@
 package photostream
 
 import (
+	"broker"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-aws/s3"
-	"github.com/googollee/go-logger"
-	"io"
-	"io/ioutil"
+	"logger"
 	"model"
-	"net/http"
 	"strconv"
 	"time"
 )
@@ -89,7 +87,6 @@ type UrlList struct {
 type Photostream struct {
 	domain string
 	bucket *s3.Bucket
-	log    *logger.SubLogger
 }
 
 func New(config *model.Config) (*Photostream, error) {
@@ -103,7 +100,6 @@ func New(config *model.Config) (*Photostream, error) {
 	return &Photostream{
 		domain: config.Thirdpart.Photostream.Domain,
 		bucket: bucket,
-		log:    config.Log.SubPrefix("photostream"),
 	}, nil
 }
 
@@ -129,7 +125,7 @@ func (p *Photostream) Grab(to model.Recipient, albumID string) ([]model.Photo, e
 	for _, photo := range list.Photos {
 		preview, fullsize, err := photo.Derivatives.GetMinAndMax()
 		if err != nil {
-			p.log.Err("can't find derivative of %s", photo.PhotoGuid)
+			logger.ERROR("can't find derivative of %s", photo.PhotoGuid)
 			continue
 		}
 		t, err := time.Parse(photo.DateCreated, "2006-01-02T15:04:05Z")
@@ -140,27 +136,28 @@ func (p *Photostream) Grab(to model.Recipient, albumID string) ([]model.Photo, e
 		if err != nil {
 			continue
 		}
-		resp, err := p.request(url, nil)
+		resp, err := broker.Http("GET", url, "application/json", nil)
+		reader, err := broker.HttpResponse(resp, err)
 		if err != nil {
-			p.log.Err("can't grab preview of %s from %s: %s", photo.PhotoGuid, url, err)
+			logger.ERROR("can't grab preview of %s from %s: %s", photo.PhotoGuid, url, err)
 			continue
 		}
-		defer resp.Body.Close()
+		defer reader.Close()
 		length, err := strconv.Atoi(resp.Header.Get("Content-Length"))
 		if err != nil {
-			p.log.Err("can't parse %s length(%s): %s", photo.PhotoGuid, resp.Header.Get("Content-Length"), err)
+			logger.ERROR("can't parse %s length(%s): %s", photo.PhotoGuid, resp.Header.Get("Content-Length"), err)
 			continue
 		}
 
 		object, err := p.bucket.CreateObject(fmt.Sprintf("/i%d/photostream/%s.jpg", to.IdentityID, photo.PhotoGuid), "image/jpeg")
 		if err != nil {
-			p.log.Err("can't save %s to s3: %s", photo.PhotoGuid, err)
+			logger.ERROR("can't save %s to s3: %s", photo.PhotoGuid, err)
 			continue
 		}
 		object.SetDate(time.Now())
-		err = object.SaveReader(resp.Body, int64(length))
+		err = object.SaveReader(reader, int64(length))
 		if err != nil {
-			p.log.Err("save %s to s3 failed: %s", photo.PhotoGuid, err)
+			logger.ERROR("save %s to s3 failed: %s", photo.PhotoGuid, err)
 			continue
 		}
 
@@ -191,60 +188,37 @@ func (p *Photostream) Get(to model.Recipient, pictureIDs []string) ([]string, er
 	return nil, fmt.Errorf("not support photostream.")
 }
 
-func (p *Photostream) getList(albumID string) (list StreamingList, err error) {
+func (p *Photostream) getList(albumID string) (StreamingList, error) {
 	url := fmt.Sprintf("https://%s/%s/sharedstreams/webstream", p.domain, albumID)
 	buf := bytes.NewBufferString(`{"streamCtag":null}`)
-	var resp *http.Response
-	resp, err = p.request(url, buf)
+	var list StreamingList
+	resp, err := broker.HttpResponse(broker.Http("POST", url, "application/json", buf.Bytes()))
 	if err != nil {
-		return
+		return list, err
 	}
-	defer resp.Body.Close()
+	defer resp.Close()
 
-	decoder := json.NewDecoder(resp.Body)
+	decoder := json.NewDecoder(resp)
 	err = decoder.Decode(&list)
-	return
+	return list, nil
 }
 
-func (p *Photostream) getUrls(albumID string, guids []string) (list UrlList, err error) {
+func (p *Photostream) getUrls(albumID string, guids []string) (UrlList, error) {
 	req := UrlRequest{
 		PhotoGuids: guids,
 	}
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
-	err = encoder.Encode(req)
+	err := encoder.Encode(req)
+	var list UrlList
 	url := fmt.Sprintf("https://%s/%s/sharedstreams/webasseturls", p.domain, albumID)
-	var resp *http.Response
-	resp, err = p.request(url, buf)
+	resp, err := broker.HttpResponse(broker.Http("POST", url, "application/json", buf.Bytes()))
 	if err != nil {
-		return
+		return list, err
 	}
-	defer resp.Body.Close()
+	defer resp.Close()
 
-	decoder := json.NewDecoder(resp.Body)
+	decoder := json.NewDecoder(resp)
 	err = decoder.Decode(&list)
-	return
-}
-
-func (p *Photostream) request(url string, reader io.Reader) (*http.Response, error) {
-	var resp *http.Response
-	var err error
-	if reader != nil {
-		resp, err = http.Post(url, "application/json", reader)
-	} else {
-		resp, err = http.Get(url)
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		content, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			return nil, err
-		}
-		return nil, fmt.Errorf("%s: %s", resp.Status, content)
-	}
-	return resp, nil
+	return list, nil
 }

@@ -1,0 +1,1 @@
+{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}Reminding: "{{.Cross.Title}}", {{$time}}{{if .Place.Title}} at {{.Place.Title}}{{end}}. {{.Config.SiteUrl}}/#!{{.Cross.ID}}/{{substr 1 4 .To.Token}}/
