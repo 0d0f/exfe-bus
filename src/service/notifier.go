@@ -2,16 +2,11 @@ package main
 
 import (
 	"broker"
-	"fmt"
 	"formatter"
 	"github.com/googollee/go-rest"
-	"image"
-	_ "image/jpeg"
-	_ "image/png"
 	"model"
 	"net/http"
 	"notifier"
-	"os"
 )
 
 type V3Notifier struct {
@@ -30,25 +25,6 @@ type V3Notifier struct {
 }
 
 func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) (*V3Notifier, error) {
-	pin, err := os.Open(fmt.Sprintf("%s/image_data/map_pin_blue.png", config.TemplatePath))
-	if err != nil {
-		return nil, err
-	}
-	defer pin.Close()
-	config.Pin, _, err = image.Decode(pin)
-	if err != nil {
-		return nil, err
-	}
-	ribbon, err := os.Open(fmt.Sprintf("%s/image_data/ribbon_280.png", config.TemplatePath))
-	if err != nil {
-		return nil, err
-	}
-	defer ribbon.Close()
-	config.Ribbon, _, err = image.Decode(ribbon)
-	if err != nil {
-		return nil, err
-	}
-
 	return &V3Notifier{
 		cross: notifier.NewCross(local, config, platform),
 		user:  notifier.NewUser(local, config, platform),

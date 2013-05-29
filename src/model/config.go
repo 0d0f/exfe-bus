@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/googollee/go-logger"
-	"image"
 )
 
 type Config struct {
@@ -130,7 +129,5 @@ type Config struct {
 		} `json:"email"`
 	} `json:"bot"`
 
-	Log    *logger.Logger `json:"-"`
-	Pin    image.Image    `json:"-"`
-	Ribbon image.Image    `json:"-"`
+	Log *logger.Logger `json:"-"`
 }
