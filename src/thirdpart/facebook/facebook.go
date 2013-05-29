@@ -65,6 +65,7 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 				}
 				if user.ExternalUsername() == "" {
 					logger.ERROR("facebook user %s doesn't have username, ignored", id)
+					user = nil
 					return
 				}
 			}(friend.Id)
