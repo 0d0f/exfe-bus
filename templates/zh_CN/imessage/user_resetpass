@@ -1,1 +1,1 @@
-重设EXFE密码。请打开此链接：{{.Config.SiteUrl}}/?t={{.To.Token}}
+{{sub "phone/user_resetpass" .}}

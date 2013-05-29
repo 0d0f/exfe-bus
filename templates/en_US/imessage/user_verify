@@ -1,1 +1,1 @@
-EXFE verification requested, please proceed to: {{.Config.SiteUrl}}/?t={{.To.Token}}  *Do NOT open if you didn't request*
+{{sub "phone/user_verify" .}}

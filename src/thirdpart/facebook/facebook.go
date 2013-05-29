@@ -36,6 +36,7 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 	}
 	url := fmt.Sprintf("https://graph.facebook.com/%s/friends?access_token=%s", to.ExternalID, idToken.Token)
 	for {
+		fmt.Println(url)
 		resp, err := broker.HttpResponse(broker.Http("GET", url, "", nil))
 		if err != nil {
 			return fmt.Errorf("facebook get friends from %s error: %s", url, err)
@@ -51,18 +52,30 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 			break
 		}
 		users := make([]thirdpart.ExternalUser, 0)
+		c := make(chan *facebookUser)
 		for _, friend := range friends.Data {
-			user, err := f.getInfo(idToken, friend.Id)
-			if err != nil {
-				logger.ERROR("can't get %s facebook infomation: %s", friend.Id, err)
-				continue
-			}
-			if user.ExternalUsername() == "" {
-				logger.ERROR("facebook user %d doesn't have username, ignored", friend.Id)
-				continue
-			}
-			users = append(users, user)
+			go func(id string) {
+				user, err := f.getInfo(idToken, id)
+				defer func() {
+					c <- user
+				}()
+				if err != nil {
+					logger.ERROR("can't get %s facebook infomation: %s", id, err)
+					return
+				}
+				if user.ExternalUsername() == "" {
+					logger.ERROR("facebook user %s doesn't have username, ignored", id)
+					return
+				}
+			}(friend.Id)
 		}
+		for _ = range friends.Data {
+			user := <-c
+			if user != nil {
+				users = append(users, user)
+			}
+		}
+		fmt.Println("users:", len(users))
 		err = f.helper.UpdateFriends(to, users)
 		if err != nil {
 			return fmt.Errorf("update %s friends error: %s", to, err)

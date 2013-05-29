@@ -1,1 +1,1 @@
-{{if .NeedVerify}}Welcome to EXFE. Please follow the link to confirm: {{.Config.SiteUrl}}/?t={{.To.Token}}  *Do NOT open if you didn't use EXFE*{{end}}
+{{sub "phone/user_welcome" .}}

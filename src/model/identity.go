@@ -1,16 +1,7 @@
 package model
 
 import (
-	"bytes"
-	"encoding/base64"
 	"fmt"
-	"github.com/nfnt/resize"
-	"image"
-	"image/draw"
-	"image/jpeg"
-	_ "image/png"
-	"io"
-	"net/http"
 )
 
 type Identity struct {
@@ -26,27 +17,6 @@ type Identity struct {
 	ExternalID       string `json:"external_id,omitempty"`
 	ExternalUsername string `json:"external_username,omitempty"`
 	OAuthToken       string `json:"oauth_token,omitempty"`
-}
-
-func (i Identity) GetAvatar(x, y int) string {
-	resp, err := http.Get(i.Avatar)
-	if err != nil {
-		return ""
-	}
-	defer resp.Body.Close()
-
-	resized, err := innerResize(resp.Body, x, y)
-	if err != nil {
-		return ""
-	}
-
-	buf := bytes.NewBuffer(nil)
-	err = jpeg.Encode(buf, resized, &jpeg.Options{70})
-	if err != nil {
-		return ""
-	}
-
-	return base64.StdEncoding.EncodeToString(buf.Bytes())
 }
 
 func (i Identity) Equal(other Identity) bool {
@@ -127,29 +97,6 @@ func (i Invitation) IsPending() bool {
 
 func (i Invitation) IsUpdatedBy(userId int64) bool {
 	return i.UpdatedBy.UserID == userId
-}
-
-func innerResize(r io.Reader, x int, y int) (image.Image, error) {
-	img, _, err := image.Decode(r)
-	if err != nil {
-		return nil, err
-	}
-	tryX := x
-	tryY := tryX * img.Bounds().Dy() / img.Bounds().Dx()
-	var offset image.Point
-	if tryY < y {
-		tryY = y
-		tryX = tryY * img.Bounds().Dx() / img.Bounds().Dy()
-		offset = image.Pt((tryX-x)/2, 0)
-	} else {
-		offset = image.Pt(0, (tryY-y)/2)
-	}
-
-	img = resize.Resize(uint(tryX), uint(tryY), img, resize.Lanczos3)
-	ret := image.NewRGBA(image.Rect(0, 0, x, y))
-	draw.Draw(ret, ret.Bounds(), img, offset, draw.Src)
-
-	return ret, nil
 }
 
 type OAuthToken struct {

@@ -1,1 +1,1 @@
-{{$time := .Cross.Time.StringInZone .Timezone}}Digest of "{{.Cross.Title}}" updates:{{if or $time .Cross.Place.Title}}{{if $time}} {{$time}}{{end}}{{if .Cross.Place.Title}} at {{.Cross.Place.Title}}{{end}}{{else}} to be decided{{end}}. {{.Config.SiteUrl}}/#!{{.Cross.ID}}/{{substr 1 4 .To.Token}}/
+{{sub "phone/cross_digest" .}}

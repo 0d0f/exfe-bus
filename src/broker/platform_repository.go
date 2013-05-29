@@ -86,21 +86,6 @@ func (p *Platform) Send(to model.Recipient, text string) (string, error) {
 	return string(body), nil
 }
 
-// func (p *Platform) PostMessage(userId int64, identityId model.IdentityId, text string) (string, error) {
-// 	externalId, poster, err := identityId.Split()
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	url := fmt.Sprintf("bus://exfe_service/thirdpart/poster/%s?to=%s", poster, url.QueryEscape(externalId))
-// 	var ids string
-// 	err = p.dispatcher.DoWithTicket(fmt.Sprintf("%d", userId), url, "POST", text, &ids)
-
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	return ids, nil
-// }
-
 func (p *Platform) GetHotRecipient(userID int64) ([]model.Recipient, error) {
 	return nil, nil
 

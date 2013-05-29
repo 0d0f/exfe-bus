@@ -1,1 +1,1 @@
-Reset EXFE password. Please follow the link: {{.Config.SiteUrl}}/?t={{.To.Token}}
+{{sub "phone/user_resetpass" .}}
