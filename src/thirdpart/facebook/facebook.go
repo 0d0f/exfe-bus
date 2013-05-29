@@ -68,6 +68,9 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 			return fmt.Errorf("update %s friends error: %s", to, err)
 		}
 		url = friends.Paging.Next
+		if url == "" {
+			break
+		}
 	}
 	return nil
 }
