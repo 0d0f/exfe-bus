@@ -63,7 +63,6 @@ func (h *HelperImp) UpdateFriends(to *model.Recipient, externalUsers []ExternalU
 		return fmt.Errorf("encoding user error: %s", err)
 	}
 	url := fmt.Sprintf("%s/v2/Gobus/AddFriends", h.config.SiteApi)
-	fmt.Println("url", url, buf.String())
 	resp, err := http.Post(url, "application/json", buf)
 	if err != nil {
 		return fmt.Errorf("update %s friends fail: %s", to, err)

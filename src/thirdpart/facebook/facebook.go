@@ -36,7 +36,6 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 	}
 	url := fmt.Sprintf("https://graph.facebook.com/%s/friends?access_token=%s", to.ExternalID, idToken.Token)
 	for {
-		fmt.Println(url)
 		resp, err := broker.HttpResponse(broker.Http("GET", url, "", nil))
 		if err != nil {
 			return fmt.Errorf("facebook get friends from %s error: %s", url, err)
@@ -76,7 +75,6 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 				users = append(users, user)
 			}
 		}
-		fmt.Println("users:", len(users))
 		err = f.helper.UpdateFriends(to, users)
 		if err != nil {
 			return fmt.Errorf("update %s friends error: %s", to, err)
