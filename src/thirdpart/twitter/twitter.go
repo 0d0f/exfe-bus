@@ -167,6 +167,7 @@ func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 		}
 
 		params := map[string]string{"user_id": join(ids, ",")}
+		logger.DEBUG("twitter lookup: %v", params)
 		resp, err := broker.HttpResponse(t.oauth.Get(twitterApiBase+"users/lookup.json", params, token))
 		if err != nil {
 			return fmt.Errorf("get %s users/lookup.json(%v) fail: %s", to, params, err)
