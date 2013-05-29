@@ -160,7 +160,6 @@ func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 
 	friendIDs := twitterIDs_.IDs
 	for len(friendIDs) > 0 {
-		fmt.Println(friendIDs, len(friendIDs))
 		ids := friendIDs
 		if len(friendIDs) > 100 {
 			ids = friendIDs[:100]
