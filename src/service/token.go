@@ -46,7 +46,7 @@ type CreateArg struct {
 //
 // 例子：
 //
-//     > curl "http://127.0.0.1:23333/v3/tokens/long" -d '{"data":"abc","resource":"123","expire_after_seconds":300}'
+//     > curl "http://127.0.0.1:23333/v3/tokens?type=long" -d '{"data":"abc","resource":"123","expire_after_seconds":300}'
 //
 // 返回：
 //
