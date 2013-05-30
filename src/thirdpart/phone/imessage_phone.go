@@ -21,7 +21,7 @@ func NewIMsgPhone(phone *Phone, imsg *imessage.IMessage) *IMsgPhone {
 }
 
 func (s *IMsgPhone) Provider() string {
-	return "imessage,phone"
+	return "imessage|phone"
 }
 
 func (s *IMsgPhone) Post(id, text string) (string, error) {
