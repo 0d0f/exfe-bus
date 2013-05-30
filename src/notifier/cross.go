@@ -120,7 +120,7 @@ func (c Cross) V3Update(updates []model.CrossUpdate) error {
 		return nil
 	}
 
-	arg, err := SummaryFromUpdates(updates, c.config)
+	arg, err := updateFromUpdates(updates, c.config)
 	if err != nil {
 		return err
 	}
@@ -259,7 +259,7 @@ func in(id *model.Invitation, ids []model.Invitation) bool {
 	return false
 }
 
-type SummaryArg struct {
+type UpdateArg struct {
 	model.ThirdpartTo
 	OldCross *model.Cross     `json:"-"`
 	Cross    model.Cross      `json:"-"`
@@ -273,7 +273,7 @@ type SummaryArg struct {
 	NewPending  []model.Identity `json:"-"`
 }
 
-func SummaryFromUpdates(updates []model.CrossUpdate, config *model.Config) (*SummaryArg, error) {
+func updateFromUpdates(updates []model.CrossUpdate, config *model.Config) (*UpdateArg, error) {
 	if updates == nil && len(updates) == 0 {
 		return nil, fmt.Errorf("no update info")
 	}
@@ -294,7 +294,7 @@ Bys:
 		bys = append(bys, update.By)
 	}
 
-	ret := &SummaryArg{
+	ret := &UpdateArg{
 		Bys:      bys,
 		OldCross: &updates[0].OldCross,
 		Cross:    updates[len(updates)-1].Cross,
@@ -345,18 +345,18 @@ Bys:
 	return ret, nil
 }
 
-func (a *SummaryArg) NeedShowBy() bool {
+func (a *UpdateArg) NeedShowBy() bool {
 	return true
 }
 
-func (a *SummaryArg) Timezone() string {
+func (a *UpdateArg) Timezone() string {
 	if a.To.Timezone != "" {
 		return a.To.Timezone
 	}
 	return a.Cross.Time.BeginAt.Timezone
 }
 
-func (a *SummaryArg) IsChanged() bool {
+func (a *UpdateArg) IsChanged() bool {
 	if a.IsTitleChanged() {
 		return true
 	}
@@ -376,7 +376,7 @@ func (a *SummaryArg) IsChanged() bool {
 	return false
 }
 
-func (a *SummaryArg) IsExfeeChanged() bool {
+func (a *UpdateArg) IsExfeeChanged() bool {
 	peopleChanged := len(a.NewAccepted)
 	peopleChanged += len(a.NewDeclined)
 	peopleChanged += len(a.NewInvited)
@@ -387,7 +387,7 @@ func (a *SummaryArg) IsExfeeChanged() bool {
 	return false
 }
 
-func (a *SummaryArg) IsRsvpComboChanged() []model.Identity {
+func (a *UpdateArg) IsRsvpComboChanged() []model.Identity {
 	count := 0
 	var ret []model.Identity
 	if len(a.NewAccepted) > 0 {
@@ -412,33 +412,33 @@ func (a *SummaryArg) IsRsvpComboChanged() []model.Identity {
 	return nil
 }
 
-func (a *SummaryArg) IsTimeChanged() bool {
+func (a *UpdateArg) IsTimeChanged() bool {
 	oldtime, _ := a.OldCross.Time.StringInZone(a.To.Timezone)
 	time, _ := a.Cross.Time.StringInZone(a.To.Timezone)
 	return oldtime != time
 }
 
-func (a *SummaryArg) IsTitleChanged() bool {
+func (a *UpdateArg) IsTitleChanged() bool {
 	return a.OldCross.Title != a.Cross.Title
 }
 
-func (a *SummaryArg) IsPlaceChanged() bool {
+func (a *UpdateArg) IsPlaceChanged() bool {
 	return !a.Cross.Place.Same(a.OldCross.Place)
 }
 
-func (a *SummaryArg) IsPlaceTitleChanged() bool {
+func (a *UpdateArg) IsPlaceTitleChanged() bool {
 	return a.Cross.Place.Title != a.OldCross.Place.Title
 }
 
-func (a *SummaryArg) IsPlaceDescChanged() bool {
+func (a *UpdateArg) IsPlaceDescChanged() bool {
 	return a.Cross.Place.Description != a.OldCross.Place.Description
 }
 
-func (a *SummaryArg) IsDescriptionChanged() bool {
+func (a *UpdateArg) IsDescriptionChanged() bool {
 	return a.Cross.Description != a.OldCross.Description
 }
 
-func (a *SummaryArg) IsComboChanged() bool {
+func (a *UpdateArg) IsComboChanged() bool {
 	changedNumber := 0
 	if a.IsTimeChanged() {
 		changedNumber++
@@ -456,10 +456,10 @@ func (a *SummaryArg) IsComboChanged() bool {
 	return changedNumber > 1
 }
 
-func (a SummaryArg) Link() string {
+func (a UpdateArg) Link() string {
 	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
 }
 
-func (a SummaryArg) PublicLink() string {
+func (a UpdateArg) PublicLink() string {
 	return fmt.Sprintf("%s/#!%d/%s", a.Config.SiteUrl, a.Cross.ID, a.To.Token[1:5])
 }
