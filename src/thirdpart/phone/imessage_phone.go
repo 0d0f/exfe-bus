@@ -27,7 +27,7 @@ func (s *IMsgPhone) Provider() string {
 func (s *IMsgPhone) Post(id, text string) (string, error) {
 	text = strings.Trim(text, " \r\n")
 	if ret, err := s.imsg.Post(id, text); err == nil {
-		logger.NOTICE("%s@phone sent from imessage", id)
+		logger.NOTICE("%s@imessage|phone sent from imessage", id)
 		return ret, nil
 	}
 	return s.phone.Post(id, text)

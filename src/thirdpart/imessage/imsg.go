@@ -2,146 +2,13 @@ package imessage
 
 import (
 	"broker"
+	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-logger"
-	"github.com/googollee/go-multiplexer"
 	"github.com/googollee/go-socket.io"
 	"model"
-	"strings"
+	"net"
 	"time"
 )
-
-type IMessageConn struct {
-	conn *socketio.Client
-	log  *logger.SubLogger
-}
-
-func (i *IMessageConn) Ping() error {
-	return nil
-}
-
-func (i *IMessageConn) Close() error {
-	return i.conn.Close()
-}
-
-func (i *IMessageConn) Error(err error) {
-	i.log.Err("%s", err)
-}
-
-type IMessage struct {
-	conn    *multiplexer.Homo
-	log     *logger.SubLogger
-	channel string
-}
-
-func New(config *model.Config) (*IMessage, error) {
-	log := config.Log.SubPrefix("imessage")
-	homo := multiplexer.NewHomo(func() (multiplexer.Instance, error) {
-		sio, err := socketio.Dial(config.Thirdpart.IMessage.Address, config.Thirdpart.IMessage.Origin, broker.NetworkTimeout)
-		if err != nil {
-			return nil, err
-		}
-		return &IMessageConn{
-			conn: sio,
-			log:  log,
-		}, nil
-	}, 5, 30*time.Second, 40*time.Second)
-	return &IMessage{
-		conn:    homo,
-		log:     log,
-		channel: config.Thirdpart.IMessage.Channel,
-	}, nil
-}
-
-func (i *IMessage) Provider() string {
-	return "imessage"
-}
-
-func (im *IMessage) Check(to string) (ret bool, err error) {
-	im.conn.Do(func(i multiplexer.Instance) {
-		imsg, ok := i.(*IMessageConn)
-		if !ok {
-			err = fmt.Errorf("instance %+v is not *IMessageConn", i)
-			return
-		}
-		req := Request{
-			To:      to,
-			Channel: im.getChannel(),
-			Action:  "1",
-		}
-		err = imsg.conn.Emit(true, "send", req)
-		if err != nil {
-			return
-		}
-		var msg socketio.Message
-		err = imsg.conn.Receive(&msg)
-		if err != nil {
-			return
-		}
-		fmt.Printf("%+v\n", msg)
-		var resp Response
-		err = msg.ReadArguments(&resp)
-		if err != nil {
-			return
-		}
-		fmt.Printf("%+v\n", resp)
-		ret = resp.Head.Status == 0
-	})
-	return
-}
-
-func (i *IMessage) Post(id, text string) (string, error) {
-	text = strings.Trim(text, " \r\n")
-	ok, err := i.Check(id)
-	fmt.Println(ok, err)
-	if err != nil {
-		return "", err
-	}
-	if !ok {
-		return "", fmt.Errorf("%s is not iMessage", id)
-	}
-	return i.SendMessage(id, text)
-}
-
-func (im *IMessage) SendMessage(to string, content string) (id string, err error) {
-	err = im.conn.Do(func(i multiplexer.Instance) {
-		imsg, ok := i.(*IMessageConn)
-		if !ok {
-			err = fmt.Errorf("instance %+v is not *IMessageConn", i)
-			return
-		}
-		req := Request{
-			To:      to,
-			Channel: im.getChannel(),
-			Action:  "2",
-			Message: content,
-		}
-		err = imsg.conn.Emit(true, "send", req)
-		if err != nil {
-			return
-		}
-		var msg socketio.Message
-		err = imsg.conn.Receive(&msg)
-		if err != nil {
-			return
-		}
-		var resp Response
-		err = msg.ReadArguments(&resp)
-		if err != nil {
-			return
-		}
-		if resp.Head.Status != 0 {
-			err = fmt.Errorf("%s", resp.Head.Err)
-			return
-		}
-		id = resp.Head.ID
-	})
-	return
-}
-
-func (i *IMessage) getChannel() string {
-	return i.channel
-}
 
 type Request struct {
 	To      string `json:"to"`
@@ -155,7 +22,165 @@ type Response struct {
 		Status int    `json:"status"`
 		To     string `json:"to"`
 		Action string `json:"act"`
-		ID     string `json:"id"`
+		Id     string `json:"id"`
 		Err    string `json:"errmsg"`
 	} `json:"head"`
+}
+
+type CallBack struct {
+	resp Response
+	err  error
+}
+
+type CallArg struct {
+	request Request
+	ret     chan CallBack
+}
+
+type IMessage struct {
+	url     string
+	org     string
+	send    chan *CallArg
+	cancel  chan *CallArg
+	timeout time.Duration
+}
+
+func New(config *model.Config) (*IMessage, error) {
+	ret := &IMessage{
+		url:     config.Thirdpart.IMessage.Address,
+		org:     config.Thirdpart.IMessage.Origin,
+		send:    make(chan *CallArg),
+		cancel:  make(chan *CallArg),
+		timeout: broker.ProcessTimeout,
+	}
+	go ret.Serve()
+	return ret, nil
+}
+
+func (im *IMessage) Provider() string {
+	return "imessage"
+}
+
+func (im *IMessage) Serve() {
+	for {
+		sio, err := socketio.Dial(im.url, im.org, time.Second)
+		if err != nil {
+			time.Sleep(im.timeout)
+			continue
+		}
+		syncId := make(map[string]*CallArg)
+		eventId := make(map[string]*CallArg)
+		for {
+			select {
+			case arg := <-im.send:
+				id, err := sio.Emit(true, "send", arg.request)
+				if err != nil {
+					arg.ret <- CallBack{err: err}
+				} else {
+					syncId[fmt.Sprintf("%d+", id)] = arg
+				}
+			case arg := <-im.cancel:
+				for k, v := range syncId {
+					if v == arg {
+						delete(syncId, k)
+						break
+					}
+				}
+				for k, v := range eventId {
+					if v == arg {
+						delete(eventId, k)
+						break
+					}
+				}
+			default:
+			}
+			var msg socketio.Message
+			err := sio.Receive(&msg)
+			if err != nil {
+				if e, ok := err.(net.Error); !ok || !e.Timeout() {
+					fmt.Println("breaked:", err)
+					break
+				}
+			}
+			if arg, ok := syncId[msg.EndPoint()]; ok {
+				delete(syncId, msg.EndPoint())
+				var ack Response
+				err := msg.ReadArguments(&ack)
+				if err != nil {
+					arg.ret <- CallBack{err: err}
+				} else {
+					eventId[ack.Head.Id] = arg
+				}
+			} else {
+				var data string
+				err := msg.ReadArguments(&data)
+				if err == nil {
+					var ack Response
+					err = json.Unmarshal([]byte(data), &ack)
+					if err == nil {
+						if arg, ok := eventId[ack.Head.Id]; ok {
+							delete(eventId, ack.Head.Id)
+							arg.ret <- CallBack{resp: ack}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func (im *IMessage) Check(to string) (bool, error) {
+	call := CallArg{
+		request: Request{
+			To:      to,
+			Channel: "1",
+			Action:  "1",
+		},
+		ret: make(chan CallBack),
+	}
+	im.send <- &call
+	defer close(call.ret)
+	select {
+	case back := <-call.ret:
+		if back.err != nil {
+			return false, back.err
+		}
+		return back.resp.Head.Status == 0, nil
+	case <-time.After(im.timeout):
+	}
+	return false, fmt.Errorf("imessage check timeout")
+}
+
+func (im *IMessage) Send(to, text string) (string, error) {
+	call := CallArg{
+		request: Request{
+			To:      to,
+			Channel: "1",
+			Action:  "2",
+			Message: text,
+		},
+		ret: make(chan CallBack),
+	}
+	im.send <- &call
+	defer close(call.ret)
+	select {
+	case back := <-call.ret:
+		if back.err != nil {
+			return "", back.err
+		}
+		return back.resp.Head.Id, nil
+	case <-time.After(im.timeout):
+	}
+	return "", fmt.Errorf("imessage check timeout")
+}
+
+func (im *IMessage) Post(to, text string) (string, error) {
+	ok, err := im.Check(to)
+	if err != nil {
+		return "", err
+	}
+	if !ok {
+		return "", fmt.Errorf("%s not imessage", to)
+	}
+	return im.Send(to, text)
 }
