@@ -29,7 +29,11 @@
 			</tr>
 			<tr>
 				<td width="30px"></td>
-				<td style="padding: 0;">{{.Cross.Description | html}}</td>
+				{{if .Cross.Description}}
+				<td style="padding:0;">{{.Cross.Description | limit 233 | html}}</td>
+				{{else}}
+				<td style="padding:0; color:#7F7F7F;">No description.</td>
+				{{end}}
 			</tr>
 			<tr style="vertical-align:top">
 				<td width="30px"></td>

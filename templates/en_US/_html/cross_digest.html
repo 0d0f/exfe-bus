@@ -12,7 +12,7 @@
 <a href="{{$link}}" style="text-decoration:none; color:#333333; font-size:14px; line-height:20px; font-weight:400;">
 	<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
 		<tr><td colspan="3">
-			<table cellpadding="0" cellspacing="0" style="display:inline-block; width:100%; border-spacing:0; vertical-align:top; background-image:url({{.Config.SiteApi}}/v3/mails/titleimage?background={{.Cross.Background .Config | base64url}}&lat={{.Cross.Place.Lat}}&lng={{.Cross.Place.Lng}}&ribbon=false); background-color:#545454;">
+			<table cellpadding="0" cellspacing="0" style="display:inline-block; width:100%; border-spacing:0; vertical-align:top; background:url({{.Config.SiteApi}}/v3/mails/titleimage?background={{.Cross.Background .Config | base64url}}&lat={{.Cross.Place.Lat}}&lng={{.Cross.Place.Lng}}&ribbon=false); border-bottom:1px solid #E6E6E6; background-color:#545454;">
 				<tbody>
 					<tr>
 						<td style="width:50px; height:100%; vertical-align:top; text-align:right;"><img src="{{.Config.SiteApi}}/v2/crosses/{{.Cross.ID}}/touch?user_id={{.To.UserID}}" /></td>
@@ -30,25 +30,31 @@
 				</tbody>
 			</table>
 		</td></tr>
+		{{if or .Cross.Updated.description .Cross.Description}}
 		<tr>
 			<td style="width:50px; height:100%; vertical-align:top; text-align:right;"></td>
 			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
 			<td style="padding:5px 10px 20px 10px;">
 				<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
 					<tbody>
-						<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">{{if .Cross.Updated.description}}Updated{{end}}</td></tr>
-						<tr><td>{{.Cross.Description | html | replace "\n" "<br />"}}</td></tr>
+						{{if .Cross.Updated.description}}<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">Updated</td></tr>{{end}}
+						{{if .Cross.Description}}
+						<tr><td>{{.Cross.Description | limit 233 | html | replace "\n" "<br />"}}</td></tr>
+						{{else}}
+						<tr><td style="color:#7F7F7F;">No description.</td></tr>
+						{{end}}
 					</tbody>
 				</table>
 			</td>
 		</tr>
+		{{end}}
 		<tr>
 			<td style="width:40px; height:100%; padding:15px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/time_30blue@2x.png" width="30px" height="30px" /></td>
 			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
 			<td style="padding:5px 10px 20px 10px;">
 				<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
 					<tbody>{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}
-						<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">{{if .Cross.Updated.time}}Updated{{end}}</td></tr>
+						{{if .Cross.Updated.time}}<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">Updated</td></tr>{{end}}
 						{{if $time}}
 						<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">{{$time | html}}</td></tr>
 						<tr><td></td></tr>
@@ -66,7 +72,7 @@
 			<td style="padding:5px 10px 20px 10px;">
 				<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
 					<tbody>
-						<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">{{if .Cross.Updated.place}}Updated{{end}}</td></tr>
+						{{if .Cross.Updated.place}}<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">Updated</td></tr>{{end}}
 						{{if .Cross.Place.Title}}
 						<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">{{.Cross.Place.Title | html | replace "\n" "<br />"}}</td></tr>
 						<tr><td>{{.Cross.Place.Description | html | replace "\n" "<br />"}}</td></tr>
@@ -118,7 +124,7 @@
 				<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
 					<tbody>
 						<tr><td height="30px"><span style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">Exfees&nbsp;&nbsp;{{.Cross.Exfee.AcceptedCount}}</span>/{{.Cross.Exfee.TotalCount}} accepted</td></tr>
-						<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">{{if .Cross.Updated.exfee}}Updated{{end}}</td></tr>
+						{{if .Cross.Updated.exfee}}<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">Updated</td></tr>{{end}}
 						<!--
 						<tr><td>Accepted: <span style="font-weight:500;" style="color:#3A6EA5;">Dave</span>, <span style="font-weight:500;" style="color:#3A6EA5;">Two33</span> and 3 others</td></tr>
 						<tr><td>Newly invited: <span style="font-weight:500;">Joe </span></td></tr>
