@@ -14,7 +14,7 @@ import (
 type Token struct {
 	rest.Service `prefix:"/v3/tokens"`
 
-	Create         rest.Processor `method:"POST" path:"/:type"`
+	Create         rest.Processor `method:"POST" path:""`
 	KeyGet         rest.Processor `method:"GET" path:"/key/:key"`
 	ResourceGet    rest.Processor `method:"POST" path:"/resources"`
 	KeyUpdate      rest.Processor `method:"POST" path:"/key/:key"`
@@ -52,7 +52,7 @@ type CreateArg struct {
 //
 //     {"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}
 func (s Token) HandleCreate(arg CreateArg) (ret model.Token) {
-	genType := s.Vars()["type"]
+	genType := s.Request().URL.Query().Get("type")
 	if genType != "long" && genType != "short" {
 		s.Error(http.StatusNotFound, fmt.Errorf("invalid type %s", genType))
 		return
