@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-socket.io"
+	"logger"
 	"model"
 	"net"
 	"time"
@@ -83,13 +84,11 @@ func (im *IMessage) Serve() {
 				for k, v := range syncId {
 					if v == arg {
 						delete(syncId, k)
-						break
 					}
 				}
 				for k, v := range eventId {
 					if v == arg {
 						delete(eventId, k)
-						break
 					}
 				}
 			default:
@@ -98,20 +97,23 @@ func (im *IMessage) Serve() {
 			err := sio.Receive(&msg)
 			if err != nil {
 				if e, ok := err.(net.Error); !ok || !e.Timeout() {
-					fmt.Println("breaked:", err)
+					logger.ERROR("imessage breaked:", err)
 					break
 				}
 			}
-			if arg, ok := syncId[msg.EndPoint()]; ok {
-				delete(syncId, msg.EndPoint())
-				var ack Response
-				err := msg.ReadArguments(&ack)
-				if err != nil {
-					arg.ret <- CallBack{err: err}
-				} else {
-					eventId[ack.Head.Id] = arg
+			switch msg.Type() {
+			case socketio.MessageACK:
+				if arg, ok := syncId[msg.EndPoint()]; ok {
+					delete(syncId, msg.EndPoint())
+					var ack Response
+					err := msg.ReadArguments(&ack)
+					if err != nil {
+						arg.ret <- CallBack{err: err}
+					} else {
+						eventId[ack.Head.Id] = arg
+					}
 				}
-			} else {
+			case socketio.MessageEvent:
 				var data string
 				err := msg.ReadArguments(&data)
 				if err == nil {
@@ -136,10 +138,9 @@ func (im *IMessage) Check(to string) (bool, error) {
 			Channel: "1",
 			Action:  "1",
 		},
-		ret: make(chan CallBack),
+		ret: make(chan CallBack, 1),
 	}
 	im.send <- &call
-	defer close(call.ret)
 	select {
 	case back := <-call.ret:
 		if back.err != nil {
@@ -147,6 +148,7 @@ func (im *IMessage) Check(to string) (bool, error) {
 		}
 		return back.resp.Head.Status == 0, nil
 	case <-time.After(im.timeout):
+		im.cancel <- &call
 	}
 	return false, fmt.Errorf("imessage check timeout")
 }
@@ -159,10 +161,9 @@ func (im *IMessage) Send(to, text string) (string, error) {
 			Action:  "2",
 			Message: text,
 		},
-		ret: make(chan CallBack),
+		ret: make(chan CallBack, 1),
 	}
 	im.send <- &call
-	defer close(call.ret)
 	select {
 	case back := <-call.ret:
 		if back.err != nil {
@@ -170,6 +171,7 @@ func (im *IMessage) Send(to, text string) (string, error) {
 		}
 		return back.resp.Head.Id, nil
 	case <-time.After(im.timeout):
+		im.cancel <- &call
 	}
 	return "", fmt.Errorf("imessage check timeout")
 }
