@@ -265,6 +265,11 @@ type UpdateArg struct {
 	Cross    model.Cross      `json:"-"`
 	Bys      []model.Identity `json:"-"`
 
+	TitleChangedBy       *model.Identity
+	DescriptionChangedBy *model.Identity
+	TimeChangedBy        *model.Identity
+	PlaceChangedBy       *model.Identity
+
 	NewInvited  []model.Identity `json:"-"`
 	Removed     []model.Identity `json:"-"`
 	NewAccepted []model.Identity `json:"-"`
@@ -314,6 +319,24 @@ Bys:
 
 	ret.Cross.Exfee.Parse()
 	ret.OldCross.Exfee.Parse()
+
+	crossTime, _ := ret.Cross.Time.StringInZone(ret.To.Timezone)
+	for i := len(updates) - 1; i >= 0; i-- {
+		c := updates[i]
+		if ret.TitleChangedBy == nil && c.Cross.Title != ret.Cross.Title {
+			ret.TitleChangedBy = &c.By
+		}
+		if ret.DescriptionChangedBy == nil && c.Cross.Description != ret.Cross.Description {
+			ret.DescriptionChangedBy = &c.By
+		}
+		t, _ := c.Cross.Time.StringInZone(c.To.Timezone)
+		if ret.TimeChangedBy == nil && t != crossTime {
+			ret.TimeChangedBy = &c.By
+		}
+		if ret.PlaceChangedBy == nil && !c.Cross.Place.Same(ret.Cross.Place) {
+			ret.PlaceChangedBy = &c.By
+		}
+	}
 
 	for _, i := range ret.Cross.Exfee.Accepted {
 		if !in(&i, ret.OldCross.Exfee.Accepted) {
@@ -413,17 +436,15 @@ func (a *UpdateArg) IsRsvpComboChanged() []model.Identity {
 }
 
 func (a *UpdateArg) IsTimeChanged() bool {
-	oldtime, _ := a.OldCross.Time.StringInZone(a.To.Timezone)
-	time, _ := a.Cross.Time.StringInZone(a.To.Timezone)
-	return oldtime != time
+	return a.TimeChangedBy != nil
 }
 
 func (a *UpdateArg) IsTitleChanged() bool {
-	return a.OldCross.Title != a.Cross.Title
+	return a.TitleChangedBy != nil
 }
 
 func (a *UpdateArg) IsPlaceChanged() bool {
-	return !a.Cross.Place.Same(a.OldCross.Place)
+	return a.PlaceChangedBy != nil
 }
 
 func (a *UpdateArg) IsPlaceTitleChanged() bool {
@@ -435,7 +456,7 @@ func (a *UpdateArg) IsPlaceDescChanged() bool {
 }
 
 func (a *UpdateArg) IsDescriptionChanged() bool {
-	return a.Cross.Description != a.OldCross.Description
+	return a.DescriptionChangedBy != nil
 }
 
 func (a *UpdateArg) IsComboChanged() bool {
