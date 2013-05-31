@@ -44,12 +44,11 @@
 		</tr>
 		{{end}}
 		<tr>
-			<td style="width:40px; height:100%; padding:15px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/time_30blue@2x.png" width="30px" height="30px" /></td>
+			<td style="width:40px; height:100%; padding:5px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/time_30blue@2x.png" width="30px" height="30px" /></td>
 			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
 			<td style="padding:5px 10px 20px 10px;">
 				<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
 					<tbody>{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}
-						<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;"></td></tr>
 						{{if $time}}
 						<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">{{$time | html}}</td></tr>
 						<tr><td></td></tr>
@@ -62,12 +61,11 @@
 			</td>
 		</tr>
 		<tr>
-			<td style="width:40px; height:100%; padding:15px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/place_30blue@2x.png" width="30px" height="30px" /></td>
+			<td style="width:40px; height:100%; padding:5px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/place_30blue@2x.png" width="30px" height="30px" /></td>
 			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
 			<td style="padding:5px 10px 20px 10px;">
 				<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
 					<tbody>
-						<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;"></td></tr>
 						{{if .Cross.Place.Title}}
 						<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">{{.Cross.Place.Title | html | replace "\n" "<br />"}}</td></tr>
 						<tr><td>{{.Cross.Place.Description | html | replace "\n" "<br />"}}</td></tr>
