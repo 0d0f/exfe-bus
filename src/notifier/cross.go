@@ -322,18 +322,18 @@ Bys:
 
 	crossTime, _ := ret.Cross.Time.StringInZone(ret.To.Timezone)
 	for i := len(updates) - 1; i >= 0; i-- {
-		c := updates[i]
-		if ret.TitleChangedBy == nil && c.Cross.Title != ret.Cross.Title {
+		c := updates[i].OldCross
+		if ret.TitleChangedBy == nil && c.Title != ret.Cross.Title {
 			ret.TitleChangedBy = &c.By
 		}
-		if ret.DescriptionChangedBy == nil && c.Cross.Description != ret.Cross.Description {
+		if ret.DescriptionChangedBy == nil && c.Description != ret.Cross.Description {
 			ret.DescriptionChangedBy = &c.By
 		}
-		t, _ := c.Cross.Time.StringInZone(c.To.Timezone)
+		t, _ := c.Time.StringInZone(ret.To.Timezone)
 		if ret.TimeChangedBy == nil && t != crossTime {
 			ret.TimeChangedBy = &c.By
 		}
-		if ret.PlaceChangedBy == nil && !c.Cross.Place.Same(ret.Cross.Place) {
+		if ret.PlaceChangedBy == nil && !c.Place.Same(ret.Cross.Place) {
 			ret.PlaceChangedBy = &c.By
 		}
 	}
