@@ -151,12 +151,7 @@ func (t EFTime) Description(targetZone string, targetLoc *time.Location) (string
 		if ret != "" {
 			ret += " on "
 		}
-		now := nowFunc()
-		if now.Year() == t_.Year() {
-			ret += t_.Format("Mon")
-		} else {
-			ret += t_.Format("Mon")
-		}
+		ret += t_.Format("Monday")
 	}
 
 	return ret, nil

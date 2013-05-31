@@ -40,19 +40,19 @@
 				<td height="20px">&nbsp;</td>
 			</tr>
 			{{end}}
-			{{if .IsTimeChanged}}{{$tz := .Timezone}}{{$time := .Cross.Time.StringInZone $tz}}
+			{{if .IsTimeChanged}}{{$tz := .Timezone}}{{$timeTitle := .Cross.Time.Title $tz}}
 			<tr>
 				<td width="30px"></td>
 				<td style="color: #E52E53; font-size:10px; line-height:12px;"><span style="color:#E52E53;">Updated</span></td>
 			</tr>
-			{{if $time}}
+			{{if $timeTitle}}
 			<tr>
 				<td width="30px"></td>
-				<td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">{{$time | html}}</td>
+				<td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">{{$timeTitle | html}}</td>
 			</tr>
 			<tr>
 				<td width="30px"></td>
-				<td></td>
+				<td>{{.Cross.Time.Description $tz}}</td>
 			</tr>
 			{{else}}
 			<tr>
