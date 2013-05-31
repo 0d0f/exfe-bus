@@ -2,9 +2,12 @@ package notifier
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"formatter"
 )
+
+var noneedSend = errors.New("no need send")
 
 func GenerateContent(localTemplate *formatter.LocalTemplate, template string, poster, lang string, arg interface{}) (string, error) {
 	templateName := fmt.Sprintf("%s/%s", poster, template)
@@ -19,7 +22,7 @@ func GenerateContent(localTemplate *formatter.LocalTemplate, template string, po
 	}
 
 	if ret.Len() == 0 {
-		return "", fmt.Errorf("no need send")
+		return "", noneedSend
 	}
 
 	return ret.String(), nil
