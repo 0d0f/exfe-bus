@@ -86,6 +86,82 @@ func (t EFTime) StringInZone(targetZone string, targetLoc *time.Location) (strin
 	return ret, nil
 }
 
+func (t EFTime) Title(targetZone string, targetLoc *time.Location) (string, error) {
+	t_, err := t.timeInZone(targetLoc)
+	if err != nil {
+		return "", err
+	}
+
+	if t.Date != "" {
+		now := nowFunc()
+		if now.Year() == t_.Year() {
+			return t_.Format("Jan 2"), nil
+		} else {
+			return t_.Format("Jan 2 2006"), nil
+		}
+	}
+
+	if t.DateWord != "" {
+		return t.DateWord, nil
+	}
+
+	return t.StringInZone(targetZone, targetLoc)
+}
+
+func (t EFTime) Description(targetZone string, targetLoc *time.Location) (string, error) {
+	if t.DateWord == "" && t.Date == "" {
+		return "", nil
+	}
+
+	t_, err := t.timeInZone(targetLoc)
+	if err != nil {
+		return "", err
+	}
+
+	ret := ""
+
+	if t.TimeWord != "" {
+		ret += t.TimeWord
+	}
+
+	if t.Time != "" {
+		if ret != "" {
+			ret += " at "
+		}
+		ret += t_.Format("3:04PM")
+	}
+
+	if loc, _ := LoadLocation(t.Timezone); loc.String() != targetLoc.String() && ret != "" {
+		ret += " "
+		if t.Time != "" {
+			ret += targetZone
+		} else {
+			ret += t.Timezone
+		}
+	}
+
+	if t.DateWord != "" && t.Date != "" {
+		if ret != "" {
+			ret += " "
+		}
+		ret += t.DateWord
+	}
+
+	if t.Date != "" {
+		if ret != "" {
+			ret += " on "
+		}
+		now := nowFunc()
+		if now.Year() == t_.Year() {
+			ret += t_.Format("Mon")
+		} else {
+			ret += t_.Format("Mon")
+		}
+	}
+
+	return ret, nil
+}
+
 func (t EFTime) timeInZone(targetLoc *time.Location) (time.Time, error) {
 	var t_ time.Time
 	var err error
@@ -124,6 +200,61 @@ type CrossTime struct {
 	BeginAt      EFTime       `json:"begin_at,omitempty"`
 	Origin       string       `json:"origin,omitempty"`
 	OutputFormat OutputFormat `json:"output_format,omitempty"`
+}
+
+func (t CrossTime) Title(targetZone string) (string, error) {
+	if t.Origin == "" {
+		return "", nil
+	}
+
+	loc, err := LoadLocation(t.BeginAt.Timezone)
+	if err != nil {
+		return "", fmt.Errorf("timezone(%s) invalid: %s", t.BeginAt.Timezone, err)
+	}
+	targetLoc := loc
+	if targetZone != "" {
+		targetLoc, err = LoadLocation(targetZone)
+		if err != nil {
+			return "", fmt.Errorf("targetZone(%s) invalid: %s", targetZone, err)
+		}
+	}
+
+	switch t.OutputFormat {
+	case TimeFormat:
+		ret, err := t.BeginAt.Title(targetZone, targetLoc)
+		return ret, err
+	}
+
+	if loc.String() == targetLoc.String() {
+		return t.Origin, nil
+	}
+	return fmt.Sprintf("%s %s", t.Origin, t.BeginAt.Timezone), nil
+}
+
+func (t CrossTime) Description(targetZone string) (string, error) {
+	if t.Origin == "" {
+		return "", nil
+	}
+
+	loc, err := LoadLocation(t.BeginAt.Timezone)
+	if err != nil {
+		return "", fmt.Errorf("timezone(%s) invalid: %s", t.BeginAt.Timezone, err)
+	}
+	targetLoc := loc
+	if targetZone != "" {
+		targetLoc, err = LoadLocation(targetZone)
+		if err != nil {
+			return "", fmt.Errorf("targetZone(%s) invalid: %s", targetZone, err)
+		}
+	}
+
+	switch t.OutputFormat {
+	case TimeFormat:
+		ret, err := t.BeginAt.Description(targetZone, targetLoc)
+		return ret, err
+	}
+
+	return "", nil
 }
 
 func (t CrossTime) StringInZone(targetZone string) (string, error) {

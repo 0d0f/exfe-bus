@@ -48,10 +48,10 @@
 			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
 			<td style="padding:5px 10px 20px 10px;">
 				<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
-					<tbody>{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}
-						{{if $time}}
-						<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">{{$time | html}}</td></tr>
-						<tr><td></td></tr>
+					<tbody>{{$tz := .Cross.Timezone .To}}{{$timeTitle := .Cross.Time.Title $tz}}
+						{{if $timeTitle}}
+						<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">{{$timeTitle | html}}</td></tr>
+						<tr><td>{{.Cross.Time.Description $tz | html}}</td></tr>
 						{{else}}
 						<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">Time</td></tr>
 						<tr><td>To be decided</td></tr>
