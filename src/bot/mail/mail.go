@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"formatter"
+	"github.com/googollee/go-aws/s3"
 	"launchpad.net/tomb"
 	"logger"
 	"model"
@@ -28,14 +29,23 @@ type Worker struct {
 	templ    *formatter.LocalTemplate
 	platform *broker.Platform
 	saver    MessageIDSaver
+	bucket   *s3.Bucket
 }
 
 func New(config *model.Config, templ *formatter.LocalTemplate, platform *broker.Platform, saver MessageIDSaver) (*Worker, error) {
+	aws := s3.New(config.AWS.S3.Domain, config.AWS.S3.Key, config.AWS.S3.Secret)
+	aws.SetACL(s3.ACLPublicRead)
+	aws.SetLocationConstraint(s3.LC_AP_SINGAPORE)
+	bucket, err := aws.GetBucket(fmt.Sprintf("%s-3rdpart-photos", config.AWS.S3.BucketPrefix))
+	if err != nil {
+		return nil, err
+	}
 	return &Worker{
 		config:   config,
 		templ:    templ,
 		platform: platform,
 		saver:    saver,
+		bucket:   bucket,
 	}, nil
 }
 
@@ -84,7 +94,7 @@ func (w *Worker) process() {
 	for _, id := range ids {
 		conn.SetDeadline(time.Now().Add(broker.ProcessTimeout))
 
-		msg, err := w.getMail(imapConn, id)
+		msg, url, err := w.getMail(imapConn, id)
 		if err != nil {
 			logger.ERROR("can't get mail %d: %s", id, err)
 			errorIds = append(errorIds, id)
@@ -126,6 +136,7 @@ func (w *Worker) process() {
 			}
 		}
 		cross := parser.GetCross()
+		cross.Description += "\n" + url
 		if to == "" {
 			crossID, code, err := w.platform.BotCrossGather(cross)
 			if err != nil {
@@ -139,7 +150,7 @@ func (w *Worker) process() {
 			}
 			to, toID = "cross_id", fmt.Sprintf("%d", crossID)
 		} else {
-			post := parser.GetPost()
+			post := parser.GetPost() + "\n" + url
 			if post != "" && !fromCalendar {
 				_, err := w.platform.BotPostConversation(parser.from.Address, post, parser.Date(), parser.addrList, to, toID)
 				if err != nil {
@@ -231,23 +242,35 @@ func (w *Worker) login() (net.Conn, *imap.Client, error) {
 	return c, conn, nil
 }
 
-func (w *Worker) getMail(conn *imap.Client, id uint32) (*mail.Message, error) {
+func (w *Worker) getMail(conn *imap.Client, id uint32) (*mail.Message, string, error) {
 	buf := bytes.NewBuffer(nil)
 	set := new(imap.SeqSet)
 	set.AddNum(id)
 
 	cmd, err := imap.Wait(conn.Fetch(set, "RFC822"))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	buf.Write(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
 
 	msg, err := mail.ReadMessage(buf)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return msg, nil
+	path := fmt.Sprintf("emailbot/%d.eml", id)
+	obj, err := w.bucket.CreateObject(path, "message/rfc822")
+	if err != nil {
+		logger.ERROR("can't save mail %d: %s", id, err)
+		return msg, "", nil
+	}
+	err = obj.SaveReader(buf, int64(buf.Len()))
+	if err != nil {
+		logger.ERROR("can't save mail %d: %s", id, err)
+		return msg, "", nil
+	}
+
+	return msg, obj.URL(), nil
 }
 
 func (w *Worker) sendHelp(code int, err error, parser *Parser) error {
