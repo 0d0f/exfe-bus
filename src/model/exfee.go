@@ -14,10 +14,10 @@ type RsvpUpdate struct {
 type Exfee struct {
 	ID            int64        `json:"id,omitempty"`
 	Name          string       `json:"name,omitempty"`
-	Invitations   []Invitation `json:"invitations"`
-	ItemsCount    int          `json:"items"`
-	TotalCount    int          `json:"total"`
-	AcceptedCount int          `json:"accepted"`
+	Invitations   []Invitation `json:"invitations,omitempty"`
+	ItemsCount    int          `json:"items,omitempty"`
+	TotalCount    int          `json:"total,omitempty"`
+	AcceptedCount int          `json:"accepted,omitempty"`
 
 	Accepted []Invitation `json:"-"`
 	Declined []Invitation `json:"-"`

@@ -58,6 +58,78 @@ func TestParseContentType(t *testing.T) {
 	}
 }
 
+func TestGroupAttachment(t *testing.T) {
+	var str = `Delivered-To: x@exfe.com
+Received: by 10.50.138.135 with SMTP id qq7csp120793igb;
+        Sun, 2 Jun 2013 21:53:49 -0700 (PDT)
+X-Received: by 10.66.4.106 with SMTP id j10mr23012102paj.218.1370235228976;
+        Sun, 02 Jun 2013 21:53:48 -0700 (PDT)
+Return-Path: <dm@exfe.com>
+Received: from mail-pb0-x22d.google.com (mail-pb0-x22d.google.com [2607:f8b0:400e:c01::22d])
+        by mx.google.com with ESMTPS id hb2si39226625pac.147.2013.06.02.21.53.48
+        for <x@exfe.com>
+        (version=TLSv1 cipher=ECDHE-RSA-RC4-SHA bits=128/128);
+        Sun, 02 Jun 2013 21:53:48 -0700 (PDT)
+Received-SPF: neutral (google.com: 2607:f8b0:400e:c01::22d is neither permitted nor denied by best guess record for domain of dm@exfe.com) client-ip=2607:f8b0:400e:c01::22d;
+Authentication-Results: mx.google.com;
+       spf=neutral (google.com: 2607:f8b0:400e:c01::22d is neither permitted nor denied by best guess record for domain of dm@exfe.com) smtp.mail=dm@exfe.com
+Received: by mail-pb0-f45.google.com with SMTP id mc8so3631pbc.18
+        for <x@exfe.com>; Sun, 02 Jun 2013 21:53:48 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=google.com; s=20120113;
+        h=sender:from:content-type:content-transfer-encoding:subject:date
+         :message-id:cc:to:mime-version:x-mailer:x-gm-message-state;
+        bh=XhroD5QWaxbeiIssOtf6cb48SvLP93NL1flgp+auwQ8=;
+        b=aDTGL9nB5/HmseBGJ25glh6vlQzafdK3g/W8xS3ap1osbwtl9WgFDfWWbl3e3M2OhR
+         4yzclJ5k1ZSFXD4B3BzeT84aNLcaYxylueLKh4LBvMmASw84uwGH3GsfZOGjPrshe+Ad
+         /rTQTVaS8FBopGEoq3n127C2EQliPctNTQJ2y+C8UICq8fH1r21nxA6BoQKdxHGizFZl
+         e5gkPDi0camFJDpmPpntcEgz+MQ0XRWnAETqbCRY8dng54oFbriqFVbRFk+ipC19w8A5
+         jhNzQBP7xYG0eAvenV1mim1DzSEzeeCa9ts6T9jgYhlKUlsQRtXPPIl7mg0yKGrfLZPJ
+         dydQ==
+X-Received: by 10.66.163.232 with SMTP id yl8mr22748095pab.104.1370235228572;
+        Sun, 02 Jun 2013 21:53:48 -0700 (PDT)
+Return-Path: <dm@exfe.com>
+Received: from dm-mbp.0d0f.com ([114.92.169.70])
+        by mx.google.com with ESMTPSA id 10sm57373136pbm.0.2013.06.02.21.53.45
+        for <multiple recipients>
+        (version=TLSv1 cipher=ECDHE-RSA-RC4-SHA bits=128/128);
+        Sun, 02 Jun 2013 21:53:47 -0700 (PDT)
+Sender: =?UTF-8?B?56uv5pyo5oGSIERVQU5NVSBIZW5n?= <hengdm@exfe.com>
+From: =?utf-8?Q?DUANMU_Heng_=E7=AB=AF=E6=9C=A8=E6=81=92?= <dm@exfe.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+Subject: =?utf-8?B?5pys5pyI5L2T5qOA?=
+Date: Mon, 3 Jun 2013 12:53:42 +0800
+Message-Id: <FCD83C12-4047-4C4E-A06B-7075BBF70C4D@exfe.com>
+Cc: x@exfe.com
+To: 0d0f team <0d0f@exfe.com>
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+X-Mailer: Apple Mail (2.1503)
+X-Gm-Message-State: ALoCoQnTJjeMYqBOnJtJXAhFnVCQzW4F3D8AhiYsVp4c/WpDNL+6OCPe+lX1/OJ60MFdir7YsVjL
+
+5aSn5a62NuaciOWuieaOkuS4quaXtumXtOS9k+ajgOWQp+OAgg0KLS0gDQrnq6/mnKggRE0uDQoN
+Cg==`
+
+	buf := bytes.NewBufferString(str)
+	msg, err := mail.ReadMessage(buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := config
+	c.Email.Prefix = "x"
+	c.Email.Domain = "exfe.com"
+	parser, err := NewParser(msg, &c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, parser.messageID, "FCD83C12-4047-4C4E-A06B-7075BBF70C4D@exfe.com")
+	assert.Equal(t, parser.content, "大家6月安排个时间体检吧。")
+	assert.Equal(t, parser.subject, "本月体检")
+	assert.Equal(t, len(parser.addrList), 3)
+	assert.Equal(t, parser.HasICS(), false)
+	assert.Equal(t, len(parser.GetCross().Exfee.Invitations), 2)
+}
+
 func TestNormalAttachment(t *testing.T) {
 	var str = `Received: from googollee$163.com ( [116.237.198.97] ) by
  ajax-webmail-wmsvr64 (Coremail) ; Tue, 19 Mar 2013 16:05:42 +0800 (CST)

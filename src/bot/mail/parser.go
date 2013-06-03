@@ -229,7 +229,9 @@ func (h *Parser) GetCross() (cross model.Cross) {
 		ExternalUsername: h.from.Address,
 	}
 	for _, addr := range h.addrList {
-		if strings.HasSuffix(addr.Address, h.domain) {
+		if pre := len(h.config.Email.Prefix) + 1; len(addr.Address) > pre &&
+			(addr.Address[:pre] == h.config.Email.Prefix+"@" || addr.Address[:pre] == h.config.Email.Prefix+"+") &&
+			strings.HasSuffix(addr.Address, h.domain) {
 			continue
 		}
 		if strings.HasSuffix(addr.Address, "googlemail.com") {
