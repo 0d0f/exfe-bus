@@ -263,6 +263,8 @@ func (w *Worker) getMail(conn *imap.Client, id uint32) (*mail.Message, string, e
 		logger.ERROR("can't save mail %d: %s", id, err)
 	}
 
+	buf.Reset()
+	buf.Write(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
 	msg, err := mail.ReadMessage(buf)
 	if err != nil {
 		return nil, "", err
