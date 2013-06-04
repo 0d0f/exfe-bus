@@ -170,8 +170,6 @@ func (h *Parser) init(r io.Reader, header mail.Header) error {
 		}
 		content = parseHtml(content)
 		h.content = parsePlain(content)
-	case "application/octet-stream":
-		fallthrough
 	case "text/calendar":
 		fallthrough
 	case "application/ics":
