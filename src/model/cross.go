@@ -34,17 +34,19 @@ func (c Cross) String() string {
 
 func (c Cross) Ics(config *Config, to Recipient) string {
 	url := fmt.Sprintf("%s/v2/ics/crosses?token=%s", config.SiteApi, to.Token)
-	logger.DEBUG("ics: %s", url)
 	resp, err := http.Get(url)
 	if err != nil {
+		logger.ERROR("get %s error: %s", url, err)
 		return ""
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return ""
-	}
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		logger.ERROR("get %s error: %s", url, err)
+		return ""
+	}
+	if resp.StatusCode != http.StatusOK {
+		logger.ERROR("get %s error: %s", url, string(b))
 		return ""
 	}
 	return base64.StdEncoding.EncodeToString(b)
