@@ -1,4 +1,5 @@
-# {{.Cross.Title}} {{if .IsTitleChanged}}(Updated){{end}}{{if .IsTimeChanged}}
+# {{.Cross.Title}} {{if .IsTitleChanged}}(Updated){{end}}
+{{.Cross.Link .To .Config}}{{if .IsTimeChanged}}
 {{$tz := .Timezone}}{{$time := .Cross.Time.StringInZone $tz}}
 {{if $time}}## {{$time}} (updated){{else}}## Time (updated)
   To be decied.{{end}}{{end}}{{if .IsPlaceChanged}}
