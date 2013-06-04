@@ -235,6 +235,7 @@ func (p *Platform) BotCrossGather(cross model.Cross) (uint64, error) {
 	b = []byte(p.replacer.Replace(string(b)))
 
 	u := fmt.Sprintf("%s/v3/bus/gather", p.config.SiteApi)
+	logger.DEBUG("post %s with %s", u, string(b))
 	resp, err := Http("POST", u, "application/json", b)
 	reader, err := HttpResponse(resp, err)
 
