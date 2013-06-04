@@ -4,6 +4,7 @@ import (
 	"broker"
 	"bytes"
 	"code.google.com/p/go-imap/go1/imap"
+	"crypto/md5"
 	"crypto/tls"
 	"fmt"
 	"formatter"
@@ -252,7 +253,9 @@ func (w *Worker) getMail(conn *imap.Client, id uint32) (*mail.Message, string, e
 	}
 	buf.Write(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
 
-	path := fmt.Sprintf("emailbot/%d.eml", id)
+	hash := md5.New()
+	name := hash.Sum(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
+	path := fmt.Sprintf("emailbot/%x.eml", name)
 	obj, err := w.bucket.CreateObject(path, "message/rfc822")
 	if err == nil {
 		err = obj.SaveReader(buf, int64(buf.Len()))
