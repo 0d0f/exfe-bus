@@ -254,7 +254,8 @@ func (w *Worker) getMail(conn *imap.Client, id uint32) (*mail.Message, string, e
 	buf.Write(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
 
 	hash := md5.New()
-	name := hash.Sum(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
+	hash.Write(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
+	name := hash.Sum(nil)
 	path := fmt.Sprintf("emailbot/%x.eml", name)
 	obj, err := w.bucket.CreateObject(path, "message/rfc822")
 	if err == nil {
