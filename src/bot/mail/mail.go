@@ -36,7 +36,7 @@ func New(config *model.Config, templ *formatter.LocalTemplate, platform *broker.
 	aws := s3.New(config.AWS.S3.Domain, config.AWS.S3.Key, config.AWS.S3.Secret)
 	aws.SetACL(s3.ACLPublicRead)
 	aws.SetLocationConstraint(s3.LC_AP_SINGAPORE)
-	bucket, err := aws.GetBucket(fmt.Sprintf("%s-3rdpart-photos", config.AWS.S3.BucketPrefix))
+	bucket, err := aws.GetBucket(fmt.Sprintf("%s-email", config.AWS.S3.BucketPrefix))
 	if err != nil {
 		return nil, err
 	}
@@ -252,21 +252,20 @@ func (w *Worker) getMail(conn *imap.Client, id uint32) (*mail.Message, string, e
 	}
 	buf.Write(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
 
+	path := fmt.Sprintf("emailbot/%d.eml", id)
+	obj, err := w.bucket.CreateObject(path, "message/rfc822")
+	if err == nil {
+		err = obj.SaveReader(buf, int64(buf.Len()))
+		if err != nil {
+			logger.ERROR("can't save mail %d: %s", id, err)
+		}
+	} else {
+		logger.ERROR("can't save mail %d: %s", id, err)
+	}
+
 	msg, err := mail.ReadMessage(buf)
 	if err != nil {
 		return nil, "", err
-	}
-
-	path := fmt.Sprintf("emailbot/%d.eml", id)
-	obj, err := w.bucket.CreateObject(path, "message/rfc822")
-	if err != nil {
-		logger.ERROR("can't save mail %d: %s", id, err)
-		return msg, "", nil
-	}
-	err = obj.SaveReader(buf, int64(buf.Len()))
-	if err != nil {
-		logger.ERROR("can't save mail %d: %s", id, err)
-		return msg, "", nil
 	}
 
 	return msg, obj.URL(), nil
