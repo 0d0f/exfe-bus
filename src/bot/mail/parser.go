@@ -172,7 +172,11 @@ func (h *Parser) init(r io.Reader, header mail.Header) error {
 		h.content = parsePlain(content)
 	case "application/octet-stream":
 		t, vars := parseContentType(header.Get("Content-Disposition"))
-		if t != "attachment" || !strings.HasSuffix(vars["filename"], ".ics") {
+		if t == "attachment" {
+			if !strings.HasSuffix(vars["filename"], ".ics") {
+				return nil
+			}
+		} else {
 			return nil
 		}
 		fallthrough
