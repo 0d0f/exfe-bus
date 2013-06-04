@@ -3,9 +3,9 @@ package broker
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"gobus"
-	"io"
 	"io/ioutil"
 	"logger"
 	"model"
@@ -20,6 +20,36 @@ import (
 const (
 	ProcessTimeout = 60 * time.Second
 	NetworkTimeout = 30 * time.Second
+)
+
+var internalError = errors.New("internal error")
+
+type ErrorType string
+type Error struct {
+	Type    ErrorType
+	Message string
+}
+
+func (e Error) Error() string {
+	return fmt.Sprintf("(%s)%s", e.Type, e.Message)
+}
+
+type Warning struct {
+	Type ErrorType              `json:"type"`
+	Vars map[string]interface{} `json:"message"`
+}
+
+func (w Warning) Error() string {
+	return fmt.Sprintf("%s(%+v)", w.Type, w.Vars)
+}
+
+const (
+	IDENTITY_NOT_FOUND ErrorType = "identity_not_found"
+	CROSS_NOT_FOUND              = "cross_not_found"
+	CROSS_NOT_MODIFIED           = "cross_not_modified"
+	CROSS_FORBIDDEN              = "cross_forbidden"
+	CROSS_ERROR                  = "cross_error"
+	NOT_AUTHORIZED               = "not_authorized"
 )
 
 var client *http.Client
@@ -70,65 +100,50 @@ func NewPlatform(config *model.Config) (*Platform, error) {
 
 func (p *Platform) Send(to model.Recipient, text string) (string, error) {
 	url := fmt.Sprintf("http://%s:%d/v3/poster/%s/%s", p.config.ExfeService.Addr, p.config.ExfeService.Port, to.Provider, to.ExternalUsername)
-	buf := bytes.NewBufferString(text)
-	resp, err := client.Post(url, "plain/text", buf)
+	resp, err := HttpResponse(Http("POST", url, "plain/text", []byte(text)))
 	if err != nil {
-		return "", err
+		logger.DEBUG("post %s error: %s with %s", url, err, text)
+		return "", internalError
 	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	defer resp.Close()
+	body, err := ioutil.ReadAll(resp)
 	if err != nil {
-		return "", err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("%s", string(body))
+		logger.DEBUG("read %s error: %s with %s", url, err, text)
+		return "", internalError
 	}
 	return string(body), nil
 }
 
-func (p *Platform) GetHotRecipient(userID int64) ([]model.Recipient, error) {
-	return nil, nil
-
-	resp, err := http.Get(fmt.Sprintf("%s/v2/Gobus/HotRecipient?user=%d", p.config.SiteApi, userID))
+func (p *Platform) FindIdentity(identity model.Identity) (model.Identity, error) {
+	b, err := json.Marshal(identity)
 	if err != nil {
-		return nil, err
+		logger.ERROR("encode identity error: %s with %+v", err, identity)
+		return identity, internalError
 	}
-	defer resp.Body.Close()
+	url := fmt.Sprintf("%s/v3/bus/revokeidentity", p.config.SiteApi)
+	resp, err := Http("POST", url, "application/json", b)
+	reader, err := HttpResponse(resp, err)
 
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("find identity failed: %s", resp.Status)
+	if err != nil {
+		switch resp.StatusCode {
+		case 404:
+			return identity, Error{IDENTITY_NOT_FOUND, err.Error()}
+		}
+		logger.ERROR("post %s error: %s with %s", url, err, string(b))
+		return identity, internalError
 	}
-	decoder := json.NewDecoder(resp.Body)
-	var ret []model.Recipient
+
+	defer reader.Close()
+	var ret struct {
+		Data model.Identity `json:"data"`
+	}
+	decoder := json.NewDecoder(reader)
 	err = decoder.Decode(&ret)
 	if err != nil {
-		return nil, err
+		logger.ERROR("decode %s error: %s", url, err, string(b))
+		return identity, internalError
 	}
-	return ret, nil
-}
-
-func (p *Platform) FindIdentity(identity model.Identity) (model.Identity, error) {
-	buf := bytes.NewBuffer(nil)
-	encoder := json.NewEncoder(buf)
-	err := encoder.Encode(identity)
-	if err != nil {
-		return identity, err
-	}
-	resp, err := http.Post(fmt.Sprintf("%s/v2/Gobus/RevokeIdentity", p.config.SiteApi), "application/json", buf)
-	if err != nil {
-		return identity, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return identity, fmt.Errorf("find identity failed: %s", resp.Status)
-	}
-	decoder := json.NewDecoder(resp.Body)
-	err = decoder.Decode(&identity)
-	if err != nil {
-		return identity, err
-	}
-	return identity, nil
+	return ret.Data, nil
 }
 
 func (p *Platform) GetConversation(exfeeId int64, token string, updatedAt string, clear bool, direction string, quantity int) ([]model.Post, error) {
@@ -137,62 +152,59 @@ func (p *Platform) GetConversation(exfeeId int64, token string, updatedAt string
 	query.Set("clear", fmt.Sprintf("%v", clear))
 	query.Set("direction", direction)
 	query.Set("quantity", fmt.Sprintf("%d", quantity))
-	url := fmt.Sprintf("%s/v2/Gobus/Conversation/%d?%s", p.config.SiteApi, exfeeId, query.Encode())
+	url := fmt.Sprintf("%s/v3/bus/conversation/%d?%s", p.config.SiteApi, exfeeId, query.Encode())
 
-	logger.DEBUG("get conversation: %s", url)
-	resp, err := http.Get(url)
+	resp, err := HttpResponse(Http("GET", url, "", nil))
 	if err != nil {
-		return nil, err
+		logger.ERROR("get %s error: %s", url)
+		return nil, internalError
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("get cross failed: %s", resp.Status)
-	}
+	defer resp.Close()
 
 	var ret struct {
-		Meta struct {
-			Code        int    `json:"code"`
-			ErrorDetail string `json:"errorDetail"`
-			ErrorType   string `json:"errorType"`
-		} `json:"meta"`
-		Response struct {
-			Conversation []model.Post `json:"conversation"`
-		} `json:"response"`
+		Data []model.Post `json:"data"`
 	}
-	decoder := json.NewDecoder(resp.Body)
+	decoder := json.NewDecoder(resp)
 	err = decoder.Decode(&ret)
 	if err != nil {
-		return nil, err
+		logger.ERROR("decode %s error: %s", url, err)
+		return nil, internalError
 	}
-	if ret.Meta.Code != 200 {
-		return nil, fmt.Errorf("%s: %s", ret.Meta.ErrorType, ret.Meta.ErrorDetail)
-	}
-	return ret.Response.Conversation, nil
+	return ret.Data, nil
 }
 
 func (p *Platform) FindCross(id int64, query url.Values) (model.Cross, error) {
-	url := fmt.Sprintf("%s/v2/Gobus/Crosses?id=%d&", p.config.SiteApi, id)
+	url := fmt.Sprintf("%s/v3/bus/Crosses/%d?", p.config.SiteApi, id)
 	if len(query) > 0 {
 		url += query.Encode()
 	}
-	logger.DEBUG("find cross: %s", url)
-	var ret model.Cross
-	resp, err := http.Get(url)
-	if err != nil {
-		return ret, err
-	}
-	defer resp.Body.Close()
+	resp, err := Http("GET", url, "", nil)
+	reader, err := HttpResponse(resp, err)
 
-	if resp.StatusCode != 200 {
-		return ret, fmt.Errorf("find cross failed: %s", resp.Status)
+	var ret struct {
+		Data model.Cross `json:"data"`
 	}
+	if err != nil {
+		switch resp.StatusCode {
+		case 304:
+			return ret.Data, Error{CROSS_NOT_MODIFIED, err.Error()}
+		case 403:
+			return ret.Data, Error{CROSS_FORBIDDEN, err.Error()}
+		case 404:
+			return ret.Data, Error{CROSS_NOT_FOUND, err.Error()}
+		}
+		logger.ERROR("get %s error: %s", url, err)
+		return ret.Data, internalError
+	}
+
+	defer reader.Close()
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&ret)
 	if err != nil {
-		return ret, err
+		logger.ERROR("decode %s error: %s", url, err)
+		return ret.Data, internalError
 	}
-	return ret, nil
+	return ret.Data, nil
 }
 
 func (p *Platform) UploadPhoto(photoxID string, photos []model.Photo) error {
@@ -214,67 +226,92 @@ func (p *Platform) UploadPhoto(photoxID string, photos []model.Photo) error {
 	return nil
 }
 
-func (p *Platform) BotCrossGather(cross model.Cross) (uint64, int, error) {
-	buf := bytes.NewBuffer(nil)
-	encoder := json.NewEncoder(buf)
-	err := encoder.Encode(cross)
+func (p *Platform) BotCrossGather(cross model.Cross) (uint64, error) {
+	b, err := json.Marshal(cross)
 	if err != nil {
-		return 0, 500, err
+		logger.ERROR("encode cross error: %s with %+v", err, cross)
+		return 0, internalError
 	}
-	str := p.replacer.Replace(buf.String())
-	buf = bytes.NewBufferString(str)
+	b = []byte(p.replacer.Replace(string(b)))
 
-	u := fmt.Sprintf("%s/v2/Gobus/Gather", p.config.SiteApi)
-	logger.DEBUG("bot gather to: %s, cross: %s", u, buf.String())
-	body, code, err := parseResp(client.Post(u, "application/json", buf))
+	u := fmt.Sprintf("%s/v3/bus/gather", p.config.SiteApi)
+	resp, err := Http("POST", u, "application/json", b)
+	reader, err := HttpResponse(resp, err)
+
 	if err != nil {
-		return 0, code, fmt.Errorf("error(%s) when send message(%s)", err, buf.String())
+		switch resp.StatusCode {
+		case 400:
+			return 0, Error{CROSS_ERROR, err.Error()}
+		}
+		logger.ERROR("post %s error: %s, with %s", u, err, string(b))
+		return 0, internalError
 	}
-	defer body.Close()
 
+	defer reader.Close()
 	var ret struct {
-		Response struct {
-			CrossID uint64 `json:"cross_id"`
-		} `json:"response"`
+		Data struct {
+			CrossId uint64 `json:"cross_id"`
+		} `json:"data"`
+		Warning Warning `json:"warning"`
 	}
-	decoder := json.NewDecoder(body)
+	decoder := json.NewDecoder(reader)
 	err = decoder.Decode(&ret)
 	if err != nil {
-		logger.ERROR("can't parse gather return: %s", err)
-		return 0, 500, err
+		logger.ERROR("parse %s error: %s with %s", u, err, string(b))
+		return 0, internalError
 	}
 
-	return ret.Response.CrossID, 200, nil
+	if resp.StatusCode == 200 {
+		return ret.Data.CrossId, nil
+	}
+	return ret.Data.CrossId, ret.Warning
 }
 
-func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Identity) (int, error) {
+func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Identity) error {
 	arg := make(map[string]interface{})
 	arg[to] = id
 	arg["cross"] = cross
 	arg["by_identity"] = by
 
-	buf := bytes.NewBuffer(nil)
-	encoder := json.NewEncoder(buf)
-	err := encoder.Encode(arg)
+	b, err := json.Marshal(arg)
 	if err != nil {
-		return 500, err
+		logger.ERROR("encoding error: %s with %+v", err, arg)
+		return internalError
 	}
-	str := p.replacer.Replace(buf.String())
-	buf = bytes.NewBufferString(str)
+	b = []byte(p.replacer.Replace(string(b)))
 
-	u := fmt.Sprintf("%s/v2/Gobus/XUpdate", p.config.SiteApi)
-	logger.DEBUG("bot cross update: %s, with: %s", u, str)
-	body, code, err := parseResp(client.Post(u, "application/json", buf))
+	u := fmt.Sprintf("%s/v3/bus/xupdate", p.config.SiteApi)
+	resp, err := Http("POST", u, "application/json", b)
+	reader, err := HttpResponse(resp, err)
 	if err != nil {
-		return code, fmt.Errorf("error(%s) when send message(%s)", err, buf.String())
+		switch resp.StatusCode {
+		case 400:
+			return Error{NOT_AUTHORIZED, err.Error()}
+		case 404:
+			return Error{CROSS_NOT_FOUND, err.Error()}
+		}
+		logger.ERROR("post %s error: %s with %s", u, err, string(b))
+		return internalError
 	}
-	defer body.Close()
 
-	return 200, nil
+	defer reader.Close()
+	var ret struct {
+		Warning Warning `json:"warning"`
+	}
+	decoder := json.NewDecoder(reader)
+	err = decoder.Decode(&ret)
+	if err != nil {
+		logger.ERROR("decode %s error: %s with %s", u, err, string(b))
+		return internalError
+	}
+	if resp.StatusCode == 200 {
+		return nil
+	}
+	return ret.Warning
 }
 
-func (p *Platform) BotPostConversation(from, post, createdAt string, exclude []*mail.Address, to, id string) (int, error) {
-	u := fmt.Sprintf("%s/v2/Gobus/PostConversation", p.config.SiteApi)
+func (p *Platform) BotPostConversation(from, post, createdAt string, exclude []*mail.Address, to, id string) error {
+	u := fmt.Sprintf("%s/v3/bus/postconversation", p.config.SiteApi)
 	params := make(url.Values)
 	params.Add(to, id)
 	params.Add("content", post)
@@ -286,54 +323,53 @@ func (p *Platform) BotPostConversation(from, post, createdAt string, exclude []*
 		ex[i] = fmt.Sprintf("%s@email", addr.Address)
 	}
 	params.Add("exclude", strings.Join(ex, ","))
-	logger.DEBUG("bot post to: %s, post content: %s\n", u, params.Encode())
 
-	body, code, err := parseResp(client.PostForm(u, params))
+	resp, err := HttpClient.PostForm(u, params)
+	reader, err := HttpResponse(resp, err)
 	if err != nil {
-		return code, fmt.Errorf("error(%s) when send message(%s)", err, params.Encode())
+		logger.ERROR("post %s error: %s with %s", u, err, params.Encode())
+		return internalError
 	}
-	defer body.Close()
+	defer reader.Close()
 
-	return 200, nil
+	return nil
 }
 
 func (p *Platform) GetIdentity(identities []model.Identity) ([]model.Identity, error) {
-	type Arg struct {
-		Identities []model.Identity `json:"identities"`
+	arg := map[string]interface{}{
+		"identities": identities,
+	}
+	b, err := json.Marshal(arg)
+	if err != nil {
+		logger.ERROR("encode error: %s with %+v", err, arg)
+		return nil, err
 	}
 	u := fmt.Sprintf("%s/v2/identities/get", p.config.SiteApi)
-	logger.DEBUG("get identities: %d", len(identities))
-	b, err := json.Marshal(Arg{identities})
+	reader, err := HttpResponse(Http("POST", u, "application/json", b))
 	if err != nil {
-		return nil, err
-	}
-	buf := bytes.NewBuffer(b)
-
-	body, code, err := parseResp(client.Post(u, "application/json", buf))
-	if err != nil {
-		return nil, err
-	}
-	defer body.Close()
-
-	if code != 200 {
-		return nil, fmt.Errorf("response %d", code)
+		logger.ERROR("post %s error: %s with %s", u, err, string(b))
+		return nil, internalError
 	}
 
+	defer reader.Close()
 	var ret struct {
 		Meta struct {
 			Code        int    `json:"code"`
 			ErrorDetail string `json:"errorDetail"`
 		} `json:"meta"`
-		Response Arg `json:"response"`
+		Response struct {
+			Identities []model.Identity `json:"identities"`
+		} `json:"response"`
 	}
-	decoder := json.NewDecoder(body)
+	decoder := json.NewDecoder(reader)
 	err = decoder.Decode(&ret)
 	if err != nil {
 		return nil, err
 	}
 
 	if ret.Meta.Code != 200 {
-		return nil, fmt.Errorf("%s", ret.Meta.ErrorDetail)
+		logger.ERROR("post %s error: %s with %s", u, ret.Meta.ErrorDetail, string(b))
+		return nil, internalError
 	}
 
 	return ret.Response.Identities, nil
@@ -341,32 +377,16 @@ func (p *Platform) GetIdentity(identities []model.Identity) ([]model.Identity, e
 
 func (p *Platform) GetIcs(token string) (string, error) {
 	url := fmt.Sprintf("%s/v2/ics/crosses?token=%s", p.config.SiteApi, token)
-	resp, err := client.Get(url)
+	reader, err := HttpResponse(HttpClient.Get(url))
 	if err != nil {
-		return "", err
+		logger.ERROR("get %s error: %s", url, err)
+		return "", internalError
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", err
-	}
-	b, err := ioutil.ReadAll(resp.Body)
+	defer reader.Close()
+	b, err := ioutil.ReadAll(reader)
 	if err != nil {
-		return "", err
+		logger.ERROR("get %s error: %s", url, err)
+		return "", internalError
 	}
 	return string(b), nil
-}
-
-func parseResp(resp *http.Response, err error) (io.ReadCloser, int, error) {
-	if err != nil {
-		return nil, 500, err
-	}
-	if resp.StatusCode != 200 {
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, 500, err
-		}
-		return nil, resp.StatusCode, fmt.Errorf("%s: %s", resp.Status, body)
-	}
-	return resp.Body, 200, nil
 }

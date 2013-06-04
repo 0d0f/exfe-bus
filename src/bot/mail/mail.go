@@ -138,12 +138,10 @@ func (w *Worker) process() {
 		cross := parser.GetCross()
 		cross.Description += "\n" + url
 		if to == "" {
-			crossID, code, err := w.platform.BotCrossGather(cross)
+			crossID, err := w.platform.BotCrossGather(cross)
 			if err != nil {
-				if code < 500 {
-					w.sendHelp(code, err, parser)
-				} else {
-					logger.ERROR("can't gather (%s) with: %+v", err, cross)
+				if warning, ok := err.(broker.Warning); ok {
+					w.sendHelp(warning, parser)
 				}
 				errorIds = append(errorIds, id)
 				continue
@@ -152,9 +150,8 @@ func (w *Worker) process() {
 		} else {
 			post := parser.GetPost() + "\n" + url
 			if post != "" && !fromCalendar {
-				_, err := w.platform.BotPostConversation(parser.from.Address, post, parser.Date(), parser.addrList, to, toID)
+				err := w.platform.BotPostConversation(parser.from.Address, post, parser.Date(), parser.addrList, to, toID)
 				if err != nil {
-					logger.ERROR("%s can't post %s with: %s", parser.from.Address, post, err)
 					errorIds = append(errorIds, id)
 					continue
 				}
@@ -167,9 +164,11 @@ func (w *Worker) process() {
 				cross.Time = nil
 			}
 			if cross.Place != nil || cross.Time != nil || len(cross.Exfee.Invitations) != 0 {
-				_, err = w.platform.BotCrossUpdate(to, toID, cross, cross.By)
+				err = w.platform.BotCrossUpdate(to, toID, cross, cross.By)
 				if err != nil {
-					logger.ERROR("%s can't update %s %s: %s", parser.from.Address, to, toID, err)
+					if warning, ok := err.(broker.Warning); ok {
+						logger.ERROR("%s can't update %s %s: %s", parser.from.Address, to, toID, warning)
+					}
 					errorIds = append(errorIds, id)
 					continue
 				}
@@ -273,7 +272,7 @@ func (w *Worker) getMail(conn *imap.Client, id uint32) (*mail.Message, string, e
 	return msg, obj.URL(), nil
 }
 
-func (w *Worker) sendHelp(code int, err error, parser *Parser) error {
+func (w *Worker) sendHelp(err error, parser *Parser) error {
 	buf := bytes.NewBuffer(nil)
 	type Email struct {
 		From      *mail.Address
