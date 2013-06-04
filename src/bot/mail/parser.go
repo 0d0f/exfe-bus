@@ -170,6 +170,12 @@ func (h *Parser) init(r io.Reader, header mail.Header) error {
 		}
 		content = parseHtml(content)
 		h.content = parsePlain(content)
+	case "application/octet-stream":
+		t, vars := parseContentType(header.Get("Content-Disposition"))
+		if t != "attachment" || !strings.HasSuffix(vars["filename"], ".ics") {
+			return nil
+		}
+		fallthrough
 	case "text/calendar":
 		fallthrough
 	case "application/ics":
