@@ -1,13 +1,13 @@
 {{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}{{$link := .Cross.Link .To .Config}}{{if .IsCreator}}You just gathered a ·X·.{{else}}{{.By.Name}} gathers you.{{end}}
 
-## {{.Cross.Title}}{{$titleUpdate := index .Cross.Updated "title"}}{{if $titleUpdate}} (updated){{end}}
-{{.Cross.Description}}{{$descUpdate := index .Cross.Updated "description"}}{{if $descUpdate}} (updated){{end}}
-{{$link}}
+## {{.Cross.Title}}
+{{if .Cross.Description}}{{.Cross.Description}}
+{{end}}{{$link}}
 
-{{if $time}}## {{$time}}{{$timeUpdate := index .Cross.Updated "time"}}{{if $timeUpdate}} (updated){{end}}{{else}}## Time
+{{if $time}}## {{$time}}{{else}}## Time
   To be decied.{{end}}
 
-{{if .Cross.Place.Title}}## {{.Cross.Place.Title}}{{$placeUpdate := index .Cross.Updated "place"}}{{if $placeUpdate}} (updated){{end}}
+{{if .Cross.Place.Title}}## {{.Cross.Place.Title}}
  {{.Cross.Place.Description}}{{else}}## Place
   To be decided.{{end}}
 

@@ -1,0 +1,16 @@
+## {{.Cross.Title}}
+{{if .Cross.Description}}{{.Cross.Description}}
+{{end}}{{.Cross.Link .To .Config}}
+
+{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}{{if $time}}## {{$time}}{{else}}## Time
+  To be decied.{{end}}
+
+{{if .Cross.Place.Title}}## {{.Cross.Place.Title}}
+ {{.Cross.Place.Description}}{{else}}## Place
+  To be decided.{{end}}
+
+## Exfees {{.Cross.Exfee.TotalCount}} invited
+{{range .Cross.Exfee.Invitations}}- {{.Identity.Name}}  {{.Identity.ScreenId}}
+{{end}}
+
+# Invitations will be sent to invitees soon in minutes. #

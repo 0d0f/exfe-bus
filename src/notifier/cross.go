@@ -108,6 +108,28 @@ func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
 	}
 	return nil
 }
+func (c Cross) V3Draft(invitation model.CrossInvitation) error {
+	invitation.Config = c.config
+	to := invitation.To
+
+	query := make(url.Values)
+	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
+	cross, err := c.platform.FindCross(invitation.CrossId, query)
+	if err != nil {
+		return err
+	}
+	invitation.Cross = cross
+
+	text, err := GenerateContent(c.localTemplate, "cross_draft", to.Provider, to.Language, invitation)
+	if err != nil {
+		return err
+	}
+	_, err = c.platform.Send(to, text)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 func (c Cross) V3Update(updates []model.CrossUpdate) error {
 	if len(updates) == 0 {
