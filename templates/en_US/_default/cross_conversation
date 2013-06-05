@@ -1,2 +1,2 @@
 {{range .Posts}}{{.By.Name}}: {{.Content}}
-{{end}}{{.Config.SiteUrl}}/?token={{.To.Token}}
+{{end}}{{.Config.SiteUrl}}/#!token={{.To.Token}}

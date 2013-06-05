@@ -9,4 +9,4 @@
 {{end}}{{if .NewDeclined}}"{{.Cross.Title}}" updated. {{range for .NewDeclined}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}} {{len .NewDeclined | plural "is" "are"}} unavailable.
 {{end}}{{if .Removed}}"{{.Cross.Title}}" updated. {{range for .Removed}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}} removed.
 {{end}}{{if .NewPending}}"{{.Cross.Title}}" updated. {{range for .NewPending}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}} responded pending decision.
-{{end}}{{end}}{{.Config.SiteUrl}}/?token={{.To.Token}}
+{{end}}{{end}}{{.Config.SiteUrl}}/#!token={{.To.Token}}

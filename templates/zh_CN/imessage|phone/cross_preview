@@ -1,1 +1,1 @@
-{{sub "phone/cross_preview" .}}
+{{sub . "phone/cross_preview"}}
