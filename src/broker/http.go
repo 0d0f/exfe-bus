@@ -19,7 +19,7 @@ func init() {
 }
 
 func SetProxy(host string) {
-	if host == nil {
+	if host == "" {
 		return
 	}
 	transport := &http.Transport{
