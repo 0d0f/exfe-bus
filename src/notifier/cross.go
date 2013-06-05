@@ -108,7 +108,7 @@ func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
 	}
 	return nil
 }
-func (c Cross) V3Draft(invitation model.CrossInvitation) error {
+func (c Cross) V3Preview(invitation model.CrossInvitation) error {
 	invitation.Config = c.config
 	to := invitation.To
 
@@ -120,7 +120,7 @@ func (c Cross) V3Draft(invitation model.CrossInvitation) error {
 	}
 	invitation.Cross = cross
 
-	text, err := GenerateContent(c.localTemplate, "cross_draft", to.Provider, to.Language, invitation)
+	text, err := GenerateContent(c.localTemplate, "cross_preview", to.Provider, to.Language, invitation)
 	if err != nil {
 		return err
 	}

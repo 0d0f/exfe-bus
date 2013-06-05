@@ -1,0 +1,1 @@
+Preview "{{.Cross.Title | limit 20}}", please check time and place. {{.Config.SiteUrl}}/?token={{.To.Token}}

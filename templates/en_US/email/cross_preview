@@ -11,13 +11,13 @@ Content-Type: multipart/alternative; boundary="alternativesplitter"
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: base64
 
-{{sub . "_markdown/cross_draft.txt" | base64 | column 80 "\r\n"}}
+{{sub . "_markdown/cross_preview.txt" | base64 | column 80 "\r\n"}}
 
 --alternativesplitter
 Content-Type: text/html; charset=utf-8
 Content-Transfer-Encoding: base64
 
-{{sub . "_html/cross_draft.html" | base64 | column 80 "\r\n"}}
+{{sub . "_html/cross_preview.html" | base64 | column 80 "\r\n"}}
 
 --alternativesplitter--
 {{$ics := .Cross.Ics .Config .To}}{{if $ics}}
