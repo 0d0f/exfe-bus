@@ -46,7 +46,7 @@ func (c Cross) Ics(config *Config, to Recipient) string {
 		return ""
 	}
 	if resp.StatusCode != http.StatusOK {
-		logger.ERROR("get %s error: %s", url, string(b))
+		logger.ERROR("get %s error: (%s)%s", url, resp.Status, string(b))
 		return ""
 	}
 	return base64.StdEncoding.EncodeToString(b)
