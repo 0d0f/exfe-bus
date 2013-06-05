@@ -19,6 +19,9 @@ func init() {
 }
 
 func SetProxy(host string) {
+	if host == nil {
+		return
+	}
 	transport := &http.Transport{
 		Proxy: func(r *http.Request) (*url.URL, error) {
 			sites := []string{"twitter.com", "facebook.com", "dropbox.com"}
