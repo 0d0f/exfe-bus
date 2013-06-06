@@ -81,6 +81,11 @@ LINE:
 	return strings.Trim(strings.Join(lines, "\n"), "\n ")
 }
 
+type attach struct {
+	url  string
+	name string
+}
+
 type Parser struct {
 	bucket *s3.Bucket
 
@@ -93,7 +98,7 @@ type Parser struct {
 	idRegexp     *regexp.Regexp
 	domain       string
 	date         time.Time
-	attachments  []string
+	attachments  []attach
 
 	content     string
 	contentMime string
@@ -145,8 +150,10 @@ func NewParser(msg *mail.Message, config *model.Config, bucket *s3.Bucket) (*Par
 	}
 
 	if len(ret.attachments) > 0 {
-		ret.content += "\n"
-		ret.content += strings.Join(ret.attachments, "\n")
+		for _, attach := range ret.attachments {
+			ret.content += fmt.Sprintf("\n[%s](%s)", attach.name, attach.url)
+
+		}
 	}
 	return ret, nil
 }
@@ -227,24 +234,24 @@ func (h *Parser) init(r io.Reader, header mail.Header) error {
 	}
 
 	if type_ == "attachment" {
+		content, err := getPartBody(r, header.Get("Content-Transfer-Encoding"), charset)
+		if err != nil {
+			return err
+		}
+		buf := bytes.NewBufferString(content)
+		hash := md5.New()
+		hash.Write(buf.Bytes())
+		path := fmt.Sprintf("%x", hash.Sum(nil))
 		if h.bucket == nil {
-			h.attachments = append(h.attachments, "http://s3/email-attachment/"+filename)
+			h.attachments = append(h.attachments, attach{"http://s3/email-attachment/" + path, filename})
 		} else {
-			content, err := getPartBody(r, header.Get("Content-Transfer-Encoding"), charset)
-			if err != nil {
-				return err
-			}
-			buf := bytes.NewBufferString(content)
-			hash := md5.New()
-			hash.Write(buf.Bytes())
-			path := fmt.Sprintf("%x-%s", hash.Sum(nil), filename)
 			obj, err := h.bucket.CreateObject(path, mime)
 			if err == nil {
 				err = obj.SaveReader(buf, int64(buf.Len()))
 				if err != nil {
 					logger.ERROR("can't save attachment %s: %s", filename, err)
 				} else {
-					h.attachments = append(h.attachments, obj.URL())
+					h.attachments = append(h.attachments, attach{obj.URL(), filename})
 				}
 			} else {
 				logger.ERROR("can't save attachment %s: %s", filename, err)
