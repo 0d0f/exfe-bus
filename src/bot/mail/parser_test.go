@@ -658,8 +658,8 @@ CkVORDpWQUxBUk0NCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVINCg==
 	}
 	assert.Equal(t, parser.GetCross().Exfee.Invitations[0].Identity.ExternalID, "googollee@163.com")
 	assert.Equal(t, parser.GetCross().Exfee.Invitations[1].Identity.ExternalID, "googollee@hotmail.com")
-	assert.Equal(t, fmt.Sprint(parser.attachments), "[http://s3/email-attachment/新event.cc]")
-	assert.Equal(t, parser.content, "测试邮件ics创建\nhttp://s3/email-attachment/新event.cc")
+	assert.Equal(t, fmt.Sprint(parser.attachments), "[{http://s3/email-attachment/3168c6bad62c61fad0d18faf7b5ae21a 新event.cc}]")
+	assert.Equal(t, parser.content, "测试邮件ics创建\n[新event.cc](http://s3/email-attachment/3168c6bad62c61fad0d18faf7b5ae21a)")
 }
 
 func TestCrossIDType(t *testing.T) {
