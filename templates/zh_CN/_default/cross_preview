@@ -1,0 +1,1 @@
+请预览“{{.Cross.Title}}”，确认时间和地点。 {{.Config.SiteUrl}}/#!token={{.To.Token}}

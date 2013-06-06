@@ -128,8 +128,6 @@ func (q Queue) HandlePush(data string) {
 		return
 	}
 	service = string(b)
-	fl := logger.FUNC(method, service, mergeKey)
-	defer fl.Quit()
 
 	query := q.Request().URL.Query()
 	updateType, ontimeStr := query.Get("update"), query.Get("ontime")
@@ -141,6 +139,9 @@ func (q Queue) HandlePush(data string) {
 	if ontime == 0 {
 		ontime = time.Now().Unix()
 	}
+
+	fl := logger.FUNC(method, service, mergeKey, updateType, ontime)
+	defer fl.Quit()
 
 	err = q.timer.Push(delayrepo.UpdateType(updateType), ontime, fmt.Sprintf("%s,%s,%s", method, service, mergeKey), []byte(data))
 	if err != nil {
