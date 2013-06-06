@@ -160,7 +160,8 @@ func (h *Parser) init(r io.Reader, header mail.Header) error {
 	boundary := pairs["boundary"]
 	charset := pairs["charset"]
 	type_, pairs := parseContentType(header.Get("Content-Disposition"))
-	filename := pairs["filename"]
+	replacer := strings.NewReplacer(" ", "_")
+	filename := replacer.Replace(pairs["filename"])
 	if s, err := encoding.DecodeEncodedWord(filename); err == nil {
 		filename = s
 	}
