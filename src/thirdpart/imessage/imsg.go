@@ -52,7 +52,7 @@ func New(config *model.Config) (*IMessage, error) {
 		org:     config.Thirdpart.IMessage.Origin,
 		send:    make(chan *CallArg),
 		cancel:  make(chan *CallArg),
-		timeout: broker.ProcessTimeout,
+		timeout: broker.NetworkTimeout,
 	}
 	go ret.Serve()
 	return ret, nil
@@ -64,9 +64,14 @@ func (im *IMessage) Provider() string {
 
 func (im *IMessage) Serve() {
 	for {
-		sio, err := socketio.Dial(im.url, im.org, time.Second)
+		sio, err := socketio.Dial(im.url, im.org, broker.NetworkTimeout)
 		if err != nil {
-			time.Sleep(im.timeout)
+			logger.ERROR("can't connect imessage server: %s", err)
+			select {
+			case arg := <-im.send:
+				arg.ret <- CallBack{err: err}
+			case <-time.After(im.timeout):
+			}
 			continue
 		}
 		syncId := make(map[string]*CallArg)
@@ -132,6 +137,7 @@ func (im *IMessage) Serve() {
 }
 
 func (im *IMessage) Check(to string) (bool, error) {
+	fmt.Println("check")
 	call := CallArg{
 		request: Request{
 			To:      to,
@@ -154,6 +160,7 @@ func (im *IMessage) Check(to string) (bool, error) {
 }
 
 func (im *IMessage) Send(to, text string) (string, error) {
+	fmt.Println("send")
 	call := CallArg{
 		request: Request{
 			To:      to,
