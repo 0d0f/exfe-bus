@@ -3,11 +3,14 @@ package mail
 import (
 	"bot/ics"
 	"bytes"
+	"crypto/md5"
 	"encoding/base64"
 	"fmt"
+	"github.com/googollee/go-aws/s3"
 	"github.com/googollee/go-encoding"
 	"io"
 	"io/ioutil"
+	"logger"
 	"mime/multipart"
 	"model"
 	"net/mail"
@@ -79,6 +82,8 @@ LINE:
 }
 
 type Parser struct {
+	bucket *s3.Bucket
+
 	from         *mail.Address
 	addrList     []*mail.Address
 	messageID    string
@@ -88,13 +93,14 @@ type Parser struct {
 	idRegexp     *regexp.Regexp
 	domain       string
 	date         time.Time
+	attachments  []string
 
 	content     string
 	contentMime string
 	event       *ics.Event
 }
 
-func NewParser(msg *mail.Message, config *model.Config) (*Parser, error) {
+func NewParser(msg *mail.Message, config *model.Config, bucket *s3.Bucket) (*Parser, error) {
 	addrList := getMailAddress(msg, "From")
 	if len(addrList) == 0 {
 		return nil, fmt.Errorf("can't find From address")
@@ -121,6 +127,8 @@ func NewParser(msg *mail.Message, config *model.Config) (*Parser, error) {
 	}
 
 	ret := &Parser{
+		bucket: bucket,
+
 		from:         from,
 		addrList:     addrList,
 		messageID:    msgID,
@@ -135,49 +143,65 @@ func NewParser(msg *mail.Message, config *model.Config) (*Parser, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if len(ret.attachments) > 0 {
+		ret.content += "\n"
+		ret.content += strings.Join(ret.attachments, "\n")
+	}
 	return ret, nil
 }
 
 func (h *Parser) init(r io.Reader, header mail.Header) error {
 	mime, pairs := parseContentType(header.Get("Content-Type"))
+	mimeType := mime
+	if i := strings.Index(mimeType, "/"); i >= 0 {
+		mimeType = mimeType[:i]
+	}
+	boundary := pairs["boundary"]
+	charset := pairs["charset"]
+	type_, pairs := parseContentType(header.Get("Content-Disposition"))
+	filename := pairs["filename"]
+	if s, err := encoding.DecodeEncodedWord(filename); err == nil {
+		filename = s
+	}
+
+	if mimeType == "multipart" {
+		parts := multipart.NewReader(r, boundary)
+		for part, e := parts.NextPart(); e == nil; part, e = parts.NextPart() {
+			if err := h.init(part, mail.Header(part.Header)); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 
 	switch mime {
-	case "multipart/mixed":
-		fallthrough
-	case "multipart/alternative":
-		parts := multipart.NewReader(r, pairs["boundary"])
-		for part, e := parts.NextPart(); e == nil; part, e = parts.NextPart() {
-			h.init(part, mail.Header(part.Header))
-		}
 	case "text/plain":
 		if h.contentMime == "text/plain" {
 			return nil
 		}
 		h.contentMime = "text/plain"
-		content, err := getPartBody(r, header.Get("Content-Transfer-Encoding"), pairs["charset"])
+		content, err := getPartBody(r, header.Get("Content-Transfer-Encoding"), charset)
 		if err != nil {
 			return err
 		}
 		h.content = parsePlain(content)
+		return nil
 	case "text/html":
 		if h.contentMime == "text/plain" || h.contentMime == "text/html" {
 			return nil
 		}
 		h.contentMime = "text/html"
-		content, err := getPartBody(r, header.Get("Content-Transfer-Encoding"), pairs["charset"])
+		content, err := getPartBody(r, header.Get("Content-Transfer-Encoding"), charset)
 		if err != nil {
 			return err
 		}
 		content = parseHtml(content)
 		h.content = parsePlain(content)
+		return nil
 	case "application/octet-stream":
-		t, vars := parseContentType(header.Get("Content-Disposition"))
-		if t == "attachment" {
-			if !strings.HasSuffix(vars["filename"], ".ics") {
-				return nil
-			}
-		} else {
-			return nil
+		if type_ != "attachment" || !strings.HasSuffix(filename, ".ics") {
+			break
 		}
 		fallthrough
 	case "text/calendar":
@@ -186,7 +210,7 @@ func (h *Parser) init(r io.Reader, header mail.Header) error {
 		if h.event != nil {
 			return nil
 		}
-		body, err := getPartBody(r, header.Get("Content-Transfer-Encoding"), pairs["charset"])
+		body, err := getPartBody(r, header.Get("Content-Transfer-Encoding"), charset)
 		if err != nil {
 			return err
 		}
@@ -197,6 +221,33 @@ func (h *Parser) init(r io.Reader, header mail.Header) error {
 		}
 		if len(calendar.Event) > 0 {
 			h.event = &calendar.Event[0]
+		}
+		return nil
+	}
+
+	if type_ == "attachment" {
+		if h.bucket == nil {
+			h.attachments = append(h.attachments, "http://s3/email-attachment/"+filename)
+		} else {
+			content, err := getPartBody(r, header.Get("Content-Transfer-Encoding"), charset)
+			if err != nil {
+				return err
+			}
+			buf := bytes.NewBufferString(content)
+			hash := md5.New()
+			hash.Write(buf.Bytes())
+			path := fmt.Sprintf("%x-%s", hash.Sum(nil), filename)
+			obj, err := h.bucket.CreateObject(path, mime)
+			if err == nil {
+				err = obj.SaveReader(buf, int64(buf.Len()))
+				if err != nil {
+					logger.ERROR("can't save attachment %s: %s", filename, err)
+				} else {
+					h.attachments = append(h.attachments, obj.URL())
+				}
+			} else {
+				logger.ERROR("can't save attachment %s: %s", filename, err)
+			}
 		}
 	}
 	return nil
@@ -425,8 +476,6 @@ func getPartBody(r io.Reader, encoder string, charset string) (string, error) {
 		r = base64.NewDecoder(base64.StdEncoding, r)
 	case "quoted-printable":
 		r = encoding.NewQEncodingDecoder(r)
-	default:
-		return "", fmt.Errorf("can't decode %s", encoder)
 	}
 	if charset = strings.ToLower(charset); charset != "" && charset != "utf-8" {
 		if charset == "gb2312" {

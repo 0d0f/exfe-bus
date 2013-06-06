@@ -4,7 +4,6 @@ import (
 	"broker"
 	"bytes"
 	"code.google.com/p/go-imap/go1/imap"
-	"crypto/md5"
 	"crypto/tls"
 	"fmt"
 	"formatter"
@@ -95,13 +94,13 @@ func (w *Worker) process() {
 	for _, id := range ids {
 		conn.SetDeadline(time.Now().Add(broker.ProcessTimeout))
 
-		msg, url, err := w.getMail(imapConn, id)
+		msg, err := w.getMail(imapConn, id)
 		if err != nil {
 			logger.ERROR("can't get mail %d: %s", id, err)
 			errorIds = append(errorIds, id)
 			continue
 		}
-		parser, err := NewParser(msg, w.config)
+		parser, err := NewParser(msg, w.config, w.bucket)
 		if err != nil {
 			logger.ERROR("parse mail %d failed: %s", id, err)
 			errorIds = append(errorIds, id)
@@ -137,7 +136,6 @@ func (w *Worker) process() {
 			}
 		}
 		cross := parser.GetCross()
-		cross.Description += "\n" + url
 		if to == "" {
 			crossID, err := w.platform.BotCrossGather(cross)
 			if err != nil {
@@ -149,8 +147,7 @@ func (w *Worker) process() {
 			}
 			to, toID = "cross_id", fmt.Sprintf("%d", crossID)
 		} else {
-			post := parser.GetPost() + "\n" + url
-			if post != "" && !fromCalendar {
+			if post := parser.GetPost(); post != "" && !fromCalendar {
 				err := w.platform.BotPostConversation(parser.from.Address, post, parser.Date(), parser.addrList, to, toID)
 				if err != nil {
 					errorIds = append(errorIds, id)
@@ -242,39 +239,23 @@ func (w *Worker) login() (net.Conn, *imap.Client, error) {
 	return c, conn, nil
 }
 
-func (w *Worker) getMail(conn *imap.Client, id uint32) (*mail.Message, string, error) {
+func (w *Worker) getMail(conn *imap.Client, id uint32) (*mail.Message, error) {
 	buf := bytes.NewBuffer(nil)
 	set := new(imap.SeqSet)
 	set.AddNum(id)
 
 	cmd, err := imap.Wait(conn.Fetch(set, "RFC822"))
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	buf.Write(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
 
-	hash := md5.New()
-	hash.Write(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
-	name := hash.Sum(nil)
-	path := fmt.Sprintf("email-%x.eml", name)
-	obj, err := w.bucket.CreateObject(path, "message/rfc822")
-	if err == nil {
-		err = obj.SaveReader(buf, int64(buf.Len()))
-		if err != nil {
-			logger.ERROR("can't save mail %d: %s", id, err)
-		}
-	} else {
-		logger.ERROR("can't save mail %d: %s", id, err)
-	}
-
-	buf.Reset()
-	buf.Write(imap.AsBytes(cmd.Data[0].MessageInfo().Attrs["RFC822"]))
 	msg, err := mail.ReadMessage(buf)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
-	return msg, obj.URL(), nil
+	return msg, nil
 }
 
 func (w *Worker) sendHelp(err error, parser *Parser) error {

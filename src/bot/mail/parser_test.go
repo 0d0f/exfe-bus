@@ -31,7 +31,7 @@ func TestParsePlain(t *testing.T) {
 		// >
 		// >
 
-		// -- 
+		// --
 		// 新的理论从少数人的主张到一统天下，并不是因为这个理论说服了别人抛弃旧观点，而是因为一代人的逝去。
 		// `, "这是回复"},
 		{"测试普通邮件\n\n在 2013-03-19 13:10:34，\"Googol Lee\" <googollee@gmail.com> 写道：\n\n测试普通邮件回复", "测试普通邮件"},
@@ -118,7 +118,7 @@ Cg==`
 	c := config
 	c.Email.Prefix = "x"
 	c.Email.Domain = "exfe.com"
-	parser, err := NewParser(msg, &c)
+	parser, err := NewParser(msg, &c, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +233,7 @@ VA0KRU5EOlZDQUxFTkRBUg0K
 	if err != nil {
 		t.Fatal(err)
 	}
-	parser, err := NewParser(msg, &config)
+	parser, err := NewParser(msg, &config, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -432,7 +432,7 @@ PC9zcGFuPjwvc3Bhbj4=
 	if err != nil {
 		t.Fatal(err)
 	}
-	parser, err := NewParser(msg, &config)
+	parser, err := NewParser(msg, &config, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -587,7 +587,7 @@ REFSDQo=
 	if err != nil {
 		t.Fatal(err)
 	}
-	parser, err := NewParser(msg, &config)
+	parser, err := NewParser(msg, &config, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -631,9 +631,9 @@ PC9zcGFuPg==
 ------=_Part_534283_55711688.1363768541461--
 
 ------=_Part_534281_720845632.1363768541461
-Content-Type: application/octet-stream; name="=?GBK?Q?=D0=C2event.ics?="
+Content-Type: application/octet-stream; name="=?GBK?Q?=D0=C2event.cc?="
 Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="=?GBK?Q?=D0=C2event.ics?="
+Content-Disposition: attachment; filename="=?GBK?Q?=D0=C2event.cc?="
 
 QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL0FwcGxlIEluYy4vL01hYyBP
 UyBYIDEwLjguMy8vRU4NCkNBTFNDQUxFOkdSRUdPUklBTg0KQkVHSU46VkVWRU5UDQpDUkVBVEVE
@@ -652,12 +652,14 @@ CkVORDpWQUxBUk0NCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVINCg==
 	if err != nil {
 		t.Fatal(err)
 	}
-	parser, err := NewParser(msg, &config)
+	parser, err := NewParser(msg, &config, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, parser.GetCross().Exfee.Invitations[0].Identity.ExternalID, "googollee@163.com")
 	assert.Equal(t, parser.GetCross().Exfee.Invitations[1].Identity.ExternalID, "googollee@hotmail.com")
+	assert.Equal(t, fmt.Sprint(parser.attachments), "[http://s3/email-attachment/新event.cc]")
+	assert.Equal(t, parser.content, "测试邮件ics创建\nhttp://s3/email-attachment/新event.cc")
 }
 
 func TestCrossIDType(t *testing.T) {
@@ -912,7 +914,7 @@ CkVORDpWQUxBUk0NCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVINCg==
 	if err != nil {
 		t.Fatal(err)
 	}
-	parser, err := NewParser(msg, &config)
+	parser, err := NewParser(msg, &config, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
