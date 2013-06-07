@@ -40,6 +40,9 @@ func (m *Poster) Add(poster IPoster) {
 }
 
 func (m Poster) HandlePost(text string) string {
+	if text == "" {
+		return ""
+	}
 	provider := m.Vars()["provider"]
 	id := m.Vars()["id"]
 	poster, ok := m.posters[provider]

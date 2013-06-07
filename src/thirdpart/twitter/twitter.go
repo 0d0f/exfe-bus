@@ -49,9 +49,12 @@ type twitterReply struct {
 
 func (t *Twitter) Post(id, text string) (string, error) {
 	text = strings.Trim(text, " \n\r")
-	lastEnter := strings.LastIndex(text, "\n")
-	privateMessage := text[:lastEnter]
-	publicMessage := text[lastEnter+1:]
+	privateMessage := text
+	publicMessage := text
+	if lastEnter := strings.LastIndex(text, "\n"); lastEnter >= 0 {
+		privateMessage = text[:lastEnter]
+		publicMessage = text[lastEnter+1:]
+	}
 	id, err := t.sendPrivate(id, privateMessage)
 	if err != nil {
 		id, err = t.sendPublic(id, publicMessage)
