@@ -307,7 +307,7 @@ func (h *Parser) GetCross() (cross model.Cross) {
 		if _, ok := check[fmt.Sprintf("%s@email", addr.Address)]; ok {
 			continue
 		}
-		cross.Exfee.Invitations = append(cross.Exfee.Invitations, model.Invitation{
+		invitation := model.Invitation{
 			Host: addr.Address == h.from.Address,
 			Via:  "email",
 			Identity: model.Identity{
@@ -317,7 +317,11 @@ func (h *Parser) GetCross() (cross model.Cross) {
 				ExternalUsername: addr.Address,
 			},
 			By: cross.By,
-		})
+		}
+		if addr.Address == h.from.Address {
+			invitation.RsvpStatus = model.RsvpAccepted
+		}
+		cross.Exfee.Invitations = append(cross.Exfee.Invitations, invitation)
 	}
 	return
 }
