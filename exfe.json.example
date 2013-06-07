@@ -104,7 +104,9 @@
     "imessage": {
       "address": "http://www.kufuwu.com:1888/socket.io/",
       "origin": "http://www.kufuwu.com/p.html",
-      "channel": "1"
+      "queue_depth": 2,
+      "channels": ["1", "2"],
+      "period_in_second": 4
     },
     "dropbox": {
       "key": "",

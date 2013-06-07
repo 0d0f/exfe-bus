@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-socket.io"
+	"github.com/stathat/consistent"
 	"logger"
 	"model"
 	"net"
 	"time"
+	"valve"
 )
 
 type Request struct {
@@ -43,15 +45,25 @@ type IMessage struct {
 	org     string
 	send    chan *CallArg
 	cancel  chan *CallArg
+	hash    *consistent.Consistent
+	valves  map[string]*valve.Valve
 	timeout time.Duration
 }
 
 func New(config *model.Config) (*IMessage, error) {
+	hash := consistent.New()
+	valves := make(map[string]*valve.Valve)
+	for _, k := range config.Thirdpart.IMessage.Channels {
+		hash.Add(k)
+		valves[k] = valve.New(config.Thirdpart.IMessage.QueueDepth, time.Duration(config.Thirdpart.IMessage.PeriodInSecond)*time.Second)
+	}
 	ret := &IMessage{
 		url:     config.Thirdpart.IMessage.Address,
 		org:     config.Thirdpart.IMessage.Origin,
 		send:    make(chan *CallArg),
 		cancel:  make(chan *CallArg),
+		hash:    hash,
+		valves:  valves,
 		timeout: broker.NetworkTimeout,
 	}
 	go ret.Serve()

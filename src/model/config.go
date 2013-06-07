@@ -108,9 +108,11 @@ type Config struct {
 			} `json:"duancaiwang"`
 		}
 		IMessage struct {
-			Address string `json:"address"`
-			Origin  string `json:"origin"`
-			Channel string `json:"channel"`
+			Address        string   `json:"address"`
+			Origin         string   `json:"origin"`
+			QueueDepth     int      `json:"queue_depth"`
+			Channels       []string `json:"channels"`
+			PeriodInSecond int      `json:"period_in_second"`
 		} `json:"imessage"`
 		Dropbox struct {
 			Key    string `json:"key"`
