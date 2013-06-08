@@ -55,15 +55,15 @@ func (t *Twitter) Post(id, text string) (string, error) {
 		privateMessage = text[:lastEnter]
 		publicMessage = text[lastEnter+1:]
 	}
-	id, err := t.sendPrivate(id, privateMessage)
+	ret, err := t.sendPrivate(id, privateMessage)
 	if err != nil {
-		id, err = t.sendPublic(id, publicMessage)
+		ret, err = t.sendPublic(id, publicMessage)
 	}
 
 	if err != nil {
 		return "", err
 	}
-	return id, nil
+	return ret, nil
 }
 
 func (t *Twitter) sendPrivate(id, text string) (string, error) {
