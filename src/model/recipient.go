@@ -32,6 +32,17 @@ type Recipient struct {
 	ExternalUsername string `json:"external_username"`
 }
 
+func (r Recipient) Tunnel() Recipient {
+	switch r.Provider {
+	case "facebook":
+		r.ExternalUsername = r.ExternalUsername + "@facebook.com"
+		r.Provider = "email"
+	case "google":
+		r.Provider = "email"
+	}
+	return r
+}
+
 func (r Recipient) Equal(other *Recipient) bool {
 	if r.UserID == other.UserID {
 		return true

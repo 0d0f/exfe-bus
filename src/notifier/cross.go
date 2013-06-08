@@ -28,6 +28,7 @@ func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 		return fmt.Errorf("len(requests) == 0")
 	}
 	to := requests[len(requests)-1].To
+	to = to.Tunnel()
 	crossId := requests[0].CrossId
 	updatedAt := requests[0].UpdatedAt
 
@@ -60,6 +61,7 @@ func (c Cross) V3Remind(requests []model.CrossDigestRequest) error {
 		return fmt.Errorf("len(requests) == 0")
 	}
 	to := requests[len(requests)-1].To
+	to = to.Tunnel()
 	crossId := requests[0].CrossId
 
 	query := make(url.Values)
@@ -89,6 +91,7 @@ func (c Cross) V3Remind(requests []model.CrossDigestRequest) error {
 func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
 	invitation.Config = c.config
 	to := invitation.To
+	to = to.Tunnel()
 
 	query := make(url.Values)
 	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
@@ -111,6 +114,7 @@ func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
 func (c Cross) V3Preview(invitation model.CrossInvitation) error {
 	invitation.Config = c.config
 	to := invitation.To
+	to = to.Tunnel()
 
 	query := make(url.Values)
 	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
@@ -152,6 +156,7 @@ func (c Cross) V3Update(updates []model.CrossUpdate) error {
 	}
 
 	to = arg.To
+	to = to.Tunnel()
 	text, err := GenerateContent(c.localTemplate, "cross_update", to.Provider, to.Language, arg)
 	if err != nil {
 		return err
@@ -170,6 +175,7 @@ func (c Cross) V3Conversation(updates []model.ConversationUpdate) error {
 	}
 	needSend := false
 	to := arg.To
+	to = to.Tunnel()
 	for _, update := range updates {
 		if !to.SameUser(&update.Post.By) {
 			needSend = true
