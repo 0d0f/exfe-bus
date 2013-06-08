@@ -20,7 +20,7 @@
 				</tbody>
 			</table></a>
 		</td></tr>
-		<tr><td style="padding:0 30px 20px 30px; font-size:11px; line-height:14px;">Invitations will be sent soon in minutes.</td></tr>
+		<tr><td style="padding:0 30px 20px 30px; font-size:11px; line-height:14px; color:#7F7F7F;">Invitations will be sent soon in minutes.</td></tr>
 		{{if .Cross.Description}}
 		<tr><td style="padding:0 30px 10px 30px;">{{.Cross.Description | limit 233 | html | replace "\n" "<br />"}}</tr></td>
 		{{end}}
@@ -40,9 +40,9 @@
 		<tr><td style="padding:0 30px 10px 30px;">To be decided</td></tr>
 		{{end}}
 		<tr><td style="padding:0 30px 0 30px; height:24px;"><span style="color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">Exfees</span> {{.Cross.Exfee.TotalCount}} invited</td></tr>
-		<tr><td style="padding:0 30px 30px 30px;">
-			{{range .Cross.Exfee.Invitations}}{{.Identity.Name | limit 15 | html}} <a style="color:#7F7F7F; font-size:12px; font-style:italic;">{{.Identity.ScreenId | html}}</a>&nbsp;&nbsp;&nbsp;{{end}}
-		</td></tr>
+		{{range .Cross.Exfee.Invitations}}
+		<tr><td style="padding:0 30px 30px 30px;">{{.Identity.Name | limit 15 | html}} {{.Identity.ScreenId | html}}</td></tr>
+		{{end}}
 	</tbody></table>
 </a>
 
