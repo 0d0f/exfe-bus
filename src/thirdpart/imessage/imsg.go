@@ -220,16 +220,12 @@ func (im *IMessage) Send(to, text string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("not response")
 	}
+	if resp.Head.Status != 0 {
+		return "", fmt.Errorf("%s", resp.Head.Err)
+	}
 	return resp.Head.Id, nil
 }
 
 func (im *IMessage) Post(to, text string) (string, error) {
-	ok, err := im.Check(to)
-	if err != nil {
-		return "", err
-	}
-	if !ok {
-		return "", fmt.Errorf("%s not imessage", to)
-	}
 	return im.Send(to, text)
 }
