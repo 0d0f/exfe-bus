@@ -52,6 +52,7 @@ func (f *Facebook) UpdateFriends(to *model.Recipient) error {
 		}
 		users := make([]thirdpart.ExternalUser, 0)
 		c := make(chan *facebookUser)
+		fmt.Sprintf("facebook bust:", len(friends.Data))
 		for _, friend := range friends.Data {
 			go func(id string) {
 				user, err := f.getInfo(idToken, id)
