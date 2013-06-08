@@ -57,7 +57,6 @@ func (s Splitter) HandleSplit(pack BigPack) {
 	pack.Ontime = s.speedon(pack.Ontime)
 
 	for _, to := range pack.Recipients {
-		to = specialProvider(to)
 		mergeKey := fmt.Sprintf("%s_%s@%s", pack.MergeKey, to.ExternalUsername, to.Provider)
 		mergeKey = base64.URLEncoding.EncodeToString([]byte(mergeKey))
 		pack.Data["to"] = to
@@ -93,7 +92,6 @@ func (s Splitter) HandleDelete(pack BigPack) {
 	pack.Ontime = s.speedon(pack.Ontime)
 
 	for _, to := range pack.Recipients {
-		to = specialProvider(to)
 		mergeKey := fmt.Sprintf("%s_%s@%s", pack.MergeKey, to.ExternalUsername, to.Provider)
 		mergeKey = base64.URLEncoding.EncodeToString([]byte(mergeKey))
 
@@ -108,19 +106,6 @@ func (s Splitter) HandleDelete(pack BigPack) {
 			}
 		}(url)
 	}
-}
-
-func specialProvider(to model.Recipient) model.Recipient {
-	switch to.Provider {
-	case "facebook":
-		to.ExternalID = fmt.Sprintf("%s@facebook.com", to.ExternalUsername)
-		to.ExternalUsername = to.ExternalID
-		to.Provider = "email"
-	case "google":
-		to.ExternalID = to.ExternalUsername
-		to.Provider = "email"
-	}
-	return to
 }
 
 func (s Splitter) speedon(ontime int64) int64 {
