@@ -41,7 +41,7 @@
 		{{end}}
 		<tr><td style="padding:0 30px 0 30px; height:24px;"><span style="color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">Exfees</span> {{.Cross.Exfee.TotalCount}} invited</td></tr>
 		{{range .Cross.Exfee.Invitations}}
-		<tr><td style="padding:0 30px 30px 30px;">{{.Identity.Name | limit 15 | html}} {{.Identity.ScreenId | html}}</td></tr>
+		<tr><td style="padding:0 30px 30px 30px;">{{.Identity.Name | limit 30 | html}}&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7F7F7F; font-size:12px; font-style:italic;">{{.Identity.ScreenId | html}}</span></td></tr>
 		{{end}}
 	</tbody></table>
 </a>
