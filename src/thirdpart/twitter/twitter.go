@@ -99,7 +99,7 @@ func (t *Twitter) sendPrivate(id, text string) (string, error) {
 func (t *Twitter) sendPublic(id, text string) (string, error) {
 	text = strings.Trim(text, " \n\r")
 	params := map[string]string{
-		"status": fmt.Sprintf("@s %s", id, text),
+		"status": fmt.Sprintf("@%s %s", id, text),
 	}
 	resp, err := broker.HttpResponse(t.oauth.Post(twitterApiBase+"statuses/update.json", params, t.token))
 	if err != nil {
