@@ -323,6 +323,14 @@ func (h *Parser) GetCross() (cross model.Cross) {
 		}
 		cross.Exfee.Invitations = append(cross.Exfee.Invitations, invitation)
 	}
+
+	cross.Widgets = []map[string]interface{}{
+		map[string]interface{}{
+			"type":  "Background",
+			"image": "mail.jpg",
+		},
+	}
+
 	return
 }
 
