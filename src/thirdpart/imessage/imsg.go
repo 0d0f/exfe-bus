@@ -149,11 +149,14 @@ func (im *IMessage) Serve() {
 }
 
 func (im *IMessage) Check(to string) (bool, error) {
-	fmt.Println("check")
+	channel, err := im.hash.Get(to)
+	if err != nil {
+		return false, err
+	}
 	call := CallArg{
 		request: Request{
 			To:      to,
-			Channel: "1",
+			Channel: channel,
 			Action:  "1",
 		},
 		ret: make(chan CallBack, 1),
@@ -172,11 +175,14 @@ func (im *IMessage) Check(to string) (bool, error) {
 }
 
 func (im *IMessage) Send(to, text string) (string, error) {
-	fmt.Println("send")
+	channel, err := im.hash.Get(to)
+	if err != nil {
+		return "", err
+	}
 	call := CallArg{
 		request: Request{
 			To:      to,
-			Channel: "1",
+			Channel: channel,
 			Action:  "2",
 			Message: text,
 		},
@@ -196,12 +202,5 @@ func (im *IMessage) Send(to, text string) (string, error) {
 }
 
 func (im *IMessage) Post(to, text string) (string, error) {
-	ok, err := im.Check(to)
-	if err != nil {
-		return "", err
-	}
-	if !ok {
-		return "", fmt.Errorf("%s not imessage", to)
-	}
 	return im.Send(to, text)
 }
