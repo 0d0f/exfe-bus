@@ -56,6 +56,7 @@ func New(config *model.Config) (*IMessage, error) {
 	for _, k := range config.Thirdpart.IMessage.Channels {
 		hash.Add(k)
 		valves[k] = valve.New(config.Thirdpart.IMessage.QueueDepth, time.Duration(config.Thirdpart.IMessage.PeriodInSecond)*time.Second)
+		go valves[k].Serve()
 	}
 	ret := &IMessage{
 		url:     config.Thirdpart.IMessage.Address,
@@ -76,7 +77,7 @@ func (im *IMessage) Provider() string {
 
 func (im *IMessage) Serve() {
 	for {
-		sio, err := socketio.Dial(im.url, im.org, broker.NetworkTimeout)
+		sio, err := socketio.Dial(im.url, im.org, time.Second)
 		if err != nil {
 			logger.ERROR("can't connect imessage server: %s", err)
 			select {
@@ -148,30 +149,50 @@ func (im *IMessage) Serve() {
 	}
 }
 
+type Work struct {
+	call CallArg
+	im   *IMessage
+}
+
+func (w Work) Do() (interface{}, error) {
+	w.im.send <- &w.call
+	select {
+	case back := <-w.call.ret:
+		if back.err != nil {
+			return nil, back.err
+		}
+		return back.resp, nil
+	case <-time.After(w.im.timeout):
+		w.im.cancel <- &w.call
+	}
+	return nil, fmt.Errorf("imessage timeout")
+}
+
 func (im *IMessage) Check(to string) (bool, error) {
 	channel, err := im.hash.Get(to)
 	if err != nil {
 		return false, err
 	}
-	call := CallArg{
-		request: Request{
-			To:      to,
-			Channel: channel,
-			Action:  "1",
+	work := Work{
+		call: CallArg{
+			request: Request{
+				To:      to,
+				Channel: channel,
+				Action:  "1",
+			},
+			ret: make(chan CallBack, 1),
 		},
-		ret: make(chan CallBack, 1),
+		im: im,
 	}
-	im.send <- &call
-	select {
-	case back := <-call.ret:
-		if back.err != nil {
-			return false, back.err
-		}
-		return back.resp.Head.Status == 0, nil
-	case <-time.After(im.timeout):
-		im.cancel <- &call
+	ret, err := im.valves[channel].Do(work)
+	if err != nil {
+		return false, err
 	}
-	return false, fmt.Errorf("imessage check timeout")
+	resp, ok := ret.(Response)
+	if !ok {
+		return false, fmt.Errorf("not response")
+	}
+	return resp.Head.Status == 0, nil
 }
 
 func (im *IMessage) Send(to, text string) (string, error) {
@@ -179,28 +200,36 @@ func (im *IMessage) Send(to, text string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	call := CallArg{
-		request: Request{
-			To:      to,
-			Channel: channel,
-			Action:  "2",
-			Message: text,
+	work := Work{
+		call: CallArg{
+			request: Request{
+				To:      to,
+				Channel: channel,
+				Action:  "2",
+				Message: text,
+			},
+			ret: make(chan CallBack, 1),
 		},
-		ret: make(chan CallBack, 1),
+		im: im,
 	}
-	im.send <- &call
-	select {
-	case back := <-call.ret:
-		if back.err != nil {
-			return "", back.err
-		}
-		return back.resp.Head.Id, nil
-	case <-time.After(im.timeout):
-		im.cancel <- &call
+	ret, err := im.valves[channel].Do(work)
+	if err != nil {
+		return "", err
 	}
-	return "", fmt.Errorf("imessage check timeout")
+	resp, ok := ret.(Response)
+	if !ok {
+		return "", fmt.Errorf("not response")
+	}
+	return resp.Head.Id, nil
 }
 
 func (im *IMessage) Post(to, text string) (string, error) {
+	ok, err := im.Check(to)
+	if err != nil {
+		return "", err
+	}
+	if !ok {
+		return "", fmt.Errorf("%s not imessage", to)
+	}
 	return im.Send(to, text)
 }
