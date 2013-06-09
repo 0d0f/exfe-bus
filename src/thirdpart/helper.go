@@ -85,6 +85,7 @@ func (h *HelperImp) UpdateIdentity(to *model.Recipient, externalUser ExternalUse
 	params.Set("external_username", externalUser.ExternalUsername())
 
 	url := fmt.Sprintf("%s/v2/gobus/UpdateIdentity", h.config.SiteApi)
+	fmt.Println(url, params.Encode())
 	resp, err := http.PostForm(url, params)
 	if err != nil {
 		return fmt.Errorf("update with %v failed: %s", params, err)

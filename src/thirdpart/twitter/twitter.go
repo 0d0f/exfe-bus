@@ -129,7 +129,6 @@ func (t *Twitter) UpdateIdentity(to *model.Recipient) error {
 	if err != nil {
 		return fmt.Errorf("can't parse %s users/show(%v) reply: %s", to, params, err)
 	}
-	fmt.Println(info)
 	err = t.helper.UpdateIdentity(to, info)
 	if err != nil {
 		return fmt.Errorf("update %s error: %s", to, err)
@@ -173,7 +172,6 @@ func (t *Twitter) UpdateFriends(to *model.Recipient) error {
 		}
 
 		params := map[string]string{"user_id": join(ids, ",")}
-		logger.DEBUG("twitter lookup: %v", params)
 		resp, err := broker.HttpResponse(t.oauth.Get(twitterApiBase+"users/lookup.json", params, token))
 		if err != nil {
 			return fmt.Errorf("get %s users/lookup.json(%v) fail: %s", to, params, err)
