@@ -78,7 +78,7 @@ func (h *FakeHelper) UpdateFriends(to *model.Recipient, externalUsers []External
 	if err != nil {
 		return fmt.Errorf("encoding user error: %s", err)
 	}
-	url := fmt.Sprintf("/v2/Gobus/AddFriends")
+	url := fmt.Sprintf("/v3/bus/addfriends")
 	fmt.Println("url:", url)
 	fmt.Println("post:", buf.String())
 	return nil
@@ -94,7 +94,7 @@ func (h *FakeHelper) UpdateIdentity(to *model.Recipient, externalUser ExternalUs
 	params.Set("avatar_filename", externalUser.Avatar())
 	params.Set("external_username", externalUser.ExternalUsername())
 
-	url := fmt.Sprintf("/v2/gobus/UpdateIdentity")
+	url := fmt.Sprintf("/v3/bus/updateidentity")
 	fmt.Println("url:", url)
 	fmt.Println("post:", params.Encode())
 	return nil

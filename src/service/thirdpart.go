@@ -2,15 +2,13 @@ package main
 
 import (
 	"broker"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	gcms "github.com/googollee/go-gcm"
-	"github.com/googollee/go-logger"
 	"github.com/virushuo/Go-Apns"
 	"gobus"
+	"logger"
 	"model"
-	"net/http"
 	"strings"
 	"thirdpart"
 	"thirdpart/_performance"
@@ -52,7 +50,7 @@ func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdp
 	email_ := email.New(helper)
 	poster.Add(email_)
 
-	apn_ := apn.New(apns_, getApnErrorHandler(config.Log.SubPrefix("apn error")))
+	apn_ := apn.New(apns_, func(err error) { logger.ERROR("%s", err) })
 	poster.Add(apn_)
 
 	gcm_ := gcm.New(gcms_)
@@ -83,7 +81,6 @@ func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdp
 
 type Thirdpart struct {
 	thirdpart *thirdpart.Thirdpart
-	log       *logger.SubLogger
 	config    *model.Config
 	platform  *broker.Platform
 }
@@ -122,7 +119,6 @@ func NewThirdpart(config *model.Config, platform *broker.Platform) (*Thirdpart, 
 
 	return &Thirdpart{
 		thirdpart: t,
-		log:       config.Log.SubPrefix("thirdpart"),
 		config:    config,
 		platform:  platform,
 	}, nil
@@ -213,30 +209,19 @@ func (t *Thirdpart) sendCallback(recipient model.Recipient, err error) {
 		arg.Error = err.Error()
 	}
 
-	buf := bytes.NewBuffer(nil)
-	encoder := json.NewEncoder(buf)
-	err = encoder.Encode(arg)
+	url := fmt.Sprintf("%s /v3/bus/notificationcallback", t.config.SiteApi)
+	b, err := json.Marshal(arg)
 	if err != nil {
-		t.log.Crit("encoding json error: %s", err)
+		logger.ERROR("encode %s error: %s with %+v", url, err, arg)
 		return
 	}
-	bufString := buf.String()
 
-	url := fmt.Sprintf("%s/v2/gobus/NotificationCallback", t.config.SiteApi)
-	resp, err := http.Post(url, "application/json", buf)
+	resp, err := broker.HttpResponse(broker.Http("Post", url, "application/json", b))
 	if err != nil {
-		t.log.Crit("send callback(%s) to %s error: %s", bufString, url, err)
+		logger.ERROR("post %s error: %s with %s", url, err, string(b))
+		return
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		t.log.Crit("send callback(%s) to %s failed: %s", bufString, url, resp.Status)
-	}
-}
-
-func getApnErrorHandler(log *logger.SubLogger) apn.ErrorHandler {
-	return func(err error) {
-		log.Err("%s", err)
-	}
+	defer resp.Close()
 }
 
 type callbackArg struct {

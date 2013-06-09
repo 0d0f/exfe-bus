@@ -1,14 +1,13 @@
 package thirdpart
 
 import (
-	"bytes"
+	"broker"
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-aws/smtp"
 	"github.com/googollee/go-logger"
 	"model"
 	"net"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -56,21 +55,16 @@ func (h *HelperImp) UpdateFriends(to *model.Recipient, externalUsers []ExternalU
 		}
 		arg.Identities[i] = user
 	}
-	buf := bytes.NewBuffer(nil)
-	e := json.NewEncoder(buf)
-	err := e.Encode(arg)
+	url := fmt.Sprintf("%s/v3/bus/addfriends", h.config.SiteApi)
+	b, err := json.Marshal(arg)
 	if err != nil {
-		return fmt.Errorf("encoding user error: %s", err)
+		return fmt.Errorf("encoding %s error: %s with %+v", url, err, arg)
 	}
-	url := fmt.Sprintf("%s/v2/Gobus/AddFriends", h.config.SiteApi)
-	resp, err := http.Post(url, "application/json", buf)
+	resp, err := broker.HttpResponse(broker.Http("POST", url, "application/json", b))
 	if err != nil {
-		return fmt.Errorf("update %s friends fail: %s", to, err)
+		return fmt.Errorf("post %s error: %s with %s", url, err, string(b))
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("update %s friends fail: %s", to, resp.Status)
-	}
+	defer resp.Close()
 	return nil
 }
 
@@ -84,16 +78,12 @@ func (h *HelperImp) UpdateIdentity(to *model.Recipient, externalUser ExternalUse
 	params.Set("avatar_filename", externalUser.Avatar())
 	params.Set("external_username", externalUser.ExternalUsername())
 
-	url := fmt.Sprintf("%s/v2/gobus/UpdateIdentity", h.config.SiteApi)
-	fmt.Println(url, params.Encode())
-	resp, err := http.PostForm(url, params)
+	url := fmt.Sprintf("%s/v3/bus/updateidentity", h.config.SiteApi)
+	resp, err := broker.HttpResponse(broker.HttpClient.PostForm(url, params))
 	if err != nil {
-		return fmt.Errorf("update with %v failed: %s", params, err)
+		return fmt.Errorf("update %s error: %s with %s", url, err, params.Encode())
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("update with %v failed: %s", params, resp.Status)
-	}
+	defer resp.Close()
 	return nil
 }
 

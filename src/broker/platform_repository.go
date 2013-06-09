@@ -1,7 +1,6 @@
 package broker
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -208,21 +207,16 @@ func (p *Platform) FindCross(id int64, query url.Values) (model.Cross, error) {
 }
 
 func (p *Platform) UploadPhoto(photoxID string, photos []model.Photo) error {
-	buf := bytes.NewBuffer(nil)
-	encoder := json.NewEncoder(buf)
-	err := encoder.Encode(photos)
+	b, err := json.Marshal(photos)
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(fmt.Sprintf("%s/v2/Gobus/AddPhotos/%s", p.config.SiteApi, photoxID), "application/json", buf)
+	url := fmt.Sprintf("%s/v3/bus/addphotos/%s", p.config.SiteApi, photoxID)
+	resp, err := HttpResponse(Http("POST", url, "application/json", b))
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("upload photo fail: %s", resp.Status)
-	}
+	defer resp.Close()
 	return nil
 }
 
