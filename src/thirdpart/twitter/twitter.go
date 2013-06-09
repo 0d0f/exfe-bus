@@ -129,6 +129,7 @@ func (t *Twitter) UpdateIdentity(to *model.Recipient) error {
 	if err != nil {
 		return fmt.Errorf("can't parse %s users/show(%v) reply: %s", to, params, err)
 	}
+	fmt.Println(info)
 	err = t.helper.UpdateIdentity(to, info)
 	if err != nil {
 		return fmt.Errorf("update %s error: %s", to, err)
