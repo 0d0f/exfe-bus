@@ -480,7 +480,16 @@ func (a *UpdateArg) IsPlaceTitleChanged() bool {
 }
 
 func (a *UpdateArg) IsPlaceDescChanged() bool {
-	return a.Cross.Place.Description != a.OldCross.Place.Description
+	if a.Cross.Place.Description != a.OldCross.Place.Description {
+		return true
+	}
+	if a.Cross.Place.Lng != a.OldCross.Place.Lng {
+		return true
+	}
+	if a.Cross.Place.Lat != a.OldCross.Place.Lat {
+		return true
+	}
+	return false
 }
 
 func (a *UpdateArg) IsDescriptionChanged() bool {
