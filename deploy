@@ -16,6 +16,7 @@ cp -Rf ./templates ${TARGET}/
 cp -Rf ./exfe.json.example ${TARGET}/
 cp -Rf ./configure ${TARGET}/
 cp -f ./launch ${TARGET}/
+[ -e ./lighttpd-1.4.28/src/.lib/mod_mysql_obj.so ] && cp -f ./lighttpd-1.4.28/src/.lib/mod_mysql_obj.so ${TARGET}
 
 cd ${TARGET}
 git add -u
