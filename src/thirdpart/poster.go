@@ -80,7 +80,7 @@ func (p PlainText) Unmarshal(r io.Reader, v interface{}) error {
 	return nil
 }
 
-func (p PlainText) Marshal(w io.Writer, v interface{}) error {
+func (p PlainText) Marshal(w io.Writer, name string, v interface{}) error {
 	_, err := w.Write([]byte(fmt.Sprintf("%s", v)))
 	return err
 }
