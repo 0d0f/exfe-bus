@@ -3,13 +3,17 @@ package main
 import (
 	"broker"
 	"daemon"
+	"database/sql"
 	"fmt"
 	"formatter"
-	"github.com/googollee/go-logger"
+	_ "github.com/go-sql-driver/mysql"
+	l "github.com/googollee/go-logger"
 	"gobus"
+	"logger"
 	"model"
 	"os"
 	"splitter"
+	"token"
 )
 
 func main() {
@@ -20,25 +24,39 @@ func main() {
 		broker.SetProxy(config.Proxy)
 	}
 
-	log, err := logger.New(output, "service bus")
+	log, err := l.New(output, "service bus")
 	if err != nil {
 		panic(err)
 		return
 	}
 	config.Log = log
 
-	db := broker.NewDBMultiplexer(&config)
+	database, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4,utf8&autocommit=true",
+		config.DB.Username, config.DB.Password, config.DB.Addr, config.DB.Port, config.DB.DbName))
+	if err != nil {
+		logger.ERROR("mysql error:", err)
+		os.Exit(-1)
+		return
+	}
+	defer database.Close()
+	_, err = database.Exec("SELECT 1")
+	if err != nil {
+		logger.ERROR("mysql error:", err)
+		os.Exit(-1)
+		return
+	}
+
 	redis := broker.NewRedisMultiplexer(&config)
 
 	localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
 	if err != nil {
-		log.Crit("load local template failed: %s", err)
+		logger.ERROR("load local template failed: %s", err)
 		os.Exit(-1)
 		return
 	}
 	platform, err := broker.NewPlatform(&config)
 	if err != nil {
-		log.Crit("can't create platform: %s", err)
+		logger.ERROR("can't create platform: %s", err)
 		os.Exit(-1)
 		return
 	}
@@ -48,7 +66,7 @@ func main() {
 
 	bus, err := gobus.NewServer(addr)
 	if err != nil {
-		log.Crit("gobus launch failed: %s", err)
+		logger.ERROR("gobus launch failed: %s", err)
 		os.Exit(-1)
 		return
 	}
@@ -56,7 +74,7 @@ func main() {
 	status := NewStatus()
 	err = bus.Register(status)
 	if err != nil {
-		log.Crit("status register failed: %s", err)
+		logger.ERROR("status register failed: %s", err)
 		os.Exit(-1)
 		return
 	}
@@ -64,13 +82,13 @@ func main() {
 
 	register := func(name string, service interface{}, err error) {
 		if err != nil {
-			log.Crit("create %s failed: %s", name, err)
+			logger.ERROR("create %s failed: %s", name, err)
 			os.Exit(-1)
 			return
 		}
 		err = bus.RegisterRestful(service)
 		if err != nil {
-			log.Crit("regiest %s failed: %s", name, err)
+			logger.ERROR("regiest %s failed: %s", name, err)
 			os.Exit(-1)
 			return
 		}
@@ -83,8 +101,14 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Token {
-		token, err := NewToken(&config, db)
-		register("token", token, err)
+		repo, err := NewTokenRepo(&config, database)
+		if err != nil {
+			logger.ERROR("can't create token repo: %s", err)
+			os.Exit(-1)
+			return
+		}
+		token := token.New(repo)
+		register("token", token, nil)
 	}
 
 	if config.ExfeService.Services.Splitter {
@@ -107,7 +131,7 @@ func main() {
 
 		err = bus.Register(iom)
 		if err != nil {
-			log.Crit("gobus launch failed: %s", err)
+			logger.ERROR("gobus launch failed: %s", err)
 			os.Exit(-1)
 			return
 		}
@@ -117,14 +141,14 @@ func main() {
 	if config.ExfeService.Services.Thirdpart {
 		thirdpart, err := NewThirdpart(&config, platform)
 		if err != nil {
-			log.Crit("create thirdpart failed: %s", err)
+			logger.ERROR("create thirdpart failed: %s", err)
 			os.Exit(-1)
 			return
 		}
 
 		err = bus.Register(thirdpart)
 		if err != nil {
-			log.Crit("gobus launch failed: %s", err)
+			logger.ERROR("gobus launch failed: %s", err)
 			os.Exit(-1)
 			return
 		}
@@ -139,11 +163,11 @@ func main() {
 	}()
 	defer func() {
 		re := recover()
-		log.Crit("crashed: %s", re)
+		logger.ERROR("crashed: %s", re)
 	}()
 	err = bus.ListenAndServe()
 	if err != nil {
-		log.Crit("gobus launch failed: %s", err)
+		logger.ERROR("gobus launch failed: %s", err)
 		os.Exit(-1)
 		return
 	}

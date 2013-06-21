@@ -45,13 +45,13 @@ func (r *TestTokenRepo) FindByHash(hash string) ([]Token, error) {
 	return ret, nil
 }
 
-func (r *TestTokenRepo) UpdateByKey(key string, data []byte, expiresIn *int64) (int, error) {
+func (r *TestTokenRepo) UpdateByKey(key string, data *string, expiresIn *int64) (int64, error) {
 	token, ok := r.store[key]
 	if !ok {
 		return 0, nil
 	}
 	if data != nil {
-		token.Data = data
+		token.Data = *data
 	}
 	if expiresIn != nil {
 		token.ExpiresIn = *expiresIn
@@ -60,15 +60,15 @@ func (r *TestTokenRepo) UpdateByKey(key string, data []byte, expiresIn *int64) (
 	return 1, nil
 }
 
-func (r *TestTokenRepo) UpdateByHash(hash string, data []byte, expiresIn *int64) (int, error) {
-	i := 0
+func (r *TestTokenRepo) UpdateByHash(hash string, data *string, expiresIn *int64) (int64, error) {
+	var i int64 = 0
 	for k, token := range r.store {
 		if token.Hash != hash {
 			continue
 		}
 		i++
 		if data != nil {
-			token.Data = data
+			token.Data = *data
 		}
 		if expiresIn != nil {
 			token.ExpiresIn = *expiresIn
@@ -117,7 +117,7 @@ func TestShortToken(t *testing.T) {
 	}
 	arg := CreateArg{}
 	arg.Resource = resource
-	arg.Data = []byte("data")
+	arg.Data = "data"
 	arg.ExpireAfterSeconds = 1
 	token := mgr.HandleCreate(arg)
 	assert.Equal(t, resp.Code, http.StatusOK)
@@ -205,7 +205,7 @@ func TestShortToken(t *testing.T) {
 	}
 	arg = CreateArg{}
 	arg.Resource = resource
-	arg.Data = []byte("data")
+	arg.Data = "data"
 	arg.ExpireAfterSeconds = 1
 	token = mgr.HandleCreate(arg)
 	assert.Equal(t, resp.Code, http.StatusOK)

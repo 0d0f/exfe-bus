@@ -12,8 +12,8 @@ type Repo interface {
 	FindByKey(key string) ([]Token, error)
 	FindByHash(hash string) ([]Token, error)
 	Touch(key, hash *string) error
-	UpdateByKey(key string, data []byte, expiresIn *int64) (int, error)
-	UpdateByHash(hash string, data []byte, expiresIn *int64) (int, error)
+	UpdateByKey(key string, data *string, expiresIn *int64) (int64, error)
+	UpdateByHash(hash string, data *string, expiresIn *int64) (int64, error)
 }
 
 type Manager struct {
@@ -179,11 +179,7 @@ func (a *UpdateArg) convert() {
 func (t Manager) HandleKeyUpdate(arg UpdateArg) {
 	arg.convert()
 	key := t.Vars()["key"]
-	var data []byte
-	if arg.Data != nil {
-		data = []byte(*arg.Data)
-	}
-	n, err := t.repo.UpdateByKey(key, data, arg.ExpiresIn)
+	n, err := t.repo.UpdateByKey(key, arg.Data, arg.ExpiresIn)
 	if err != nil {
 		t.Error(http.StatusInternalServerError, err)
 		return
@@ -201,11 +197,7 @@ func (t Manager) HandleKeyUpdate(arg UpdateArg) {
 func (t Manager) HandleResourceUpdate(arg UpdateArg) {
 	arg.convert()
 	hash := hashResource(arg.Resource)
-	var data []byte
-	if arg.Data != nil {
-		data = []byte(*arg.Data)
-	}
-	n, err := t.repo.UpdateByHash(hash, data, arg.ExpiresIn)
+	n, err := t.repo.UpdateByHash(hash, arg.Data, arg.ExpiresIn)
 	if err != nil {
 		t.Error(http.StatusInternalServerError, err)
 		return
