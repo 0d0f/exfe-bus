@@ -21,7 +21,7 @@ const (
 func update(data *string, expiresIn *int64) string {
 	ret := ""
 	if data != nil {
-		ret += fmt.Sprintf("`data`=\"%s\"", *data)
+		ret += fmt.Sprintf("`data`='%s'", *data)
 	}
 	if expiresIn != nil {
 		if ret != "" {
