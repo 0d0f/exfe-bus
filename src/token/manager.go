@@ -62,7 +62,7 @@ func (t Manager) HandleCreate(arg CreateArg) Token {
 	token := arg.Token
 	token.Hash = hashResource(arg.Resource)
 	token.TouchedAt = time.Now().Unix()
-	token.ExpiresIn = time.Now().Add(time.Duration(arg.ExpireAfterSeconds) * time.Second).Unix()
+	token.ExpiresAt = time.Now().Add(time.Duration(arg.ExpireAfterSeconds) * time.Second).Unix()
 	gentype := t.Request().URL.Query().Get("type")
 
 	generator, ok := t.generators[gentype]
@@ -161,13 +161,13 @@ type UpdateArg struct {
 	Data               *string `json:"data"`
 	ExpireAfterSeconds *int    `json:"expire_after_seconds"`
 	Resource           string  `json:"resource"`
-	ExpiresIn          *int64  `json:"-"`
+	ExpiresAt          *int64  `json:"-"`
 }
 
 func (a *UpdateArg) convert() {
 	if a.ExpireAfterSeconds != nil {
-		a.ExpiresIn = new(int64)
-		*a.ExpiresIn = time.Now().Add(time.Duration(*a.ExpireAfterSeconds) * time.Second).Unix()
+		a.ExpiresAt = new(int64)
+		*a.ExpiresAt = time.Now().Add(time.Duration(*a.ExpireAfterSeconds) * time.Second).Unix()
 	}
 }
 
@@ -179,7 +179,7 @@ func (a *UpdateArg) convert() {
 func (t Manager) HandleKeyUpdate(arg UpdateArg) {
 	arg.convert()
 	key := t.Vars()["key"]
-	n, err := t.repo.UpdateByKey(key, arg.Data, arg.ExpiresIn)
+	n, err := t.repo.UpdateByKey(key, arg.Data, arg.ExpiresAt)
 	if err != nil {
 		t.Error(http.StatusInternalServerError, err)
 		return
@@ -197,7 +197,7 @@ func (t Manager) HandleKeyUpdate(arg UpdateArg) {
 func (t Manager) HandleResourceUpdate(arg UpdateArg) {
 	arg.convert()
 	hash := hashResource(arg.Resource)
-	n, err := t.repo.UpdateByHash(hash, arg.Data, arg.ExpiresIn)
+	n, err := t.repo.UpdateByHash(hash, arg.Data, arg.ExpiresAt)
 	if err != nil {
 		t.Error(http.StatusInternalServerError, err)
 		return

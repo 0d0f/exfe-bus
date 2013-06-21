@@ -23,7 +23,7 @@ func (r *TestTokenRepo) FindByKey(key string) ([]Token, error) {
 	if !ok {
 		return nil, nil
 	}
-	if time.Now().Unix() >= ret.ExpiresIn {
+	if time.Now().Unix() >= ret.ExpiresAt {
 		return nil, nil
 	}
 	return []Token{ret}, nil
@@ -37,7 +37,7 @@ func (r *TestTokenRepo) FindByHash(hash string) ([]Token, error) {
 		if t.Hash != hash {
 			continue
 		}
-		if now >= t.ExpiresIn {
+		if now >= t.ExpiresAt {
 			continue
 		}
 		ret = append(ret, t)
@@ -54,7 +54,7 @@ func (r *TestTokenRepo) UpdateByKey(key string, data *string, expiresIn *int64) 
 		token.Data = *data
 	}
 	if expiresIn != nil {
-		token.ExpiresIn = *expiresIn
+		token.ExpiresAt = *expiresIn
 	}
 	r.store[key] = token
 	return 1, nil
@@ -71,7 +71,7 @@ func (r *TestTokenRepo) UpdateByHash(hash string, data *string, expiresIn *int64
 			token.Data = *data
 		}
 		if expiresIn != nil {
-			token.ExpiresIn = *expiresIn
+			token.ExpiresAt = *expiresIn
 		}
 		r.store[k] = token
 	}

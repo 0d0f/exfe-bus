@@ -13,7 +13,7 @@ type Token struct {
 	Scopes    string `json:"scopes"`
 	Client    string `json:"client"`
 	CreatedAt int64  `json:"-"`
-	ExpiresIn int64  `json:"expires_in"`
+	ExpiresAt int64  `json:"expires_at"`
 	TouchedAt int64  `json:"touched_at"`
 	Data      string `json:"data"`
 
@@ -21,7 +21,7 @@ type Token struct {
 }
 
 func (t *Token) compatible() {
-	t.ExpireAt = t.ExpiresIn
+	t.ExpireAt = t.ExpiresAt
 }
 
 func hashResource(resource string) string {

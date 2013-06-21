@@ -1,1 +1,1 @@
-CREATE TABLE `tokens` (`id` BIGINT(20) NOT NULL AUTO_INCREMENT, PRIMARY KEY(`id`), `key` CHAR(64) NOT NULL, `hash` CHAR(32) NOT NULL, `user_id` TEXT, `scopes` TEXT, `client` TEXT, `data` TEXT, `touched_at` BIGINT, `expires_in` BIGINT, `created_at` BIGINT) DEFAULT CHARSET=utf8mb4;
+CREATE TABLE `tokens` (`id` BIGINT(20) NOT NULL AUTO_INCREMENT, PRIMARY KEY(`id`), `key` CHAR(64) NOT NULL, `hash` CHAR(32) NOT NULL, `user_id` TEXT, `scopes` TEXT, `client` TEXT, `data` TEXT, `touched_at` BIGINT, `expires_at` BIGINT, `created_at` BIGINT) DEFAULT CHARSET=utf8mb4;
