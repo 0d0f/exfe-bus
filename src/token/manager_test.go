@@ -2,7 +2,9 @@ package token
 
 import (
 	"fmt"
+	"github.com/googollee/go-rest"
 	"github.com/stretchrcom/testify/assert"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -16,58 +18,83 @@ func (r *TestTokenRepo) Store(token Token) error {
 	return nil
 }
 
-func (r *TestTokenRepo) UpdateData(token Token, data string) error {
-	tokens, err := r.Find(token)
-	if err != nil {
-		return fmt.Errorf("can't find")
+func (r *TestTokenRepo) FindByKey(key string) ([]Token, error) {
+	ret, ok := r.store[key]
+	if !ok {
+		return nil, nil
 	}
-	for _, t := range tokens {
-		t.Data = data
-		r.store[t.Key] = t
+	if time.Now().Unix() >= ret.ExpiresIn {
+		return nil, nil
 	}
-	return nil
+	return []Token{ret}, nil
 }
 
-func (r *TestTokenRepo) UpdateExpireAt(token Token, expireAt time.Time) error {
-	tokens, err := r.Find(token)
-	if err != nil {
-		return fmt.Errorf("can't find")
-	}
-	for _, t := range tokens {
-		t.ExpireAt = expireAt
-		r.store[t.Key] = t
-	}
-	return nil
-}
-
-func (r *TestTokenRepo) Find(token Token) ([]Token, error) {
-	ret := make([]Token, 0)
+func (r *TestTokenRepo) FindByHash(hash string) ([]Token, error) {
+	fmt.Println(hash, r.store)
+	var ret []Token
+	now := time.Now().Unix()
 	for _, t := range r.store {
-		if token.Key != "" && t.Key != token.Key {
+		if t.Hash != hash {
 			continue
 		}
-		if token.Hash != "" && t.Hash != token.Hash {
-			continue
-		}
-		if time.Now().After(t.ExpireAt) {
+		if now >= t.ExpiresIn {
 			continue
 		}
 		ret = append(ret, t)
 	}
-	if len(ret) == 0 {
-		return nil, nil
-	}
 	return ret, nil
 }
 
-func (r *TestTokenRepo) Touch(token Token) error {
-	tokens, err := r.Find(token)
-	if err != nil {
-		return fmt.Errorf("can't find")
+func (r *TestTokenRepo) UpdateByKey(key string, data []byte, expiresIn *int64) (int, error) {
+	token, ok := r.store[key]
+	if !ok {
+		return 0, nil
 	}
-	for _, t := range tokens {
-		t.TouchedAt = time.Now()
-		r.store[t.Key] = t
+	if data != nil {
+		token.Data = data
+	}
+	if expiresIn != nil {
+		token.ExpiresIn = *expiresIn
+	}
+	r.store[key] = token
+	return 1, nil
+}
+
+func (r *TestTokenRepo) UpdateByHash(hash string, data []byte, expiresIn *int64) (int, error) {
+	i := 0
+	for k, token := range r.store {
+		if token.Hash != hash {
+			continue
+		}
+		i++
+		if data != nil {
+			token.Data = data
+		}
+		if expiresIn != nil {
+			token.ExpiresIn = *expiresIn
+		}
+		r.store[k] = token
+	}
+	return i, nil
+}
+
+func (r *TestTokenRepo) Touch(key, hash *string) error {
+	if key != nil {
+		token, ok := r.store[*key]
+		if !ok {
+			return nil
+		}
+		token.TouchedAt = time.Now().Unix()
+		r.store[*key] = token
+	}
+	if hash != nil {
+		for k, token := range r.store {
+			if token.Hash != *hash {
+				continue
+			}
+			token.TouchedAt = time.Now().Unix()
+			r.store[k] = token
+		}
 	}
 	return nil
 }
@@ -80,68 +107,78 @@ func TestShortToken(t *testing.T) {
 	resource := "resource"
 	tk := ""
 
-	{
-		_, err := mgr.Get(tk, resource)
-		assert.NotEqual(t, err, nil)
+	req, err := http.NewRequest("GET", "http://test/?type=short", nil)
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	token, err := mgr.Create("short", resource, "data", time.Second)
-	assert.Equal(t, err, nil)
+	resp, err := rest.SetTest(mgr, nil, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	arg := CreateArg{}
+	arg.Resource = resource
+	arg.Data = []byte("data")
+	arg.ExpireAfterSeconds = 1
+	token := mgr.HandleCreate(arg)
+	assert.Equal(t, resp.Code, http.StatusOK)
 	tk = token.Key
 
 	{
-		token, err := mgr.Get(tk, "")
-		assert.Equal(t, err, nil)
-		assert.Equal(t, len(token), 1)
-		assert.Equal(t, token[0].Key, tk)
-		assert.Equal(t, token[0].Data, "data")
+		resp, _ := rest.SetTest(mgr, map[string]string{"key": tk}, nil)
+		tokens := mgr.HandleKeyGet()
+		assert.Equal(t, resp.Code, http.StatusOK)
+		assert.Equal(t, len(tokens), 1)
+		assert.Equal(t, tokens[0].Key, tk)
+		assert.Equal(t, string(tokens[0].Data), "data")
 	}
 
 	{
-		token, err := mgr.Get("", resource)
-		assert.Equal(t, err, nil)
-		assert.Equal(t, len(token), 1)
-		assert.Equal(t, token[0].Key, tk)
-		assert.Equal(t, token[0].Data, "data")
+		resp, _ := rest.SetTest(mgr, nil, nil)
+		tokens := mgr.HandleResourceGet(resource)
+		assert.Equal(t, resp.Code, http.StatusOK)
+		assert.Equal(t, len(tokens), 1)
+		assert.Equal(t, tokens[0].Key, tk)
+		assert.Equal(t, string(tokens[0].Data), "data")
 	}
 
 	{
-		token, err := mgr.Get(tk, resource)
-		assert.Equal(t, err, nil)
-		assert.Equal(t, len(token), 1)
-		assert.Equal(t, token[0].Key, tk)
-		assert.Equal(t, token[0].Data, "data")
+		resp, _ := rest.SetTest(mgr, map[string]string{"key": tk}, nil)
+		data := "abc"
+		mgr.HandleKeyUpdate(UpdateArg{
+			Data: &data,
+		})
+		assert.Equal(t, resp.Code, http.StatusOK)
 	}
 
 	{
-		err = mgr.UpdateData(tk, "abc")
-		assert.Equal(t, err, nil)
+		resp, _ := rest.SetTest(mgr, map[string]string{"key": tk}, nil)
+		tokens := mgr.HandleKeyGet()
+		assert.Equal(t, resp.Code, http.StatusOK)
+		assert.Equal(t, len(tokens), 1)
+		assert.Equal(t, tokens[0].Key, tk)
+		assert.Equal(t, string(tokens[0].Data), "abc")
 	}
 
 	{
-		token, err := mgr.Get(tk, resource)
-		assert.Equal(t, err, nil)
-		assert.Equal(t, len(token), 1)
-		assert.Equal(t, token[0].Key, tk)
-		assert.Equal(t, token[0].Data, "abc")
-	}
-
-	{
-		err := mgr.Refresh(tk, resource, 3*time.Second)
-		assert.Equal(t, err, nil)
+		resp, _ := rest.SetTest(mgr, map[string]string{"key": tk}, nil)
+		after := 3
+		mgr.HandleKeyUpdate(UpdateArg{
+			ExpireAfterSeconds: &after,
+		})
+		assert.Equal(t, resp.Code, http.StatusOK)
 
 		fmt.Println("touch")
-		mgr.Get(tk, resource)
+		mgr.HandleKeyGet()
 
 		time.Sleep(2 * time.Second)
 
-		token, err := mgr.Get(tk, resource)
-		assert.Equal(t, err, nil)
+		token := mgr.HandleKeyGet()
+		assert.Equal(t, resp.Code, http.StatusOK)
 		assert.Equal(t, len(token), 1)
 		touch1 := token[0].TouchedAt
 
-		token, err = mgr.Get(tk, resource)
-		assert.Equal(t, err, nil)
+		token = mgr.HandleKeyGet()
+		assert.Equal(t, resp.Code, http.StatusOK)
 		assert.Equal(t, len(token), 1)
 		touch2 := token[0].TouchedAt
 
@@ -153,30 +190,50 @@ func TestShortToken(t *testing.T) {
 	time.Sleep(time.Second * 2)
 
 	{
-		_, err := mgr.Get(tk, "")
-		assert.NotEqual(t, err, nil)
+		resp, _ := rest.SetTest(mgr, map[string]string{"key": tk}, nil)
+		_ = mgr.HandleKeyGet()
+		assert.NotEqual(t, resp.Code, http.StatusOK)
 	}
 
-	token, err = mgr.Create("long", resource, "data", time.Second)
-	assert.Equal(t, err, nil)
+	req, err = http.NewRequest("GET", "http://test/?type=long", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err = rest.SetTest(mgr, nil, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	arg = CreateArg{}
+	arg.Resource = resource
+	arg.Data = []byte("data")
+	arg.ExpireAfterSeconds = 1
+	token = mgr.HandleCreate(arg)
+	assert.Equal(t, resp.Code, http.StatusOK)
 	tk = token.Key
 
-	err = mgr.Refresh(tk, "", time.Second)
-	assert.Equal(t, err, nil)
+	after := 1
+	resp, _ = rest.SetTest(mgr, map[string]string{"key": tk}, nil)
+	mgr.HandleKeyUpdate(UpdateArg{
+		ExpireAfterSeconds: &after,
+	})
+	assert.Equal(t, resp.Code, http.StatusOK)
 
 	{
-		token, err := mgr.Get(tk, "")
-		assert.Equal(t, err, nil)
-		assert.Equal(t, len(token), 1)
-		assert.Equal(t, token[0].Key, tk)
-		assert.Equal(t, token[0].Data, "data")
+		tokens := mgr.HandleKeyGet()
+		assert.Equal(t, resp.Code, http.StatusOK)
+		assert.Equal(t, len(tokens), 1)
+		assert.Equal(t, tokens[0].Key, tk)
+		assert.Equal(t, string(tokens[0].Data), "data")
 	}
 
-	err = mgr.Refresh(tk, "", 0)
-	assert.Equal(t, err, nil)
+	after = 0
+	mgr.HandleKeyUpdate(UpdateArg{
+		ExpireAfterSeconds: &after,
+	})
+	assert.Equal(t, resp.Code, http.StatusOK)
 
 	{
-		_, err := mgr.Get(tk, "")
-		assert.NotEqual(t, err, nil)
+		mgr.HandleKeyGet()
+		assert.Equal(t, resp.Code, http.StatusNotFound)
 	}
 }

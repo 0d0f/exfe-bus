@@ -3,27 +3,27 @@ package token
 import (
 	"crypto/md5"
 	"fmt"
+	"github.com/eaigner/hood"
 	"io"
-	"model"
-	"time"
 )
 
 type Token struct {
-	Key       string
-	Hash      string
-	Data      string
-	TouchedAt time.Time
-	ExpireAt  time.Time
-	CreatedAt time.Time
+	Id        hood.Id
+	Key       string       `json:"key" sql:"pk,size(64)" validate:"presence"`
+	Hash      string       `json:"hash" sql:"size(32)"`
+	UserId    string       `json:"user_id" sql:"size(128)"`
+	Scopes    []byte       `json:"scopes"`
+	Client    []byte       `json:"client"`
+	CreatedAt hood.Created `json:"-"`
+	ExpiresIn int64        `json:"expires_in"`
+	TouchedAt int64        `json:"touched_at"`
+	Data      []byte       `json:"data"`
+
+	ExpireAt int64 `json:"expire_at" sql:"-"`
 }
 
-func (t Token) Token() model.Token {
-	return model.Token{
-		Key:       t.Key,
-		Data:      t.Data,
-		TouchedAt: t.TouchedAt.UTC().Format("2006-01-02 15:04:05"),
-		ExpireAt:  t.ExpireAt.Unix(),
-	}
+func (t *Token) compatible() {
+	t.ExpireAt = t.ExpiresIn
 }
 
 func hashResource(resource string) string {

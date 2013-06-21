@@ -8,7 +8,7 @@ import (
 func TestShortGenerator(t *testing.T) {
 	token := Token{
 		Hash: hashResource("resource"),
-		Data: "data",
+		Data: []byte("data"),
 	}
 	GenerateShortToken(&token)
 	assert.Equal(t, len(token.Key), 4)
@@ -22,7 +22,7 @@ func TestShortGenerator(t *testing.T) {
 func TestLongGenerator(t *testing.T) {
 	token := Token{
 		Hash: hashResource("resource"),
-		Data: "data",
+		Data: []byte("data"),
 	}
 	GenerateLongToken(&token)
 	assert.Equal(t, len(token.Key), 64)
