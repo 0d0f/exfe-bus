@@ -39,7 +39,7 @@ func main() {
 		return
 	}
 	defer database.Close()
-	_, err = database.Exec("SELECT 1")
+	err = database.Ping()
 	if err != nil {
 		logger.ERROR("mysql error:", err)
 		os.Exit(-1)

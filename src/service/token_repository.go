@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -18,18 +19,21 @@ const (
 	DELETE         = "DELETE FROM `tokens` WHERE expires_at<=UNIX_TIMESTAMP()"
 )
 
-func update(data *string, expiresIn *int64) string {
-	ret := ""
+func update(data *string, expiresIn *int64) (string, []interface{}) {
+	buf := bytes.NewBuffer(nil)
+	var args []interface{}
 	if data != nil {
-		ret += fmt.Sprintf("`data`='%s'", *data)
+		buf.Write([]byte("`data`=?"))
+		args = append(args, *data)
 	}
 	if expiresIn != nil {
-		if ret != "" {
-			ret += ", "
+		if data != nil {
+			buf.Write([]byte(", "))
 		}
-		ret += fmt.Sprintf("`expires_at`=%d", *expiresIn)
+		buf.Write([]byte("`expires_at`=?"))
+		args = append(args, *expiresIn)
 	}
-	return ret
+	return buf.String(), args
 }
 
 func where(key, hash *string) string {
@@ -108,12 +112,13 @@ func (r *TokenRepo) Touch(key, hash *string) error {
 }
 
 func (r *TokenRepo) UpdateByKey(key string, data *string, expiresIn *int64) (int64, error) {
-	set := update(data, expiresIn)
+	set, args := update(data, expiresIn)
 	if set == "" {
 		return 0, nil
 	}
+	args = append(args, key)
 	sql := fmt.Sprintf(UPDATE_BY_KEY, set)
-	result, err := r.db.Exec(sql, key)
+	result, err := r.db.Exec(sql, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -125,12 +130,13 @@ func (r *TokenRepo) UpdateByKey(key string, data *string, expiresIn *int64) (int
 }
 
 func (r *TokenRepo) UpdateByHash(hash string, data *string, expiresIn *int64) (int64, error) {
-	set := update(data, expiresIn)
+	set, args := update(data, expiresIn)
 	if set == "" {
 		return 0, nil
 	}
+	args = append(args, hash)
 	sql := fmt.Sprintf(UPDATE_BY_HASH, set)
-	result, err := r.db.Exec(sql, hash)
+	result, err := r.db.Exec(sql, args...)
 	if err != nil {
 		return 0, err
 	}
