@@ -103,7 +103,6 @@ func (r *TokenRepo) FindByHash(hash string) ([]token.Token, error) {
 
 func (r *TokenRepo) Touch(key, hash *string) error {
 	sql := TOUCH + where(key, hash)
-	fmt.Println(sql)
 	_, err := r.db.Exec(sql)
 	return err
 }
