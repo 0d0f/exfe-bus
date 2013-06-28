@@ -60,23 +60,23 @@ func (i Identity) ScreenId() string {
 type RsvpType string
 
 const (
-	RsvpNoresponse   RsvpType = "NORESPONSE"
-	RsvpAccepted              = "ACCEPTED"
-	RsvpInterested            = "INTERESTED"
-	RsvpDeclined              = "DECLINED"
-	RsvpRemoved               = "REMOVED"
-	RsvpNotification          = "NOTIFICATION"
+	Noresponse   RsvpType = "NORESPONSE"
+	Accepted              = "ACCEPTED"
+	Interested            = "INTERESTED"
+	Declined              = "DECLINED"
+	Removed               = "REMOVED"
+	Notification          = "NOTIFICATION"
 )
 
 type Invitation struct {
-	ID         uint64   `json:"id,omitempty"`
-	Host       bool     `json:"host,omitempty"`
-	Mates      uint64   `json:"mates,omitempty"`
-	Identity   Identity `json:"identity,omitempty"`
-	RsvpStatus RsvpType `json:"rsvp_status,omitempty"`
-	By         Identity `json:"by_identity,omitempty"`
-	UpdatedBy  Identity `json:"updated_by,omitempty"`
-	Via        string   `json:"via,omitempty"`
+	ID        uint64   `json:"id,omitempty"`
+	Host      bool     `json:"host,omitempty"`
+	Mates     uint64   `json:"mates,omitempty"`
+	Identity  Identity `json:"identity,omitempty"`
+	Response  RsvpType `json:"response,omitempty"`
+	By        Identity `json:"by_identity,omitempty"`
+	UpdatedBy Identity `json:"updated_by,omitempty"`
+	Via       string   `json:"via,omitempty"`
 }
 
 func (i *Invitation) String() string {
@@ -84,11 +84,11 @@ func (i *Invitation) String() string {
 }
 
 func (i Invitation) IsAccepted() bool {
-	return i.RsvpStatus == RsvpAccepted
+	return i.Response == Accepted
 }
 
 func (i Invitation) IsDeclined() bool {
-	return i.RsvpStatus == RsvpDeclined
+	return i.Response == Declined
 }
 
 func (i Invitation) IsPending() bool {

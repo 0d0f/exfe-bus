@@ -20,5 +20,6 @@ go get $1 github.com/gorilla/mux
 go get $1 launchpad.net/tomb
 cat build.list | while read l;
 do
+  echo building $l ...
   GOPATH=$GOPATH:$(pwd) go install $l
 done

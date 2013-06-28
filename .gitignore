@@ -2,5 +2,6 @@ test.cmd
 *.yaml
 *.json
 apns_dev_*.pem
+exfebus.sublime*
 bin/*
 pkg/*

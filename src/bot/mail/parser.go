@@ -319,7 +319,7 @@ func (h *Parser) GetCross() (cross model.Cross) {
 			By: cross.By,
 		}
 		if addr.Address == h.from.Address {
-			invitation.RsvpStatus = model.RsvpAccepted
+			invitation.Response = model.Accepted
 		}
 		cross.Exfee.Invitations = append(cross.Exfee.Invitations, invitation)
 	}
@@ -461,19 +461,19 @@ func (h *Parser) convertEventToCross(event ics.Event, from *mail.Address) model.
 			ExternalUsername: a.Email,
 			Provider:         "email",
 		}
-		rsvp := model.RsvpNoresponse
+		rsvp := model.Noresponse
 		switch a.PartStat {
 		case "ACCEPTED":
-			rsvp = model.RsvpAccepted
+			rsvp = model.Accepted
 		case "DECLINED":
-			rsvp = model.RsvpDeclined
+			rsvp = model.Declined
 		}
 		invitations = append(invitations, model.Invitation{
-			Host:       host,
-			RsvpStatus: rsvp,
-			Identity:   identity,
-			Via:        "email",
-			By:         by,
+			Host:     host,
+			Response: rsvp,
+			Identity: identity,
+			Via:      "email",
+			By:       by,
 		})
 	}
 

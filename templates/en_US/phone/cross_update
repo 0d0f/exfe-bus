@@ -4,7 +4,7 @@
 {{end}}{{if .IsPlaceTitleChanged}}"{{.Cross.Title}}" updated: {{if .Cross.Place.Title}}{{.Cross.Place.Title}}{{else}}place to be decided{{end}}.
 {{end}}{{if .IsPlaceDescChanged}}"{{.Cross.Title}}" at {{.Cross.Place.Title}} detail updated.
 {{end}}{{if .IsDescriptionChanged}}"{{.Cross.Title}}" description updated.
-{{end}}{{end}}{{if .IsRsvpComboChanged}}"{{.Cross.Title}}" updated. {{range for .IsRsvpComboChanged}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}} responsed.
+{{end}}{{end}}{{if .IsResponseComboChanged}}"{{.Cross.Title}}" updated. {{range for .IsResponseComboChanged}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}} responsed.
 {{else}}{{if .NewAccepted}}"{{.Cross.Title}}" updated. {{range for .NewAccepted}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}} accepted.
 {{end}}{{if .NewDeclined}}"{{.Cross.Title}}" updated. {{range for .NewDeclined}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}} {{len .NewDeclined | plural "is" "are"}} unavailable.
 {{end}}{{if .Removed}}"{{.Cross.Title}}" updated. {{range for .Removed}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}} removed.

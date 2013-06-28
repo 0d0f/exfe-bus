@@ -438,7 +438,7 @@ func (a *UpdateArg) IsExfeeChanged() bool {
 	return false
 }
 
-func (a *UpdateArg) IsRsvpComboChanged() []model.Identity {
+func (a *UpdateArg) IsResponseComboChanged() []model.Identity {
 	count := 0
 	var ret []model.Identity
 	if len(a.NewAccepted) > 0 {

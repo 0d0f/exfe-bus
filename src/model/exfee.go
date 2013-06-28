@@ -30,10 +30,10 @@ func (e *Exfee) Parse() {
 	e.Pending = make([]Invitation, 0)
 
 	for _, i := range e.Invitations {
-		switch i.RsvpStatus {
-		case RsvpAccepted:
+		switch i.Response {
+		case Accepted:
 			e.Accepted = append(e.Accepted, i)
-		case RsvpDeclined:
+		case Declined:
 			e.Declined = append(e.Declined, i)
 		default:
 			e.Pending = append(e.Pending, i)
