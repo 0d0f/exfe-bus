@@ -51,7 +51,7 @@ func (t *Twitter) Post(id, text string) (string, error) {
 	text = strings.Trim(text, " \n\r")
 	privateMessage := text
 	publicMessage := text
-	if lastEnter := strings.LastIndex(text, "\n"); lastEnter >= 0 {
+	if lastEnter := strings.LastIndex(text, "\n\n"); lastEnter >= 0 {
 		privateMessage = text[:lastEnter]
 		publicMessage = text[lastEnter+1:]
 	}

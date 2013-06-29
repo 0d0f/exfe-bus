@@ -57,6 +57,10 @@ func (i Identity) ScreenId() string {
 	return i.ExternalUsername + "@" + i.Provider
 }
 
+func (i Identity) Id() string {
+	return fmt.Sprintf("%s@%s", i.ExternalID, i.Provider)
+}
+
 type RsvpType string
 
 const (

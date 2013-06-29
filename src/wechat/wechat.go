@@ -1,16 +1,20 @@
 package main
 
 import (
+	"broker"
 	"bytes"
 	"crypto/tls"
 	"daemon"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/googollee/go-aws/s3"
 	"io/ioutil"
 	"logger"
 	"model"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -35,10 +39,10 @@ type ContactRequest struct {
 
 type Request struct {
 	BaseRequest BaseRequest
-	Count       int
-	List        []ContactRequest
-	SyncKey     SyncKey
-	Msg         Message
+	Count       int              `json:"Count,omitempty"`
+	List        []ContactRequest `json:"List,omitempty"`
+	SyncKey     *SyncKey         `json:"SyncKey,omitempty"`
+	Msg         *Message         `json:"Msg,omitempty"`
 }
 
 type Member struct {
@@ -109,6 +113,10 @@ type Message struct {
 	Type                 int
 	Url                  string
 	VoiceLength          int
+}
+
+func (m Message) IsChatRoom() bool {
+	return m.MsgType == 10000
 }
 
 type Response struct {
@@ -229,7 +237,7 @@ func New() (*WeChat, error) {
 func (wc *WeChat) SendMessage(to, content string) error {
 	req := Request{
 		BaseRequest: wc.baseRequest,
-		Msg: Message{
+		Msg: &Message{
 			FromUserName: wc.userName,
 			ToUserName:   to,
 			Type:         1,
@@ -253,7 +261,7 @@ func (wc *WeChat) SendMessage(to, content string) error {
 func (wc *WeChat) GetLast() (*Response, error) {
 	req := Request{
 		BaseRequest: wc.baseRequest,
-		SyncKey:     wc.syncKey,
+		SyncKey:     &wc.syncKey,
 	}
 	var resp Response
 	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsync?sid="+wc.baseRequest.Sid, req, &resp)
@@ -273,7 +281,7 @@ func (wc *WeChat) GetContact(reqContacts []ContactRequest) ([]Contact, error) {
 		BaseRequest: wc.baseRequest,
 		Count:       len(reqContacts),
 		List:        reqContacts,
-		SyncKey:     wc.syncKey,
+		SyncKey:     &wc.syncKey,
 	}
 	var resp Response
 	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxbatchgetcontact?type=ex", req, &resp)
@@ -281,6 +289,85 @@ func (wc *WeChat) GetContact(reqContacts []ContactRequest) ([]Contact, error) {
 		return nil, err
 	}
 	return resp.ContactList, nil
+}
+
+func (wc *WeChat) ConvertCross(bucket *s3.Bucket, msg *Message) (uint64, model.Cross, error) {
+	if !msg.IsChatRoom() {
+		return 0, model.Cross{}, fmt.Errorf("%s", "not chat room")
+	}
+	chatroomReq := []ContactRequest{
+		ContactRequest{
+			UserName: msg.FromUserName,
+		},
+	}
+	chatrooms, err := wc.GetContact(chatroomReq)
+	if err != nil {
+		return 0, model.Cross{}, err
+	}
+	var chatroom Contact
+	for _, c := range chatrooms {
+		if c.UserName == msg.FromUserName {
+			chatroom = c
+			break
+		}
+	}
+	if chatroom.UserName != msg.FromUserName {
+		return 0, model.Cross{}, fmt.Errorf("can't find chatroom %s", msg.FromUserName)
+	}
+	var contactsReq []ContactRequest
+	for _, m := range chatroom.MemberList {
+		contactsReq = append(contactsReq, ContactRequest{
+			UserName:   m.UserName,
+			ChatRoomId: chatroom.Uin,
+		})
+	}
+	contacts, err := wc.GetContact(contactsReq)
+	if err != nil {
+		return 0, model.Cross{}, err
+	}
+	ret := model.Cross{}
+	ret.Title = "Cross with "
+	ret.Exfee.Invitations = make([]model.Invitation, len(contacts))
+	var host *model.Identity
+	for i, member := range contacts {
+		if i < 3 {
+			ret.Title += member.NickName + ", "
+		}
+		headerUrl := "https://wx.qq.com" + member.HeadImgUrl
+		headerPath := fmt.Sprintf("/thirdpart/weichat/%d.jpg", member.Uin)
+		resp, err := wc.get(headerUrl)
+		if err == nil {
+			obj, err := bucket.CreateObject(headerPath, resp.Header.Get("Content-Type"))
+			if err == nil {
+				obj.SetDate(time.Now())
+				length, err := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
+				if err == nil {
+					err = obj.SaveReader(resp.Body, length)
+					if err == nil {
+						headerUrl = obj.URL()
+					}
+				}
+			}
+		}
+		ret.Exfee.Invitations[i].Identity = model.Identity{
+			ExternalID:       fmt.Sprintf("%d", member.Uin),
+			Provider:         "wechat",
+			ExternalUsername: member.UserName,
+			Nickname:         member.NickName,
+			Avatar:           headerUrl,
+		}
+		if member.Uin == chatroom.OwnerUin {
+			ret.Exfee.Invitations[i].Host = true
+			host = &ret.Exfee.Invitations[i].Identity
+		}
+	}
+	ret.Title = ret.Title[:len(ret.Title)-2]
+	ret.By = *host
+	for i := range ret.Exfee.Invitations {
+		ret.Exfee.Invitations[i].By = *host
+		ret.Exfee.Invitations[i].UpdatedBy = *host
+	}
+	return chatroom.Uin, ret, nil
 }
 
 func (wc *WeChat) postJson(url string, data interface{}, reply interface{}) error {
@@ -398,12 +485,39 @@ func main() {
 	aws.SetLocationConstraint(s3.LC_AP_SINGAPORE)
 	bucket, err := aws.GetBucket(fmt.Sprintf("%s-3rdpart-photos", config.AWS.S3.BucketPrefix))
 	if err != nil {
-		panic(err)
+		logger.ERROR("can't create bucket: %s", err)
+		os.Exit(-1)
+		return
 	}
+
+	platform, err := broker.NewPlatform(&config)
+	if err != nil {
+		logger.ERROR("can't create platform: %s", err)
+		os.Exit(-1)
+		return
+	}
+
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4,utf8&autocommit=true",
+		config.DB.Username, config.DB.Password, config.DB.Addr, config.DB.Port, config.DB.DbName))
+	if err != nil {
+		logger.ERROR("mysql error:", err)
+		os.Exit(-1)
+		return
+	}
+	defer db.Close()
+	err = db.Ping()
+	if err != nil {
+		logger.ERROR("mysql error:", err)
+		os.Exit(-1)
+		return
+	}
+	idSaver := broker.NewCrossSaver(db)
 
 	wc, err := New()
 	if err != nil {
-		panic(err)
+		logger.ERROR("can't create wechat: %s", err)
+		os.Exit(-1)
+		return
 	}
 	defer func() {
 		logger.NOTICE("quit")
@@ -420,94 +534,71 @@ func main() {
 			return
 		default:
 		}
-		// err := wc.Ping()
-		// if err != nil {
-		// 	panic(err)
-		// }
 		fmt.Print(".")
 		resp, err := wc.GetLast()
 		if err != nil {
-			panic(err)
+			logger.ERROR("can't get last message: %s", err)
+			os.Exit(-1)
+			return
 		}
-		if len(resp.AddMsgList) > 0 {
-			var contactReq []ContactRequest
-			for _, msg := range resp.AddMsgList {
-				if msg.MsgType != 10000 {
-					continue
-				}
-				contactReq = append(contactReq, ContactRequest{
-					UserName: msg.FromUserName,
-				})
+		for _, msg := range resp.AddMsgList {
+			if !msg.IsChatRoom() {
+				continue
 			}
-			if len(contactReq) > 0 {
-				contacts, err := wc.GetContact(contactReq)
+			uin, cross, err := wc.ConvertCross(bucket, &msg)
+			if err != nil {
+				logger.ERROR("can't convert to cross: %s", err)
+				os.Exit(-1)
+				return
+			}
+			uinStr := fmt.Sprintf("%d", uin)
+			idStr, exist, err := idSaver.Check([]string{uinStr})
+			if err != nil {
+				logger.ERROR("can't check uin %s: %s", uinStr, err)
+				continue
+			}
+			if exist {
+				id, err := strconv.ParseInt(idStr, 10, 64)
 				if err != nil {
-					panic(err)
+					goto CREATE
 				}
-				for i, c := range contacts {
-					if c.MemberCount == 0 {
-						fmt.Printf("%d: person %+v\n", i, c)
+				oldCross, err := platform.FindCross(id, nil)
+				if err != nil {
+					goto CREATE
+				}
+				exfee := make(map[string]bool)
+				host := cross.Exfee.Invitations[0].Identity
+				for _, invitation := range cross.Exfee.Invitations {
+					exfee[invitation.Identity.Id()] = true
+					if invitation.Host {
+						host = invitation.Identity
+					}
+				}
+				for _, invitation := range oldCross.Exfee.Invitations {
+					if exfee[invitation.Identity.Id()] {
 						continue
 					}
-					var contactReq []ContactRequest
-					for _, m := range c.MemberList {
-						contactReq = append(contactReq, ContactRequest{
-							UserName:   m.UserName,
-							ChatRoomId: c.Uin,
-						})
-					}
-					cs, err := wc.GetContact(contactReq)
-					if err != nil {
-						panic(err)
-					}
-					cross := model.Cross{}
-					cross.Title = "Cross with "
-					cross.Exfee.Invitations = make([]model.Invitation, len(cs))
-					var host *model.Identity
-					for i, member := range cs {
-						if i < 3 {
-							cross.Title += member.NickName + ", "
-						}
-						headerPath := fmt.Sprintf("/thirdpart/weichat/%d.jpg", member.Uin)
-						resp, err := wc.get("https://wx.qq.com" + member.HeadImgUrl)
-						if err != nil {
-							panic(err)
-						}
-						obj, err := bucket.CreateObject(headerPath, resp.Header.Get("Content-Type"))
-						if err != nil {
-							panic(err)
-						}
-						obj.SetDate(time.Now())
-						length, err := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
-						if err != nil {
-							panic(err)
-						}
-						err = obj.SaveReader(resp.Body, length)
-						if err != nil {
-							panic(err)
-						}
-						cross.Exfee.Invitations[i].Identity = model.Identity{
-							ExternalID:       fmt.Sprintf("%d", member.Uin),
-							Provider:         "wechat",
-							ExternalUsername: member.UserName,
-							Nickname:         member.NickName,
-							Avatar:           obj.URL(),
-						}
-						if member.Uin == c.OwnerUin {
-							cross.Exfee.Invitations[i].Host = true
-							host = &cross.Exfee.Invitations[i].Identity
-						}
-					}
-					cross.Title = cross.Title[:len(cross.Title)-2]
-					cross.By = *host
-					for i := range cross.Exfee.Invitations {
-						cross.Exfee.Invitations[i].By = *host
-						cross.Exfee.Invitations[i].UpdatedBy = *host
-					}
-					b, _ := json.Marshal(cross)
-					fmt.Printf("%d: cross %s\n", i, string(b))
+					invitation.Response = model.Removed
+					cross.Exfee.Invitations = append(cross.Exfee.Invitations, invitation)
+				}
+				err = platform.BotCrossUpdate("cross_id", idStr, cross, host)
+				if err != nil {
+					logger.ERROR("can't update cross %s: %s", idStr, err)
+					goto CREATE
 				}
 			}
+		CREATE:
+			id, err := platform.BotCrossGather(cross)
+			if err != nil {
+				logger.ERROR("can't gather cross: %s", err)
+				continue
+			}
+			err = idSaver.Save([]string{fmt.Sprintf("%d", uin)}, fmt.Sprintf("%d", id))
+			if err != nil {
+				logger.ERROR("can't save cross id: %s", err)
+				continue
+			}
+			logger.INFO("gather cross", msg.FromUserName, uin, id, err)
 		}
 		time.Sleep(time.Second * 30)
 		if time.Now().Sub(last) > time.Minute*30 {
