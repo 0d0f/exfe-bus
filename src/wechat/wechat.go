@@ -38,6 +38,7 @@ type Request struct {
 	Count       int
 	List        []ContactRequest
 	SyncKey     SyncKey
+	Msg         Message
 }
 
 type Member struct {
@@ -90,11 +91,13 @@ type Message struct {
 	AppMsgType           int
 	Content              string
 	CreateTime           int64
+	ClientMsgId          int
 	FileName             string
 	FileSize             string
 	ForwardFlag          int
 	FromUserName         string
 	ImgStatus            int
+	LocalID              int
 	MediaId              string
 	MsgId                int64
 	MsgType              int
@@ -103,6 +106,7 @@ type Message struct {
 	StatusNotifyCode     int
 	StatusNotifyUserName string
 	ToUserName           string
+	Type                 int
 	Url                  string
 	VoiceLength          int
 }
@@ -112,6 +116,7 @@ type Response struct {
 		ErrMsg string
 		Ret    int
 	}
+	User Contact
 
 	AddMsgCount  int
 	AddMsgList   []Message
@@ -128,6 +133,7 @@ type WeChat struct {
 	client      *http.Client
 	baseRequest BaseRequest
 	syncKey     SyncKey
+	userName    string
 }
 
 func New() (*WeChat, error) {
@@ -216,15 +222,24 @@ func New() (*WeChat, error) {
 		client:      client,
 		baseRequest: baseRequest,
 		syncKey:     ret.SyncKey,
+		userName:    ret.User.UserName,
 	}, nil
 }
 
-func (wc *WeChat) Ping() error {
+func (wc *WeChat) SendMessage(to, content string) error {
 	req := Request{
 		BaseRequest: wc.baseRequest,
+		Msg: Message{
+			FromUserName: wc.userName,
+			ToUserName:   to,
+			Type:         1,
+			Content:      content,
+			ClientMsgId:  1,
+			LocalID:      1,
+		},
 	}
 	var resp Response
-	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsync?sid="+wc.baseRequest.Sid, req, &resp)
+	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsendmsg?sid="+wc.baseRequest.Sid, req, &resp)
 	if err != nil {
 		return err
 	}
@@ -232,7 +247,6 @@ func (wc *WeChat) Ping() error {
 		return fmt.Errorf("%s", resp.BaseResponse.ErrMsg)
 	}
 	wc.baseRequest.Skey = resp.Skey
-	wc.syncKey = resp.SyncKey
 	return nil
 }
 
@@ -391,10 +405,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer func() {
+		logger.NOTICE("quit")
+	}()
+	logger.NOTICE("login as %s", wc.userName)
+
+	i := 0
+	msgs := []string{"早", "hi", "喂", "what", "艹", "fuck", "呸", "lol"}
+	last := time.Now()
+
 	for {
 		select {
 		case <-quit:
-			logger.NOTICE("quit")
 			return
 		default:
 		}
@@ -488,5 +510,14 @@ func main() {
 			}
 		}
 		time.Sleep(time.Second * 30)
+		if time.Now().Sub(last) > time.Minute*30 {
+			last = time.Now()
+			err = wc.SendMessage("leaskh", msgs[i])
+			if err != nil {
+				panic(err)
+			}
+			i++
+			i = i % len(msgs)
+		}
 	}
 }
