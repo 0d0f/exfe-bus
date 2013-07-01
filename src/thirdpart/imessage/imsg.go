@@ -226,6 +226,6 @@ func (im *IMessage) Send(to, text string) (string, error) {
 	return resp.Head.Id, nil
 }
 
-func (im *IMessage) Post(to, text string) (string, error) {
+func (im *IMessage) Post(from, to, text string) (string, error) {
 	return im.Send(to, text)
 }

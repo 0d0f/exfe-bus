@@ -26,7 +26,7 @@ func (g *GCM) Provider() string {
 	return "Android"
 }
 
-func (g *GCM) Post(id, text string) (string, error) {
+func (g *GCM) Post(from, id, text string) (string, error) {
 	text = strings.Trim(text, " \r\n")
 	last := strings.LastIndex(text, "\n")
 	if last != -1 {

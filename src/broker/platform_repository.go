@@ -220,11 +220,11 @@ func (p *Platform) UploadPhoto(photoxID string, photos []model.Photo) error {
 	return nil
 }
 
-func (p *Platform) BotCrossGather(cross model.Cross) (uint64, error) {
+func (p *Platform) BotCrossGather(cross model.Cross) (model.Cross, error) {
 	b, err := json.Marshal(cross)
 	if err != nil {
 		logger.ERROR("encode cross error: %s with %+v", err, cross)
-		return 0, internalError
+		return model.Cross{}, internalError
 	}
 	b = []byte(p.replacer.Replace(string(b)))
 
@@ -235,30 +235,28 @@ func (p *Platform) BotCrossGather(cross model.Cross) (uint64, error) {
 	if err != nil {
 		switch resp.StatusCode {
 		case 400:
-			return 0, Error{CROSS_ERROR, err.Error()}
+			return model.Cross{}, Error{CROSS_ERROR, err.Error()}
 		}
 		logger.ERROR("post %s error: %s, with %s", u, err, string(b))
-		return 0, internalError
+		return model.Cross{}, internalError
 	}
 
 	defer reader.Close()
 	var ret struct {
-		Data struct {
-			CrossId uint64 `json:"cross_id"`
-		} `json:"data"`
-		Warning Warning `json:"warning"`
+		Data    model.Cross `json:"data"`
+		Warning Warning     `json:"warning"`
 	}
 	decoder := json.NewDecoder(reader)
 	err = decoder.Decode(&ret)
 	if err != nil {
 		logger.ERROR("parse %s error: %s with %s", u, err, string(b))
-		return 0, internalError
+		return model.Cross{}, internalError
 	}
 
 	if resp.StatusCode == 200 {
-		return ret.Data.CrossId, nil
+		return ret.Data, nil
 	}
-	return ret.Data.CrossId, ret.Warning
+	return ret.Data, ret.Warning
 }
 
 func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Identity) error {

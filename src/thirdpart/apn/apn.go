@@ -37,7 +37,7 @@ func (a *Apn) Provider() string {
 	return "iOS"
 }
 
-func (a *Apn) Post(id, text string) (string, error) {
+func (a *Apn) Post(from, id, text string) (string, error) {
 	text = strings.Trim(text, " \r\n")
 	last := strings.LastIndex(text, "\n")
 	if last == -1 {

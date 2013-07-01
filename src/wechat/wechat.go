@@ -142,9 +142,12 @@ type WeChat struct {
 	baseRequest BaseRequest
 	syncKey     SyncKey
 	userName    string
+	lastPing    time.Time
+	pingId      string
+	pingIndex   int
 }
 
-func New() (*WeChat, error) {
+func New(pingId string) (*WeChat, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -231,6 +234,9 @@ func New() (*WeChat, error) {
 		baseRequest: baseRequest,
 		syncKey:     ret.SyncKey,
 		userName:    ret.User.UserName,
+		lastPing:    time.Now(),
+		pingId:      pingId,
+		pingIndex:   0,
 	}, nil
 }
 
@@ -255,6 +261,20 @@ func (wc *WeChat) SendMessage(to, content string) error {
 		return fmt.Errorf("%s", resp.BaseResponse.ErrMsg)
 	}
 	wc.baseRequest.Skey = resp.Skey
+	wc.lastPing = time.Now()
+	return nil
+}
+
+func (wc *WeChat) Ping(timeout time.Duration) error {
+	if time.Now().Sub(wc.lastPing) < timeout {
+		return nil
+	}
+	msgs := []string{"早", "hi", "喂", "what", "敲", "lol"}
+	err := wc.SendMessage(wc.pingId, msgs[wc.pingIndex])
+	if err != nil {
+		return err
+	}
+	wc.pingIndex = (wc.pingIndex + 1) % len(msgs)
 	return nil
 }
 
@@ -480,6 +500,13 @@ func main() {
 	var config model.Config
 	_, quit := daemon.Init("exfe.json", &config)
 
+	work, ok := config.Wechat[os.Args[0]]
+	if !ok {
+		logger.ERROR("unknow work type", os.Args[0])
+		os.Exit(-1)
+		return
+	}
+
 	aws := s3.New(config.AWS.S3.Domain, config.AWS.S3.Key, config.AWS.S3.Secret)
 	aws.SetACL(s3.ACLPublicRead)
 	aws.SetLocationConstraint(s3.LC_AP_SINGAPORE)
@@ -511,9 +538,9 @@ func main() {
 		os.Exit(-1)
 		return
 	}
-	idSaver := broker.NewCrossSaver(db)
+	kvSaver := broker.NewKVSaver(db)
 
-	wc, err := New()
+	wc, err := New(work.PingId)
 	if err != nil {
 		logger.ERROR("can't create wechat: %s", err)
 		os.Exit(-1)
@@ -522,11 +549,39 @@ func main() {
 	defer func() {
 		logger.NOTICE("quit")
 	}()
-	logger.NOTICE("login as %s", wc.userName)
 
-	i := 0
-	msgs := []string{"早", "hi", "喂", "what", "艹", "fuck", "呸", "lol"}
-	last := time.Now()
+	http.HandleFunc("/send", func(w http.ResponseWriter, r *http.Request) {
+		to := r.URL.Query().Get("to")
+		if strings.HasPrefix(to, "e") && strings.HasSuffix(to, "@exfe") {
+			defer r.Body.Close()
+			chatroomId, exist, err := kvSaver.Check([]string{to})
+			if err != nil {
+				fmt.Println("not exist")
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if !exist {
+				http.Error(w, fmt.Sprintf("can't find chatroom for %s", to), http.StatusBadRequest)
+				return
+			}
+			to = chatroomId
+		}
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		err = wc.SendMessage(to, string(b))
+		if err != nil {
+			fmt.Println("send fail")
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+
+	go http.ListenAndServe(fmt.Sprintf("%s:%d", work.Addr, work.Port), nil)
+
+	logger.NOTICE("login as %s", wc.userName)
 
 	for {
 		select {
@@ -534,7 +589,6 @@ func main() {
 			return
 		default:
 		}
-		fmt.Print(".")
 		resp, err := wc.GetLast()
 		if err != nil {
 			logger.ERROR("can't get last message: %s", err)
@@ -552,7 +606,7 @@ func main() {
 				return
 			}
 			uinStr := fmt.Sprintf("%d", uin)
-			idStr, exist, err := idSaver.Check([]string{uinStr})
+			idStr, exist, err := kvSaver.Check([]string{uinStr})
 			if err != nil {
 				logger.ERROR("can't check uin %s: %s", uinStr, err)
 				continue
@@ -588,27 +642,25 @@ func main() {
 				}
 			}
 		CREATE:
-			id, err := platform.BotCrossGather(cross)
+			cross, err = platform.BotCrossGather(cross)
 			if err != nil {
 				logger.ERROR("can't gather cross: %s", err)
 				continue
 			}
-			err = idSaver.Save([]string{fmt.Sprintf("%d", uin)}, fmt.Sprintf("%d", id))
+			err = kvSaver.Save([]string{fmt.Sprintf("%d", uin)}, fmt.Sprintf("%d", cross.ID))
 			if err != nil {
 				logger.ERROR("can't save cross id: %s", err)
-				continue
 			}
-			logger.INFO("gather cross", msg.FromUserName, uin, id, err)
+			err = kvSaver.Save([]string{fmt.Sprintf("e%d@exfe", cross.Exfee.ID)}, fmt.Sprintf("%d@chatroom", uin))
+			if err != nil {
+				logger.ERROR("can't save exfee id: %s", err)
+			}
+			logger.INFO("wechat_gather", msg.FromUserName, uin, cross.ID, cross.Exfee.ID, err)
 		}
 		time.Sleep(time.Second * 30)
-		if time.Now().Sub(last) > time.Minute*30 {
-			last = time.Now()
-			err = wc.SendMessage("leaskh", msgs[i])
-			if err != nil {
-				panic(err)
-			}
-			i++
-			i = i % len(msgs)
+		err = wc.Ping(time.Minute * 30)
+		if err != nil {
+			panic(err)
 		}
 	}
 }

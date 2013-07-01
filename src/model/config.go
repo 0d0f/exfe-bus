@@ -69,6 +69,11 @@ type Config struct {
 		Addr string `json:"addr"`
 		Port uint   `json:"port"`
 	} `json:"exfe_queue"`
+	Wechat map[string]struct {
+		Addr   string `json:"addr"`
+		Port   uint   `json:"port"`
+		PingId string `json:"ping_id"`
+	} `json:"wechat"`
 
 	Splitter struct {
 		SpeedOn map[string]int64 `json:"speed_on"`

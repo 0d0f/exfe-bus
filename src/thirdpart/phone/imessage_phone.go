@@ -24,11 +24,11 @@ func (s *IMsgPhone) Provider() string {
 	return "imessage|phone"
 }
 
-func (s *IMsgPhone) Post(id, text string) (string, error) {
+func (s *IMsgPhone) Post(from, id, text string) (string, error) {
 	text = strings.Trim(text, " \r\n")
-	if ret, err := s.imsg.Post(id, text); err == nil {
+	if ret, err := s.imsg.Post(from, id, text); err == nil {
 		logger.NOTICE("%s@imessage|phone sent from imessage", id)
 		return ret, nil
 	}
-	return s.phone.Post(id, text)
+	return s.phone.Post(from, id, text)
 }

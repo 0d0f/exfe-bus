@@ -47,7 +47,7 @@ type twitterReply struct {
 	Recipient twitterInfo `json:"recipient"`
 }
 
-func (t *Twitter) Post(id, text string) (string, error) {
+func (t *Twitter) Post(from, id, text string) (string, error) {
 	text = strings.Trim(text, " \n\r")
 	privateMessage := text
 	publicMessage := text

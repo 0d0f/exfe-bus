@@ -25,7 +25,7 @@ func (f *Facebook) Provider() string {
 	return provider
 }
 
-func (f *Facebook) Post(id, text string) (string, error) {
+func (f *Facebook) Post(from, id, text string) (string, error) {
 	return f.helper.SendEmail(id, text)
 }
 

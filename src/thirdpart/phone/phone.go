@@ -31,7 +31,7 @@ func (s *Phone) Provider() string {
 	return "phone"
 }
 
-func (s *Phone) Post(id, text string) (string, error) {
+func (s *Phone) Post(from, id, text string) (string, error) {
 	text = strings.Trim(text, " \r\n")
 
 	var sender Sender

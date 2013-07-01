@@ -137,7 +137,7 @@ func (w *Worker) process() {
 		}
 		cross := parser.GetCross()
 		if to == "" {
-			crossID, err := w.platform.BotCrossGather(cross)
+			cross, err := w.platform.BotCrossGather(cross)
 			if err != nil {
 				if warning, ok := err.(broker.Warning); ok {
 					w.sendHelp(warning, parser)
@@ -145,7 +145,7 @@ func (w *Worker) process() {
 				errorIds = append(errorIds, id)
 				continue
 			}
-			to, toID = "cross_id", fmt.Sprintf("%d", crossID)
+			to, toID = "cross_id", fmt.Sprintf("%d", cross.ID)
 		} else {
 			if post := parser.GetPost(); post != "" && !fromCalendar {
 				err := w.platform.BotPostConversation(parser.from.Address, post, parser.Date(), parser.addrList, to, toID)

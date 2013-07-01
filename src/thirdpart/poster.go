@@ -16,8 +16,7 @@ func init() {
 type IPoster interface {
 	Provider() string
 
-	Post(userId string, text string) (messageId string, err error)
-	// Send(to *model.Recipient, text string) (messageId string, err error)
+	Post(from, to string, text string) (messageId string, err error)
 }
 
 type Poster struct {
@@ -51,13 +50,7 @@ func (m Poster) HandlePost(text string) string {
 		return ""
 	}
 
-	// to := &model.Recipient{
-	// 	ExternalUsername: id,
-	// 	ExternalID:       id,
-	// 	Provider:         provider,
-	// }
-	// ret, err := poster.Send(to, text)
-	ret, err := poster.Post(id, text)
+	ret, err := poster.Post(m.Request().URL.Query().Get("from"), id, text)
 	if err != nil {
 		m.Error(http.StatusInternalServerError, m.DetailError(2, "%s", err))
 	}

@@ -21,6 +21,7 @@ import (
 	"thirdpart/phone"
 	"thirdpart/photostream"
 	"thirdpart/twitter"
+	"thirdpart/wechat"
 	"time"
 )
 
@@ -49,6 +50,9 @@ func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdp
 
 	email_ := email.New(helper)
 	poster.Add(email_)
+
+	wechat := wechat.New(config)
+	poster.Add(wechat)
 
 	apn_ := apn.New(apns_, func(err error) { logger.ERROR("%s", err) })
 	poster.Add(apn_)
