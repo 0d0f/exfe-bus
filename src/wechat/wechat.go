@@ -267,8 +267,10 @@ func (wc *WeChat) SendMessage(to, content string) error {
 
 func (wc *WeChat) Ping(timeout time.Duration) error {
 	if time.Now().Sub(wc.lastPing) < timeout {
+		fmt.Print(".")
 		return nil
 	}
+	fmt.Print("+")
 	msgs := []string{"早", "hi", "喂", "what", "敲", "lol"}
 	err := wc.SendMessage(wc.pingId, msgs[wc.pingIndex])
 	if err != nil {
@@ -660,7 +662,8 @@ func main() {
 		time.Sleep(time.Second * 30)
 		err = wc.Ping(time.Minute * 30)
 		if err != nil {
-			panic(err)
+			logger.ERROR("ping error: %s", err)
+			return
 		}
 	}
 }
