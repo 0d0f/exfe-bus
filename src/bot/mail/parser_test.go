@@ -127,7 +127,9 @@ Cg==`
 	assert.Equal(t, parser.subject, "本月体检")
 	assert.Equal(t, len(parser.addrList), 3)
 	assert.Equal(t, parser.HasICS(), false)
-	assert.Equal(t, len(parser.GetCross().Exfee.Invitations), 2)
+	cross := parser.GetCross()
+	assert.Equal(t, len(cross.Exfee.Invitations), 2)
+	assert.Equal(t, cross.Time.BeginAt.Timezone, "+08:00")
 }
 
 func TestNormalAttachment(t *testing.T) {

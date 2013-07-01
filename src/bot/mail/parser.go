@@ -126,9 +126,15 @@ func NewParser(msg *mail.Message, config *model.Config, bucket *s3.Bucket) (*Par
 		subject = s
 	}
 
-	date, err := time.Parse("Mon, 02 Jan 2006 15:04:05 -0700", msg.Header.Get("Date"))
+	date, err := time.Parse("Mon, 2 Jan 2006 15:04:05 -0700", msg.Header.Get("Date"))
 	if err != nil {
-		date = time.Now()
+		date, err = time.Parse("Mon, 2 Jan 2006 15:04:05 -0700 MST", msg.Header.Get("Date"))
+	}
+	if err != nil {
+		date, err = time.Parse("Mon, 2 Jan 2006 15:04:05 -0700 (MST)", msg.Header.Get("Date"))
+	}
+	if err != nil {
+		date = time.Now().UTC()
 	}
 
 	ret := &Parser{
@@ -139,7 +145,7 @@ func NewParser(msg *mail.Message, config *model.Config, bucket *s3.Bucket) (*Par
 		messageID:    msgID,
 		referenceIDs: ids,
 		subject:      subject,
-		date:         date.UTC(),
+		date:         date,
 		config:       config,
 		domain:       config.Email.Domain,
 		idRegexp:     regexp.MustCompile(config.Email.Prefix + "\\+([0-9a-zA-Z]+)@"),
@@ -274,7 +280,7 @@ func (h *Parser) GetIDs() []string {
 }
 
 func (h *Parser) Date() string {
-	return h.date.Format("2006-01-02 15:04:05")
+	return h.date.UTC().Format("2006-01-02 15:04:05")
 }
 
 func (h *Parser) GetCross() (cross model.Cross) {
@@ -284,6 +290,11 @@ func (h *Parser) GetCross() (cross model.Cross) {
 		cross.Description = h.content
 	}
 	cross.Title = h.subject
+	cross.Time = &model.CrossTime{
+		BeginAt: model.EFTime{
+			Timezone: h.date.Format("-07:00"),
+		},
+	}
 
 	check := make(map[string]bool)
 	for _, i := range cross.Exfee.Invitations {
