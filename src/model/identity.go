@@ -52,7 +52,7 @@ func (i Identity) ScreenId() string {
 	case "phone":
 		return i.ExternalUsername
 	case "twitter":
-		return "@" + i.ExternalUsername
+		return "@" + i.ExternalUsername + "@" + i.Provider
 	}
 	return i.ExternalUsername + "@" + i.Provider
 }
