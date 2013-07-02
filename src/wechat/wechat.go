@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"daemon"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -549,6 +550,19 @@ func main() {
 		return
 	}
 	defer func() {
+		post := fmt.Sprintf("http://%s:%d/v3/poster/email/srv-op@exfe.com", config.ExfeService.Addr, config.ExfeService.Port)
+		queue := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s?ontime=%d", config.ExfeQueue.Addr, config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(post)), time.Now().Unix())
+		notice := `Content-Type: text/plain
+To: srv-op@exfe.com
+From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
+Subject: =?utf-8?B?ISEhIVdlQ2hhdCBEb3duISEhIeKAjw==?=
+
+WeChat is down!!! Help!!!!`
+		resp, err := broker.Http("POST", queue, "text/plain", []byte(notice))
+		if err != nil {
+			logger.ERROR("send notification failed: %s", err)
+		}
+		resp.Body.Close()
 		logger.NOTICE("quit")
 	}()
 
