@@ -29,7 +29,7 @@ func (w *Wechat) Post(from, to, content string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("can't find bot: %s", from)
 	}
-	resp, err := broker.Http("POST", bot, "text/plain", []byte(content))
+	resp, err := broker.Http("POST", bot+"?to="+to, "text/plain", []byte(content))
 	if err != nil {
 		return "", err
 	}
