@@ -155,9 +155,9 @@ func TestTemplateSub(t *testing.T) {
 func TestLocalTemplate(t *testing.T) {
 	l, err := NewLocalTemplate("./template_test", "en_US")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, l.defaultLang, "en_US")
+	assert.Equal(t, l.defaultLang, "en_us")
 
-	_, ok := l.templates["en_US"]
+	_, ok := l.templates["en_us"]
 	assert.Equal(t, ok, true)
 
 	_, ok = l.templates[".should_ignore"]
@@ -179,7 +179,7 @@ func TestLocalTemplate(t *testing.T) {
 func TestLocalTemplateExist(t *testing.T) {
 	l, err := NewLocalTemplate("./template_test", "en_US")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, l.defaultLang, "en_US")
+	assert.Equal(t, l.defaultLang, "en_us")
 
 	assert.Equal(t, l.IsExist("en_US", "test.template"), true)
 	assert.Equal(t, l.IsExist("en_CN", "test.template"), true)

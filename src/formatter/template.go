@@ -130,7 +130,7 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 		return nil, fmt.Errorf("can't read dir %s: %s", path, err)
 	}
 	ret := &LocalTemplate{
-		defaultLang: defaultLang,
+		defaultLang: strings.ToLower(defaultLang),
 		templates:   make(map[string]*template.Template),
 	}
 	for _, i := range infos {
@@ -145,12 +145,13 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 		if err != nil {
 			return nil, fmt.Errorf("can't parse %s/%s: %s", path, i.Name(), err)
 		}
-		ret.templates[i.Name()] = template
+		ret.templates[strings.ToLower(i.Name())] = template
 	}
 	return ret, nil
 }
 
 func (l *LocalTemplate) IsExist(lang, name string) bool {
+	lang = strings.ToLower(lang)
 	t, ok := l.templates[lang]
 	if !ok {
 		t, ok = l.templates[l.defaultLang]
@@ -162,6 +163,7 @@ func (l *LocalTemplate) IsExist(lang, name string) bool {
 }
 
 func (l *LocalTemplate) Execute(wr io.Writer, lang, name string, data interface{}) error {
+	lang = strings.ToLower(lang)
 	t, ok := l.templates[lang]
 	if ok {
 		err := t.ExecuteTemplate(wr, name, data)
