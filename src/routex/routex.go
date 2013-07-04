@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/googollee/go-broadcast"
 	"github.com/googollee/go-rest"
-	"io/ioutil"
 	"logger"
 	"model"
 	"net/http"
