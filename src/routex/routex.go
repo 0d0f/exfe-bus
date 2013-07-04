@@ -97,17 +97,11 @@ func (m RouteMap) HandleGetLocation() map[string][]Location {
 	return ret
 }
 
-func (m RouteMap) HandleUpdateRoute() {
+func (m RouteMap) HandleUpdateRoute(content string) {
 	token, ok := m.auth()
 	if !ok {
 		return
 	}
-	b, err := ioutil.ReadAll(m.Request().Body)
-	if err != nil {
-		m.Error(http.StatusBadRequest, err)
-		return
-	}
-	content := string(b)
 	if err := m.routeRepo.Save(token.CrossId, content); err != nil {
 		logger.ERROR("save route for cross %d failed: %s", token.CrossId, err)
 		m.Error(http.StatusInternalServerError, err)
