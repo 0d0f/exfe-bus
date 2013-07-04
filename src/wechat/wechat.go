@@ -558,6 +558,7 @@ From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
 Subject: =?utf-8?B?ISEhIVdlQ2hhdCBEb3duISEhIeKAjw==?=
 
 WeChat is down!!! Help!!!!`
+		logger.NOTICE("send %s: %s", queue, notice)
 		resp, err := broker.Http("POST", queue, "text/plain", []byte(notice))
 		if err != nil {
 			logger.ERROR("send notification failed: %s", err)
