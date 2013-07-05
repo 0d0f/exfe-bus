@@ -175,6 +175,11 @@ func (m *RouteMap) auth() (Token, bool) {
 		return token, false
 	}
 
+	if token.TokenType != "cross_access_token" && token.TokenType != "user_token" {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		return token, false
+	}
+
 	query := make(url.Values)
 	query.Set("user_id", fmt.Sprintf("%d", token.UserId))
 	token.Cross, err = m.platform.FindCross(int64(crossId), query)
