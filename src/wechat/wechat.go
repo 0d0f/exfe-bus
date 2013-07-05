@@ -534,9 +534,10 @@ func main() {
 	var config model.Config
 	_, quit := daemon.Init("exfe.json", &config)
 
-	work, ok := config.Wechat[os.Args[1]]
+	workType := os.Args[len(os.Args)-1]
+	work, ok := config.Wechat[workType]
 	if !ok {
-		logger.ERROR("unknow work type", os.Args[0])
+		logger.ERROR("unknow work type %s", workType)
 		return
 	}
 
