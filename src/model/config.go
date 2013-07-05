@@ -63,6 +63,7 @@ type Config struct {
 			Notifier  bool `json:"notifier"`
 			Live      bool `json:"live"`
 			Splitter  bool `json:"splitter"`
+			Routex    bool `json:"routex"`
 		} `json:"services"`
 	} `json:"exfe_service"`
 	ExfeQueue struct {

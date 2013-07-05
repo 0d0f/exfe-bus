@@ -6,12 +6,14 @@ import (
 	"database/sql"
 	"fmt"
 	"formatter"
+	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
 	l "github.com/googollee/go-logger"
 	"gobus"
 	"logger"
 	"model"
 	"os"
+	"routex"
 	"splitter"
 	"token"
 )
@@ -46,7 +48,12 @@ func main() {
 		return
 	}
 
-	redis := broker.NewRedisMultiplexer(&config)
+	redis_ := broker.NewRedisMultiplexer(&config)
+	redis, err := redis.DialTimeout("tcp", config.Redis.Netaddr, broker.NetworkTimeout, broker.NetworkTimeout, broker.NetworkTimeout)
+	if err != nil {
+		logger.ERROR("redis connect error: %s", err)
+		return
+	}
 
 	localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
 	if err != nil {
@@ -127,7 +134,7 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Iom {
-		iom := NewIom(&config, redis)
+		iom := NewIom(&config, redis_)
 
 		err = bus.Register(iom)
 		if err != nil {
@@ -153,6 +160,13 @@ func main() {
 			return
 		}
 		log.Info("register Thirdpart")
+	}
+
+	if config.ExfeService.Services.Routex {
+		location := &routex.LocationSaver{redis}
+		route := &routex.RouteSaver{redis}
+		routex := routex.New(location, route, platform, &config)
+		register("routex", routex, nil)
 	}
 
 	go func() {

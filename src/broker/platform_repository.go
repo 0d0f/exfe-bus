@@ -382,3 +382,30 @@ func (p *Platform) GetIcs(token string) (string, error) {
 	}
 	return string(b), nil
 }
+
+func (p *Platform) GetIdentityById(id uint64) (model.Identity, error) {
+	u := fmt.Sprintf("%s/v3/identities/%d", p.config.SiteApi, id)
+	reader, err := HttpResponse(Http("GET", u, "applicatioin/json", nil))
+	if err != nil {
+		logger.ERROR("get %s error: %s", u, err)
+		return model.Identity{}, err
+	}
+
+	defer reader.Close()
+	var ret struct {
+		Meta struct {
+			Code        int    `json:"code"`
+			ErrorDetail string `json:"errorDetail"`
+		} `json:"meta"`
+		Response struct {
+			Identity model.Identity `json:"identity"`
+		} `json:"response"`
+	}
+	decoder := json.NewDecoder(reader)
+	err = decoder.Decode(&ret)
+	if err != nil || ret.Meta.Code != 200 {
+		logger.ERROR("decode %s error: %s(%d %s)", u, err, ret.Meta.Code, ret.Meta.ErrorDetail)
+		return model.Identity{}, err
+	}
+	return ret.Response.Identity, nil
+}
