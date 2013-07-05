@@ -47,7 +47,7 @@ func (s *LocationSaver) Save(id string, crossId uint64, l Location) error {
 	if err != nil {
 		return err
 	}
-	err = s.Redis.Send("EXPIRE", key, time.Hour*24/time.Second)
+	err = s.Redis.Send("EXPIRE", key, int(time.Hour*24/time.Second))
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (s *LocationSaver) Load(id string, crossId uint64) ([]Location, error) {
 }
 
 func (s *LocationSaver) key(id string, crossId uint64) string {
-	return fmt.Sprintf("exfe:v3:routex:location:%s:cross_%d", id, crossId)
+	return fmt.Sprintf("exfe:v3:routex:cross_%d:location:%s", id, crossId)
 }
 
 type RouteSaver struct {
@@ -96,7 +96,7 @@ func (s *RouteSaver) Save(crossId uint64, content string) error {
 	if err != nil {
 		return err
 	}
-	err = s.Redis.Send("EXPIRE", key, time.Hour*24*7/time.Second)
+	err = s.Redis.Send("EXPIRE", key, int(time.Hour*24*7/time.Second))
 	if err != nil {
 		return err
 	}
@@ -117,5 +117,5 @@ func (s *RouteSaver) Load(crossId uint64) (string, error) {
 }
 
 func (s *RouteSaver) key(crossId uint64) string {
-	return fmt.Sprintf("exfe:v3:routex:route:cross_%d", crossId)
+	return fmt.Sprintf("exfe:v3:routex:cross_%d:route", crossId)
 }

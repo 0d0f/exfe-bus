@@ -66,7 +66,7 @@ func (m RouteMap) HandleUpdateLocation(location Location) {
 		return
 	}
 	broadcast.Send(map[string]interface{}{
-		"name": fmt.Sprintf("/cross/%d/location", token.CrossId),
+		"name": m.UpdateRoute.Path("cross_id", m.Vars()["cross_id"]),
 		"data": map[string]interface{}{
 			id: locations,
 		},
@@ -112,7 +112,7 @@ func (m RouteMap) HandleUpdateRoute(content string) {
 		return
 	}
 	broadcast.Send(map[string]interface{}{
-		"name": fmt.Sprintf("/cross/%d/route", token.CrossId),
+		"name": m.UpdateRoute.Path("cross_id", m.Vars()["cross_id"]),
 		"data": content,
 	})
 }
@@ -147,12 +147,23 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 	c := make(chan interface{})
 	b.Register(c)
+	defer func() {
+		b.Unregister(c)
+		close(c)
+	}()
 	for {
-		d := <-c
-		stream.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
-		err := stream.Write(d)
-		if err != nil {
-			return
+		select {
+		case d := <-c:
+			stream.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
+			err := stream.Write(d)
+			if err != nil {
+				return
+			}
+		case <-time.After(broker.NetworkTimeout):
+			err := stream.Ping()
+			if err != nil {
+				return
+			}
 		}
 	}
 }

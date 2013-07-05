@@ -384,7 +384,7 @@ func (p *Platform) GetIcs(token string) (string, error) {
 }
 
 func (p *Platform) GetIdentityById(id uint64) (model.Identity, error) {
-	u := fmt.Sprintf("%s/v3/identities/%d", p.config.SiteApi, id)
+	u := fmt.Sprintf("%s/v2/identities/%d", p.config.SiteApi, id)
 	reader, err := HttpResponse(Http("GET", u, "applicatioin/json", nil))
 	if err != nil {
 		logger.ERROR("get %s error: %s", u, err)
