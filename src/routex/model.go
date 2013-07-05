@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"logger"
+	"model"
 	"time"
 )
 
@@ -14,13 +15,12 @@ type Location struct {
 	Lat       string `json:"lat"`
 }
 
-type CrossToken struct {
-	TokenType  string `json:"token_type"`
-	CrossId    uint64 `json:"cross_id"`
-	IdentityId uint64 `json:"identity_id"`
-	UserId     int64  `json:"user_id"`
-	CreatedAt  int64  `json:"created_time"`
-	UpdatedAt  int64  `json:"updated_time"`
+type Token struct {
+	TokenType string `json:"token_type"`
+	UserId    int64  `json:"user_id"`
+
+	Cross    model.Cross    `json:"-"`
+	Identity model.Identity `json:"-"`
 }
 
 type LocationRepo interface {
