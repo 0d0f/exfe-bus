@@ -148,7 +148,7 @@ type WeChat struct {
 	pingIndex   int
 }
 
-func New(pingId string) (*WeChat, error) {
+func New(pingId string, config *model.Config) (*WeChat, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -171,7 +171,27 @@ func New(pingId string) (*WeChat, error) {
 		return nil, fmt.Errorf("can't find key uuid in %s", string(b))
 	}
 	uuid := string(b[:end])
-	logger.NOTICE("login: https://login.weixin.qq.com/qrcode/%s?t=webwx", uuid)
+	loginUrl := fmt.Sprintf("https://login.weixin.qq.com/qrcode/%s?t=webwx", uuid)
+	logger.NOTICE("login: %s", loginUrl)
+
+	post := fmt.Sprintf("http://%s:%d/v3/poster/email/srv-op@exfe.com", config.ExfeService.Addr, config.ExfeService.Port)
+	queue := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s?ontime=%d&update=once", config.ExfeQueue.Addr, config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(post)), time.Now().Unix())
+	notice := `Content-Type: text/plain
+To: srv-op@exfe.com
+From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
+Subject: =?utf-8?B?ISEhIVdlQ2hhdCBEb3duISEhIeKAjw==?=
+
+WeChat need login!!! Help!!!!
+QR: ` + loginUrl
+	b, _ = json.Marshal(notice)
+	{
+		resp, err := broker.Http("POST", queue, "text/plain", b)
+		if err != nil {
+			logger.ERROR("send notification %s failed: %s with %s", queue, err, string(b))
+		} else {
+			resp.Body.Close()
+		}
+	}
 
 	login := fmt.Sprintf("https://login.weixin.qq.com/cgi-bin/mmwebwx-bin/login?uuid=%s&tip=1", uuid)
 	var tokenUrl string
@@ -538,28 +558,12 @@ func main() {
 	}
 	kvSaver := broker.NewKVSaver(db)
 
-	wc, err := New(work.PingId)
+	wc, err := New(work.PingId, &config)
 	if err != nil {
 		logger.ERROR("can't create wechat: %s", err)
 		return
 	}
 	defer func() {
-		post := fmt.Sprintf("http://%s:%d/v3/poster/email/srv-op@exfe.com", config.ExfeService.Addr, config.ExfeService.Port)
-		queue := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s?ontime=%d&update=once", config.ExfeQueue.Addr, config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(post)), time.Now().Unix())
-		notice := `Content-Type: text/plain
-To: srv-op@exfe.com
-From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
-Subject: =?utf-8?B?ISEhIVdlQ2hhdCBEb3duISEhIeKAjw==?=
-
-WeChat is down!!! Help!!!!`
-		b, _ := json.Marshal(notice)
-		logger.NOTICE("send %s: %s", queue, string(b))
-		resp, err := broker.Http("POST", queue, "text/plain", []byte(b))
-		if err != nil {
-			logger.ERROR("send notification failed: %s", err)
-		} else {
-			resp.Body.Close()
-		}
 		logger.NOTICE("quit")
 	}()
 
