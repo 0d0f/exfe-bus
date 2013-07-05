@@ -519,7 +519,7 @@ func makeSyncQuery(syncKey []map[string]int) string {
 func sendmail(config *model.Config, content string) {
 	post := fmt.Sprintf("http://%s:%d/v3/poster/email/srv-op@exfe.com", config.ExfeService.Addr, config.ExfeService.Port)
 	queue := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s?ontime=%d&update=once", config.ExfeQueue.Addr, config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(post)), time.Now().Unix())
-	b, _ = json.Marshal(content)
+	b, _ := json.Marshal(content)
 	{
 		resp, err := broker.Http("POST", queue, "application/json", b)
 		if err != nil {
