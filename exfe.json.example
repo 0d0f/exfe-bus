@@ -57,7 +57,15 @@
   "exfe_service": {
     "addr": "127.0.0.1",
     "port": 23333,
-    "services": {"token": true, "iom":true, "thirdpart":true, "notifier":true, "live": true, "splitter": true}
+    "services": {
+      "token": true,
+      "iom": true,
+      "thirdpart": true,
+      "notifier": true,
+      "live": true,
+      "splitter": true,
+      "routex": true
+    }
   },
   "exfe_queue": {
     "addr": "127.0.0.1",

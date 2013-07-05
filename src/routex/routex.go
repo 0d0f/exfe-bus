@@ -17,8 +17,8 @@ type RouteMap struct {
 
 	UpdateLocation rest.Processor `path:"/cross/:cross_id/location" method:"POST"`
 	GetLocation    rest.Processor `path:"/cross/:cross_id/location" method:"GET"`
-	UpdateRoute    rest.Processor `path:"cross/:cross_id/route" method:"POST"`
-	GetRoute       rest.Processor `path:/cross/:cross_id/route" method:"GET"`
+	UpdateRoute    rest.Processor `path:"/cross/:cross_id/route" method:"POST"`
+	GetRoute       rest.Processor `path:"/cross/:cross_id/route" method:"GET"`
 	Notification   rest.Streaming `path:"/cross/:cross_id" method:"POST"`
 
 	locationRepo LocationRepo
@@ -50,6 +50,7 @@ func (m RouteMap) HandleUpdateLocation(location Location) {
 		return
 	}
 	id := identity.Id()
+	location.Timestamp = time.Now().Unix()
 	if err := m.locationRepo.Save(id, token.CrossId, location); err != nil {
 		logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.CrossId, err, location)
 		m.Error(http.StatusInternalServerError, err)
@@ -130,7 +131,7 @@ func (m RouteMap) HandleGetRoute() string {
 	return content
 }
 
-func (m RouteMap) HandleNotification(stream *rest.Stream) {
+func (m RouteMap) HandleNotification(stream rest.Stream) {
 	if m.Request().URL.Query().Get("_method") != "WATCH" {
 		m.Error(http.StatusBadRequest, m.DetailError(-1, "method not watch"))
 		return
