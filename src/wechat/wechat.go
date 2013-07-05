@@ -506,7 +506,6 @@ func main() {
 	work, ok := config.Wechat[os.Args[1]]
 	if !ok {
 		logger.ERROR("unknow work type", os.Args[0])
-		os.Exit(-1)
 		return
 	}
 
@@ -516,14 +515,12 @@ func main() {
 	bucket, err := aws.GetBucket(fmt.Sprintf("%s-3rdpart-photos", config.AWS.S3.BucketPrefix))
 	if err != nil {
 		logger.ERROR("can't create bucket: %s", err)
-		os.Exit(-1)
 		return
 	}
 
 	platform, err := broker.NewPlatform(&config)
 	if err != nil {
 		logger.ERROR("can't create platform: %s", err)
-		os.Exit(-1)
 		return
 	}
 
@@ -531,14 +528,12 @@ func main() {
 		config.DB.Username, config.DB.Password, config.DB.Addr, config.DB.Port, config.DB.DbName))
 	if err != nil {
 		logger.ERROR("mysql error:", err)
-		os.Exit(-1)
 		return
 	}
 	defer db.Close()
 	err = db.Ping()
 	if err != nil {
 		logger.ERROR("mysql error:", err)
-		os.Exit(-1)
 		return
 	}
 	kvSaver := broker.NewKVSaver(db)
@@ -546,7 +541,6 @@ func main() {
 	wc, err := New(work.PingId)
 	if err != nil {
 		logger.ERROR("can't create wechat: %s", err)
-		os.Exit(-1)
 		return
 	}
 	defer func() {
@@ -609,7 +603,6 @@ WeChat is down!!! Help!!!!`
 		resp, err := wc.GetLast()
 		if err != nil {
 			logger.ERROR("can't get last message: %s", err)
-			os.Exit(-1)
 			return
 		}
 		for _, msg := range resp.AddMsgList {
@@ -619,7 +612,6 @@ WeChat is down!!! Help!!!!`
 			uin, cross, err := wc.ConvertCross(bucket, &msg)
 			if err != nil {
 				logger.ERROR("can't convert to cross: %s", err)
-				os.Exit(-1)
 				return
 			}
 			uinStr := fmt.Sprintf("%d", uin)
