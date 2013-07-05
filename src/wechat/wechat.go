@@ -521,7 +521,7 @@ func sendmail(config *model.Config, content string) {
 	queue := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s?ontime=%d&update=once", config.ExfeQueue.Addr, config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(post)), time.Now().Unix())
 	b, _ := json.Marshal(content)
 	{
-		resp, err := broker.Http("POST", queue, "application/json", b)
+		resp, err := broker.Http("POST", queue, "plain/text", b)
 		if err != nil {
 			logger.ERROR("send notification %s failed: %s with %s", queue, err, string(b))
 		} else {
