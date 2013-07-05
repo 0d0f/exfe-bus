@@ -554,7 +554,7 @@ Subject: =?utf-8?B?ISEhIVdlQ2hhdCBEb3duISEhIeKAjw==?=
 WeChat is down!!! Help!!!!`
 		b, _ := json.Marshal(notice)
 		logger.NOTICE("send %s: %s", queue, string(b))
-		resp, err := broker.Http("POST", queue, "text/plain", []byte(notice))
+		resp, err := broker.Http("POST", queue, "text/plain", []byte(b))
 		if err != nil {
 			logger.ERROR("send notification failed: %s", err)
 		} else {
