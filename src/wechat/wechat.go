@@ -545,19 +545,21 @@ func main() {
 	}
 	defer func() {
 		post := fmt.Sprintf("http://%s:%d/v3/poster/email/srv-op@exfe.com", config.ExfeService.Addr, config.ExfeService.Port)
-		queue := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s?ontime=%d", config.ExfeQueue.Addr, config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(post)), time.Now().Unix())
+		queue := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s?ontime=%d&update=once", config.ExfeQueue.Addr, config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(post)), time.Now().Unix())
 		notice := `Content-Type: text/plain
 To: srv-op@exfe.com
 From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
 Subject: =?utf-8?B?ISEhIVdlQ2hhdCBEb3duISEhIeKAjw==?=
 
 WeChat is down!!! Help!!!!`
-		logger.NOTICE("send %s: %s", queue, notice)
+		b, _ := json.Marshal(notice)
+		logger.NOTICE("send %s: %s", queue, string(b))
 		resp, err := broker.Http("POST", queue, "text/plain", []byte(notice))
 		if err != nil {
 			logger.ERROR("send notification failed: %s", err)
+		} else {
+			resp.Body.Close()
 		}
-		resp.Body.Close()
 		logger.NOTICE("quit")
 	}()
 
