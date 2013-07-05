@@ -174,24 +174,13 @@ func New(pingId string, config *model.Config) (*WeChat, error) {
 	loginUrl := fmt.Sprintf("https://login.weixin.qq.com/qrcode/%s?t=webwx", uuid)
 	logger.NOTICE("login: %s", loginUrl)
 
-	post := fmt.Sprintf("http://%s:%d/v3/poster/email/srv-op@exfe.com", config.ExfeService.Addr, config.ExfeService.Port)
-	queue := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s?ontime=%d&update=once", config.ExfeQueue.Addr, config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(post)), time.Now().Unix())
-	notice := `Content-Type: text/plain
+	sendmail(config, `Content-Type: text/plain
 To: srv-op@exfe.com
 From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
-Subject: =?utf-8?B?ISEhIVdlQ2hhdCBEb3duISEhIeKAjw==?=
+Subject: =?utf-8?B?ISEhIVdlQ2hhdCBuZWVkIGxvZ2luISEhIQo=?=
 
 WeChat need login!!! Help!!!!
-QR: ` + loginUrl
-	b, _ = json.Marshal(notice)
-	{
-		resp, err := broker.Http("POST", queue, "text/plain", b)
-		if err != nil {
-			logger.ERROR("send notification %s failed: %s with %s", queue, err, string(b))
-		} else {
-			resp.Body.Close()
-		}
-	}
+QR: `+loginUrl)
 
 	login := fmt.Sprintf("https://login.weixin.qq.com/cgi-bin/mmwebwx-bin/login?uuid=%s&tip=1", uuid)
 	var tokenUrl string
@@ -250,6 +239,14 @@ QR: ` + loginUrl
 		return nil, fmt.Errorf("webwxinit error: %s", ret.BaseResponse.ErrMsg)
 	}
 	baseRequest.Skey = ret.Skey
+
+	sendmail(config, `Content-Type: text/plain
+To: srv-op@exfe.com
+From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
+Subject: =?utf-8?B?V2VDaGF0IGxvZ2luZWQK?=
+
+WeChat logined as `+ret.User.UserName)
+
 	return &WeChat{
 		client:      client,
 		baseRequest: baseRequest,
@@ -517,6 +514,20 @@ func makeSyncQuery(syncKey []map[string]int) string {
 		}
 	}
 	return ret
+}
+
+func sendmail(config *model.Config, content string) {
+	post := fmt.Sprintf("http://%s:%d/v3/poster/email/srv-op@exfe.com", config.ExfeService.Addr, config.ExfeService.Port)
+	queue := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s?ontime=%d&update=once", config.ExfeQueue.Addr, config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(post)), time.Now().Unix())
+	b, _ = json.Marshal(content)
+	{
+		resp, err := broker.Http("POST", queue, "application/json", b)
+		if err != nil {
+			logger.ERROR("send notification %s failed: %s with %s", queue, err, string(b))
+		} else {
+			resp.Body.Close()
+		}
+	}
 }
 
 func main() {
