@@ -135,15 +135,22 @@ func (h LiveService) HandleStreaming(s rest.Stream) {
 	}
 	s.Write(cards)
 	for {
-		d := <-c
-		cards, ok := d.([]here.Card)
-		if !ok {
-			continue
-		}
-		err := s.Write(cards)
-		if err != nil || len(cards) == 0 {
-			h.config.Log.Info("|live|clear|t|%s|card||name||long||lang||acc||trait|", token)
-			return
+		select {
+		case d := <-c:
+			cards, ok := d.([]here.Card)
+			if !ok {
+				continue
+			}
+			err := s.Write(cards)
+			if err != nil || len(cards) == 0 {
+				h.config.Log.Info("|live|clear|t|%s|card||name||long||lang||acc||trait|", token)
+				return
+			}
+		case <-time.After(broker.NetworkTimeout):
+			err := s.Ping()
+			if err != nil {
+				return
+			}
 		}
 	}
 }
