@@ -88,12 +88,12 @@ func (m RouteMap) HandleGetLocation() map[string][]Location {
 	return ret
 }
 
-func (m RouteMap) HandleUpdateRoute(content string) {
+func (m RouteMap) HandleUpdateRoute(data []map[string]interface{}) {
 	token, ok := m.auth()
 	if !ok {
 		return
 	}
-	if err := m.routeRepo.Save(token.Cross.ID, content); err != nil {
+	if err := m.routeRepo.Save(token.Cross.ID, data); err != nil {
 		logger.ERROR("save route for cross %d failed: %s", token.Cross.ID, err)
 		m.Error(http.StatusInternalServerError, err)
 		return
@@ -104,22 +104,22 @@ func (m RouteMap) HandleUpdateRoute(content string) {
 	}
 	broadcast.Send(map[string]interface{}{
 		"name": m.UpdateRoute.Path("cross_id", fmt.Sprintf("%d", token.Cross.ID)),
-		"data": content,
+		"data": data,
 	})
 }
 
-func (m RouteMap) HandleGetRoute() string {
+func (m RouteMap) HandleGetRoute() []map[string]interface{} {
 	token, ok := m.auth()
 	if !ok {
-		return ""
+		return nil
 	}
-	content, err := m.routeRepo.Load(token.Cross.ID)
+	data, err := m.routeRepo.Load(token.Cross.ID)
 	if err != nil {
-		logger.ERROR("can't get content of cross %d: %s", token.Cross.ID, err)
+		logger.ERROR("can't get route of cross %d: %s", token.Cross.ID, err)
 		m.Error(http.StatusInternalServerError, err)
-		return ""
+		return nil
 	}
-	return content
+	return data
 }
 
 func (m RouteMap) HandleNotification(stream rest.Stream) {

@@ -10,9 +10,22 @@ import (
 )
 
 type Location struct {
-	Timestamp int64  `json:"timestamp"`
-	Lng       string `json:"lng"`
-	Lat       string `json:"lat"`
+	Id          string `json:"id,omitempty"`
+	Type        string `json:"type,omitempty"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+	Timestamp   int64  `json:"timestamp,omitempty"`
+	Lng         string `json:"lng"`
+	Lat         string `json:"lat"`
+}
+
+type Route struct {
+	Id          string     `json:"id,omitempty"`
+	Type        string     `json:"type,omitempty"`
+	Title       string     `json:"title,omitempty"`
+	Description string     `json:"description,omitempty"`
+	Timestamp   int64      `json:"timestamp,omitempty"`
+	Locations   []Location `json:"locations"`
 }
 
 type Token struct {
@@ -29,8 +42,8 @@ type LocationRepo interface {
 }
 
 type RouteRepo interface {
-	Save(crossId uint64, content string) error
-	Load(crossId uint64) (string, error)
+	Save(crossId uint64, content []map[string]interface{}) error
+	Load(crossId uint64) ([]map[string]interface{}, error)
 }
 
 type LocationSaver struct {
@@ -90,9 +103,13 @@ type RouteSaver struct {
 	Redis redis.Conn
 }
 
-func (s *RouteSaver) Save(crossId uint64, content string) error {
+func (s *RouteSaver) Save(crossId uint64, data []map[string]interface{}) error {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
 	key := s.key(crossId)
-	err := s.Redis.Send("SET", key, content)
+	err = s.Redis.Send("SET", key, b)
 	if err != nil {
 		return err
 	}
@@ -107,13 +124,18 @@ func (s *RouteSaver) Save(crossId uint64, content string) error {
 	return nil
 }
 
-func (s *RouteSaver) Load(crossId uint64) (string, error) {
+func (s *RouteSaver) Load(crossId uint64) ([]map[string]interface{}, error) {
 	key := s.key(crossId)
-	content, err := redis.String(s.Redis.Do("GET", key))
+	b, err := redis.Bytes(s.Redis.Do("GET", key))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return content, nil
+	var ret []map[string]interface{}
+	err = json.Unmarshal(b, &ret)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 }
 
 func (s *RouteSaver) key(crossId uint64) string {
