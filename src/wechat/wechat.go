@@ -184,7 +184,12 @@ QR: `+loginUrl)
 
 	login := fmt.Sprintf("https://login.weixin.qq.com/cgi-bin/mmwebwx-bin/login?uuid=%s&tip=1", uuid)
 	var tokenUrl string
+	startTime := time.Now()
 	for {
+		now := time.Now()
+		if now.Sub(startTime) > 10*time.Minute {
+			return nil, fmt.Errorf("login timeout, need restart")
+		}
 		b, err = resp(client.Get(login))
 		if err != nil {
 			return nil, err
