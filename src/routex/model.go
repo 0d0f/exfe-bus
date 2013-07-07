@@ -10,18 +10,28 @@ import (
 )
 
 type Location struct {
-	Id          string `json:"id,omitempty"`
-	Type        string `json:"type,omitempty"`
-	Title       string `json:"title,omitempty"`
-	Description string `json:"description,omitempty"`
-	Timestamp   int64  `json:"timestamp,omitempty"`
-	Lng         string `json:"lng"`
-	Lat         string `json:"lat"`
+	Id          string   `json:"id,omitempty"`
+	Type        string   `json:"type,omitempty"`
+	CreatedAt   int64    `json:"created_at,omitempty"`
+	CreatedBy   string   `json:"created_by,omitempty"`
+	UpdatedAt   int64    `json:"updated_at,omitempty"`
+	UpdatedBy   string   `json:"updated_by,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
+	Icon        string   `json:"icon,omitempty"`
+	Title       string   `json:"title,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Timestamp   int64    `json:"timestamp,omitempty"`
+	Lng         string   `json:"longitude"`
+	Lat         string   `json:"latitude"`
 }
 
 type Route struct {
 	Id          string     `json:"id,omitempty"`
 	Type        string     `json:"type,omitempty"`
+	CreatedAt   int64      `json:"created_at,omitempty"`
+	CreatedBy   string     `json:"created_by,omitempty"`
+	UpdatedAt   int64      `json:"updated_at,omitempty"`
+	UpdatedBy   string     `json:"updated_by,omitempty"`
 	Title       string     `json:"title,omitempty"`
 	Description string     `json:"description,omitempty"`
 	Timestamp   int64      `json:"timestamp,omitempty"`
