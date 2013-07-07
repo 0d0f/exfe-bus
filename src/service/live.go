@@ -120,7 +120,7 @@ func (h LiveService) HandleStreaming(s rest.Stream) {
 	c := make(chan interface{})
 	b, ok := h.broadcast[token]
 	if !ok {
-		b = broadcast.NewBroadcast()
+		b = broadcast.NewBroadcast(5)
 		h.broadcast[token] = b
 	}
 	b.Register(c)

@@ -133,7 +133,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 	b, ok := m.broadcasts[token.Cross.ID]
 	if !ok {
-		b = broadcast.NewBroadcast()
+		b = broadcast.NewBroadcast(-1)
 		m.broadcasts[token.Cross.ID] = b
 	}
 	c := make(chan interface{})
