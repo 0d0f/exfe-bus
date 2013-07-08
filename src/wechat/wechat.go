@@ -178,7 +178,7 @@ func New(pingId string, config *model.Config) (*WeChat, error) {
 	sendmail(config, `Content-Type: text/plain
 To: srv-op@exfe.com
 From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
-Subject: =?utf-8?B?ISEhIVdlQ2hhdCBuZWVkIGxvZ2luISEhIQo=?=
+Subject: =?utf-8?B?V2VjaGF0IFNlcnZpY2UgTm90aWZpY2F0aW9uCg==?=
 
 WeChat need login!!! Help!!!!
 QR: `+loginUrl)
@@ -264,7 +264,7 @@ QR: `+loginUrl)
 	sendmail(config, `Content-Type: text/plain
 To: srv-op@exfe.com
 From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
-Subject: =?utf-8?B?V2VDaGF0IGxvZ2luZWQK?=
+Subject: =?utf-8?B?V2VjaGF0IFNlcnZpY2UgTm90aWZpY2F0aW9uCg==?=
 
 WeChat logined as `+ret.User.UserName)
 
