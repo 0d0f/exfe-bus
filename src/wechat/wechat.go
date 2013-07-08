@@ -187,7 +187,7 @@ QR: `+loginUrl)
 	startTime := time.Now()
 	for {
 		now := time.Now()
-		if now.Sub(startTime) > 10*time.Minute {
+		if now.Sub(startTime) > 5*time.Minute {
 			return nil, fmt.Errorf("login timeout, need restart")
 		}
 		b, err = resp(client.Get(login))
