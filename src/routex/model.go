@@ -84,7 +84,9 @@ func (s *LocationSaver) Save(id string, crossId uint64, l Location) error {
 
 func (s *LocationSaver) Load(id string, crossId uint64) ([]Location, error) {
 	key := s.key(id, crossId)
-	values, err := redis.Values(s.Redis.Do("LRANGE", key, 0, 100))
+	lrange, err := s.Redis.Do("LRANGE", key, 0, 100)
+	logger.NOTICE("lrange: %+v, err: %s", lrange, err)
+	values, err := redis.Values(lrange, err)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +109,7 @@ func (s *LocationSaver) Load(id string, crossId uint64) ([]Location, error) {
 }
 
 func (s *LocationSaver) key(id string, crossId uint64) string {
-	return fmt.Sprintf("exfe:v3:routex:cross_%d:location:%s", id, crossId)
+	return fmt.Sprintf("exfe:v3:routex:cross_%d:location:%s", crossId, id)
 }
 
 type RouteSaver struct {
