@@ -142,6 +142,38 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 		b.Unregister(c)
 		close(c)
 	}()
+
+	ret := make(map[string][]Location)
+	for _, invitation := range token.Cross.Exfee.Invitations {
+		id := invitation.Identity.Id()
+		locations, err := m.locationRepo.Load(id, token.Cross.ID)
+		if err != nil {
+			logger.ERROR("can't get locations %s of cross %d: %s", id, token.Cross.ID, err)
+			continue
+		}
+		ret[id] = locations
+	}
+	err := stream.Write(map[string]interface{}{
+		"name": fmt.Sprintf("/v3/routex/cross/%d/location", token.Cross.ID),
+		"data": ret,
+	})
+	if err != nil {
+		return
+	}
+
+	data, err := m.routeRepo.Load(token.Cross.ID)
+	if err == nil {
+		err := stream.Write(map[string]interface{}{
+			"name": m.UpdateRoute.Path("cross_id", fmt.Sprintf("%d", token.Cross.ID)),
+			"data": data,
+		})
+		if err != nil {
+			return
+		}
+	} else {
+		logger.ERROR("can't get route of cross %d: %s", token.Cross.ID, err)
+	}
+
 	for {
 		select {
 		case d := <-c:
