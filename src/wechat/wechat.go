@@ -15,6 +15,7 @@ import (
 	"logger"
 	"model"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -245,6 +246,21 @@ QR: `+loginUrl)
 	}
 	baseRequest.Skey = ret.Skey
 
+	buf = bytes.NewBuffer(nil)
+	encoder = json.NewEncoder(buf)
+	err = encoder.Encode(map[string]interface{}{
+		"BaseRequest":  baseRequest,
+		"Code":         3,
+		"FromUserName": ret.User.UserName,
+		"ToUserName":   ret.User.UserName,
+		"ClientMsgId":  timestamp(),
+	})
+	re, err = client.Post("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxstatusnotify", "application/json", buf)
+	if err != nil {
+		return nil, err
+	}
+	re.Body.Close()
+
 	sendmail(config, `Content-Type: text/plain
 To: srv-op@exfe.com
 From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
@@ -301,6 +317,51 @@ func (wc *WeChat) Ping(timeout time.Duration) error {
 	}
 	wc.pingIndex = (wc.pingIndex + 1) % len(msgs)
 	return nil
+}
+
+func (wc *WeChat) Checkt() (string, error) {
+	params := make(url.Values)
+	params.Set("callback", "_")
+	params.Set("sid", wc.baseRequest.Sid)
+	params.Set("uin", fmt.Sprintf("%d", wc.baseRequest.Uin))
+	params.Set("deviceid", wc.baseRequest.DeviceID)
+	params.Set("synckey", makeSyncQuery(wc.syncKey.List))
+	params.Set("_", timestamp())
+	resp, err := wc.get("https://webpush.weixin.qq.com/cgi-bin/mmwebwx-bin/synccheck?" + params.Encode())
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	const ret = "retcode:\""
+	index := bytes.Index(b, []byte(ret))
+	if index < 0 {
+		return "", fmt.Errorf("sync error, no retcode: %s", string(b))
+	}
+	s := b[index+len(ret):]
+	end := bytes.Index(s, []byte("\""))
+	if end < 0 {
+		return "", fmt.Errorf("sync error, no retcode: %s", string(b))
+	}
+	if retcode := string(s[:end]); retcode != "0" {
+		return "", fmt.Errorf("sync error: %s", retcode)
+	}
+
+	const begin = "selector:\""
+	index = bytes.Index(b, []byte(begin))
+	if index < 0 {
+		return "", fmt.Errorf("sync error, no selector: %s", string(b))
+	}
+	s = b[index+len(begin):]
+	end = bytes.Index(s, []byte("\""))
+	if end < 0 {
+		return "", fmt.Errorf("sync error, no selector: %s", string(b))
+	}
+	return string(s[:end]), nil
 }
 
 func (wc *WeChat) GetLast() (*Response, error) {
@@ -440,6 +501,11 @@ func (wc *WeChat) get(url string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.116 Safari/537.36")
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	req.Header.Set("Origin", "https://wx.qq.com")
+	req.Header.Set("Referer", "https://wx.qq.com/")
 	req.Header.Set("Cookie", fmt.Sprintf("wxuin=%d; wxsid=%s", wc.baseRequest.Uin, wc.baseRequest.Sid))
 	re, err := wc.client.Do(req)
 	if err != nil {
@@ -450,6 +516,11 @@ func (wc *WeChat) get(url string) (*http.Response, error) {
 		return nil, fmt.Errorf("%s", re.Status)
 	}
 	return re, nil
+}
+
+func timestamp() string {
+	now := time.Now().UTC()
+	return fmt.Sprintf("%d\n", now.UnixNano()/int64(time.Millisecond))
 }
 
 func resp(r *http.Response, err error) ([]byte, error) {
@@ -590,7 +661,6 @@ func main() {
 			defer r.Body.Close()
 			chatroomId, exist, err := kvSaver.Check([]string{to})
 			if err != nil {
-				fmt.Println("not exist")
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -607,7 +677,6 @@ func main() {
 		}
 		err = wc.SendMessage(to, string(b))
 		if err != nil {
-			fmt.Println("send fail")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -622,6 +691,19 @@ func main() {
 		case <-quit:
 			return
 		default:
+		}
+		ret, err := wc.Checkt()
+		if err != nil {
+			logger.ERROR("can't get last message: %s", err)
+			return
+		}
+		if ret == "0" {
+			err = wc.Ping(time.Minute * 30)
+			if err != nil {
+				logger.ERROR("ping error: %s", err)
+				return
+			}
+			continue
 		}
 		resp, err := wc.GetLast()
 		if err != nil {
@@ -688,12 +770,6 @@ func main() {
 				logger.ERROR("can't save exfee id: %s", err)
 			}
 			logger.INFO("wechat_gather", msg.FromUserName, uin, cross.ID, cross.Exfee.ID, err)
-		}
-		time.Sleep(time.Second * 30)
-		err = wc.Ping(time.Minute * 30)
-		if err != nil {
-			logger.ERROR("ping error: %s", err)
-			return
 		}
 	}
 }
