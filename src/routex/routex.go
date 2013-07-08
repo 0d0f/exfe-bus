@@ -67,7 +67,7 @@ func (m RouteMap) HandleUpdateLocation(location Location) {
 		return
 	}
 	broadcast.Send(map[string]interface{}{
-		"name": m.UpdateRoute.Path("cross_id", fmt.Sprintf("%d", token.Cross.ID)),
+		"name": m.UpdateLocation.Path("cross_id", fmt.Sprintf("%d", token.Cross.ID)),
 		"data": map[string]interface{}{
 			id: locations,
 		},
