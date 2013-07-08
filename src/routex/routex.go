@@ -91,6 +91,9 @@ func (m RouteMap) HandleGetLocation() map[string][]Location {
 			logger.ERROR("can't get locations %s of cross %d: %s", id, token.Cross.ID, err)
 			continue
 		}
+		if locations == nil {
+			continue
+		}
 		ret[id] = locations
 	}
 	return ret
@@ -135,6 +138,9 @@ func (m RouteMap) HandleGetRoute() []map[string]interface{} {
 		m.Error(http.StatusInternalServerError, err)
 		return nil
 	}
+	if data == nil {
+		return make([]map[string]interface{}, 0)
+	}
 	return data
 }
 
@@ -171,10 +177,13 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 			logger.ERROR("can't get locations %s of cross %d: %s", id, token.Cross.ID, err)
 			continue
 		}
+		if locations == nil {
+			continue
+		}
 		ret[id] = locations
 	}
 	err := stream.Write(map[string]interface{}{
-		"name": fmt.Sprintf("/v3/routex/cross/%d/location", token.Cross.ID),
+		"name": m.UpdateLocation.Path("cross_id", fmt.Sprintf("%d", token.Cross.ID)),
 		"data": ret,
 	})
 	if err != nil {
@@ -182,7 +191,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 
 	data, err := m.routeRepo.Load(token.Cross.ID)
-	if err == nil {
+	if err == nil && data != nil {
 		err := stream.Write(map[string]interface{}{
 			"name": m.UpdateRoute.Path("cross_id", fmt.Sprintf("%d", token.Cross.ID)),
 			"data": data,
@@ -190,7 +199,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 		if err != nil {
 			return
 		}
-	} else {
+	} else if err != nil {
 		logger.ERROR("can't get route of cross %d: %s", token.Cross.ID, err)
 	}
 

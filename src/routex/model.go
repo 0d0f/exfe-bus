@@ -85,7 +85,9 @@ func (s *LocationSaver) Save(id string, crossId uint64, l Location) error {
 func (s *LocationSaver) Load(id string, crossId uint64) ([]Location, error) {
 	key := s.key(id, crossId)
 	lrange, err := s.Redis.Do("LRANGE", key, 0, 100)
-	logger.NOTICE("lrange: %+v, err: %s", lrange, err)
+	if lrange == nil {
+		return nil, nil
+	}
 	values, err := redis.Values(lrange, err)
 	if err != nil {
 		return nil, err
@@ -139,7 +141,11 @@ func (s *RouteSaver) Save(crossId uint64, data []map[string]interface{}) error {
 
 func (s *RouteSaver) Load(crossId uint64) ([]map[string]interface{}, error) {
 	key := s.key(crossId)
-	b, err := redis.Bytes(s.Redis.Do("GET", key))
+	get, err := s.Redis.Do("GET", key)
+	if get == nil {
+		return nil, nil
+	}
+	b, err := redis.Bytes(get, err)
 	if err != nil {
 		return nil, err
 	}
