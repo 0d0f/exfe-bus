@@ -41,6 +41,10 @@ func New(locationRepo LocationRepo, routeRepo RouteRepo, platform *broker.Platfo
 }
 
 func (m RouteMap) HandleUpdateLocation(location Location) {
+	m.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
+	m.Header().Set("Access-Control-Allow-Credentials", "true")
+	m.Header().Set("Cache-Control", "no-cache")
+
 	token, ok := m.auth()
 	if !ok {
 		return
@@ -71,6 +75,10 @@ func (m RouteMap) HandleUpdateLocation(location Location) {
 }
 
 func (m RouteMap) HandleGetLocation() map[string][]Location {
+	m.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
+	m.Header().Set("Access-Control-Allow-Credentials", "true")
+	m.Header().Set("Cache-Control", "no-cache")
+
 	token, ok := m.auth()
 	if !ok {
 		return nil
@@ -89,6 +97,10 @@ func (m RouteMap) HandleGetLocation() map[string][]Location {
 }
 
 func (m RouteMap) HandleUpdateRoute(data []map[string]interface{}) {
+	m.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
+	m.Header().Set("Access-Control-Allow-Credentials", "true")
+	m.Header().Set("Cache-Control", "no-cache")
+
 	token, ok := m.auth()
 	if !ok {
 		return
@@ -109,6 +121,10 @@ func (m RouteMap) HandleUpdateRoute(data []map[string]interface{}) {
 }
 
 func (m RouteMap) HandleGetRoute() []map[string]interface{} {
+	m.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
+	m.Header().Set("Access-Control-Allow-Credentials", "true")
+	m.Header().Set("Cache-Control", "no-cache")
+
 	token, ok := m.auth()
 	if !ok {
 		return nil
@@ -123,6 +139,10 @@ func (m RouteMap) HandleGetRoute() []map[string]interface{} {
 }
 
 func (m RouteMap) HandleNotification(stream rest.Stream) {
+	m.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
+	m.Header().Set("Access-Control-Allow-Credentials", "true")
+	m.Header().Set("Cache-Control", "no-cache")
+
 	if m.Request().URL.Query().Get("_method") != "WATCH" {
 		m.Error(http.StatusBadRequest, m.DetailError(-1, "method not watch"))
 		return
