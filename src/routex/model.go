@@ -21,8 +21,9 @@ type Location struct {
 	Title       string   `json:"title,omitempty"`
 	Description string   `json:"description,omitempty"`
 	Timestamp   int64    `json:"timestamp,omitempty"`
-	Lng         string   `json:"longitude"`
-	Lat         string   `json:"latitude"`
+	Accuracy    string   `json:"accuracy",omitempty`
+	Longitude   string   `json:"longitude"`
+	Latitude    string   `json:"latitude"`
 }
 
 type Route struct {
