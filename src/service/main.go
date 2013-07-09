@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"formatter"
-	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
 	l "github.com/googollee/go-logger"
 	"gobus"
@@ -49,7 +48,7 @@ func main() {
 	}
 
 	redis_ := broker.NewRedisMultiplexer(&config)
-	redis, err := redis.DialTimeout("tcp", config.Redis.Netaddr, broker.NetworkTimeout, broker.NetworkTimeout, broker.NetworkTimeout)
+	redis, err := broker.NewRedisPool(&config)
 	if err != nil {
 		logger.ERROR("redis connect error: %s", err)
 		return

@@ -1,9 +1,11 @@
 package routex
 
 import (
+	"broker"
 	"encoding/json"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"github.com/googollee/go-multiplexer"
 	"logger"
 	"model"
 	"time"
@@ -58,7 +60,7 @@ type RouteRepo interface {
 }
 
 type LocationSaver struct {
-	Redis redis.Conn
+	Redis *broker.RedisPool
 }
 
 func (s *LocationSaver) Save(id string, crossId uint64, l Location) error {
@@ -67,15 +69,25 @@ func (s *LocationSaver) Save(id string, crossId uint64, l Location) error {
 		return err
 	}
 	key := s.key(id, crossId)
-	err = s.Redis.Send("LPUSH", key, b)
-	if err != nil {
-		return err
+	e := s.Redis.Do(func(i multiplexer.Instance) {
+		r := i.(*broker.RedisInstance_).Redis
+
+		err = r.Send("LPUSH", key, b)
+		if err != nil {
+			return
+		}
+		err = r.Send("EXPIRE", key, int(time.Hour*24/time.Second))
+		if err != nil {
+			return
+		}
+		err = r.Flush()
+		if err != nil {
+			return
+		}
+	})
+	if e != nil {
+		return e
 	}
-	err = s.Redis.Send("EXPIRE", key, int(time.Hour*24/time.Second))
-	if err != nil {
-		return err
-	}
-	err = s.Redis.Flush()
 	if err != nil {
 		return err
 	}
@@ -84,11 +96,23 @@ func (s *LocationSaver) Save(id string, crossId uint64, l Location) error {
 
 func (s *LocationSaver) Load(id string, crossId uint64) ([]Location, error) {
 	key := s.key(id, crossId)
-	lrange, err := s.Redis.Do("LRANGE", key, 0, 100)
+	var lrange interface{}
+	var err error
+	e := s.Redis.Do(func(i multiplexer.Instance) {
+		r := i.(*broker.RedisInstance_).Redis
+
+		lrange, err = r.Do("LRANGE", key, 0, 100)
+	})
+	if e != nil {
+		return nil, e
+	}
+	if err != nil {
+		return nil, err
+	}
+
 	if lrange == nil {
 		return nil, nil
 	}
-	fmt.Println("location", lrange, err)
 	values, err := redis.Values(lrange, err)
 	if err != nil {
 		return nil, err
@@ -116,7 +140,7 @@ func (s *LocationSaver) key(id string, crossId uint64) string {
 }
 
 type RouteSaver struct {
-	Redis redis.Conn
+	Redis *broker.RedisPool
 }
 
 func (s *RouteSaver) Save(crossId uint64, data []map[string]interface{}) error {
@@ -125,15 +149,25 @@ func (s *RouteSaver) Save(crossId uint64, data []map[string]interface{}) error {
 		return err
 	}
 	key := s.key(crossId)
-	err = s.Redis.Send("SET", key, b)
-	if err != nil {
-		return err
+	e := s.Redis.Do(func(i multiplexer.Instance) {
+		r := i.(*broker.RedisInstance_).Redis
+
+		err = r.Send("SET", key, b)
+		if err != nil {
+			return
+		}
+		err = r.Send("EXPIRE", key, int(time.Hour*24*7/time.Second))
+		if err != nil {
+			return
+		}
+		err = r.Flush()
+		if err != nil {
+			return
+		}
+	})
+	if e != nil {
+		return e
 	}
-	err = s.Redis.Send("EXPIRE", key, int(time.Hour*24*7/time.Second))
-	if err != nil {
-		return err
-	}
-	err = s.Redis.Flush()
 	if err != nil {
 		return err
 	}
@@ -142,11 +176,23 @@ func (s *RouteSaver) Save(crossId uint64, data []map[string]interface{}) error {
 
 func (s *RouteSaver) Load(crossId uint64) ([]map[string]interface{}, error) {
 	key := s.key(crossId)
-	get, err := s.Redis.Do("GET", key)
+	var get interface{}
+	var err error
+	e := s.Redis.Do(func(i multiplexer.Instance) {
+		r := i.(*broker.RedisInstance_).Redis
+
+		get, err = r.Do("GET", key)
+	})
+	if e != nil {
+		return nil, e
+	}
+	if err != nil {
+		return nil, err
+	}
+
 	if get == nil {
 		return nil, nil
 	}
-	fmt.Println("route", get, err)
 	b, err := redis.Bytes(get, err)
 	if err != nil {
 		return nil, err
