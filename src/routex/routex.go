@@ -66,6 +66,9 @@ func (m RouteMap) HandleUpdateLocation(location Location) {
 		logger.ERROR("can't get locations %s of cross %d: %s", id, token.Cross.ID, err)
 		return
 	}
+	if locations == nil {
+		return
+	}
 	broadcast.Send(map[string]interface{}{
 		"name": m.UpdateLocation.Path("cross_id", fmt.Sprintf("%d", token.Cross.ID)),
 		"data": map[string]interface{}{

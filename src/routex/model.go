@@ -88,6 +88,7 @@ func (s *LocationSaver) Load(id string, crossId uint64) ([]Location, error) {
 	if lrange == nil {
 		return nil, nil
 	}
+	fmt.Println("location", lrange, err)
 	values, err := redis.Values(lrange, err)
 	if err != nil {
 		return nil, err
@@ -145,6 +146,7 @@ func (s *RouteSaver) Load(crossId uint64) ([]map[string]interface{}, error) {
 	if get == nil {
 		return nil, nil
 	}
+	fmt.Println("route", get, err)
 	b, err := redis.Bytes(get, err)
 	if err != nil {
 		return nil, err
