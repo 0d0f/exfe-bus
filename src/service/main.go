@@ -163,7 +163,7 @@ func main() {
 
 	if config.ExfeService.Services.Routex {
 		location := &routex.LocationSaver{redis}
-		route := &routex.RouteSaver{redis}
+		route := &routex.RouteSaver{database}
 		routex := routex.New(location, route, platform, &config)
 		register("routex", routex, nil)
 	}

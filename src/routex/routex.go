@@ -7,6 +7,7 @@ import (
 	"github.com/googollee/go-broadcast"
 	"github.com/googollee/go-rest"
 	"logger"
+	"math"
 	"model"
 	"net/http"
 	"net/url"
@@ -50,20 +51,51 @@ func (m RouteMap) HandleUpdateLocation(location Location) {
 		return
 	}
 	id := token.Identity.Id()
-	location.Timestamp = time.Now().Unix()
-	if err := m.locationRepo.Save(id, token.Cross.ID, location); err != nil {
-		logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, location)
-		m.Error(http.StatusInternalServerError, err)
+
+	lat, lng, _, err := location.GetGeo()
+	if err != nil {
+		m.Error(http.StatusBadRequest, err)
 		return
 	}
 
-	broadcast, ok := m.broadcasts[token.Cross.ID]
-	if !ok {
-		return
-	}
+	location.Timestamp = time.Now().Unix()
 	locations, err := m.locationRepo.Load(id, token.Cross.ID)
 	if err != nil {
 		logger.ERROR("can't get locations %s of cross %d: %s", id, token.Cross.ID, err)
+	}
+	if len(locations) == 0 {
+		if err := m.locationRepo.Save(id, token.Cross.ID, location); err != nil {
+			logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, location)
+			m.Error(http.StatusInternalServerError, err)
+			return
+		}
+	} else {
+		last := locations[0]
+		lastLat, lastLng, _, err := last.GetGeo()
+		if err != nil {
+			if err := m.locationRepo.Save(id, token.Cross.ID, location); err != nil {
+				logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, location)
+				m.Error(http.StatusInternalServerError, err)
+				return
+			}
+		} else {
+			a := math.Cos(lastLat) * math.Cos(lat) * math.Cos(lastLng-lng)
+			b := math.Sin(lastLat) * math.Sin(lat)
+			alpha := math.Acos(a + b)
+			distance := alpha * 6371000
+			if distance > 30 {
+				if err := m.locationRepo.Save(id, token.Cross.ID, location); err != nil {
+					logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, location)
+					m.Error(http.StatusInternalServerError, err)
+					return
+				}
+			}
+		}
+	}
+	locations = append([]Location{location}, locations...)
+
+	broadcast, ok := m.broadcasts[token.Cross.ID]
+	if !ok {
 		return
 	}
 	if locations == nil {

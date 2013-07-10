@@ -2,12 +2,14 @@ package routex
 
 import (
 	"broker"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"github.com/googollee/go-multiplexer"
 	"logger"
 	"model"
+	"strconv"
 	"time"
 )
 
@@ -26,6 +28,22 @@ type Location struct {
 	Accuracy    string   `json:"accuracy",omitempty`
 	Longitude   string   `json:"longitude"`
 	Latitude    string   `json:"latitude"`
+}
+
+func (l Location) GetGeo() (float64, float64, float64, error) {
+	lat, err := strconv.ParseFloat(l.Latitude, 64)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	lng, err := strconv.ParseFloat(l.Longitude, 64)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	acc, err := strconv.ParseFloat(l.Accuracy, 64)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	return lat, lng, acc, nil
 }
 
 type Route struct {
@@ -139,8 +157,14 @@ func (s *LocationSaver) key(id string, crossId uint64) string {
 	return fmt.Sprintf("exfe:v3:routex:cross_%d:location:%s", crossId, id)
 }
 
+const (
+	ROUTERX_INSERT = "INSERT IGNORE INTO `routex` (`cross_id`, `route`, `touched_at`) VALUES (?, ?, NOW())"
+	ROUTERX_UPDATE = "UPDATE `routex` SET `route`=?, `touched_at`=NOW() WHERE `cross_id`=?"
+	ROUTERX_GET    = "SELECT `route` FROM `routex` WHERE `cross_id`=?"
+)
+
 type RouteSaver struct {
-	Redis *broker.RedisPool
+	Db *sql.DB
 }
 
 func (s *RouteSaver) Save(crossId uint64, data []map[string]interface{}) error {
@@ -148,63 +172,43 @@ func (s *RouteSaver) Save(crossId uint64, data []map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	key := s.key(crossId)
-	e := s.Redis.Do(func(i multiplexer.Instance) {
-		r := i.(*broker.RedisInstance_).Redis
-
-		err = r.Send("SET", key, b)
-		if err != nil {
-			return
-		}
-		err = r.Send("EXPIRE", key, int(time.Hour*24*7/time.Second))
-		if err != nil {
-			return
-		}
-		err = r.Flush()
-		if err != nil {
-			return
-		}
-	})
-	if e != nil {
-		return e
-	}
+	n, err := s.Db.Exec(ROUTERX_INSERT, crossId, string(b))
 	if err != nil {
 		return err
+	}
+	rows, err := n.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		_, err := s.Db.Exec(ROUTERX_UPDATE, string(b), crossId)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (s *RouteSaver) Load(crossId uint64) ([]map[string]interface{}, error) {
-	key := s.key(crossId)
-	var get interface{}
-	var err error
-	e := s.Redis.Do(func(i multiplexer.Instance) {
-		r := i.(*broker.RedisInstance_).Redis
-
-		get, err = r.Do("GET", key)
-	})
-	if e != nil {
-		return nil, e
-	}
+	var row *sql.Rows
+	row, err := s.Db.Query(ROUTERX_GET, crossId)
 	if err != nil {
 		return nil, err
 	}
+	defer row.Close()
 
-	if get == nil {
+	value, exist := "", false
+	for row.Next() {
+		row.Scan(&value)
+		exist = true
+	}
+	if !exist {
 		return nil, nil
 	}
-	b, err := redis.Bytes(get, err)
-	if err != nil {
-		return nil, err
-	}
 	var ret []map[string]interface{}
-	err = json.Unmarshal(b, &ret)
+	err = json.Unmarshal([]byte(value), &ret)
 	if err != nil {
 		return nil, err
 	}
 	return ret, nil
-}
-
-func (s *RouteSaver) key(crossId uint64) string {
-	return fmt.Sprintf("exfe:v3:routex:cross_%d:route", crossId)
 }
