@@ -83,7 +83,7 @@ func (m RouteMap) HandleUpdateLocation(location Location) {
 			b := math.Sin(lastLat) * math.Sin(lat)
 			alpha := math.Acos(a + b)
 			distance := alpha * 6371000
-			logger.INFO("cross", token.Cross.ID, id, "location", location, "last", last, "alpha", alpha, "distance", distance)
+			logger.INFO("routex", "cross", token.Cross.ID, id, "location", location.Longitude, location.Latitude, location.Accuracy, "last", last.Longitude, last.Latitude, last.Accuracy, "alpha", alpha, "distance", distance)
 			if distance > 30 {
 				if err := m.locationRepo.Save(id, token.Cross.ID, location); err != nil {
 					logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, location)
