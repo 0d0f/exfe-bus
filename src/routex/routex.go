@@ -105,7 +105,8 @@ func (m RouteMap) HandleUpdateLocation(location Location) {
 		return
 	}
 	broadcast.Send(map[string]interface{}{
-		"name": fmt.Sprintf("/v3/cross/%d/routex/location", token.Cross.ID),
+		"path": fmt.Sprintf("/v3/cross/%d/routex/location", token.Cross.ID),
+		"room": "location",
 		"data": map[string]interface{}{
 			id: locations,
 		},
@@ -156,7 +157,8 @@ func (m RouteMap) HandleUpdateRoute(data []map[string]interface{}) {
 		return
 	}
 	broadcast.Send(map[string]interface{}{
-		"name": fmt.Sprintf("/v3/cross/%d/routex/route", token.Cross.ID),
+		"path": fmt.Sprintf("/v3/cross/%d/routex/route", token.Cross.ID),
+		"room": "route",
 		"data": data,
 	})
 }
@@ -221,7 +223,8 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 		ret[id] = locations
 	}
 	err := stream.Write(map[string]interface{}{
-		"name": fmt.Sprintf("/v3/cross/%d/routex/location", token.Cross.ID),
+		"path": fmt.Sprintf("/v3/cross/%d/routex/location", token.Cross.ID),
+		"room": "location",
 		"data": ret,
 	})
 	if err != nil {
@@ -231,7 +234,8 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	data, err := m.routeRepo.Load(token.Cross.ID)
 	if err == nil && data != nil {
 		err := stream.Write(map[string]interface{}{
-			"name": fmt.Sprintf("/v3/cross/%d/routex/route", token.Cross.ID),
+			"path": fmt.Sprintf("/v3/cross/%d/routex/route", token.Cross.ID),
+			"room": "route",
 			"data": data,
 		})
 		if err != nil {
