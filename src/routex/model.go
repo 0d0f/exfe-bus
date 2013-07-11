@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-type Breadcrum struct {
+type Breadcrumb struct {
 	Id          string   `json:"id,omitempty"`
 	Type        string   `json:"type,omitempty"`
 	CreatedAt   int64    `json:"created_at,omitempty"`
@@ -30,7 +30,7 @@ type Breadcrum struct {
 	Latitude    string   `json:"latitude"`
 }
 
-func (l Breadcrum) GetGeo() (float64, float64, float64, error) {
+func (l Breadcrumb) GetGeo() (float64, float64, float64, error) {
 	lat, err := strconv.ParseFloat(l.Latitude, 64)
 	if err != nil {
 		return 0, 0, 0, err
@@ -54,9 +54,9 @@ type Token struct {
 	Identity model.Identity `json:"-"`
 }
 
-type BreadcrumsRepo interface {
-	Save(id string, crossId uint64, l Breadcrum) error
-	Load(id string, crossId uint64) ([]Breadcrum, error)
+type BreadcrumbsRepo interface {
+	Save(id string, crossId uint64, l Breadcrumb) error
+	Load(id string, crossId uint64) ([]Breadcrumb, error)
 }
 
 type GeomarksRepo interface {
@@ -64,11 +64,11 @@ type GeomarksRepo interface {
 	Load(crossId uint64) ([]map[string]interface{}, error)
 }
 
-type BreadcrumsSaver struct {
+type BreadcrumbsSaver struct {
 	Redis *broker.RedisPool
 }
 
-func (s *BreadcrumsSaver) Save(id string, crossId uint64, l Breadcrum) error {
+func (s *BreadcrumbsSaver) Save(id string, crossId uint64, l Breadcrumb) error {
 	b, err := json.Marshal(l)
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func (s *BreadcrumsSaver) Save(id string, crossId uint64, l Breadcrum) error {
 	return nil
 }
 
-func (s *BreadcrumsSaver) Load(id string, crossId uint64) ([]Breadcrum, error) {
+func (s *BreadcrumbsSaver) Load(id string, crossId uint64) ([]Breadcrumb, error) {
 	key := s.key(id, crossId)
 	var lrange interface{}
 	var err error
@@ -122,14 +122,14 @@ func (s *BreadcrumsSaver) Load(id string, crossId uint64) ([]Breadcrum, error) {
 	if err != nil {
 		return nil, err
 	}
-	var ret []Breadcrum
+	var ret []Breadcrumb
 	for len(values) > 0 {
 		var b []byte
 		values, err = redis.Scan(values, &b)
 		if err != nil {
 			return nil, err
 		}
-		var location Breadcrum
+		var location Breadcrumb
 		err := json.Unmarshal(b, &location)
 		if err != nil {
 			logger.ERROR("can't unmashal location value: %s with %s", err, string(b))
@@ -140,7 +140,7 @@ func (s *BreadcrumsSaver) Load(id string, crossId uint64) ([]Breadcrum, error) {
 	return ret, nil
 }
 
-func (s *BreadcrumsSaver) key(id string, crossId uint64) string {
+func (s *BreadcrumbsSaver) key(id string, crossId uint64) string {
 	return fmt.Sprintf("exfe:v3:routex:cross_%d:location:%s", crossId, id)
 }
 

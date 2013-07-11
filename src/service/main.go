@@ -162,7 +162,7 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Routex {
-		location := &routex.BreadcrumsSaver{redis}
+		location := &routex.BreadcrumbsSaver{redis}
 		route := &routex.GeomarksSaver{database}
 		routex := routex.New(location, route, platform, &config)
 		register("routex", routex, nil)

@@ -18,32 +18,32 @@ import (
 type RouteMap struct {
 	rest.Service `prefix:"/v3/routex" mime:"application/json"`
 
-	UpdateBreadcrums rest.Processor `path:"/crosses/:cross_id/breadcrums" method:"POST"`
-	GetBreadcrums    rest.Processor `path:"/crosses/:cross_id/breadcrums" method:"GET"`
+	UpdateBreadcrums rest.Processor `path:"/crosses/:cross_id/breadcrumbs" method:"POST"`
+	GetBreadcrums    rest.Processor `path:"/crosses/:cross_id/breadcrumbs" method:"GET"`
 	UpdateGeomarks   rest.Processor `path:"/crosses/:cross_id/geomarks" method:"POST"`
 	GetGeomarks      rest.Processor `path:"/crosses/:cross_id/geomarks" method:"GET"`
 	Notification     rest.Streaming `path:"/crosses/:cross_id" method:"POST"`
 	Options          rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
 	SendNotice       rest.Processor `path:"/crosses/:cross_id/notice" method:"POST"`
 
-	breadcrumsRepo BreadcrumsRepo
-	geomarksRepo   GeomarksRepo
-	platform       *broker.Platform
-	config         *model.Config
-	broadcasts     map[uint64]*broadcast.Broadcast
+	breadcrumbsRepo BreadcrumbsRepo
+	geomarksRepo    GeomarksRepo
+	platform        *broker.Platform
+	config          *model.Config
+	broadcasts      map[uint64]*broadcast.Broadcast
 }
 
-func New(breadcrumsRepo BreadcrumsRepo, geomarksRepo GeomarksRepo, platform *broker.Platform, config *model.Config) *RouteMap {
+func New(breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, platform *broker.Platform, config *model.Config) *RouteMap {
 	return &RouteMap{
-		breadcrumsRepo: breadcrumsRepo,
-		geomarksRepo:   geomarksRepo,
-		platform:       platform,
-		config:         config,
-		broadcasts:     make(map[uint64]*broadcast.Broadcast),
+		breadcrumbsRepo: breadcrumbsRepo,
+		geomarksRepo:    geomarksRepo,
+		platform:        platform,
+		config:          config,
+		broadcasts:      make(map[uint64]*broadcast.Broadcast),
 	}
 }
 
-func (m RouteMap) HandleUpdateBreadcrums(breadcrum Breadcrum) {
+func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Breadcrumb) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -54,29 +54,29 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrum Breadcrum) {
 	}
 	id := token.Identity.Id()
 
-	lat, lng, _, err := breadcrum.GetGeo()
+	lat, lng, _, err := breadcrumb.GetGeo()
 	if err != nil {
 		m.Error(http.StatusBadRequest, err)
 		return
 	}
 
-	breadcrum.Timestamp = time.Now().Unix()
-	breadcrums, err := m.breadcrumsRepo.Load(id, token.Cross.ID)
+	breadcrumb.Timestamp = time.Now().Unix()
+	breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
 	if err != nil {
-		logger.ERROR("can't get breadcrums %s of cross %d: %s", id, token.Cross.ID, err)
+		logger.ERROR("can't get breadcrumbs %s of cross %d: %s", id, token.Cross.ID, err)
 	}
-	if len(breadcrums) == 0 {
-		if err := m.breadcrumsRepo.Save(id, token.Cross.ID, breadcrum); err != nil {
-			logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrum)
+	if len(breadcrumbs) == 0 {
+		if err := m.breadcrumbsRepo.Save(id, token.Cross.ID, breadcrumb); err != nil {
+			logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrumb)
 			m.Error(http.StatusInternalServerError, err)
 			return
 		}
 	} else {
-		last := breadcrums[0]
+		last := breadcrumbs[0]
 		lastLat, lastLng, _, err := last.GetGeo()
 		if err != nil {
-			if err := m.breadcrumsRepo.Save(id, token.Cross.ID, breadcrum); err != nil {
-				logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrum)
+			if err := m.breadcrumbsRepo.Save(id, token.Cross.ID, breadcrumb); err != nil {
+				logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrumb)
 				m.Error(http.StatusInternalServerError, err)
 				return
 			}
@@ -85,34 +85,34 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrum Breadcrum) {
 			b := math.Sin(lastLat) * math.Sin(lat)
 			alpha := math.Acos(a + b)
 			distance := alpha * 6371000
-			logger.INFO("routex", "cross", token.Cross.ID, id, "breadcrum", breadcrum.Longitude, breadcrum.Latitude, breadcrum.Accuracy, "last", last.Longitude, last.Latitude, last.Accuracy, "alpha", alpha, "distance", distance)
+			logger.INFO("routex", "cross", token.Cross.ID, id, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "last", last.Longitude, last.Latitude, last.Accuracy, "alpha", alpha, "distance", distance)
 			if distance > 30 {
-				if err := m.breadcrumsRepo.Save(id, token.Cross.ID, breadcrum); err != nil {
-					logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrum)
+				if err := m.breadcrumbsRepo.Save(id, token.Cross.ID, breadcrumb); err != nil {
+					logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrumb)
 					m.Error(http.StatusInternalServerError, err)
 					return
 				}
 			}
 		}
 	}
-	breadcrums = append([]Breadcrum{breadcrum}, breadcrums...)
+	breadcrumbs = append([]Breadcrumb{breadcrumb}, breadcrumbs...)
 
 	broadcast, ok := m.broadcasts[token.Cross.ID]
 	if !ok {
 		return
 	}
-	if breadcrums == nil {
+	if breadcrumbs == nil {
 		return
 	}
 	broadcast.Send(map[string]interface{}{
-		"type": "/crosses/routex/breadcrum",
+		"type": "/crosses/routex/breadcrumbs",
 		"data": map[string]interface{}{
-			id: breadcrums,
+			id: breadcrumbs,
 		},
 	})
 }
 
-func (m RouteMap) HandleGetBreadcrums() map[string][]Breadcrum {
+func (m RouteMap) HandleGetBreadcrums() map[string][]Breadcrumb {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -121,18 +121,18 @@ func (m RouteMap) HandleGetBreadcrums() map[string][]Breadcrum {
 	if !ok {
 		return nil
 	}
-	ret := make(map[string][]Breadcrum)
+	ret := make(map[string][]Breadcrumb)
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		id := invitation.Identity.Id()
-		breadcrums, err := m.breadcrumsRepo.Load(id, token.Cross.ID)
+		breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
 		if err != nil {
-			logger.ERROR("can't get breadcrums %s of cross %d: %s", id, token.Cross.ID, err)
+			logger.ERROR("can't get breadcrumbs %s of cross %d: %s", id, token.Cross.ID, err)
 			continue
 		}
-		if breadcrums == nil {
+		if breadcrumbs == nil {
 			continue
 		}
-		ret[id] = breadcrums
+		ret[id] = breadcrumbs
 	}
 	return ret
 }
@@ -207,21 +207,21 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 		close(c)
 	}()
 
-	ret := make(map[string][]Breadcrum)
+	ret := make(map[string][]Breadcrumb)
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		id := invitation.Identity.Id()
-		breadcrums, err := m.breadcrumsRepo.Load(id, token.Cross.ID)
+		breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
 		if err != nil {
-			logger.ERROR("can't get breadcrums %s of cross %d: %s", id, token.Cross.ID, err)
+			logger.ERROR("can't get breadcrumbs %s of cross %d: %s", id, token.Cross.ID, err)
 			continue
 		}
-		if breadcrums == nil {
+		if breadcrumbs == nil {
 			continue
 		}
-		ret[id] = breadcrums
+		ret[id] = breadcrumbs
 	}
 	err := stream.Write(map[string]interface{}{
-		"type": "/crosses/routex/breadcrum",
+		"type": "/crosses/routex/breadcrumbs",
 		"data": ret,
 	})
 	if err != nil {
