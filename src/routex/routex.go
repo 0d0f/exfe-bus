@@ -266,7 +266,7 @@ func (m RouteMap) HandleOptions() {
 	m.WriteHeader(http.StatusNoContent)
 }
 
-func (m RouteMap) HandleNotice(id string) {
+func (m RouteMap) HandleSendNotice(id string) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
