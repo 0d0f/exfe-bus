@@ -20,7 +20,7 @@ type V3Notifier struct {
 	UserWelcome       rest.Processor `path:"/user/welcome" method:"POST"`
 	UserVerify        rest.Processor `path:"/user/verify" method:"POST"`
 	UserReset         rest.Processor `path:"/user/reset" method:"POST"`
-	WechatRoutex      rest.Processor `path:"/wechat/routex" method:"POST"`
+	// WechatRoutex      rest.Processor `path:"/wechat/routex" method:"POST"`
 
 	cross  *notifier.Cross
 	user   *notifier.User
