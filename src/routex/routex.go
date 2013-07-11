@@ -18,13 +18,13 @@ import (
 type RouteMap struct {
 	rest.Service `prefix:"/v3/routex" mime:"application/json"`
 
-	UpdateLocation rest.Processor `path:"/cross/:cross_id/location" method:"POST"`
-	GetLocation    rest.Processor `path:"/cross/:cross_id/location" method:"GET"`
-	UpdateRoute    rest.Processor `path:"/cross/:cross_id/route" method:"POST"`
-	GetRoute       rest.Processor `path:"/cross/:cross_id/route" method:"GET"`
-	Notification   rest.Streaming `path:"/cross/:cross_id" method:"POST"`
-	Options        rest.Processor `path:"/cross/:cross_id" method:"OPTIONS"`
-	SendNotice     rest.Processor `path:"/cross/:cross_id/notice" method:"POST"`
+	UpdateLocation rest.Processor `path:"/crosses/:cross_id/location" method:"POST"`
+	GetLocation    rest.Processor `path:"/crosses/:cross_id/location" method:"GET"`
+	UpdateRoute    rest.Processor `path:"/crosses/:cross_id/route" method:"POST"`
+	GetRoute       rest.Processor `path:"/crosses/:cross_id/route" method:"GET"`
+	Notification   rest.Streaming `path:"/crosses/:cross_id" method:"POST"`
+	Options        rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
+	SendNotice     rest.Processor `path:"/crosses/:cross_id/notice" method:"POST"`
 
 	locationRepo LocationRepo
 	routeRepo    RouteRepo
