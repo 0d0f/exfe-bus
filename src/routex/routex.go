@@ -258,7 +258,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 }
 
-func (m *RouteMap) HandleOptions() {
+func (m RouteMap) HandleOptions() {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -266,7 +266,7 @@ func (m *RouteMap) HandleOptions() {
 	m.WriteHeader(http.StatusNoContent)
 }
 
-func (m *RouteMap) HandleNotice(id string) {
+func (m RouteMap) HandleNotice(id string) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
