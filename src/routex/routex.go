@@ -275,6 +275,23 @@ func (m RouteMap) HandleSendNotice(id string) {
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
+	token, ok := m.auth()
+	if !ok {
+		return
+	}
+
+	identity, ok := model.FromIdentityId(id), false
+	for _, inv := range token.Cross.Exfee.Invitations {
+		if inv.Identity.Equal(identity) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		m.Error(http.StatusForbidden, fmt.Errorf("%s is not attend cross %d", id, token.Cross.ID))
+		return
+	}
+
 	recipients, err := m.platform.GetRecipientsById(id)
 	if err != nil {
 		m.Error(http.StatusInternalServerError, err)
