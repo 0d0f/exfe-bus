@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Identity struct {
@@ -17,6 +18,14 @@ type Identity struct {
 	ExternalID       string `json:"external_id,omitempty"`
 	ExternalUsername string `json:"external_username,omitempty"`
 	OAuthToken       string `json:"oauth_token,omitempty"`
+}
+
+func FromIdentityId(id string) Identity {
+	sp := strings.SplitN(id, "@", 2)
+	return Identity{
+		ExternalUsername: sp[0],
+		Provider:         sp[1],
+	}
 }
 
 func (i Identity) Equal(other Identity) bool {

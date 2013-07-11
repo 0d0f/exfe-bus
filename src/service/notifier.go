@@ -20,15 +20,18 @@ type V3Notifier struct {
 	UserWelcome       rest.Processor `path:"/user/welcome" method:"POST"`
 	UserVerify        rest.Processor `path:"/user/verify" method:"POST"`
 	UserReset         rest.Processor `path:"/user/reset" method:"POST"`
+	WechatRoutex      rest.Processor `path:"/wechat/routex" method:"POST"`
 
-	cross *notifier.Cross
-	user  *notifier.User
+	cross  *notifier.Cross
+	user   *notifier.User
+	wechat *notifier.Wechat
 }
 
 func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) (*V3Notifier, error) {
 	return &V3Notifier{
-		cross: notifier.NewCross(local, config, platform),
-		user:  notifier.NewUser(local, config, platform),
+		cross:  notifier.NewCross(local, config, platform),
+		user:   notifier.NewUser(local, config, platform),
+		wechat: notifier.NewWechat(local, config, platform),
 	}, nil
 }
 

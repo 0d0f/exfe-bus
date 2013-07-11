@@ -23,6 +23,8 @@ type RouteMap struct {
 	UpdateRoute    rest.Processor `path:"/cross/:cross_id/route" method:"POST"`
 	GetRoute       rest.Processor `path:"/cross/:cross_id/route" method:"GET"`
 	Notification   rest.Streaming `path:"/cross/:cross_id" method:"POST"`
+	Options        rest.Processor `path:"/cross/:cross_id" method:"OPTIONS"`
+	SendNotice     rest.Processor `path:"/cross/:cross_id/notice" method:"POST"`
 
 	locationRepo LocationRepo
 	routeRepo    RouteRepo
@@ -254,6 +256,21 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 			}
 		}
 	}
+}
+
+func (m *RouteMap) HandleOptions() {
+	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
+	m.Header().Set("Access-Control-Allow-Credentials", "true")
+	m.Header().Set("Cache-Control", "no-cache")
+
+	m.WriteHeader(http.StatusNoContent)
+}
+
+func (m *RouteMap) HandleNotice(id string) {
+	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
+	m.Header().Set("Access-Control-Allow-Credentials", "true")
+	m.Header().Set("Cache-Control", "no-cache")
+
 }
 
 func (m *RouteMap) auth() (Token, bool) {
