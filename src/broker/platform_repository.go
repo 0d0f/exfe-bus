@@ -409,3 +409,8 @@ func (p *Platform) GetIdentityById(id uint64) (model.Identity, error) {
 	}
 	return ret.Response.Identity, nil
 }
+
+func (p *Platform) GetRecipientsById(id string) ([]model.Recipient, error) {
+	logger.ERROR("not implement get recipients by id")
+	return nil, fmt.Errorf("not implement")
+}

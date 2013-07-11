@@ -275,6 +275,32 @@ func (m RouteMap) HandleSendNotice(id string) {
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
+	recipients, err := m.platform.GetRecipientsById(id)
+	if err != nil {
+		m.Error(http.StatusInternalServerError, err)
+		return
+	}
+	for _, recipient := range recipients {
+		switch recipient.Provider {
+		case "iOS":
+			fallthrough
+		case "Android":
+			body, err := json.Marshal(recipient)
+			if err != nil {
+				logger.ERROR("can't marshal: %s with %+v", err, recipient)
+				continue
+			}
+			url := fmt.Sprintf("http://%s:%d/v3/notifier/wechat/routex", m.config.ExfeService.Addr, m.config.ExfeService.Port)
+			resp, err := broker.HttpResponse(broker.Http("POST", url, "applicatioin/json", body))
+			if err != nil {
+				logger.ERROR("call %s error: %s with %#v", url, err, body)
+				continue
+			}
+			resp.Close()
+			return
+		}
+	}
+	return
 }
 
 func (m *RouteMap) auth() (Token, bool) {
