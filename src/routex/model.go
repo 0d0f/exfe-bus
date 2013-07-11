@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-type Location struct {
+type Breadcrum struct {
 	Id          string   `json:"id,omitempty"`
 	Type        string   `json:"type,omitempty"`
 	CreatedAt   int64    `json:"created_at,omitempty"`
@@ -30,7 +30,7 @@ type Location struct {
 	Latitude    string   `json:"latitude"`
 }
 
-func (l Location) GetGeo() (float64, float64, float64, error) {
+func (l Breadcrum) GetGeo() (float64, float64, float64, error) {
 	lat, err := strconv.ParseFloat(l.Latitude, 64)
 	if err != nil {
 		return 0, 0, 0, err
@@ -46,19 +46,6 @@ func (l Location) GetGeo() (float64, float64, float64, error) {
 	return lat, lng, acc, nil
 }
 
-type Route struct {
-	Id          string     `json:"id,omitempty"`
-	Type        string     `json:"type,omitempty"`
-	CreatedAt   int64      `json:"created_at,omitempty"`
-	CreatedBy   string     `json:"created_by,omitempty"`
-	UpdatedAt   int64      `json:"updated_at,omitempty"`
-	UpdatedBy   string     `json:"updated_by,omitempty"`
-	Title       string     `json:"title,omitempty"`
-	Description string     `json:"description,omitempty"`
-	Timestamp   int64      `json:"timestamp,omitempty"`
-	Locations   []Location `json:"locations"`
-}
-
 type Token struct {
 	TokenType string `json:"token_type"`
 	UserId    int64  `json:"user_id"`
@@ -67,21 +54,21 @@ type Token struct {
 	Identity model.Identity `json:"-"`
 }
 
-type LocationRepo interface {
-	Save(id string, crossId uint64, l Location) error
-	Load(id string, crossId uint64) ([]Location, error)
+type BreadcrumsRepo interface {
+	Save(id string, crossId uint64, l Breadcrum) error
+	Load(id string, crossId uint64) ([]Breadcrum, error)
 }
 
-type RouteRepo interface {
+type GeomarksRepo interface {
 	Save(crossId uint64, content []map[string]interface{}) error
 	Load(crossId uint64) ([]map[string]interface{}, error)
 }
 
-type LocationSaver struct {
+type BreadcrumsSaver struct {
 	Redis *broker.RedisPool
 }
 
-func (s *LocationSaver) Save(id string, crossId uint64, l Location) error {
+func (s *BreadcrumsSaver) Save(id string, crossId uint64, l Breadcrum) error {
 	b, err := json.Marshal(l)
 	if err != nil {
 		return err
@@ -112,7 +99,7 @@ func (s *LocationSaver) Save(id string, crossId uint64, l Location) error {
 	return nil
 }
 
-func (s *LocationSaver) Load(id string, crossId uint64) ([]Location, error) {
+func (s *BreadcrumsSaver) Load(id string, crossId uint64) ([]Breadcrum, error) {
 	key := s.key(id, crossId)
 	var lrange interface{}
 	var err error
@@ -135,14 +122,14 @@ func (s *LocationSaver) Load(id string, crossId uint64) ([]Location, error) {
 	if err != nil {
 		return nil, err
 	}
-	var ret []Location
+	var ret []Breadcrum
 	for len(values) > 0 {
 		var b []byte
 		values, err = redis.Scan(values, &b)
 		if err != nil {
 			return nil, err
 		}
-		var location Location
+		var location Breadcrum
 		err := json.Unmarshal(b, &location)
 		if err != nil {
 			logger.ERROR("can't unmashal location value: %s with %s", err, string(b))
@@ -153,26 +140,26 @@ func (s *LocationSaver) Load(id string, crossId uint64) ([]Location, error) {
 	return ret, nil
 }
 
-func (s *LocationSaver) key(id string, crossId uint64) string {
+func (s *BreadcrumsSaver) key(id string, crossId uint64) string {
 	return fmt.Sprintf("exfe:v3:routex:cross_%d:location:%s", crossId, id)
 }
 
 const (
-	ROUTERX_INSERT = "INSERT IGNORE INTO `routex` (`cross_id`, `route`, `touched_at`) VALUES (?, ?, NOW())"
-	ROUTERX_UPDATE = "UPDATE `routex` SET `route`=?, `touched_at`=NOW() WHERE `cross_id`=?"
-	ROUTERX_GET    = "SELECT `route` FROM `routex` WHERE `cross_id`=?"
+	GEOMARKS_INSERT = "INSERT IGNORE INTO `routex` (`cross_id`, `route`, `touched_at`) VALUES (?, ?, NOW())"
+	GEOMARKS_UPDATE = "UPDATE `routex` SET `route`=?, `touched_at`=NOW() WHERE `cross_id`=?"
+	GEOMARKS_GET    = "SELECT `route` FROM `routex` WHERE `cross_id`=?"
 )
 
-type RouteSaver struct {
+type GeomarksSaver struct {
 	Db *sql.DB
 }
 
-func (s *RouteSaver) Save(crossId uint64, data []map[string]interface{}) error {
+func (s *GeomarksSaver) Save(crossId uint64, data []map[string]interface{}) error {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
-	n, err := s.Db.Exec(ROUTERX_INSERT, crossId, string(b))
+	n, err := s.Db.Exec(GEOMARKS_INSERT, crossId, string(b))
 	if err != nil {
 		return err
 	}
@@ -181,7 +168,7 @@ func (s *RouteSaver) Save(crossId uint64, data []map[string]interface{}) error {
 		return err
 	}
 	if rows == 0 {
-		_, err := s.Db.Exec(ROUTERX_UPDATE, string(b), crossId)
+		_, err := s.Db.Exec(GEOMARKS_UPDATE, string(b), crossId)
 		if err != nil {
 			return err
 		}
@@ -189,9 +176,9 @@ func (s *RouteSaver) Save(crossId uint64, data []map[string]interface{}) error {
 	return nil
 }
 
-func (s *RouteSaver) Load(crossId uint64) ([]map[string]interface{}, error) {
+func (s *GeomarksSaver) Load(crossId uint64) ([]map[string]interface{}, error) {
 	var row *sql.Rows
-	row, err := s.Db.Query(ROUTERX_GET, crossId)
+	row, err := s.Db.Query(GEOMARKS_GET, crossId)
 	if err != nil {
 		return nil, err
 	}

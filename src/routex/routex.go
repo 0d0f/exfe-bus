@@ -18,32 +18,32 @@ import (
 type RouteMap struct {
 	rest.Service `prefix:"/v3/routex" mime:"application/json"`
 
-	UpdateLocation rest.Processor `path:"/crosses/:cross_id/location" method:"POST"`
-	GetLocation    rest.Processor `path:"/crosses/:cross_id/location" method:"GET"`
-	UpdateRoute    rest.Processor `path:"/crosses/:cross_id/route" method:"POST"`
-	GetRoute       rest.Processor `path:"/crosses/:cross_id/route" method:"GET"`
-	Notification   rest.Streaming `path:"/crosses/:cross_id" method:"POST"`
-	Options        rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
-	SendNotice     rest.Processor `path:"/crosses/:cross_id/notice" method:"POST"`
+	UpdateBreadcrums rest.Processor `path:"/crosses/:cross_id/breadcrums" method:"POST"`
+	GetBreadcrums    rest.Processor `path:"/crosses/:cross_id/breadcrums" method:"GET"`
+	UpdateGeomarks   rest.Processor `path:"/crosses/:cross_id/geomarks" method:"POST"`
+	GetGeomarks      rest.Processor `path:"/crosses/:cross_id/geomarks" method:"GET"`
+	Notification     rest.Streaming `path:"/crosses/:cross_id" method:"POST"`
+	Options          rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
+	SendNotice       rest.Processor `path:"/crosses/:cross_id/notice" method:"POST"`
 
-	locationRepo LocationRepo
-	routeRepo    RouteRepo
-	platform     *broker.Platform
-	config       *model.Config
-	broadcasts   map[uint64]*broadcast.Broadcast
+	breadcrumsRepo BreadcrumsRepo
+	geomarksRepo   GeomarksRepo
+	platform       *broker.Platform
+	config         *model.Config
+	broadcasts     map[uint64]*broadcast.Broadcast
 }
 
-func New(locationRepo LocationRepo, routeRepo RouteRepo, platform *broker.Platform, config *model.Config) *RouteMap {
+func New(breadcrumsRepo BreadcrumsRepo, geomarksRepo GeomarksRepo, platform *broker.Platform, config *model.Config) *RouteMap {
 	return &RouteMap{
-		locationRepo: locationRepo,
-		routeRepo:    routeRepo,
-		platform:     platform,
-		config:       config,
-		broadcasts:   make(map[uint64]*broadcast.Broadcast),
+		breadcrumsRepo: breadcrumsRepo,
+		geomarksRepo:   geomarksRepo,
+		platform:       platform,
+		config:         config,
+		broadcasts:     make(map[uint64]*broadcast.Broadcast),
 	}
 }
 
-func (m RouteMap) HandleUpdateLocation(location Location) {
+func (m RouteMap) HandleUpdateBreadcrums(breadcrum Breadcrum) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -54,29 +54,29 @@ func (m RouteMap) HandleUpdateLocation(location Location) {
 	}
 	id := token.Identity.Id()
 
-	lat, lng, _, err := location.GetGeo()
+	lat, lng, _, err := breadcrum.GetGeo()
 	if err != nil {
 		m.Error(http.StatusBadRequest, err)
 		return
 	}
 
-	location.Timestamp = time.Now().Unix()
-	locations, err := m.locationRepo.Load(id, token.Cross.ID)
+	breadcrum.Timestamp = time.Now().Unix()
+	breadcrums, err := m.breadcrumsRepo.Load(id, token.Cross.ID)
 	if err != nil {
-		logger.ERROR("can't get locations %s of cross %d: %s", id, token.Cross.ID, err)
+		logger.ERROR("can't get breadcrums %s of cross %d: %s", id, token.Cross.ID, err)
 	}
-	if len(locations) == 0 {
-		if err := m.locationRepo.Save(id, token.Cross.ID, location); err != nil {
-			logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, location)
+	if len(breadcrums) == 0 {
+		if err := m.breadcrumsRepo.Save(id, token.Cross.ID, breadcrum); err != nil {
+			logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrum)
 			m.Error(http.StatusInternalServerError, err)
 			return
 		}
 	} else {
-		last := locations[0]
+		last := breadcrums[0]
 		lastLat, lastLng, _, err := last.GetGeo()
 		if err != nil {
-			if err := m.locationRepo.Save(id, token.Cross.ID, location); err != nil {
-				logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, location)
+			if err := m.breadcrumsRepo.Save(id, token.Cross.ID, breadcrum); err != nil {
+				logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrum)
 				m.Error(http.StatusInternalServerError, err)
 				return
 			}
@@ -85,34 +85,34 @@ func (m RouteMap) HandleUpdateLocation(location Location) {
 			b := math.Sin(lastLat) * math.Sin(lat)
 			alpha := math.Acos(a + b)
 			distance := alpha * 6371000
-			logger.INFO("routex", "cross", token.Cross.ID, id, "location", location.Longitude, location.Latitude, location.Accuracy, "last", last.Longitude, last.Latitude, last.Accuracy, "alpha", alpha, "distance", distance)
+			logger.INFO("routex", "cross", token.Cross.ID, id, "breadcrum", breadcrum.Longitude, breadcrum.Latitude, breadcrum.Accuracy, "last", last.Longitude, last.Latitude, last.Accuracy, "alpha", alpha, "distance", distance)
 			if distance > 30 {
-				if err := m.locationRepo.Save(id, token.Cross.ID, location); err != nil {
-					logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, location)
+				if err := m.breadcrumsRepo.Save(id, token.Cross.ID, breadcrum); err != nil {
+					logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrum)
 					m.Error(http.StatusInternalServerError, err)
 					return
 				}
 			}
 		}
 	}
-	locations = append([]Location{location}, locations...)
+	breadcrums = append([]Breadcrum{breadcrum}, breadcrums...)
 
 	broadcast, ok := m.broadcasts[token.Cross.ID]
 	if !ok {
 		return
 	}
-	if locations == nil {
+	if breadcrums == nil {
 		return
 	}
 	broadcast.Send(map[string]interface{}{
-		"type": "/crosses/routex/location",
+		"type": "/crosses/routex/breadcrum",
 		"data": map[string]interface{}{
-			id: locations,
+			id: breadcrums,
 		},
 	})
 }
 
-func (m RouteMap) HandleGetLocation() map[string][]Location {
+func (m RouteMap) HandleGetBreadcrums() map[string][]Breadcrum {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -121,23 +121,23 @@ func (m RouteMap) HandleGetLocation() map[string][]Location {
 	if !ok {
 		return nil
 	}
-	ret := make(map[string][]Location)
+	ret := make(map[string][]Breadcrum)
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		id := invitation.Identity.Id()
-		locations, err := m.locationRepo.Load(id, token.Cross.ID)
+		breadcrums, err := m.breadcrumsRepo.Load(id, token.Cross.ID)
 		if err != nil {
-			logger.ERROR("can't get locations %s of cross %d: %s", id, token.Cross.ID, err)
+			logger.ERROR("can't get breadcrums %s of cross %d: %s", id, token.Cross.ID, err)
 			continue
 		}
-		if locations == nil {
+		if breadcrums == nil {
 			continue
 		}
-		ret[id] = locations
+		ret[id] = breadcrums
 	}
 	return ret
 }
 
-func (m RouteMap) HandleUpdateRoute(data []map[string]interface{}) {
+func (m RouteMap) HandleUpdateGeomarks(data []map[string]interface{}) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -146,7 +146,7 @@ func (m RouteMap) HandleUpdateRoute(data []map[string]interface{}) {
 	if !ok {
 		return
 	}
-	if err := m.routeRepo.Save(token.Cross.ID, data); err != nil {
+	if err := m.geomarksRepo.Save(token.Cross.ID, data); err != nil {
 		logger.ERROR("save route for cross %d failed: %s", token.Cross.ID, err)
 		m.Error(http.StatusInternalServerError, err)
 		return
@@ -156,12 +156,12 @@ func (m RouteMap) HandleUpdateRoute(data []map[string]interface{}) {
 		return
 	}
 	broadcast.Send(map[string]interface{}{
-		"type": "/crosses/routex/route",
+		"type": "/crosses/routex/geomarks",
 		"data": data,
 	})
 }
 
-func (m RouteMap) HandleGetRoute() []map[string]interface{} {
+func (m RouteMap) HandleGetGeomarks() []map[string]interface{} {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -170,7 +170,7 @@ func (m RouteMap) HandleGetRoute() []map[string]interface{} {
 	if !ok {
 		return nil
 	}
-	data, err := m.routeRepo.Load(token.Cross.ID)
+	data, err := m.geomarksRepo.Load(token.Cross.ID)
 	if err != nil {
 		logger.ERROR("can't get route of cross %d: %s", token.Cross.ID, err)
 		m.Error(http.StatusInternalServerError, err)
@@ -207,31 +207,31 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 		close(c)
 	}()
 
-	ret := make(map[string][]Location)
+	ret := make(map[string][]Breadcrum)
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		id := invitation.Identity.Id()
-		locations, err := m.locationRepo.Load(id, token.Cross.ID)
+		breadcrums, err := m.breadcrumsRepo.Load(id, token.Cross.ID)
 		if err != nil {
-			logger.ERROR("can't get locations %s of cross %d: %s", id, token.Cross.ID, err)
+			logger.ERROR("can't get breadcrums %s of cross %d: %s", id, token.Cross.ID, err)
 			continue
 		}
-		if locations == nil {
+		if breadcrums == nil {
 			continue
 		}
-		ret[id] = locations
+		ret[id] = breadcrums
 	}
 	err := stream.Write(map[string]interface{}{
-		"type": "/crosses/routex/location",
+		"type": "/crosses/routex/breadcrum",
 		"data": ret,
 	})
 	if err != nil {
 		return
 	}
 
-	data, err := m.routeRepo.Load(token.Cross.ID)
+	data, err := m.geomarksRepo.Load(token.Cross.ID)
 	if err == nil && data != nil {
 		err := stream.Write(map[string]interface{}{
-			"type": "/crosses/routex/route",
+			"type": "/crosses/routex/geomarks",
 			"data": data,
 		})
 		if err != nil {
