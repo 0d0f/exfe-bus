@@ -4,140 +4,20 @@ import (
 	"broker"
 	"bytes"
 	"crypto/tls"
-	"daemon"
-	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/googollee/go-aws/s3"
 	"io/ioutil"
 	"logger"
 	"model"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 )
-
-type BaseRequest struct {
-	Uin      uint64
-	Sid      string
-	Skey     string
-	DeviceID string
-}
-
-type SyncKey struct {
-	Count int
-	List  []map[string]int
-}
-
-type ContactRequest struct {
-	UserName   string
-	ChatRoomId uint64
-}
-
-type Request struct {
-	BaseRequest BaseRequest
-	Count       int              `json:"Count,omitempty"`
-	List        []ContactRequest `json:"List,omitempty"`
-	SyncKey     *SyncKey         `json:"SyncKey,omitempty"`
-	Msg         *Message         `json:"Msg,omitempty"`
-}
-
-type Member struct {
-	AttrStatus      int
-	DisplayName     string
-	MemberStatus    int
-	NickName        string
-	PYInitial       string
-	PYQuanPin       string
-	RemarkPYInitial string
-	RemarkPYQuanPin string
-	Uin             uint64
-	UserName        string
-}
-
-type Contact struct {
-	Alias            string
-	AppAccountFlag   int
-	AttrStatus       int
-	City             string
-	ContactFlag      int
-	HeadImgUrl       string
-	HideInputBarFlag int
-	MemberCount      int
-	MemberList       []Member
-	NickName         string
-	OwnerUin         uint64
-	PYInitial        string
-	PYQuanPin        string
-	Province         string
-	RemarkName       string
-	RemarkPYInitial  string
-	RemarkPYQuanPin  string
-	Sex              int
-	Signature        string
-	SnsFlag          int
-	StarFriend       int
-	Statues          int
-	Uin              uint64
-	UniFriend        int
-	UserName         string
-	VerifyFlag       int
-}
-
-type Message struct {
-	AppInfo struct {
-		AddID string
-		Type  int
-	}
-	AppMsgType           int
-	Content              string
-	CreateTime           int64
-	ClientMsgId          int
-	FileName             string
-	FileSize             string
-	ForwardFlag          int
-	FromUserName         string
-	ImgStatus            int
-	LocalID              int
-	MediaId              string
-	MsgId                int64
-	MsgType              int
-	PlayLength           int
-	Status               int
-	StatusNotifyCode     int
-	StatusNotifyUserName string
-	ToUserName           string
-	Type                 int
-	Url                  string
-	VoiceLength          int
-}
-
-func (m Message) IsChatRoom() bool {
-	return m.MsgType == 10000
-}
-
-type Response struct {
-	BaseResponse struct {
-		ErrMsg string
-		Ret    int
-	}
-	User Contact
-
-	AddMsgCount  int
-	AddMsgList   []Message
-	ContinueFlag int
-
-	Count       int
-	ContactList []Contact
-
-	Skey    string
-	SyncKey SyncKey
-}
 
 type WeChat struct {
 	client      *http.Client
@@ -150,12 +30,17 @@ type WeChat struct {
 }
 
 func New(pingId string, config *model.Config) (*WeChat, error) {
+	jar, err := cookiejar.New(new(cookiejar.Options))
+	if err != nil {
+		return nil, err
+	}
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
 		},
+		Jar: jar,
 	}
 	b, err := resp(http.Get("https://login.weixin.qq.com/jslogin?appid=wx782c26e4c19acffb&redirect_uri=https%3A%2F%2Fwx.qq.com%2Fcgi-bin%2Fmmwebwx-bin%2Fwebwxnewloginpage&fun=new&lang=zh_CN"))
 	if err != nil {
@@ -183,15 +68,18 @@ Subject: =?utf-8?B?V2VjaGF0IFNlcnZpY2UgTm90aWZpY2F0aW9uCg==?=
 WeChat need login!!! Help!!!!
 QR: `+loginUrl)
 
-	login := fmt.Sprintf("https://login.weixin.qq.com/cgi-bin/mmwebwx-bin/login?uuid=%s&tip=1", uuid)
+	params := make(url.Values)
+	params.Set("uuid", uuid)
+	params.Set("tip", "0")
 	var tokenUrl string
 	startTime := time.Now()
 	for {
+		params.Set("_", fmt.Sprintf("%d", timestamp()))
 		now := time.Now()
 		if now.Sub(startTime) > 5*time.Minute {
 			return nil, fmt.Errorf("login timeout, need restart")
 		}
-		b, err = resp(client.Get(login))
+		b, err = resp(client.Get("https://login.weixin.qq.com/cgi-bin/mmwebwx-bin/login?" + params.Encode()))
 		if err != nil {
 			return nil, err
 		}
@@ -255,11 +143,6 @@ QR: `+loginUrl)
 		"ToUserName":   ret.User.UserName,
 		"ClientMsgId":  timestamp(),
 	})
-	re, err = client.Post("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxstatusnotify", "application/json", buf)
-	if err != nil {
-		return nil, err
-	}
-	re.Body.Close()
 
 	sendmail(config, `Content-Type: text/plain
 To: srv-op@exfe.com
@@ -287,17 +170,20 @@ func (wc *WeChat) SendMessage(to, content string) error {
 			ToUserName:   to,
 			Type:         1,
 			Content:      content,
-			ClientMsgId:  1,
-			LocalID:      1,
+			ClientMsgId:  timestamp(),
+			LocalID:      timestamp(),
 		},
 	}
 	var resp Response
-	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsendmsg?sid="+wc.baseRequest.Sid, req, &resp)
+	params := make(url.Values)
+	params.Set("sid", wc.baseRequest.Sid)
+	params.Set("r", fmt.Sprintf("%d", timestamp()))
+	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsendmsg?"+params.Encode(), req, &resp)
 	if err != nil {
 		return err
 	}
 	if resp.BaseResponse.Ret != 0 {
-		return fmt.Errorf("%s", resp.BaseResponse.ErrMsg)
+		return fmt.Errorf("(%d)%s", resp.BaseResponse.Ret, resp.BaseResponse.ErrMsg)
 	}
 	wc.baseRequest.Skey = resp.Skey
 	wc.lastPing = time.Now()
@@ -319,14 +205,14 @@ func (wc *WeChat) Ping(timeout time.Duration) error {
 	return nil
 }
 
-func (wc *WeChat) Checkt() (string, error) {
+func (wc *WeChat) Check() (string, error) {
 	params := make(url.Values)
 	params.Set("callback", "_")
 	params.Set("sid", wc.baseRequest.Sid)
 	params.Set("uin", fmt.Sprintf("%d", wc.baseRequest.Uin))
 	params.Set("deviceid", wc.baseRequest.DeviceID)
 	params.Set("synckey", makeSyncQuery(wc.syncKey.List))
-	params.Set("_", timestamp())
+	params.Set("_", fmt.Sprintf("%d", timestamp()))
 	resp, err := wc.get("https://webpush.weixin.qq.com/cgi-bin/mmwebwx-bin/synccheck?" + params.Encode())
 	if err != nil {
 		return "", err
@@ -398,8 +284,11 @@ func (wc *WeChat) GetContact(reqContacts []ContactRequest) ([]Contact, error) {
 }
 
 func (wc *WeChat) ConvertCross(bucket *s3.Bucket, msg *Message) (uint64, model.Cross, error) {
-	if !msg.IsChatRoom() {
-		return 0, model.Cross{}, fmt.Errorf("%s", "not chat room")
+	if msg.MsgType != JoinMessage {
+		return 0, model.Cross{}, fmt.Errorf("%s", "not join message")
+	}
+	if strings.HasSuffix(msg.FromUserName, "@chatroom") {
+		return 0, model.Cross{}, fmt.Errorf("%s", "not join chat room")
 	}
 	chatroomReq := []ContactRequest{
 		ContactRequest{
@@ -483,11 +372,18 @@ func (wc *WeChat) postJson(url string, data interface{}, reply interface{}) erro
 	if err != nil {
 		return err
 	}
+	fmt.Println("post:", url, "post:", buf.String())
 	req, err := http.NewRequest("POST", url, buf)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Cookie", fmt.Sprintf("wxuin=%d; wxsid=%s", wc.baseRequest.Uin, wc.baseRequest.Sid))
+	req.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.116 Safari/537.36")
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	req.Header.Set("Origin", "https://wx.qq.com")
+	req.Header.Set("Referer", "https://wx.qq.com/")
 	re, err := wc.client.Do(req)
 	err = respJson(reply, re, err)
 	if err != nil {
@@ -497,16 +393,17 @@ func (wc *WeChat) postJson(url string, data interface{}, reply interface{}) erro
 }
 
 func (wc *WeChat) get(url string) (*http.Response, error) {
+	fmt.Println("get:", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Connection", "keep-alive")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.116 Safari/537.36")
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
 	req.Header.Set("Origin", "https://wx.qq.com")
 	req.Header.Set("Referer", "https://wx.qq.com/")
-	req.Header.Set("Cookie", fmt.Sprintf("wxuin=%d; wxsid=%s", wc.baseRequest.Uin, wc.baseRequest.Sid))
 	re, err := wc.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -518,9 +415,9 @@ func (wc *WeChat) get(url string) (*http.Response, error) {
 	return re, nil
 }
 
-func timestamp() string {
+func timestamp() int64 {
 	now := time.Now().UTC()
-	return fmt.Sprintf("%d\n", now.UnixNano()/int64(time.Millisecond))
+	return now.UnixNano() / int64(time.Millisecond)
 }
 
 func resp(r *http.Response, err error) ([]byte, error) {
@@ -602,174 +499,6 @@ func sendmail(config *model.Config, content string) {
 			logger.ERROR("send notification %s failed: %s with %s", queue, err, string(b))
 		} else {
 			resp.Body.Close()
-		}
-	}
-}
-
-func main() {
-	var config model.Config
-	_, quit := daemon.Init("exfe.json", &config)
-
-	workType := os.Args[len(os.Args)-1]
-	work, ok := config.Wechat[workType]
-	if !ok {
-		logger.ERROR("unknow work type %s", workType)
-		return
-	}
-
-	aws := s3.New(config.AWS.S3.Domain, config.AWS.S3.Key, config.AWS.S3.Secret)
-	aws.SetACL(s3.ACLPublicRead)
-	aws.SetLocationConstraint(s3.LC_AP_SINGAPORE)
-	bucket, err := aws.GetBucket(fmt.Sprintf("%s-3rdpart-photos", config.AWS.S3.BucketPrefix))
-	if err != nil {
-		logger.ERROR("can't create bucket: %s", err)
-		return
-	}
-
-	platform, err := broker.NewPlatform(&config)
-	if err != nil {
-		logger.ERROR("can't create platform: %s", err)
-		return
-	}
-
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4,utf8&autocommit=true",
-		config.DB.Username, config.DB.Password, config.DB.Addr, config.DB.Port, config.DB.DbName))
-	if err != nil {
-		logger.ERROR("mysql error:", err)
-		return
-	}
-	defer db.Close()
-	err = db.Ping()
-	if err != nil {
-		logger.ERROR("mysql error:", err)
-		return
-	}
-	kvSaver := broker.NewKVSaver(db)
-
-	wc, err := New(work.PingId, &config)
-	if err != nil {
-		logger.ERROR("can't create wechat: %s", err)
-		return
-	}
-	defer func() {
-		logger.NOTICE("quit")
-	}()
-
-	http.HandleFunc("/send", func(w http.ResponseWriter, r *http.Request) {
-		to := r.URL.Query().Get("to")
-		if strings.HasPrefix(to, "e") && strings.HasSuffix(to, "@exfe") {
-			defer r.Body.Close()
-			chatroomId, exist, err := kvSaver.Check([]string{to})
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if !exist {
-				http.Error(w, fmt.Sprintf("can't find chatroom for %s", to), http.StatusBadRequest)
-				return
-			}
-			to = chatroomId
-		}
-		b, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		err = wc.SendMessage(to, string(b))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	})
-
-	go http.ListenAndServe(fmt.Sprintf("%s:%d", work.Addr, work.Port), nil)
-
-	logger.NOTICE("login as %s", wc.userName)
-
-	for {
-		select {
-		case <-quit:
-			return
-		default:
-		}
-		ret, err := wc.Checkt()
-		if err != nil {
-			logger.ERROR("can't get last message: %s", err)
-			return
-		}
-		if ret == "0" {
-			err = wc.Ping(time.Minute * 30)
-			if err != nil {
-				logger.ERROR("ping error: %s", err)
-				return
-			}
-			continue
-		}
-		resp, err := wc.GetLast()
-		if err != nil {
-			logger.ERROR("can't get last message: %s", err)
-			return
-		}
-		for _, msg := range resp.AddMsgList {
-			if !msg.IsChatRoom() {
-				continue
-			}
-			uin, cross, err := wc.ConvertCross(bucket, &msg)
-			if err != nil {
-				logger.ERROR("can't convert to cross: %s", err)
-				return
-			}
-			uinStr := fmt.Sprintf("%d", uin)
-			idStr, exist, err := kvSaver.Check([]string{uinStr})
-			if err != nil {
-				logger.ERROR("can't check uin %s: %s", uinStr, err)
-				continue
-			}
-			if exist {
-				id, err := strconv.ParseInt(idStr, 10, 64)
-				if err != nil {
-					goto CREATE
-				}
-				oldCross, err := platform.FindCross(id, nil)
-				if err != nil {
-					goto CREATE
-				}
-				exfee := make(map[string]bool)
-				host := cross.Exfee.Invitations[0].Identity
-				for _, invitation := range cross.Exfee.Invitations {
-					exfee[invitation.Identity.Id()] = true
-					if invitation.Host {
-						host = invitation.Identity
-					}
-				}
-				for _, invitation := range oldCross.Exfee.Invitations {
-					if exfee[invitation.Identity.Id()] {
-						continue
-					}
-					invitation.Response = model.Removed
-					cross.Exfee.Invitations = append(cross.Exfee.Invitations, invitation)
-				}
-				err = platform.BotCrossUpdate("cross_id", idStr, cross, host)
-				if err != nil {
-					logger.ERROR("can't update cross %s: %s", idStr, err)
-					goto CREATE
-				}
-			}
-		CREATE:
-			cross, err = platform.BotCrossGather(cross)
-			if err != nil {
-				logger.ERROR("can't gather cross: %s", err)
-				continue
-			}
-			err = kvSaver.Save([]string{fmt.Sprintf("%d", uin)}, fmt.Sprintf("%d", cross.ID))
-			if err != nil {
-				logger.ERROR("can't save cross id: %s", err)
-			}
-			err = kvSaver.Save([]string{fmt.Sprintf("e%d@exfe", cross.Exfee.ID)}, fmt.Sprintf("%d@chatroom", uin))
-			if err != nil {
-				logger.ERROR("can't save exfee id: %s", err)
-			}
-			logger.INFO("wechat_gather", msg.FromUserName, uin, cross.ID, cross.Exfee.ID, err)
 		}
 	}
 }
