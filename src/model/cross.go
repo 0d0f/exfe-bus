@@ -22,6 +22,8 @@ type Cross struct {
 	Exfee       Exfee                    `json:"exfee,omitempty"`
 	Updated     map[string]UpdateInfo    `json:"updated,omitempty"`
 	Widgets     []map[string]interface{} `json:"widget"`
+	CreatedAt   string                   `json:"created_at"`
+	UpdatedAt   string                   `json:"updated_at"`
 }
 
 func (c Cross) Equal(other *Cross) bool {

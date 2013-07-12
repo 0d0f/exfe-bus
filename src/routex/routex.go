@@ -43,7 +43,7 @@ func New(breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, platform *b
 	}
 }
 
-func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Breadcrumb) {
+func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -95,7 +95,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Breadcrumb) {
 			}
 		}
 	}
-	breadcrumbs = append([]Breadcrumb{breadcrumb}, breadcrumbs...)
+	breadcrumbs = append([]Location{breadcrumb}, breadcrumbs...)
 
 	broadcast, ok := m.broadcasts[token.Cross.ID]
 	if !ok {
@@ -112,7 +112,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Breadcrumb) {
 	})
 }
 
-func (m RouteMap) HandleGetBreadcrums() map[string][]Breadcrumb {
+func (m RouteMap) HandleGetBreadcrums() map[string][]Location {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -121,7 +121,7 @@ func (m RouteMap) HandleGetBreadcrums() map[string][]Breadcrumb {
 	if !ok {
 		return nil
 	}
-	ret := make(map[string][]Breadcrumb)
+	ret := make(map[string][]Location)
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		id := invitation.Identity.Id()
 		breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
@@ -177,7 +177,33 @@ func (m RouteMap) HandleGetGeomarks() []map[string]interface{} {
 		return nil
 	}
 	if data == nil {
-		return make([]map[string]interface{}, 0)
+		ret := make([]map[string]interface{}, 0)
+		if token.Cross.Place.Lng != "" && token.Cross.Place.Lat != "" {
+			createdAt, err := time.Parse("2006-01-02 15:04:05 -0700", token.Cross.CreatedAt)
+			if err != nil {
+				createdAt = time.Now()
+			}
+			updatedAt, err := time.Parse("2006-01-02 15:04:05 -0700", token.Cross.UpdatedAt)
+			if err != nil {
+				updatedAt = time.Now()
+			}
+			destinaion := map[string]interface{}{
+				"id":          "destination",
+				"type":        "location",
+				"created_at":  createdAt.Unix(),
+				"created_by":  token.Cross.By.Id(),
+				"updated_at":  updatedAt.Unix(),
+				"updated_by":  token.Cross.By.Id(),
+				"tags":        []string{"destination"},
+				"title":       token.Cross.Place.Title,
+				"description": token.Cross.Place.Description,
+				"timestamp":   time.Now().Unix(),
+				"longitude":   token.Cross.Place.Lng,
+				"latitude":    token.Cross.Place.Lat,
+			}
+			ret = append(ret, destinaion)
+		}
+		return ret
 	}
 	return data
 }
@@ -207,7 +233,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 		close(c)
 	}()
 
-	ret := make(map[string][]Breadcrumb)
+	ret := make(map[string][]Location)
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		id := invitation.Identity.Id()
 		breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
@@ -229,7 +255,35 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 
 	data, err := m.geomarksRepo.Load(token.Cross.ID)
-	if err == nil && data != nil {
+	if err == nil {
+		if data == nil {
+			data = make([]map[string]interface{}, 0)
+			if token.Cross.Place.Lng != "" && token.Cross.Place.Lat != "" {
+				createdAt, err := time.Parse("2006-01-02 15:04:05 -0700", token.Cross.CreatedAt)
+				if err != nil {
+					createdAt = time.Now()
+				}
+				updatedAt, err := time.Parse("2006-01-02 15:04:05 -0700", token.Cross.UpdatedAt)
+				if err != nil {
+					updatedAt = time.Now()
+				}
+				destinaion := map[string]interface{}{
+					"id":          "destination",
+					"type":        "location",
+					"created_at":  createdAt.Unix(),
+					"created_by":  token.Cross.By.Id(),
+					"updated_at":  updatedAt.Unix(),
+					"updated_by":  token.Cross.By.Id(),
+					"tags":        []string{"destination"},
+					"title":       token.Cross.Place.Title,
+					"description": token.Cross.Place.Description,
+					"timestamp":   time.Now().Unix(),
+					"longitude":   token.Cross.Place.Lng,
+					"latitude":    token.Cross.Place.Lat,
+				}
+				data = append(data, destinaion)
+			}
+		}
 		err := stream.Write(map[string]interface{}{
 			"type": "/v3/crosses/routex/geomarks",
 			"data": data,

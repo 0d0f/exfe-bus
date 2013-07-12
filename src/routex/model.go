@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-type Breadcrumb struct {
+type Location struct {
 	Id          string   `json:"id,omitempty"`
 	Type        string   `json:"type,omitempty"`
 	CreatedAt   int64    `json:"created_at,omitempty"`
@@ -30,7 +30,7 @@ type Breadcrumb struct {
 	Latitude    string   `json:"latitude"`
 }
 
-func (l Breadcrumb) GetGeo() (float64, float64, float64, error) {
+func (l Location) GetGeo() (float64, float64, float64, error) {
 	lat, err := strconv.ParseFloat(l.Latitude, 64)
 	if err != nil {
 		return 0, 0, 0, err
@@ -55,8 +55,8 @@ type Token struct {
 }
 
 type BreadcrumbsRepo interface {
-	Save(id string, crossId uint64, l Breadcrumb) error
-	Load(id string, crossId uint64) ([]Breadcrumb, error)
+	Save(id string, crossId uint64, l Location) error
+	Load(id string, crossId uint64) ([]Location, error)
 }
 
 type GeomarksRepo interface {
@@ -68,7 +68,7 @@ type BreadcrumbsSaver struct {
 	Redis *broker.RedisPool
 }
 
-func (s *BreadcrumbsSaver) Save(id string, crossId uint64, l Breadcrumb) error {
+func (s *BreadcrumbsSaver) Save(id string, crossId uint64, l Location) error {
 	b, err := json.Marshal(l)
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func (s *BreadcrumbsSaver) Save(id string, crossId uint64, l Breadcrumb) error {
 	return nil
 }
 
-func (s *BreadcrumbsSaver) Load(id string, crossId uint64) ([]Breadcrumb, error) {
+func (s *BreadcrumbsSaver) Load(id string, crossId uint64) ([]Location, error) {
 	key := s.key(id, crossId)
 	var lrange interface{}
 	var err error
@@ -122,14 +122,14 @@ func (s *BreadcrumbsSaver) Load(id string, crossId uint64) ([]Breadcrumb, error)
 	if err != nil {
 		return nil, err
 	}
-	var ret []Breadcrumb
+	var ret []Location
 	for len(values) > 0 {
 		var b []byte
 		values, err = redis.Scan(values, &b)
 		if err != nil {
 			return nil, err
 		}
-		var location Breadcrumb
+		var location Location
 		err := json.Unmarshal(b, &location)
 		if err != nil {
 			logger.ERROR("can't unmashal location value: %s with %s", err, string(b))
