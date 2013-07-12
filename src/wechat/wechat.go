@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-aws/s3"
+	"io"
 	"io/ioutil"
 	"logger"
 	"model"
@@ -373,17 +374,11 @@ func (wc *WeChat) postJson(url string, data interface{}, reply interface{}) erro
 		return err
 	}
 	fmt.Println("post:", url, "post:", buf.String())
-	req, err := http.NewRequest("POST", url, buf)
+	req, err := wc.request("POST", url, buf)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
-	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.116 Safari/537.36")
-	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
-	req.Header.Set("Origin", "https://wx.qq.com")
-	req.Header.Set("Referer", "https://wx.qq.com/")
+
 	re, err := wc.client.Do(req)
 	err = respJson(reply, re, err)
 	if err != nil {
@@ -394,16 +389,11 @@ func (wc *WeChat) postJson(url string, data interface{}, reply interface{}) erro
 
 func (wc *WeChat) get(url string) (*http.Response, error) {
 	fmt.Println("get:", url)
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := wc.request("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Accept", "*/*")
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.116 Safari/537.36")
-	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
-	req.Header.Set("Origin", "https://wx.qq.com")
-	req.Header.Set("Referer", "https://wx.qq.com/")
+
 	re, err := wc.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -413,6 +403,20 @@ func (wc *WeChat) get(url string) (*http.Response, error) {
 		return nil, fmt.Errorf("%s", re.Status)
 	}
 	return re, nil
+}
+
+func (wc *WeChat) request(method, urlStr string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, urlStr, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.116 Safari/537.36")
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	req.Header.Set("Origin", "https://wx.qq.com")
+	req.Header.Set("Referer", "https://wx.qq.com/")
+	return req, nil
 }
 
 func timestamp() int64 {
