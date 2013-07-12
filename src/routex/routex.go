@@ -105,7 +105,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Breadcrumb) {
 		return
 	}
 	broadcast.Send(map[string]interface{}{
-		"type": "/crosses/routex/breadcrumbs",
+		"type": "/v3/crosses/routex/breadcrumbs",
 		"data": map[string]interface{}{
 			id: breadcrumbs,
 		},
@@ -156,7 +156,7 @@ func (m RouteMap) HandleUpdateGeomarks(data []map[string]interface{}) {
 		return
 	}
 	broadcast.Send(map[string]interface{}{
-		"type": "/crosses/routex/geomarks",
+		"type": "/v3/crosses/routex/geomarks",
 		"data": data,
 	})
 }
@@ -221,7 +221,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 		ret[id] = breadcrumbs
 	}
 	err := stream.Write(map[string]interface{}{
-		"type": "/crosses/routex/breadcrumbs",
+		"type": "/v3/crosses/routex/breadcrumbs",
 		"data": ret,
 	})
 	if err != nil {
@@ -231,7 +231,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	data, err := m.geomarksRepo.Load(token.Cross.ID)
 	if err == nil && data != nil {
 		err := stream.Write(map[string]interface{}{
-			"type": "/crosses/routex/geomarks",
+			"type": "/v3/crosses/routex/geomarks",
 			"data": data,
 		})
 		if err != nil {
