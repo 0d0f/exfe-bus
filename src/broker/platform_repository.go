@@ -411,6 +411,23 @@ func (p *Platform) GetIdentityById(id uint64) (model.Identity, error) {
 }
 
 func (p *Platform) GetRecipientsById(id string) ([]model.Recipient, error) {
-	logger.ERROR("not implement get recipients by id")
-	return nil, fmt.Errorf("not implement")
+	query := make(url.Values)
+	query.Set("identity_id", id)
+	u := fmt.Sprintf("%s/v3/bus/recipients?%s", p.config.SiteApi, query.Encode())
+	reader, err := HttpResponse(Http("GET", u, "", nil))
+	if err != nil {
+		logger.ERROR("get %s error: %s", u, err)
+		return nil, err
+	}
+	defer reader.Close()
+	var ret struct {
+		Data []model.Recipient
+	}
+	decoder := json.NewDecoder(reader)
+	err = decoder.Decode(&ret)
+	if err != nil {
+		logger.ERROR("decode %s error: %s", u, err)
+		return nil, err
+	}
+	return ret.Data, nil
 }
