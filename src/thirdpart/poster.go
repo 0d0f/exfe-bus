@@ -5,7 +5,6 @@ import (
 	"github.com/googollee/go-rest"
 	"io"
 	"io/ioutil"
-	// "model"
 	"net/http"
 )
 
