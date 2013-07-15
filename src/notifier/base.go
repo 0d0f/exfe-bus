@@ -10,6 +10,13 @@ import (
 var noneedSend = errors.New("no need send")
 
 func GenerateContent(localTemplate *formatter.LocalTemplate, template string, poster, lang string, arg interface{}) (string, error) {
+	switch poster {
+	case "facebook":
+		fallthrough
+	case "google":
+		poster = "email"
+	}
+
 	templateName := fmt.Sprintf("%s/%s", poster, template)
 	if !localTemplate.IsExist(lang, templateName) {
 		templateName = fmt.Sprintf("_default/%s", template)
