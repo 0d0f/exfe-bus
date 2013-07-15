@@ -21,10 +21,16 @@ type Identity struct {
 }
 
 func FromIdentityId(id string) Identity {
-	sp := strings.SplitN(id, "@", 2)
+	spliter := strings.LastIndex(id, "@")
+	if spliter < 0 {
+		return Identity{
+			ExternalUsername: id,
+			Provider:         "",
+		}
+	}
 	return Identity{
-		ExternalUsername: sp[0],
-		Provider:         sp[1],
+		ExternalUsername: id[:spliter],
+		Provider:         id[spliter+1:],
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 	"model"
 	"net/http"
 	"net/url"
+	"notifier"
 	"strconv"
 	"time"
 )
@@ -24,7 +25,7 @@ type RouteMap struct {
 	GetGeomarks      rest.Processor `path:"/crosses/:cross_id/geomarks" method:"GET"`
 	Notification     rest.Streaming `path:"/crosses/:cross_id" method:"POST"`
 	Options          rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
-	SendNotice       rest.Processor `path:"/crosses/:cross_id/notice" method:"POST"`
+	SendRequest      rest.Processor `path:"/crosses/:cross_id/request" method:"POST"`
 
 	breadcrumbsRepo BreadcrumbsRepo
 	geomarksRepo    GeomarksRepo
@@ -320,7 +321,7 @@ func (m RouteMap) HandleOptions() {
 	m.WriteHeader(http.StatusNoContent)
 }
 
-func (m RouteMap) HandleSendNotice(id string) {
+func (m RouteMap) HandleSendRequest(id string) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -352,15 +353,19 @@ func (m RouteMap) HandleSendNotice(id string) {
 		case "iOS":
 			fallthrough
 		case "Android":
-			body, err := json.Marshal(recipient)
+			body, err := json.Marshal(notifier.RequestArg{
+				To:      recipient,
+				CrossId: token.Cross.ID,
+				From:    token.Identity,
+			})
 			if err != nil {
 				logger.ERROR("can't marshal: %s with %+v", err, recipient)
 				continue
 			}
-			url := fmt.Sprintf("http://%s:%d/v3/notifier/wechat/routex", m.config.ExfeService.Addr, m.config.ExfeService.Port)
+			url := fmt.Sprintf("http://%s:%d/v3/notifier/routex/request", m.config.ExfeService.Addr, m.config.ExfeService.Port)
 			resp, err := broker.HttpResponse(broker.Http("POST", url, "applicatioin/json", body))
 			if err != nil {
-				logger.ERROR("call %s error: %s with %#v", url, err, body)
+				logger.ERROR("call %s error: %s with %#v", url, err, string(body))
 				continue
 			}
 			resp.Close()
@@ -381,6 +386,7 @@ func (m *RouteMap) auth() (Token, bool) {
 	}
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
+	authData = `{"token_type":"cross_access_token","cross_id":100717,"identity_id":574,"user_id":475,"created_time":1373871641,"updated_time":1373871641}`
 	if err := json.Unmarshal([]byte(authData), &token); err != nil {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return token, false

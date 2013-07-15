@@ -22,7 +22,8 @@ func NewRoutex(localTemplate *formatter.LocalTemplate, config *model.Config, pla
 
 type RequestArg struct {
 	To      model.Recipient `json:"to"`
-	CrossId int64           `json:"cross_id"`
+	CrossId uint64          `json:"cross_id"`
+	From    model.Identity  `json:"from"`
 
 	Config *model.Config `json:"-"`
 }
