@@ -115,8 +115,8 @@ func (n V3Notifier) HandleUserReset(arg model.UserVerify) {
 	}
 }
 
-func (n V3Notifier) HandleRoutexRequest(to model.Recipient) {
-	err := n.routex.Request(to)
+func (n V3Notifier) HandleRoutexRequest(arg notifier.RequestArg) {
+	err := n.routex.Request(arg)
 	if err != nil {
 		n.Error(http.StatusInternalServerError, n.DetailError(6, "%s", err))
 		return

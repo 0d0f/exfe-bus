@@ -33,7 +33,7 @@ func (w *Routex) Request(arg RequestArg) error {
 	if err != nil {
 		return err
 	}
-	_, err = w.platform.Send(to, text)
+	_, err = w.platform.Send(arg.To, text)
 	if err != nil {
 		return err
 	}
