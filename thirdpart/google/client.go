@@ -4,16 +4,16 @@ import (
 	"code.google.com/p/goauth2/oauth"
 	"exfe/model"
 	"exfe/service"
-	"github.com/googollee/go-logger"
 	"net/http"
+	"thirdpart"
 )
 
 type Client struct {
-	http *http.Client
-	log  *logger.Logger
+	http   *http.Client
+	helper thirdpart.Helper
 }
 
-func NewClient(config *exfe_service.Config, id *exfe_model.Receiver) *Client {
+func NewClient(config *exfe_service.Config, id *exfe_model.Receiver, helper thirdpart.Helper) *Client {
 	c := &oauth.Config{
 		ClientId:     config.Google.ID,
 		ClientSecret: config.Google.Secret,
@@ -29,6 +29,11 @@ func NewClient(config *exfe_service.Config, id *exfe_model.Receiver) *Client {
 
 	t.Token = token
 	return &Client{
-		http: t.Client(),
+		http:   t.Client(),
+		helper: helper,
 	}
+}
+
+func (g *Client) Post(from, id, text string) (string, error) {
+	return f.helper.SendEmail(id, text)
 }

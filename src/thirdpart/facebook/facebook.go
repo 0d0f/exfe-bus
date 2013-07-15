@@ -26,7 +26,7 @@ func (f *Facebook) Provider() string {
 }
 
 func (f *Facebook) Post(from, id, text string) (string, error) {
-	return f.helper.SendEmail(id, text)
+	return f.helper.SendEmail(id+"@facebook.com", text)
 }
 
 func (f *Facebook) UpdateFriends(to *model.Recipient) error {
