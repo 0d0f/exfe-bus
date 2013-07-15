@@ -1,0 +1,1 @@
+@{{.Recipient.Name}} wonders your current location. {{.Config.SiteUrl}}/#!{{.CrossId}}/routex/{{.Recipient.Token}}

@@ -1,0 +1,3 @@
+@{{.Recipient.Name}} 请您在“活点地图”中更新方位 {{.Config.SiteUrl}}/#!{{.CrossId}}/routex/{{.Recipient.Token}}
+
+{"cid":{{.CrossId}},"t":"routex"}

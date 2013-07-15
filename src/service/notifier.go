@@ -20,18 +20,18 @@ type V3Notifier struct {
 	UserWelcome       rest.Processor `path:"/user/welcome" method:"POST"`
 	UserVerify        rest.Processor `path:"/user/verify" method:"POST"`
 	UserReset         rest.Processor `path:"/user/reset" method:"POST"`
-	WechatRoutex      rest.Processor `path:"/wechat/routex" method:"POST"`
+	RoutexRequest     rest.Processor `path:"/routex/request" method:"POST"`
 
 	cross  *notifier.Cross
 	user   *notifier.User
-	wechat *notifier.Wechat
+	routex *notifier.Routex
 }
 
 func NewV3Notifier(local *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) (*V3Notifier, error) {
 	return &V3Notifier{
 		cross:  notifier.NewCross(local, config, platform),
 		user:   notifier.NewUser(local, config, platform),
-		wechat: notifier.NewWechat(local, config, platform),
+		routex: notifier.NewRoutex(local, config, platform),
 	}, nil
 }
 
@@ -115,8 +115,8 @@ func (n V3Notifier) HandleUserReset(arg model.UserVerify) {
 	}
 }
 
-func (n V3Notifier) HandleWechatRoutex(to model.Recipient) {
-	err := n.wechat.RoutexNotice(to)
+func (n V3Notifier) HandleRoutexRequest(to model.Recipient) {
+	err := n.routex.Request(to)
 	if err != nil {
 		n.Error(http.StatusInternalServerError, n.DetailError(6, "%s", err))
 		return
