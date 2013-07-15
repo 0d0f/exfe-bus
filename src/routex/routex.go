@@ -386,7 +386,6 @@ func (m *RouteMap) auth() (Token, bool) {
 	}
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	authData = `{"token_type":"cross_access_token","cross_id":100717,"identity_id":574,"user_id":475,"created_time":1373871641,"updated_time":1373871641}`
 	if err := json.Unmarshal([]byte(authData), &token); err != nil {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return token, false
