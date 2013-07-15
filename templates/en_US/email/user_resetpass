@@ -1,7 +1,7 @@
 Content-Type: multipart/alternative; boundary="bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60"
 To: =?utf-8?B?{{.To.Name | base64}}?= <{{.To.ExternalUsername}}>
 From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <{{.Config.Email.Prefix}}@{{.Config.Email.Domain}}>
-Subject: =?utf-8?B?{{base64 "EXFE reset forgotten password"}}?=
+Subject: =?utf-8?B?{{base64 "Reset EXFE password"}}?=
 
 --bf4da18faf42d84da6be65288a47b5d8ca22e5f1c8d3af179533aa734d60
 Content-Type: text/plain; charset=utf-8
