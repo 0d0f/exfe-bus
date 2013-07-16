@@ -6,6 +6,8 @@ import (
 	"github.com/googollee/go-gcm"
 	"regexp"
 	"strings"
+	"thirdpart"
+	"time"
 )
 
 type Broker interface {
@@ -14,6 +16,7 @@ type Broker interface {
 
 type GCM struct {
 	broker Broker
+	f      thirdpart.Callback
 }
 
 func New(broker Broker) *GCM {
@@ -24,6 +27,10 @@ func New(broker Broker) *GCM {
 
 func (g *GCM) Provider() string {
 	return "Android"
+}
+
+func (g *GCM) SetPosterCallback(callback thirdpart.Callback) (time.Duration, bool) {
+	return 0, true
 }
 
 func (g *GCM) Post(from, id, text string) (string, error) {

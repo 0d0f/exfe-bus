@@ -7,6 +7,7 @@ import (
 	"logger"
 	"model"
 	"thirdpart"
+	"time"
 )
 
 type Facebook struct {
@@ -23,6 +24,10 @@ func New(helper thirdpart.Helper) *Facebook {
 
 func (f *Facebook) Provider() string {
 	return provider
+}
+
+func (f *Facebook) SetPosterCallback(callback thirdpart.Callback) (time.Duration, bool) {
+	return time.Hour * 72, true
 }
 
 func (f *Facebook) Post(from, id, text string) (string, error) {

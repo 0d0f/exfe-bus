@@ -9,6 +9,7 @@ import (
 	"model"
 	"strings"
 	"thirdpart"
+	"time"
 )
 
 const twitterApiBase = "https://api.twitter.com/1.1/"
@@ -42,7 +43,8 @@ func (t *Twitter) Provider() string {
 	return "twitter"
 }
 
-func (t *Twitter) SetCallback(f thirdpart.Callback) {
+func (t *Twitter) SetPosterCallback(f thirdpart.Callback) (time.Duration, bool) {
+	return 0, true
 }
 
 type twitterReply struct {
@@ -50,7 +52,7 @@ type twitterReply struct {
 	Recipient twitterInfo `json:"recipient"`
 }
 
-func (t *Twitter) Post(from, id, text string) (string, bool, error) {
+func (t *Twitter) Post(from, id, text string) (string, error) {
 	text = strings.Trim(text, " \n\r")
 	privateMessage := text
 	publicMessage := text
@@ -64,9 +66,9 @@ func (t *Twitter) Post(from, id, text string) (string, bool, error) {
 	}
 
 	if err != nil {
-		return "", false, err
+		return "", err
 	}
-	return ret, false, nil
+	return ret, nil
 }
 
 func (t *Twitter) sendPrivate(id, text string) (string, error) {

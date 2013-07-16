@@ -6,6 +6,7 @@ import (
 	"github.com/googollee/go-rest"
 	"io"
 	"io/ioutil"
+	"model"
 	"net/http"
 	"time"
 )
@@ -16,10 +17,16 @@ func init() {
 
 type Callback func(id string, err error)
 
+type posterHandler struct {
+	poster    IPoster
+	waiting   time.Duration
+	defaultOK bool
+}
+
 type IPoster interface {
 	Provider() string
-	SetCallback(f Callback)
-	Post(from, to string, text string) (messageId string, waiting bool, err error)
+	SetPosterCallback(f Callback) (waiting time.Duration, defaultOK bool)
+	Post(from, to string, text string) (messageId string, err error)
 }
 
 type Response struct {
@@ -31,35 +38,37 @@ type Response struct {
 type Poster struct {
 	rest.Service `prefix:"/v3/poster" mime:"plain/text"`
 
-	Post  rest.Processor `path:"/:provider/*id" method:"POST"`
-	Watch rest.Streaming `path:"/" method:"WATCH"`
+	Post     rest.Processor `path:"/send/:provider/*id" method:"POST"`
+	Response rest.Processor `path:"/response/:provider/*id" method:"POST"`
+	Watch    rest.Streaming `path:"/" method:"WATCH"`
 
-	posters   map[string]IPoster
+	config    *model.Config
+	posters   map[string]posterHandler
 	watchChan *broadcast.Broadcast
 }
 
 func NewPoster() (*Poster, error) {
 	ret := &Poster{
-		posters:   make(map[string]IPoster),
+		posters:   make(map[string]posterHandler),
 		watchChan: broadcast.NewBroadcast(-1),
 	}
 	return ret, nil
 }
 
 func (m *Poster) Add(poster IPoster) {
-	poster.SetCallback(func(id string, err error) {
-		m.callback(fmt.Sprintf("%s_%s", poster.Provider(), id), err)
+	waiting, defaultOK := poster.SetPosterCallback(func(id string, err error) {
+		resp := Response{
+			Id:    fmt.Sprintf("%s-%s", poster.Provider(), id),
+			Ok:    err == nil,
+			Error: err.Error(),
+		}
+		m.HandleResponse(resp)
 	})
-	m.posters[poster.Provider()] = poster
-}
-
-func (m *Poster) callback(id string, err error) {
-	response := Response{
-		Id:    id,
-		Ok:    err == nil,
-		Error: err.Error(),
+	m.posters[poster.Provider()] = posterHandler{
+		poster:    poster,
+		waiting:   waiting,
+		defaultOK: defaultOK,
 	}
-	m.watchChan.Send(response)
 }
 
 func (m Poster) HandlePost(text string) string {
@@ -68,22 +77,28 @@ func (m Poster) HandlePost(text string) string {
 	}
 	provider := m.Vars()["provider"]
 	id := m.Vars()["id"]
-	poster, ok := m.posters[provider]
+	handler, ok := m.posters[provider]
 	if !ok {
 		m.Error(http.StatusBadRequest, m.DetailError(1, "invalid provider: %s", provider))
 		return ""
 	}
 
-	ret, waiting, err := poster.Post(m.Request().URL.Query().Get("from"), id, text)
+	ret, err := handler.poster.Post(m.Request().URL.Query().Get("from"), id, text)
 	if err != nil {
 		m.Error(http.StatusInternalServerError, m.DetailError(2, "%s", err))
 	}
-	if waiting {
+	if handler.waiting > 0 {
+		m.Header().Set("Ontime", fmt.Sprintf("%d", time.Now().Add(handler.waiting)))
+		m.Header().Set("Default", fmt.Sprintf("%d", handler.defaultOK))
 		m.WriteHeader(http.StatusAccepted)
 	} else {
 		m.WriteHeader(http.StatusOK)
 	}
-	return ret
+	return fmt.Sprintf("%d-%d", provider, ret)
+}
+
+func (m Poster) HandleResponse(resp Response) {
+	m.watchChan.Send(resp)
 }
 
 func (m Poster) HandleWatch(stream rest.Stream) {
