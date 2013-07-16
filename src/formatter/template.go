@@ -153,13 +153,20 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 func (l *LocalTemplate) IsExist(lang, name string) bool {
 	lang = strings.ToLower(lang)
 	t, ok := l.templates[lang]
-	if !ok {
-		t, ok = l.templates[l.defaultLang]
-		if !ok {
-			return false
+	if ok {
+		err := t.Lookup(name)
+		if err == nil {
+			return true
 		}
 	}
-	return t.Lookup(name) != nil
+	t, ok = l.templates[l.defaultLang]
+	if ok {
+		err := t.Lookup(name)
+		if err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 func (l *LocalTemplate) Execute(wr io.Writer, lang, name string, data interface{}) error {
