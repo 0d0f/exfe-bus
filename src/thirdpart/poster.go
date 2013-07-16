@@ -7,16 +7,19 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 func init() {
 	rest.RegisterMarshaller("plain/text", new(PlainText))
 }
 
+type Callback func(id string, err error)
+
 type IPoster interface {
 	Provider() string
-
-	Post(from, to string, text string) (messageId string, err error)
+	SetCallback(f Callback)
+	Post(from, to string, text string) (messageId string, waiting bool, err error)
 }
 
 type Response struct {
@@ -37,13 +40,26 @@ type Poster struct {
 
 func NewPoster() (*Poster, error) {
 	ret := &Poster{
-		posters: make(map[string]IPoster),
+		posters:   make(map[string]IPoster),
+		watchChan: broadcast.NewBroadcast(-1),
 	}
 	return ret, nil
 }
 
 func (m *Poster) Add(poster IPoster) {
+	poster.SetCallback(func(id string, err error) {
+		m.callback(fmt.Sprintf("%s_%s", poster.Provider(), id), err)
+	})
 	m.posters[poster.Provider()] = poster
+}
+
+func (m *Poster) callback(id string, err error) {
+	response := Response{
+		Id:    id,
+		Ok:    err == nil,
+		Error: err.Error(),
+	}
+	m.watchChan.Send(response)
 }
 
 func (m Poster) HandlePost(text string) string {
@@ -58,15 +74,39 @@ func (m Poster) HandlePost(text string) string {
 		return ""
 	}
 
-	ret, err := poster.Post(m.Request().URL.Query().Get("from"), id, text)
+	ret, waiting, err := poster.Post(m.Request().URL.Query().Get("from"), id, text)
 	if err != nil {
 		m.Error(http.StatusInternalServerError, m.DetailError(2, "%s", err))
+	}
+	if waiting {
+		m.WriteHeader(http.StatusAccepted)
+	} else {
+		m.WriteHeader(http.StatusOK)
 	}
 	return ret
 }
 
 func (m Poster) HandleWatch(stream rest.Stream) {
+	c := make(chan interface{})
+	err := m.watchChan.Register(c)
+	if err != nil {
+		m.Error(http.StatusBadRequest, err)
+		return
+	}
+	defer m.watchChan.Unregister(c)
 
+	for {
+		select {
+		case i := <-c:
+			stream.SetWriteDeadline(time.Now().Add(time.Second))
+			err = stream.Write(i)
+		case <-time.After(time.Second):
+			err = stream.Ping()
+		}
+		if err != nil {
+			return
+		}
+	}
 }
 
 type PlainText struct{}

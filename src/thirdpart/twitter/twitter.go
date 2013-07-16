@@ -42,12 +42,15 @@ func (t *Twitter) Provider() string {
 	return "twitter"
 }
 
+func (t *Twitter) SetCallback(f thirdpart.Callback) {
+}
+
 type twitterReply struct {
 	Id        string      `json:"id_str"`
 	Recipient twitterInfo `json:"recipient"`
 }
 
-func (t *Twitter) Post(from, id, text string) (string, error) {
+func (t *Twitter) Post(from, id, text string) (string, bool, error) {
 	text = strings.Trim(text, " \n\r")
 	privateMessage := text
 	publicMessage := text
@@ -61,9 +64,9 @@ func (t *Twitter) Post(from, id, text string) (string, error) {
 	}
 
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
-	return ret, nil
+	return ret, false, nil
 }
 
 func (t *Twitter) sendPrivate(id, text string) (string, error) {
