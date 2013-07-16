@@ -2,6 +2,7 @@ package thirdpart
 
 import (
 	"fmt"
+	"github.com/googollee/go-broadcast"
 	"github.com/googollee/go-rest"
 	"io"
 	"io/ioutil"
@@ -18,12 +19,20 @@ type IPoster interface {
 	Post(from, to string, text string) (messageId string, err error)
 }
 
+type Response struct {
+	Id    string `json:"id"`
+	Ok    bool   `json:"ok"`
+	Error string `json:"error"`
+}
+
 type Poster struct {
 	rest.Service `prefix:"/v3/poster" mime:"plain/text"`
 
-	Post rest.Processor `path:"/:provider/*id" method:"POST"`
+	Post  rest.Processor `path:"/:provider/*id" method:"POST"`
+	Watch rest.Streaming `path:"/" method:"WATCH"`
 
-	posters map[string]IPoster
+	posters   map[string]IPoster
+	watchChan *broadcast.Broadcast
 }
 
 func NewPoster() (*Poster, error) {
@@ -54,6 +63,10 @@ func (m Poster) HandlePost(text string) string {
 		m.Error(http.StatusInternalServerError, m.DetailError(2, "%s", err))
 	}
 	return ret
+}
+
+func (m Poster) HandleWatch(stream rest.Stream) {
+
 }
 
 type PlainText struct{}
