@@ -99,12 +99,42 @@ func (r *Response) Listen() error {
 }
 
 func (r *Response) PushQueue(u string, arg interface{}, ontime int64) {
-	queueUrl = fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s?ontime=%d",
-		r.config.ExfeQueue.Addr, r.config.ExfeQueue.Port, base64.URLEncoding.EncodeToString(u), ontime)
+	queueUrl := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s?ontime=%d",
+		r.config.ExfeQueue.Addr, r.config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(u)), ontime)
+	b, err := json.Marshal(arg)
+	if err != nil {
+		logger.ERROR("can't marshal: %s with %#v", err, arg)
+		return
+	}
+	resp, err := broker.HttpResponse(broker.Http("POST", queueUrl, "text/plain", b))
+	if err != nil {
+		logger.ERROR("push to queue %s failed: %s with %s", queueUrl, err, string(b))
+		return
+	}
+	resp.Close()
 }
 
 func (r *Response) DeleteQueue(u string) {
+	queueUrl := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s",
+		r.config.ExfeQueue.Addr, r.config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(u)))
+	resp, err := broker.HttpResponse(broker.Http("DELETE", queueUrl, "text/plain", nil))
+	if err != nil {
+		logger.ERROR("delete queue %s failed: %s with %s", queueUrl, err)
+		return
+	}
+	resp.Close()
 }
 
-func (r *Response) Do(u string, args interface{}) {
+func (r *Response) Do(u string, arg interface{}) {
+	b, err := json.Marshal(arg)
+	if err != nil {
+		logger.ERROR("can't marshal: %s with %#v", err, arg)
+		return
+	}
+	resp, err := broker.HttpResponse(broker.Http("POST", u, "text/plain", b))
+	if err != nil {
+		logger.ERROR("push to queue %s failed: %s with %s", u, err, string(b))
+		return
+	}
+	resp.Close()
 }
