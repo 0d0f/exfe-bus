@@ -5,6 +5,7 @@ import (
 	"model"
 	"strconv"
 	"strings"
+	"thirdpart"
 	"time"
 )
 
@@ -19,8 +20,12 @@ func New() *Performance {
 	return new(Performance)
 }
 
-func (p Performance) Provider() string {
+func (p *Performance) Provider() string {
 	return "_performance"
+}
+
+func (p *Performance) SetPosterCallback(callback thirdpart.Callback) (time.Duration, bool) {
+	return 0, true
 }
 
 func (p *Performance) Post(from, id, text string) (string, error) {

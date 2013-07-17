@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"model"
 	"strings"
+	"thirdpart"
+	"time"
 )
 
 type Phone struct {
@@ -29,6 +31,10 @@ func New(config *model.Config) (*Phone, error) {
 
 func (s *Phone) Provider() string {
 	return "phone"
+}
+
+func (s *Phone) SetPosterCallback(callback thirdpart.Callback) (time.Duration, bool) {
+	return 0, true
 }
 
 func (s *Phone) Post(from, id, text string) (string, error) {

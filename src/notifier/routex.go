@@ -3,10 +3,16 @@ package notifier
 import (
 	"broker"
 	"formatter"
+	"github.com/googollee/go-rest"
 	"model"
+	"net/http"
 )
 
 type Routex struct {
+	rest.Service `prefix:"/v3/notifier/routex"`
+
+	Request rest.Processor `path:"/request" method:"POST"`
+
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
 	platform      *broker.Platform
@@ -28,15 +34,16 @@ type RequestArg struct {
 	Config *model.Config `json:"-"`
 }
 
-func (w *Routex) Request(arg RequestArg) error {
+func (w Routex) HandleRequest(arg RequestArg) {
 	arg.Config = w.config
 	text, err := GenerateContent(w.localTemplate, "routex_request", arg.To.Provider, arg.To.Language, arg)
 	if err != nil {
-		return err
+		w.Error(http.StatusInternalServerError, err)
+		return
 	}
-	_, err = w.platform.Send(arg.To, text)
+	_, _, _, err = w.platform.Send(arg.To, text)
 	if err != nil {
-		return err
+		w.Error(http.StatusInternalServerError, err)
+		return
 	}
-	return nil
 }

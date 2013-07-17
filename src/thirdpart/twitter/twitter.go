@@ -9,6 +9,7 @@ import (
 	"model"
 	"strings"
 	"thirdpart"
+	"time"
 )
 
 const twitterApiBase = "https://api.twitter.com/1.1/"
@@ -40,6 +41,10 @@ func New(config *model.Config, helper thirdpart.Helper) *Twitter {
 
 func (t *Twitter) Provider() string {
 	return "twitter"
+}
+
+func (t *Twitter) SetPosterCallback(f thirdpart.Callback) (time.Duration, bool) {
+	return 0, true
 }
 
 type twitterReply struct {

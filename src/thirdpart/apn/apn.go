@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/virushuo/Go-Apns"
+	"logger"
 	"regexp"
 	"strings"
+	"thirdpart"
+	"time"
 )
 
 type Broker interface {
@@ -21,20 +24,31 @@ type sendArg struct {
 type Apn struct {
 	broker Broker
 	id     uint32
+	f      thirdpart.Callback
 }
 
-type ErrorHandler func(err error)
+type ErrorHandler func(err apns.NotificationError)
 
-func New(broker Broker, errorHandler ErrorHandler) *Apn {
-	go listenError(broker.GetErrorChan(), errorHandler)
-	return &Apn{
+func New(broker Broker) *Apn {
+	ret := &Apn{
 		broker: broker,
 		id:     0,
 	}
+	go listenError(broker.GetErrorChan(), func(err apns.NotificationError) {
+		if ret.f != nil {
+			ret.f(fmt.Sprintf("%d", err.Identifier), err)
+		}
+	})
+	return ret
 }
 
 func (a *Apn) Provider() string {
 	return "iOS"
+}
+
+func (a *Apn) SetPosterCallback(callback thirdpart.Callback) (time.Duration, bool) {
+	a.f = callback
+	return time.Second * 30, true
 }
 
 func (a *Apn) Post(from, id, text string) (string, error) {
@@ -77,7 +91,13 @@ func (a *Apn) Post(from, id, text string) (string, error) {
 
 func listenError(errChan <-chan error, h ErrorHandler) {
 	for {
-		h(<-errChan)
+		err := <-errChan
+		e, ok := err.(apns.NotificationError)
+		if !ok {
+			logger.ERROR("unknow err: %s", err)
+			continue
+		}
+		h(e)
 	}
 }
 

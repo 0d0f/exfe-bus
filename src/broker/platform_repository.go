@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/mail"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -97,20 +98,34 @@ func NewPlatform(config *model.Config) (*Platform, error) {
 	}, nil
 }
 
-func (p *Platform) Send(to model.Recipient, text string) (string, error) {
-	url := fmt.Sprintf("http://%s:%d/v3/poster/%s/%s", p.config.ExfeService.Addr, p.config.ExfeService.Port, to.Provider, to.ExternalUsername)
-	resp, err := HttpResponse(Http("POST", url, "plain/text", []byte(text)))
+func (p *Platform) Send(to model.Recipient, text string) (string, int64, bool, error) {
+	url := fmt.Sprintf("http://%s:%d/v3/poster/message/%s/%s", p.config.ExfeService.Addr, p.config.ExfeService.Port, to.Provider, to.ExternalUsername)
+	resp, err := Http("POST", url, "plain/text", []byte(text))
 	if err != nil {
 		logger.DEBUG("post %s error: %s with %s", url, err, text)
-		return "", internalError
+		return "", 0, false, internalError
 	}
-	defer resp.Close()
-	body, err := ioutil.ReadAll(resp)
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		logger.DEBUG("read %s error: %s with %s", url, err, text)
-		return "", internalError
+		return "", 0, false, internalError
 	}
-	return string(body), nil
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return string(body), 0, true, nil
+	case http.StatusAccepted:
+		ontimeStr := resp.Header.Get("Ontime")
+		ontime, err := strconv.ParseInt(ontimeStr, 10, 64)
+		if err != nil {
+			logger.DEBUG("can't parse ontime %s: %s", ontimeStr, err)
+			return "", 0, false, err
+		}
+		defaultOK := resp.Header.Get("Default")
+		return string(body), ontime, defaultOK == "true", nil
+	}
+	return "", 0, false, fmt.Errorf("(%s)%s", resp.Status, string(body))
 }
 
 func (p *Platform) FindIdentity(identity model.Identity) (model.Identity, error) {

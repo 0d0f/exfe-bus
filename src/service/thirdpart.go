@@ -54,7 +54,7 @@ func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdp
 	wechat := wechat.New(config)
 	poster.Add(wechat)
 
-	apn_ := apn.New(apns_, func(err error) { logger.ERROR("%s", err) })
+	apn_ := apn.New(apns_)
 	poster.Add(apn_)
 
 	gcm_ := gcm.New(gcms_)
@@ -71,9 +71,6 @@ func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdp
 		return nil, fmt.Errorf("can't create phone: %s", err)
 	}
 	poster.Add(phone_)
-
-	imsgPhone := phone.NewIMsgPhone(phone_, imsg_)
-	poster.Add(imsgPhone)
 
 	if config.Debug {
 		performance := _performance.New()

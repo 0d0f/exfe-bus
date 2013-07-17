@@ -9,6 +9,7 @@ import (
 	"logger"
 	"model"
 	"net"
+	"thirdpart"
 	"time"
 	"valve"
 )
@@ -48,6 +49,7 @@ type IMessage struct {
 	hash    *consistent.Consistent
 	valves  map[string]*valve.Valve
 	timeout time.Duration
+	f       thirdpart.Callback
 }
 
 func New(config *model.Config) (*IMessage, error) {
@@ -73,6 +75,11 @@ func New(config *model.Config) (*IMessage, error) {
 
 func (im *IMessage) Provider() string {
 	return "imessage"
+}
+
+func (im *IMessage) SetPosterCallback(callback thirdpart.Callback) (time.Duration, bool) {
+	im.f = callback
+	return time.Second * 30, false
 }
 
 func (im *IMessage) Serve() {

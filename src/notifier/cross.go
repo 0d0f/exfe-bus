@@ -4,12 +4,23 @@ import (
 	"broker"
 	"fmt"
 	"formatter"
+	"github.com/googollee/go-rest"
 	"logger"
 	"model"
+	"net/http"
 	"net/url"
 )
 
 type Cross struct {
+	rest.Service `prefix:"/v3/notifier/cross"`
+
+	Digest       rest.Processor `path:"/digest" method:"POST"`
+	Remind       rest.Processor `path:"/remind" method:"POST"`
+	Invitation   rest.Processor `path:"/invitation" method:"POST"`
+	Preview      rest.Processor `path:"/preview" method:"POST"`
+	Update       rest.Processor `path:"/update" method:"POST"`
+	Conversation rest.Processor `path:"/conversation" method:"POST"`
+
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
 	platform      *broker.Platform
@@ -23,9 +34,10 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config, plat
 	}
 }
 
-func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
+func (c Cross) HandleDigest(requests []model.CrossDigestRequest) {
 	if len(requests) == 0 {
-		return fmt.Errorf("len(requests) == 0")
+		c.Error(http.StatusBadRequest, fmt.Errorf("len(requests) == 0"))
+		return
 	}
 	to := requests[len(requests)-1].To
 	crossId := requests[0].CrossId
@@ -36,7 +48,8 @@ func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
 	cross, err := c.platform.FindCross(crossId, query)
 	if err != nil {
-		return err
+		c.Error(http.StatusBadRequest, err)
+		return
 	}
 
 	arg := map[string]interface{}{
@@ -46,18 +59,20 @@ func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 	}
 	text, err := GenerateContent(c.localTemplate, "cross_digest", to.Provider, to.Language, arg)
 	if err != nil {
-		return err
+		c.Error(http.StatusInternalServerError, err)
+		return
 	}
-	_, err = c.platform.Send(to, text)
+	_, _, _, err = c.platform.Send(to, text)
 	if err != nil {
-		return err
+		c.Error(http.StatusInternalServerError, err)
+		return
 	}
-	return nil
 }
 
-func (c Cross) V3Remind(requests []model.CrossDigestRequest) error {
+func (c Cross) HandleRemind(requests []model.CrossDigestRequest) {
 	if len(requests) == 0 {
-		return fmt.Errorf("len(requests) == 0")
+		c.Error(http.StatusBadRequest, fmt.Errorf("len(requests) == 0"))
+		return
 	}
 	to := requests[len(requests)-1].To
 	crossId := requests[0].CrossId
@@ -66,7 +81,8 @@ func (c Cross) V3Remind(requests []model.CrossDigestRequest) error {
 	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
 	cross, err := c.platform.FindCross(crossId, query)
 	if err != nil {
-		return err
+		c.Error(http.StatusBadRequest, err)
+		return
 	}
 	cross.Updated = nil
 
@@ -77,16 +93,17 @@ func (c Cross) V3Remind(requests []model.CrossDigestRequest) error {
 	}
 	text, err := GenerateContent(c.localTemplate, "cross_remind", to.Provider, to.Language, arg)
 	if err != nil {
-		return err
+		c.Error(http.StatusInternalServerError, err)
+		return
 	}
-	_, err = c.platform.Send(to, text)
+	_, _, _, err = c.platform.Send(to, text)
 	if err != nil {
-		return err
+		c.Error(http.StatusInternalServerError, err)
+		return
 	}
-	return nil
 }
 
-func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
+func (c Cross) HandleInvitation(invitation model.CrossInvitation) {
 	invitation.Config = c.config
 	to := invitation.To
 
@@ -94,21 +111,24 @@ func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
 	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
 	cross, err := c.platform.FindCross(invitation.CrossId, query)
 	if err != nil {
-		return err
+		c.Error(http.StatusBadRequest, err)
+		return
 	}
 	invitation.Cross = cross
 
 	text, err := GenerateContent(c.localTemplate, "cross_invitation", to.Provider, to.Language, invitation)
 	if err != nil {
-		return err
+		c.Error(http.StatusInternalServerError, err)
+		return
 	}
-	_, err = c.platform.Send(to, text)
+	_, _, _, err = c.platform.Send(to, text)
 	if err != nil {
-		return err
+		c.Error(http.StatusInternalServerError, err)
+		return
 	}
-	return nil
 }
-func (c Cross) V3Preview(invitation model.CrossInvitation) error {
+
+func (c Cross) HandlePreview(invitation model.CrossInvitation) {
 	invitation.Config = c.config
 	to := invitation.To
 
@@ -116,57 +136,64 @@ func (c Cross) V3Preview(invitation model.CrossInvitation) error {
 	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
 	cross, err := c.platform.FindCross(invitation.CrossId, query)
 	if err != nil {
-		return err
+		c.Error(http.StatusBadRequest, err)
+		return
 	}
 	invitation.Cross = cross
 
 	text, err := GenerateContent(c.localTemplate, "cross_preview", to.Provider, to.Language, invitation)
 	if err != nil {
-		return err
+		c.Error(http.StatusInternalServerError, err)
+		return
 	}
-	_, err = c.platform.Send(to, text)
+	_, _, _, err = c.platform.Send(to, text)
 	if err != nil {
-		return err
+		c.Error(http.StatusInternalServerError, err)
+		return
 	}
-	return nil
 }
 
-func (c Cross) V3Update(updates []model.CrossUpdate) error {
+func (c Cross) HandleUpdate(updates []model.CrossUpdate) {
 	if len(updates) == 0 {
-		return fmt.Errorf("len(updates) == 0")
+		c.Error(http.StatusBadRequest, fmt.Errorf("len(updates) == 0"))
+		return
 	}
 
 	to := updates[0].To
 	if to.SameUser(&updates[0].By) {
 		c.config.Log.Debug("not send with all self updates: %s", to)
-		return nil
+		return
 	}
 
 	arg, err := updateFromUpdates(updates, c.config)
 	if err != nil {
-		return err
+		c.Error(http.StatusBadRequest, err)
+		return
 	}
 
 	if !arg.IsChanged() {
-		return nil
+		c.Error(http.StatusBadRequest, err)
+		return
 	}
 
 	to = arg.To
 	text, err := GenerateContent(c.localTemplate, "cross_update", to.Provider, to.Language, arg)
 	if err != nil {
-		return err
+		c.Error(http.StatusInternalServerError, err)
+		return
 	}
-	_, err = c.platform.Send(to, text)
+	_, _, _, err = c.platform.Send(to, text)
 	if err != nil {
-		return err
+		c.Error(http.StatusInternalServerError, err)
+		return
 	}
-	return nil
 }
 
-func (c Cross) V3Conversation(updates []model.ConversationUpdate) error {
+func (c Cross) HandleConversation(updates []model.ConversationUpdate) {
 	arg, err := ArgFromConversations(updates, c.config, c.platform)
 	if err != nil {
-		return err
+		c.Error(http.StatusBadRequest, err)
+		return
 	}
 	needSend := false
 	to := arg.To
@@ -177,7 +204,7 @@ func (c Cross) V3Conversation(updates []model.ConversationUpdate) error {
 	}
 	if !needSend {
 		c.config.Log.Debug("not send with all self updates: %s", to)
-		return nil
+		return
 	}
 
 	oldPosts, err := c.platform.GetConversation(arg.Cross.Exfee.ID, to.Token, arg.Posts[0].CreatedAt, false, "older", 2)
@@ -191,13 +218,14 @@ func (c Cross) V3Conversation(updates []model.ConversationUpdate) error {
 
 	text, err := GenerateContent(c.localTemplate, "cross_conversation", to.Provider, to.Language, arg)
 	if err != nil {
-		return err
+		c.Error(http.StatusInternalServerError, err)
+		return
 	}
-	_, err = c.platform.Send(to, text)
+	_, _, _, err = c.platform.Send(to, text)
 	if err != nil {
-		return err
+		c.Error(http.StatusInternalServerError, err)
+		return
 	}
-	return nil
 }
 
 type ConversationArg struct {
