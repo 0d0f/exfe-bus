@@ -96,6 +96,7 @@ type Invitation struct {
 	By        Identity `json:"by_identity,omitempty"`
 	UpdatedBy Identity `json:"updated_by,omitempty"`
 	Via       string   `json:"via,omitempty"`
+	Token     string   `json:"token,omitempty"`
 }
 
 func (i *Invitation) String() string {

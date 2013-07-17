@@ -151,6 +151,22 @@ func main() {
 				logger.ERROR("can't save exfee id: %s", err)
 			}
 			logger.INFO("wechat_gather", msg.FromUserName, uin, cross.ID, cross.Exfee.ID, err)
+			smith, err := cross.Exfee.FindInvitedUser(model.Identity{
+				ExternalID: fmt.Sprintf("%d", wc.baseRequest.Uin),
+				Provider:   "wechat",
+			})
+			if err != nil {
+				logger.ERROR("can't find Smith Exfer in cross %d: %s", cross.ID, err)
+				continue
+			}
+			chatroom := fmt.Sprintf("%d@chatroom", uin)
+			u := fmt.Sprintf("%s/#!token=%s/routex/", config.SiteUrl, smith.Token)
+			err = wc.SendMessage(chatroom, u)
+			logger.NOTICE("send %s to %s", u, chatroom)
+			if err != nil {
+				logger.ERROR("can't send %s to %s", u, chatroom)
+				continue
+			}
 		}
 	}
 }
