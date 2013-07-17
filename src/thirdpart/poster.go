@@ -50,7 +50,7 @@ type Poster struct {
 func NewPoster() (*Poster, error) {
 	ret := &Poster{
 		posters:   make(map[string]posterHandler),
-		watchChan: broadcast.NewBroadcast(-1),
+		watchChan: broadcast.NewBroadcast(10),
 	}
 	return ret, nil
 }
@@ -86,6 +86,7 @@ func (m Poster) HandlePost(text string) string {
 	ret, err := handler.poster.Post(m.Request().URL.Query().Get("from"), id, text)
 	if err != nil {
 		m.Error(http.StatusInternalServerError, m.DetailError(2, "%s", err))
+		return ""
 	}
 	if handler.waiting > 0 {
 		m.Header().Set("Ontime", fmt.Sprintf("%d", time.Now().Add(handler.waiting)))
