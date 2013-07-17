@@ -29,7 +29,7 @@ type IPoster interface {
 	Post(from, to string, text string) (messageId string, err error)
 }
 
-type Response struct {
+type PostResponse struct {
 	Id    string `json:"id"`
 	Ok    bool   `json:"ok"`
 	Error string `json:"error"`
@@ -38,9 +38,9 @@ type Response struct {
 type Poster struct {
 	rest.Service `prefix:"/v3/poster" mime:"plain/text"`
 
-	Post     rest.Processor `path:"/send/:provider/*id" method:"POST"`
-	Response rest.Processor `path:"/response/:provider/*id" method:"POST"`
-	Watch    rest.Streaming `path:"/" method:"WATCH"`
+	Post     rest.Processor `path:"/:provider/*id" method:"POST"`
+	Response rest.Processor `path:"/:provider/*id" method:"PUT"`
+	Watch    rest.Streaming `path:"" method:"WATCH"`
 
 	config    *model.Config
 	posters   map[string]posterHandler
@@ -57,7 +57,7 @@ func NewPoster() (*Poster, error) {
 
 func (m *Poster) Add(poster IPoster) {
 	waiting, defaultOK := poster.SetPosterCallback(func(id string, err error) {
-		resp := Response{
+		resp := PostResponse{
 			Id:    fmt.Sprintf("%s-%s", poster.Provider(), id),
 			Ok:    err == nil,
 			Error: err.Error(),
@@ -98,7 +98,8 @@ func (m Poster) HandlePost(text string) string {
 	return fmt.Sprintf("%d-%d", provider, ret)
 }
 
-func (m Poster) HandleResponse(resp Response) {
+func (m Poster) HandleResponse(resp PostResponse) {
+	resp.Id = fmt.Sprintf("%s-%s", m.Vars()["provider"], m.Vars()["id"])
 	m.watchChan.Send(resp)
 }
 
@@ -110,6 +111,7 @@ func (m Poster) HandleWatch(stream rest.Stream) {
 		return
 	}
 	defer m.watchChan.Unregister(c)
+	m.WriteHeader(http.StatusOK)
 
 	for {
 		select {
