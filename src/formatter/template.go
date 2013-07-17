@@ -153,33 +153,31 @@ func NewLocalTemplate(path string, defaultLang string) (*LocalTemplate, error) {
 func (l *LocalTemplate) IsExist(lang, name string) bool {
 	lang = strings.ToLower(lang)
 	t, ok := l.templates[lang]
-	if !ok {
-		t, ok = l.templates[l.defaultLang]
-		if !ok {
-			return false
+	if ok {
+		if t.Lookup(name) != nil {
+			return true
 		}
 	}
-	return t.Lookup(name) != nil
+	t, ok = l.templates[l.defaultLang]
+	if ok {
+		if t.Lookup(name) != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func (l *LocalTemplate) Execute(wr io.Writer, lang, name string, data interface{}) error {
 	lang = strings.ToLower(lang)
 	t, ok := l.templates[lang]
-	if ok {
-		err := t.ExecuteTemplate(wr, name, data)
-		if err == nil {
-			return nil
-		}
+	if ok && t.Lookup(name) != nil {
+		return t.ExecuteTemplate(wr, name, data)
 	}
 	t, ok = l.templates[l.defaultLang]
 	if !ok {
 		return fmt.Errorf("can't find lang %s or default %s", lang, l.defaultLang)
 	}
-	err := t.ExecuteTemplate(wr, name, data)
-	if err != nil {
-		return err
-	}
-	return nil
+	return t.ExecuteTemplate(wr, name, data)
 }
 
 func parseDirTemplate(t *template.Template, dir, name string) error {
