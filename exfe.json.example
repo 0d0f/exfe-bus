@@ -75,7 +75,9 @@
     "hdmap": {
       "addr": "127.0.0.1",
       "port": 23335,
-      "ping_id": "leaskh"
+      "ping_id": "leaskh",
+      "username": "",
+      "password": ""
     }
   },
 
