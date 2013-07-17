@@ -8,10 +8,12 @@ import (
 	"logger"
 	"model"
 	"thirdpart"
+	"time"
 )
 
 type ResponseItem struct {
 	DefaultOk bool
+	Recipient model.Recipient
 	OkAction  struct {
 		TargetUrl string
 		Arg       interface{}
@@ -32,22 +34,40 @@ type Response struct {
 	config *model.Config
 }
 
-func NewResponse(config *model.Config) (*Response, error) {
-	return &Response{
-		config: config,
-	}, nil
+var response *Response
+
+func WaitResponse(id string, ontime int64, defaultOk bool, recipient model.Recipient, u string, args interface{}) {
+	response.WaitResponse(id, ontime, defaultOk, recipient, u, args)
 }
 
-func (r *Response) WaitResponse(id string, ontime int64, defaultOk bool, identityId, u string, args interface{}) {
+func SetupResponse(config *model.Config) error {
+	response = &Response{
+		config: config,
+	}
+	go func() {
+		for {
+			err := response.Listen()
+			if err != nil {
+				logger.ERROR("response listen failed: %s", err)
+			}
+			time.Sleep(time.Second * 10)
+		}
+	}()
+	return nil
+}
+
+func (r *Response) WaitResponse(id string, ontime int64, defaultOk bool, recipient model.Recipient, u string, args interface{}) {
 	if ontime == 0 && defaultOk {
 		return
 	}
 	item := ResponseItem{
 		DefaultOk: defaultOk,
+		Recipient: recipient,
 	}
 	item.OkAction.TargetUrl = fmt.Sprintf("%s/v3/bus/notificatioincallback")
 	item.OkAction.Arg = map[string]interface{}{
-		"identity_id": identityId,
+		"identity_id": recipient.ID(),
+		"error":       "",
 	}
 	item.FailAction.TargetUrl = u
 	item.FailAction.Arg = args
@@ -87,6 +107,13 @@ func (r *Response) Listen() error {
 		if item.DefaultOk {
 			if !resp.Ok {
 				r.DeleteQueue(item.OkAction.TargetUrl)
+				if len(item.Recipient.Fallbacks) == 0 {
+					item.FailAction.TargetUrl = fmt.Sprintf("%s/v3/bus/notificatioincallback")
+					item.FailAction.Arg = map[string]interface{}{
+						"identity_id": item.Recipient.ID(),
+						"error":       resp.Error,
+					}
+				}
 				r.Do(item.FailAction.TargetUrl, item.FailAction.Arg)
 			}
 		} else {

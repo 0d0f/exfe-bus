@@ -2,6 +2,7 @@ package notifier
 
 import (
 	"broker"
+	"fmt"
 	"formatter"
 	"github.com/googollee/go-rest"
 	"model"
@@ -41,9 +42,11 @@ func (w Routex) HandleRequest(arg RequestArg) {
 		w.Error(http.StatusInternalServerError, err)
 		return
 	}
-	_, _, _, err = w.platform.Send(arg.To, text)
+	id, ontime, defaultOk, err := w.platform.Send(arg.To, text)
 	if err != nil {
 		w.Error(http.StatusInternalServerError, err)
 		return
 	}
+	arg.To.Fallbacks = arg.To.Fallbacks[1:]
+	WaitResponse(id, ontime, defaultOk, arg.To, fmt.Sprintf("http://%s:%d/v3/notifier/routex/request", w.config.ExfeService.Addr, w.config.ExfeService.Port), arg)
 }

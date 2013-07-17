@@ -19,23 +19,18 @@ func (i IdentityId) Split() (externalId, provider string, err error) {
 	return
 }
 
-type Fallback struct {
-	Id     string `json:"id"`
-	Ontime int64  `json:"ontime"`
-}
-
 type Recipient struct {
-	IdentityID       int64      `json:"identity_id"`
-	UserID           int64      `json:"user_id"`
-	Name             string     `json:"name"`
-	AuthData         string     `json:"auth_data"`
-	Timezone         string     `json:"timezone"`
-	Token            string     `json:"token"`
-	Language         string     `json:"language"`
-	Provider         string     `json:"provider"`
-	ExternalID       string     `json:"external_id"`
-	ExternalUsername string     `json:"external_username"`
-	Fallbacks        []Fallback `json:"fallback"`
+	IdentityID       int64    `json:"identity_id"`
+	UserID           int64    `json:"user_id"`
+	Name             string   `json:"name"`
+	AuthData         string   `json:"auth_data"`
+	Timezone         string   `json:"timezone"`
+	Token            string   `json:"token"`
+	Language         string   `json:"language"`
+	Provider         string   `json:"provider"`
+	ExternalID       string   `json:"external_id"`
+	ExternalUsername string   `json:"external_username"`
+	Fallbacks        []string `json:"fallback"`
 }
 
 func (r Recipient) Equal(other *Recipient) bool {
