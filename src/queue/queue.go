@@ -129,6 +129,12 @@ func (q Queue) HandlePush(data string) {
 
 	query := q.Request().URL.Query()
 	updateType, ontimeStr := query.Get("update"), query.Get("ontime")
+	if updateType == "" {
+		updateType = "once"
+	}
+	if ontimeStr == "" {
+		ontimeStr = "0"
+	}
 	ontime, err := strconv.ParseInt(ontimeStr, 10, 64)
 	if err != nil {
 		q.Error(http.StatusBadRequest, q.DetailError(5, "invalid ontime: %s", ontimeStr))

@@ -47,8 +47,9 @@ func (l Location) GetGeo() (float64, float64, float64, error) {
 }
 
 type Token struct {
-	TokenType string `json:"token_type"`
-	UserId    int64  `json:"user_id"`
+	TokenType  string `json:"token_type"`
+	UserId     int64  `json:"user_id"`
+	IdentityId int64  `json:"identity_id"`
 
 	Cross    model.Cross    `json:"-"`
 	Identity model.Identity `json:"-"`

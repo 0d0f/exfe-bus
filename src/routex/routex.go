@@ -397,17 +397,28 @@ func (m *RouteMap) auth() (Token, bool) {
 	}
 
 	query := make(url.Values)
-	query.Set("user_id", fmt.Sprintf("%d", token.UserId))
+	if token.TokenType == "user_token" {
+		query.Set("user_id", fmt.Sprintf("%d", token.UserId))
+	}
 	token.Cross, err = m.platform.FindCross(int64(crossId), query)
 	if err != nil {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return token, false
 	}
 
-	for _, inv := range token.Cross.Exfee.Invitations {
-		if inv.Identity.UserID == token.UserId {
-			token.Identity = inv.Identity
-			return token, true
+	if token.TokenType == "user_token" {
+		for _, inv := range token.Cross.Exfee.Invitations {
+			if inv.Identity.UserID == token.UserId {
+				token.Identity = inv.Identity
+				return token, true
+			}
+		}
+	} else {
+		for _, inv := range token.Cross.Exfee.Invitations {
+			if inv.Identity.ID == token.IdentityId {
+				token.Identity = inv.Identity
+				return token, true
+			}
 		}
 	}
 
