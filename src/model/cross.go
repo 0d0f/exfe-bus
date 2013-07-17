@@ -24,6 +24,9 @@ type Cross struct {
 	Widgets     []map[string]interface{} `json:"widget,omitempty"`
 	CreatedAt   string                   `json:"created_at,omitempty"`
 	UpdatedAt   string                   `json:"updated_at,omitempty"`
+	Attribute   struct {
+		State string `json:"state"`
+	} `json:"attribute"`
 }
 
 func (c Cross) Equal(other *Cross) bool {

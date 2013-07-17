@@ -341,6 +341,7 @@ func (h *Parser) GetCross() (cross model.Cross) {
 			"image": "mail.jpg",
 		},
 	}
+	cross.Attribute.State = "draft"
 
 	return
 }
