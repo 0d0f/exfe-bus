@@ -48,7 +48,7 @@ func (c Cross) V3Digest(requests []model.CrossDigestRequest) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.platform.Send(to, text)
+	_, _, _, err = c.platform.Send(to, text)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (c Cross) V3Remind(requests []model.CrossDigestRequest) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.platform.Send(to, text)
+	_, _, _, err = c.platform.Send(to, text)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (c Cross) V3Invitation(invitation model.CrossInvitation) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.platform.Send(to, text)
+	_, _, _, err = c.platform.Send(to, text)
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func (c Cross) V3Preview(invitation model.CrossInvitation) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.platform.Send(to, text)
+	_, _, _, err = c.platform.Send(to, text)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (c Cross) V3Update(updates []model.CrossUpdate) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.platform.Send(to, text)
+	_, _, _, err = c.platform.Send(to, text)
 	if err != nil {
 		return err
 	}
@@ -193,7 +193,7 @@ func (c Cross) V3Conversation(updates []model.ConversationUpdate) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.platform.Send(to, text)
+	_, _, _, err = c.platform.Send(to, text)
 	if err != nil {
 		return err
 	}

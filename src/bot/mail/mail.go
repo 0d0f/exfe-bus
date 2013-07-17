@@ -288,6 +288,6 @@ func (w *Worker) sendHelp(err error, parser *Parser) error {
 		ExternalID:       parser.from.Address,
 		ExternalUsername: parser.from.Address,
 	}
-	_, err = w.platform.Send(to, buf.String())
+	_, _, _, err = w.platform.Send(to, buf.String())
 	return err
 }

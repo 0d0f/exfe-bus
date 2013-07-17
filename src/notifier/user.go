@@ -32,7 +32,7 @@ func (u User) V3Welcome(arg model.UserWelcome) error {
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
-	_, err = u.platform.Send(to, text)
+	_, _, _, err = u.platform.Send(to, text)
 	return err
 }
 
@@ -47,7 +47,7 @@ func (u User) V3Verify(arg model.UserVerify) error {
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
-	_, err = u.platform.Send(to, text)
+	_, _, _, err = u.platform.Send(to, text)
 	return err
 }
 
@@ -62,6 +62,6 @@ func (u User) V3ResetPassword(arg model.UserVerify) error {
 	if err != nil {
 		return fmt.Errorf("can't get content: %s", err)
 	}
-	_, err = u.platform.Send(to, text)
+	_, _, _, err = u.platform.Send(to, text)
 	return err
 }

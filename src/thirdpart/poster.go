@@ -90,7 +90,7 @@ func (m Poster) HandlePost(text string) string {
 	}
 	if handler.waiting > 0 {
 		m.Header().Set("Ontime", fmt.Sprintf("%d", time.Now().Add(handler.waiting)))
-		m.Header().Set("Default", fmt.Sprintf("%d", handler.defaultOK))
+		m.Header().Set("Default", fmt.Sprintf("%s", handler.defaultOK))
 		m.WriteHeader(http.StatusAccepted)
 	} else {
 		m.WriteHeader(http.StatusOK)
