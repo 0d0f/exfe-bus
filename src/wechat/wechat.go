@@ -30,7 +30,7 @@ type WeChat struct {
 	pingIndex   int
 }
 
-func New(pingId string, config *model.Config) (*WeChat, error) {
+func New(username, password, pingId string, config *model.Config) (*WeChat, error) {
 	jar, err := cookiejar.New(new(cookiejar.Options))
 	if err != nil {
 		return nil, err
@@ -61,13 +61,16 @@ func New(pingId string, config *model.Config) (*WeChat, error) {
 	loginUrl := fmt.Sprintf("https://login.weixin.qq.com/qrcode/%s?t=webwx", uuid)
 	logger.NOTICE("login: %s", loginUrl)
 
-	sendmail(config, `Content-Type: text/plain
+	mail := fmt.Sprintf(`Content-Type: text/plain
 To: srv-op@exfe.com
 From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
 Subject: =?utf-8?B?V2VjaGF0IFNlcnZpY2UgTm90aWZpY2F0aW9uCg==?=
 
 WeChat need login!!! Help!!!!
-QR: `+loginUrl)
+QR: %s
+Username: %s
+Password: %s`, loginUrl, username, password)
+	sendmail(config, mail)
 
 	params := make(url.Values)
 	params.Set("uuid", uuid)

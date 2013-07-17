@@ -54,7 +54,7 @@ func main() {
 	}
 	kvSaver := broker.NewKVSaver(db)
 
-	wc, err := New(work.PingId, &config)
+	wc, err := New(work.Username, work.Password, work.PingId, &config)
 	if err != nil {
 		logger.ERROR("can't create wechat: %s", err)
 		return
