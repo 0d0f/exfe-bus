@@ -291,7 +291,7 @@ func (wc *WeChat) ConvertCross(bucket *s3.Bucket, msg *Message) (uint64, model.C
 	if msg.MsgType != JoinMessage {
 		return 0, model.Cross{}, fmt.Errorf("%s", "not join message")
 	}
-	if strings.HasSuffix(msg.FromUserName, "@chatroom") {
+	if !strings.HasSuffix(msg.FromUserName, "@chatroom") {
 		return 0, model.Cross{}, fmt.Errorf("%s", "not join chat room")
 	}
 	chatroomReq := []ContactRequest{
@@ -350,8 +350,8 @@ func (wc *WeChat) ConvertCross(bucket *s3.Bucket, msg *Message) (uint64, model.C
 		}
 		ret.Exfee.Invitations[i].Identity = model.Identity{
 			ExternalID:       fmt.Sprintf("%d", member.Uin),
-			Provider:         "wechat",
 			ExternalUsername: member.UserName,
+			Provider:         "wechat",
 			Nickname:         member.NickName,
 			Avatar:           headerUrl,
 		}
@@ -376,7 +376,6 @@ func (wc *WeChat) postJson(url string, data interface{}, reply interface{}) erro
 	if err != nil {
 		return err
 	}
-	fmt.Println("post:", url, "post:", buf.String())
 	req, err := wc.request("POST", url, buf)
 	if err != nil {
 		return err
@@ -391,7 +390,6 @@ func (wc *WeChat) postJson(url string, data interface{}, reply interface{}) erro
 }
 
 func (wc *WeChat) get(url string) (*http.Response, error) {
-	fmt.Println("get:", url)
 	req, err := wc.request("GET", url, nil)
 	if err != nil {
 		return nil, err

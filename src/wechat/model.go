@@ -3,7 +3,7 @@ package main
 type MessageType int
 
 const (
-	JoinMessage MessageType = 100000
+	JoinMessage MessageType = 10000
 	ChatMessage             = 1
 )
 

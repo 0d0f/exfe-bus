@@ -78,7 +78,6 @@ func main() {
 			logger.ERROR("can't get last message: %s", err)
 			return
 		}
-		fmt.Println("check:", ret)
 		if ret == "0" {
 			err = wc.Ping(time.Minute * 30)
 			if err != nil {
@@ -93,14 +92,13 @@ func main() {
 			return
 		}
 		for _, msg := range resp.AddMsgList {
-			fmt.Println("msg:", msg.MsgType)
 			if msg.MsgType != JoinMessage {
 				continue
 			}
 			uin, cross, err := wc.ConvertCross(bucket, &msg)
 			if err != nil {
 				logger.ERROR("can't convert to cross: %s", err)
-				return
+				continue
 			}
 			uinStr := fmt.Sprintf("%d", uin)
 			idStr, exist, err := kvSaver.Check([]string{uinStr})
