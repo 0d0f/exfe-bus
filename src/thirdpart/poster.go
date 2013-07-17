@@ -38,8 +38,8 @@ type PostResponse struct {
 type Poster struct {
 	rest.Service `prefix:"/v3/poster" mime:"plain/text"`
 
-	Post     rest.Processor `path:"/:provider/*id" method:"POST"`
-	Response rest.Processor `path:"/:provider/*id" method:"PUT"`
+	Post     rest.Processor `path:"/message/:provider/*id" method:"POST"`
+	Response rest.Processor `path:"/response/:provider/*id" method:"POST"`
 	Watch    rest.Streaming `path:"" method:"WATCH"`
 
 	config    *model.Config
