@@ -11,6 +11,7 @@ import (
 	"gobus"
 	"logger"
 	"model"
+	"notifier"
 	"os"
 	"routex"
 	"splitter"
@@ -123,8 +124,12 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Notifier {
-		notifier, err := NewV3Notifier(localTemplate, &config, platform)
-		register("notifier", notifier, err)
+		user := notifier.NewUser(localTemplate, &config, platform)
+		register("notifier/user", user, nil)
+		cross := notifier.NewCross(localTemplate, &config, platform)
+		register("notifier/cross", cross, nil)
+		routex := notifier.NewRoutex(localTemplate, &config, platform)
+		register("notifier/routex", routex, nil)
 	}
 
 	if config.ExfeService.Services.Thirdpart {
