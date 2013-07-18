@@ -12,10 +12,8 @@ import (
 )
 
 type ResponseItem struct {
-	FailAction struct {
-		TargetUrl string
-		Arg       interface{}
-	}
+	FailUrl string
+	FailArg interface{}
 }
 
 type ResponseSaver interface {
@@ -55,16 +53,17 @@ func (r *Response) WaitResponse(id string, ontime int64, defaultOk bool, recipie
 	if ontime == 0 || len(recipient.Fallbacks) == 0 {
 		return
 	}
-	item := ResponseItem{}
-	item.FailAction.TargetUrl = u
-	item.FailAction.Arg = args
+	item := ResponseItem{
+		FailUrl: u,
+		FailArg: args,
+	}
 	err := r.saver.Save(id, item, ontime)
 	if err != nil {
 		logger.ERROR("save response item(%d) failed: %s", id, err)
 		return
 	}
 	if !defaultOk {
-		r.PushQueue(id, item.FailAction.TargetUrl, item.FailAction.Arg, ontime)
+		r.PushQueue(id, item.FailUrl, item.FailArg, ontime)
 	}
 }
 
@@ -90,9 +89,9 @@ func (r *Response) Listen() error {
 			continue
 		}
 		if resp.Ok {
-			r.DeleteQueue(resp.Id, item.FailAction.TargetUrl)
+			r.DeleteQueue(resp.Id, item.FailUrl)
 		} else {
-			r.Do(item.FailAction.TargetUrl, item.FailAction.Arg)
+			r.Do(item.FailUrl, item.FailArg)
 		}
 	}
 }

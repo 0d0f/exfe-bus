@@ -1,10 +1,12 @@
 package notifier
 
 import (
+	"broker"
 	"bytes"
 	"errors"
 	"fmt"
 	"formatter"
+	"model"
 )
 
 var noneedSend = errors.New("no need send")
@@ -33,4 +35,17 @@ func GenerateContent(localTemplate *formatter.LocalTemplate, template string, po
 	}
 
 	return ret.String(), nil
+}
+
+func SendAndSave(localTemplate *formatter.LocalTemplate, platform *broker.Platform, to model.Recipient, arg interface{}, template, failUrl string) error {
+	text, err := GenerateContent(localTemplate, template, to.Provider, to.Language, arg)
+	if err != nil {
+		return err
+	}
+	id, ontime, defaultOk, err := platform.Send(to, text)
+	if err != nil {
+		return err
+	}
+	WaitResponse(id, ontime, defaultOk, to, failUrl, arg)
+	return nil
 }

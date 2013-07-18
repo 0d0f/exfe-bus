@@ -39,6 +39,7 @@ func (r *Recipient) PopRecipient() Recipient {
 		id := FromIdentityId(r.Fallbacks[0])
 		ret.ExternalID, ret.ExternalUsername, ret.Provider = id.ExternalID, id.ExternalUsername, id.Provider
 		r.Fallbacks = r.Fallbacks[1:]
+		ret.Fallbacks = r.Fallbacks
 	}
 	return ret
 }

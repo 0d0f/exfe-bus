@@ -25,7 +25,7 @@ func (p *Performance) Provider() string {
 }
 
 func (p *Performance) SetPosterCallback(callback thirdpart.Callback) (time.Duration, bool) {
-	return 30 * time.Second, true
+	return 10 * time.Second, false
 }
 
 func (p *Performance) Post(from, id, text string) (string, error) {

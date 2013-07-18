@@ -17,6 +17,7 @@ type Routex struct {
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
 	platform      *broker.Platform
+	domain        string
 }
 
 func NewRoutex(localTemplate *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *Routex {
@@ -24,6 +25,7 @@ func NewRoutex(localTemplate *formatter.LocalTemplate, config *model.Config, pla
 		localTemplate: localTemplate,
 		config:        config,
 		platform:      platform,
+		domain:        fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port),
 	}
 }
 
@@ -37,16 +39,11 @@ type RequestArg struct {
 
 func (w Routex) HandleRequest(arg RequestArg) {
 	arg.Config = w.config
-	text, err := GenerateContent(w.localTemplate, "routex_request", arg.To.Provider, arg.To.Language, arg)
+
+	to := arg.To.PopRecipient()
+	err := SendAndSave(w.localTemplate, w.platform, to, arg, "routex_request", w.domain+"/v3/notifier/routex/request")
 	if err != nil {
 		w.Error(http.StatusInternalServerError, err)
 		return
 	}
-	id, ontime, defaultOk, err := w.platform.Send(arg.To, text)
-	if err != nil {
-		w.Error(http.StatusInternalServerError, err)
-		return
-	}
-	arg.To.Fallbacks = arg.To.Fallbacks[1:]
-	WaitResponse(id, ontime, defaultOk, arg.To, fmt.Sprintf("http://%s:%d/v3/notifier/routex/request", w.config.ExfeService.Addr, w.config.ExfeService.Port), arg)
 }
