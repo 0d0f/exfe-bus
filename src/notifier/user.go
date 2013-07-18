@@ -39,7 +39,7 @@ func (u User) HandleWelcome(arg model.UserWelcome) {
 	}
 
 	to := arg.To.PopRecipient()
-	err = SendAndSave(u.localTemplate, u.platform, to, arg, "user_welcome", u.domain+"/v3/notifier/user/welcome")
+	err = SendAndSave(u.localTemplate, u.platform, to, arg, "user_welcome", u.domain+"/v3/notifier/user/welcome", arg)
 	if err != nil {
 		u.Error(http.StatusInternalServerError, err)
 		return
@@ -54,7 +54,7 @@ func (u User) HandleVerify(arg model.UserVerify) {
 	}
 
 	to := arg.To.PopRecipient()
-	err = SendAndSave(u.localTemplate, u.platform, to, arg, "user_verify", u.domain+"/v3/notifier/user/verify")
+	err = SendAndSave(u.localTemplate, u.platform, to, arg, "user_verify", u.domain+"/v3/notifier/user/verify", arg)
 	if err != nil {
 		u.Error(http.StatusInternalServerError, err)
 		return
@@ -69,7 +69,7 @@ func (u User) HandleReset(arg model.UserVerify) {
 	}
 
 	to := arg.To.PopRecipient()
-	err = SendAndSave(u.localTemplate, u.platform, to, arg, "user_resetpass", u.domain+"/v3/notifier/user/reset")
+	err = SendAndSave(u.localTemplate, u.platform, to, arg, "user_resetpass", u.domain+"/v3/notifier/user/reset", arg)
 	if err != nil {
 		u.Error(http.StatusInternalServerError, err)
 		return

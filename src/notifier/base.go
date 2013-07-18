@@ -37,7 +37,7 @@ func GenerateContent(localTemplate *formatter.LocalTemplate, template string, po
 	return ret.String(), nil
 }
 
-func SendAndSave(localTemplate *formatter.LocalTemplate, platform *broker.Platform, to model.Recipient, arg interface{}, template, failUrl string) error {
+func SendAndSave(localTemplate *formatter.LocalTemplate, platform *broker.Platform, to model.Recipient, arg interface{}, template, failUrl string, failArg interface{}) error {
 	text, err := GenerateContent(localTemplate, template, to.Provider, to.Language, arg)
 	if err != nil {
 		return err
@@ -46,6 +46,6 @@ func SendAndSave(localTemplate *formatter.LocalTemplate, platform *broker.Platfo
 	if err != nil {
 		return err
 	}
-	WaitResponse(id, ontime, defaultOk, to, failUrl, arg)
+	WaitResponse(id, ontime, defaultOk, to, failUrl, failArg)
 	return nil
 }
