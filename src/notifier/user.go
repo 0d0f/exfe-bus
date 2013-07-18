@@ -2,6 +2,7 @@ package notifier
 
 import (
 	"broker"
+	"fmt"
 	"formatter"
 	"github.com/googollee/go-rest"
 	"model"
@@ -18,6 +19,7 @@ type User struct {
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
 	platform      *broker.Platform
+	domain        string
 }
 
 func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *User {
@@ -25,6 +27,7 @@ func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config, platf
 		localTemplate: localTemplate,
 		config:        config,
 		platform:      platform,
+		domain:        fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port),
 	}
 }
 
@@ -55,17 +58,18 @@ func (u User) HandleVerify(arg model.UserVerify) {
 		return
 	}
 
-	to := arg.To
+	to := arg.To.PopRecipient()
 	text, err := GenerateContent(u.localTemplate, "user_verify", to.Provider, to.Language, arg)
 	if err != nil {
 		u.Error(http.StatusInternalServerError, err)
 		return
 	}
-	_, _, _, err = u.platform.Send(to, text)
+	id, ontime, defaultOk, err := u.platform.Send(to, text)
 	if err != nil {
 		u.Error(http.StatusInternalServerError, err)
 		return
 	}
+	WaitResponse(id, ontime, defaultOk, arg.To, u.domain+"/v3/notifier/user/verify", arg)
 }
 
 func (u User) HandleReset(arg model.UserVerify) {

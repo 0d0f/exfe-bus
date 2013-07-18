@@ -12,12 +12,6 @@ import (
 )
 
 type ResponseItem struct {
-	DefaultOk bool
-	Recipient model.Recipient
-	OkAction  struct {
-		TargetUrl string
-		Arg       interface{}
-	}
 	FailAction struct {
 		TargetUrl string
 		Arg       interface{}
@@ -40,9 +34,10 @@ func WaitResponse(id string, ontime int64, defaultOk bool, recipient model.Recip
 	response.WaitResponse(id, ontime, defaultOk, recipient, u, args)
 }
 
-func SetupResponse(config *model.Config) error {
+func SetupResponse(config *model.Config, saver ResponseSaver) error {
 	response = &Response{
 		config: config,
+		saver:  saver,
 	}
 	go func() {
 		for {
@@ -57,18 +52,10 @@ func SetupResponse(config *model.Config) error {
 }
 
 func (r *Response) WaitResponse(id string, ontime int64, defaultOk bool, recipient model.Recipient, u string, args interface{}) {
-	if ontime == 0 && defaultOk {
+	if ontime == 0 || len(recipient.Fallbacks) == 0 {
 		return
 	}
-	item := ResponseItem{
-		DefaultOk: defaultOk,
-		Recipient: recipient,
-	}
-	item.OkAction.TargetUrl = fmt.Sprintf("%s/v3/bus/notificatioincallback")
-	item.OkAction.Arg = map[string]interface{}{
-		"identity_id": recipient.ID(),
-		"error":       "",
-	}
+	item := ResponseItem{}
 	item.FailAction.TargetUrl = u
 	item.FailAction.Arg = args
 	err := r.saver.Save(id, item, ontime)
@@ -76,10 +63,8 @@ func (r *Response) WaitResponse(id string, ontime int64, defaultOk bool, recipie
 		logger.ERROR("save response item(%d) failed: %s", id, err)
 		return
 	}
-	if defaultOk {
-		r.PushQueue(item.OkAction.TargetUrl, item.OkAction.Arg, ontime)
-	} else {
-		r.PushQueue(item.FailAction.TargetUrl, item.FailAction.Arg, ontime)
+	if !defaultOk {
+		r.PushQueue(id, item.FailAction.TargetUrl, item.FailAction.Arg, ontime)
 	}
 }
 
@@ -104,30 +89,17 @@ func (r *Response) Listen() error {
 			logger.ERROR("can't load response item(%s): %s", resp.Id, err)
 			continue
 		}
-		if item.DefaultOk {
-			if !resp.Ok {
-				r.DeleteQueue(item.OkAction.TargetUrl)
-				if len(item.Recipient.Fallbacks) == 0 {
-					item.FailAction.TargetUrl = fmt.Sprintf("%s/v3/bus/notificatioincallback")
-					item.FailAction.Arg = map[string]interface{}{
-						"identity_id": item.Recipient.ID(),
-						"error":       resp.Error,
-					}
-				}
-				r.Do(item.FailAction.TargetUrl, item.FailAction.Arg)
-			}
+		if resp.Ok {
+			r.DeleteQueue(resp.Id, item.FailAction.TargetUrl)
 		} else {
-			if resp.Ok {
-				r.DeleteQueue(item.FailAction.TargetUrl)
-				r.Do(item.OkAction.TargetUrl, item.OkAction.Arg)
-			}
+			r.Do(item.FailAction.TargetUrl, item.FailAction.Arg)
 		}
 	}
 }
 
-func (r *Response) PushQueue(u string, arg interface{}, ontime int64) {
-	queueUrl := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s?ontime=%d",
-		r.config.ExfeQueue.Addr, r.config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(u)), ontime)
+func (r *Response) PushQueue(id, u string, arg interface{}, ontime int64) {
+	queueUrl := fmt.Sprintf("http://%s:%d/v3/queue/-%s/POST/%s?ontime=%d",
+		r.config.ExfeQueue.Addr, r.config.ExfeQueue.Port, id, base64.URLEncoding.EncodeToString([]byte(u)), ontime)
 	b, err := json.Marshal(arg)
 	if err != nil {
 		logger.ERROR("can't marshal: %s with %#v", err, arg)
@@ -141,9 +113,9 @@ func (r *Response) PushQueue(u string, arg interface{}, ontime int64) {
 	resp.Close()
 }
 
-func (r *Response) DeleteQueue(u string) {
-	queueUrl := fmt.Sprintf("http://%s:%d/v3/queue/-/POST/%s",
-		r.config.ExfeQueue.Addr, r.config.ExfeQueue.Port, base64.URLEncoding.EncodeToString([]byte(u)))
+func (r *Response) DeleteQueue(id, u string) {
+	queueUrl := fmt.Sprintf("http://%s:%d/v3/queue/-%s/POST/%s",
+		r.config.ExfeQueue.Addr, r.config.ExfeQueue.Port, id, base64.URLEncoding.EncodeToString([]byte(u)))
 	resp, err := broker.HttpResponse(broker.Http("DELETE", queueUrl, "text/plain", nil))
 	if err != nil {
 		logger.ERROR("delete queue %s failed: %s with %s", queueUrl, err)
@@ -160,7 +132,7 @@ func (r *Response) Do(u string, arg interface{}) {
 	}
 	resp, err := broker.HttpResponse(broker.Http("POST", u, "text/plain", b))
 	if err != nil {
-		logger.ERROR("push to queue %s failed: %s with %s", u, err, string(b))
+		logger.ERROR("response do %s failed: %s with %s", u, err, string(b))
 		return
 	}
 	resp.Close()

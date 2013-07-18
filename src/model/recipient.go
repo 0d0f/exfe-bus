@@ -30,7 +30,17 @@ type Recipient struct {
 	Provider         string   `json:"provider"`
 	ExternalID       string   `json:"external_id"`
 	ExternalUsername string   `json:"external_username"`
-	Fallbacks        []string `json:"fallback"`
+	Fallbacks        []string `json:"fallbacks"`
+}
+
+func (r *Recipient) PopRecipient() Recipient {
+	ret := *r
+	if len(r.Fallbacks) > 0 {
+		id := FromIdentityId(r.Fallbacks[0])
+		ret.ExternalID, ret.ExternalUsername, ret.Provider = id.ExternalID, id.ExternalUsername, id.Provider
+		r.Fallbacks = r.Fallbacks[1:]
+	}
+	return ret
 }
 
 func (r Recipient) Equal(other *Recipient) bool {

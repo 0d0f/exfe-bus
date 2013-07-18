@@ -55,7 +55,7 @@ func (a *Apn) Post(from, id, text string) (string, error) {
 	text = strings.Trim(text, " \r\n")
 	last := strings.LastIndex(text, "\n")
 	if last == -1 {
-		return "", nil
+		return "", fmt.Errorf("no payload")
 	}
 	dataStr := text[last+1:]
 	var data interface{}
@@ -84,8 +84,10 @@ func (a *Apn) Post(from, id, text string) (string, error) {
 
 	err = a.broker.Send(&notification)
 	if err != nil {
+		fmt.Println("here:", err)
 		return fmt.Sprint("%d", ret), fmt.Errorf("send %d error: %s", ret, err)
 	}
+	fmt.Println("ret:", ret)
 	return fmt.Sprint("%d", ret), nil
 }
 

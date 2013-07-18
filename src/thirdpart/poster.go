@@ -89,13 +89,13 @@ func (m Poster) HandlePost(text string) string {
 		return ""
 	}
 	if handler.waiting > 0 {
-		m.Header().Set("Ontime", fmt.Sprintf("%d", time.Now().Add(handler.waiting)))
-		m.Header().Set("Default", fmt.Sprintf("%s", handler.defaultOK))
+		m.Header().Set("Ontime", fmt.Sprintf("%d", time.Now().Add(handler.waiting).Unix()))
+		m.Header().Set("Default", fmt.Sprintf("%v", handler.defaultOK))
 		m.WriteHeader(http.StatusAccepted)
 	} else {
 		m.WriteHeader(http.StatusOK)
 	}
-	return fmt.Sprintf("%d-%d", provider, ret)
+	return fmt.Sprintf("%s-%s", provider, ret)
 }
 
 func (m Poster) HandleResponse(resp PostResponse) {

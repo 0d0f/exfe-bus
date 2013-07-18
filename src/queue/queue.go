@@ -137,6 +137,9 @@ func (q Queue) HandlePush(data string) {
 	if ontime == 0 {
 		ontime = time.Now().Unix()
 	}
+	if updateType == "" {
+		updateType = "once"
+	}
 
 	fl := logger.FUNC(method, service, mergeKey, updateType, ontime)
 	defer fl.Quit()
