@@ -212,7 +212,6 @@ func (w *Worker) delete(conn *imap.Client, ids []uint32) error {
 }
 
 func (w *Worker) login() (net.Conn, *imap.Client, error) {
-	logger.DEBUG("host: %#v, timeout: %s", w.config.Bot.Email.IMAPHost, broker.NetworkTimeout)
 	c, err := net.DialTimeout("tcp", w.config.Bot.Email.IMAPHost, broker.NetworkTimeout)
 	if err != nil {
 		return nil, nil, err
@@ -226,15 +225,12 @@ func (w *Worker) login() (net.Conn, *imap.Client, error) {
 	c.SetDeadline(time.Now().Add(broker.NetworkTimeout))
 
 	conn.Data = nil
-	logger.DEBUG("caps: %v", conn.Caps)
 	if conn.Caps["STARTTLS"] {
 		conn.StartTLS(nil)
 	}
 
 	if conn.State() == imap.Login {
-		logger.DEBUG("user: %#v, password: %#v", w.config.Bot.Email.IMAPUser, w.config.Bot.Email.IMAPPassword)
 		_, err = conn.Login(w.config.Bot.Email.IMAPUser, w.config.Bot.Email.IMAPPassword)
-		logger.DEBUG("login err: %s", err)
 		if err != nil {
 			return nil, nil, err
 		}
