@@ -232,8 +232,8 @@ func (w *Worker) login() (net.Conn, *imap.Client, error) {
 
 	if conn.State() == imap.Login {
 		_, err = conn.Login(w.config.Bot.Email.IMAPUser, w.config.Bot.Email.IMAPPassword)
+		logger.DEBUG("login err: %s", err)
 		if err != nil {
-			logger.DEBUG("login err: %s", err)
 			return nil, nil, err
 		}
 	}
