@@ -40,10 +40,6 @@ type RequestArg struct {
 func (w Routex) HandleRequest(arg RequestArg) {
 	arg.Config = w.config
 
-	to := arg.To.PopRecipient()
-	err := SendAndSave(w.localTemplate, w.platform, to, arg, "routex_request", w.domain+"/v3/notifier/routex/request", arg)
-	if err != nil {
-		w.Error(http.StatusInternalServerError, err)
-		return
-	}
+	go SendAndSave(w.localTemplate, w.platform, &arg.To, arg, "routex_request", w.domain+"/v3/notifier/routex/request", &arg)
+	w.WriteHeader(http.StatusAccepted)
 }

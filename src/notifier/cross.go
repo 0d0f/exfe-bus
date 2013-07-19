@@ -48,7 +48,7 @@ func (c Cross) HandleDigest(requests []model.CrossDigestRequest) {
 	failArg[0].CrossId = crossId
 	failArg[0].UpdatedAt = updatedAt
 
-	to := failArg[0].To.PopRecipient()
+	to := &failArg[0].To
 
 	query := make(url.Values)
 	query.Set("updated_at", updatedAt)
@@ -65,11 +65,8 @@ func (c Cross) HandleDigest(requests []model.CrossDigestRequest) {
 		"Config": c.config,
 	}
 
-	err = SendAndSave(c.localTemplate, c.platform, to, arg, "cross_digest", c.domain+"/v3/notifier/cross/digest", failArg)
-	if err != nil {
-		c.Error(http.StatusInternalServerError, err)
-		return
-	}
+	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_digest", c.domain+"/v3/notifier/cross/digest", &failArg)
+	c.WriteHeader(http.StatusAccepted)
 }
 
 func (c Cross) HandleRemind(requests []model.CrossDigestRequest) {
@@ -80,7 +77,7 @@ func (c Cross) HandleRemind(requests []model.CrossDigestRequest) {
 	crossId := requests[0].CrossId
 	failArg := requests[len(requests)-1:]
 	failArg[0].CrossId = crossId
-	to := failArg[0].To.PopRecipient()
+	to := &failArg[0].To
 
 	query := make(url.Values)
 	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
@@ -96,16 +93,13 @@ func (c Cross) HandleRemind(requests []model.CrossDigestRequest) {
 		"Cross":  cross,
 		"Config": c.config,
 	}
-	err = SendAndSave(c.localTemplate, c.platform, to, arg, "cross_remind", c.domain+"/v3/notifier/cross/remind", failArg)
-	if err != nil {
-		c.Error(http.StatusInternalServerError, err)
-		return
-	}
+	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_remind", c.domain+"/v3/notifier/cross/remind", &failArg)
+	c.WriteHeader(http.StatusAccepted)
 }
 
 func (c Cross) HandleInvitation(invitation model.CrossInvitation) {
 	invitation.Config = c.config
-	to := invitation.To.PopRecipient()
+	to := &invitation.To
 
 	query := make(url.Values)
 	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
@@ -116,16 +110,13 @@ func (c Cross) HandleInvitation(invitation model.CrossInvitation) {
 	}
 	invitation.Cross = cross
 
-	err = SendAndSave(c.localTemplate, c.platform, to, invitation, "cross_invitation", c.domain+"/v3/notifier/cross/invitation", invitation)
-	if err != nil {
-		c.Error(http.StatusInternalServerError, err)
-		return
-	}
+	go SendAndSave(c.localTemplate, c.platform, to, invitation, "cross_invitation", c.domain+"/v3/notifier/cross/invitation", &invitation)
+	c.WriteHeader(http.StatusAccepted)
 }
 
 func (c Cross) HandlePreview(invitation model.CrossInvitation) {
 	invitation.Config = c.config
-	to := invitation.To.PopRecipient()
+	to := &invitation.To
 
 	query := make(url.Values)
 	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
@@ -136,11 +127,8 @@ func (c Cross) HandlePreview(invitation model.CrossInvitation) {
 	}
 	invitation.Cross = cross
 
-	err = SendAndSave(c.localTemplate, c.platform, to, invitation, "cross_preview", c.domain+"/v3/notifier/cross/preview", invitation)
-	if err != nil {
-		c.Error(http.StatusInternalServerError, err)
-		return
-	}
+	go SendAndSave(c.localTemplate, c.platform, to, invitation, "cross_preview", c.domain+"/v3/notifier/cross/preview", &invitation)
+	c.WriteHeader(http.StatusAccepted)
 }
 
 func (c Cross) HandleUpdate(updates []model.CrossUpdate) {
@@ -149,7 +137,7 @@ func (c Cross) HandleUpdate(updates []model.CrossUpdate) {
 		return
 	}
 
-	to := updates[0].To
+	to := &updates[0].To
 	if to.SameUser(&updates[0].By) {
 		c.config.Log.Debug("not send with all self updates: %s", to)
 		return
@@ -168,13 +156,10 @@ func (c Cross) HandleUpdate(updates []model.CrossUpdate) {
 
 	failArg := updates[len(updates)-1:]
 	failArg[0].OldCross = updates[0].OldCross
-	to = failArg[0].To.PopRecipient()
+	to = &failArg[0].To
 
-	err = SendAndSave(c.localTemplate, c.platform, to, arg, "cross_update", c.domain+"/v3/notifier/cross/update", failArg)
-	if err != nil {
-		c.Error(http.StatusInternalServerError, err)
-		return
-	}
+	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_update", c.domain+"/v3/notifier/cross/update", &failArg)
+	c.WriteHeader(http.StatusAccepted)
 }
 
 func (c Cross) HandleConversation(updates []model.ConversationUpdate) {
@@ -185,7 +170,7 @@ func (c Cross) HandleConversation(updates []model.ConversationUpdate) {
 		return
 	}
 	needSend := false
-	to := failArg[0].To.PopRecipient()
+	to := &failArg[0].To
 	for _, update := range updates {
 		if !to.SameUser(&update.Post.By) {
 			needSend = true
@@ -205,11 +190,8 @@ func (c Cross) HandleConversation(updates []model.ConversationUpdate) {
 		}
 	}
 
-	err = SendAndSave(c.localTemplate, c.platform, to, arg, "cross_conversation", c.domain+"/v3/notifier/cross/conversation", failArg)
-	if err != nil {
-		c.Error(http.StatusInternalServerError, err)
-		return
-	}
+	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_conversation", c.domain+"/v3/notifier/cross/conversation", &failArg)
+	c.WriteHeader(http.StatusAccepted)
 }
 
 type ConversationArg struct {

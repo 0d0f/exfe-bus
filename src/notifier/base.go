@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"formatter"
+	"logger"
 	"model"
 )
 
@@ -37,15 +38,29 @@ func GenerateContent(localTemplate *formatter.LocalTemplate, template string, po
 	return ret.String(), nil
 }
 
-func SendAndSave(localTemplate *formatter.LocalTemplate, platform *broker.Platform, to model.Recipient, arg interface{}, template, failUrl string, failArg interface{}) error {
-	text, err := GenerateContent(localTemplate, template, to.Provider, to.Language, arg)
-	if err != nil {
-		return err
+// TODO: to是个指针有些过于精妙了。这个指针指向failArg里的to字段，在每次pop时会自动改变failArg里To字段的值，保证wait response的正确。
+//       由于interface{}也有可能传值，所以调用者传递failArg时，应该显式使用&保证传址而不是传值。
+func SendAndSave(localTemplate *formatter.LocalTemplate, platform *broker.Platform, to *model.Recipient, arg interface{}, template, failUrl string, failArg interface{}) {
+	var id string
+	var ontime int64
+	var defaultOk bool
+	needResponse := false
+	for run := true; run; run = len(to.Fallbacks) > 0 {
+		fallback := to.PopRecipient()
+		text, err := GenerateContent(localTemplate, template, fallback.Provider, fallback.Language, arg)
+		if err != nil {
+			logger.ERROR("generate content failed: %s with %#v", err, arg)
+			continue
+		}
+		id, ontime, defaultOk, err = platform.Send(fallback, text)
+		if err != nil {
+			continue
+		}
+		needResponse = true
+		break
 	}
-	id, ontime, defaultOk, err := platform.Send(to, text)
-	if err != nil {
-		return err
+	if !needResponse {
+		return
 	}
-	WaitResponse(id, ontime, defaultOk, to, failUrl, failArg)
-	return nil
+	WaitResponse(id, ontime, defaultOk, *to, failUrl, failArg)
 }
