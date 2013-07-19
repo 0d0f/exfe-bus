@@ -3,6 +3,7 @@ package apn
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/googollee/go-broadcast"
 	"github.com/virushuo/Go-Apns"
 	"logger"
 	"regexp"
@@ -22,22 +23,21 @@ type sendArg struct {
 }
 
 type Apn struct {
-	broker Broker
-	id     uint32
-	f      thirdpart.Callback
+	broker    Broker
+	id        uint32
+	broadcast *broadcast.Broadcast
 }
 
 type ErrorHandler func(err apns.NotificationError)
 
 func New(broker Broker) *Apn {
 	ret := &Apn{
-		broker: broker,
-		id:     0,
+		broker:    broker,
+		broadcast: broadcast.NewBroadcast(-1),
+		id:        0,
 	}
 	go listenError(broker.GetErrorChan(), func(err apns.NotificationError) {
-		if ret.f != nil {
-			ret.f(fmt.Sprintf("%d", err.Identifier), err)
-		}
+		ret.broadcast.Send(err)
 	})
 	return ret
 }
@@ -47,7 +47,6 @@ func (a *Apn) Provider() string {
 }
 
 func (a *Apn) SetPosterCallback(callback thirdpart.Callback) (time.Duration, bool) {
-	a.f = callback
 	return 0, true
 }
 
@@ -82,12 +81,27 @@ func (a *Apn) Post(from, id, text string) (string, error) {
 		Payload:     &payload,
 	}
 
+	c := make(chan interface{})
+	a.broadcast.Register(c)
+	defer a.broadcast.Unregister(c)
+
+SEND:
 	err = a.broker.Send(&notification)
 	if err != nil {
-		fmt.Println("here:", err)
 		return fmt.Sprint("%d", ret), fmt.Errorf("send %d error: %s", ret, err)
 	}
-	fmt.Println("ret:", ret)
+	select {
+	case e := <-c:
+		err, ok := e.(apns.NotificationError)
+		if ok {
+			if ret == err.Identifier {
+				return "", err
+			}
+		} else if ret > err.Identifier {
+			goto SEND
+		}
+	case <-time.After(time.Second / 10):
+	}
 	return fmt.Sprint("%d", ret), nil
 }
 
