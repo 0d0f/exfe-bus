@@ -14,7 +14,7 @@ type User struct {
 
 	Welcome rest.Processor `path:"/welcome" method:"POST"`
 	Verify  rest.Processor `path:"/verify" method:"POST"`
-	Reset   rest.Processor `path:"/rest" method:"POST"`
+	Reset   rest.Processor `path:"/reset" method:"POST"`
 
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
