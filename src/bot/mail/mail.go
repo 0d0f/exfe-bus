@@ -212,6 +212,7 @@ func (w *Worker) delete(conn *imap.Client, ids []uint32) error {
 }
 
 func (w *Worker) login() (net.Conn, *imap.Client, error) {
+	logger.DEBUG("host: %#v, timeout: %s", w.config.Bot.Email.IMAPHost, broker.NetworkTimeout)
 	c, err := net.DialTimeout("tcp", w.config.Bot.Email.IMAPHost, broker.NetworkTimeout)
 	if err != nil {
 		return nil, nil, err
