@@ -48,7 +48,7 @@ func (a *Apn) Provider() string {
 
 func (a *Apn) SetPosterCallback(callback thirdpart.Callback) (time.Duration, bool) {
 	a.f = callback
-	return time.Second * 30, true
+	return 0, true
 }
 
 func (a *Apn) Post(from, id, text string) (string, error) {
