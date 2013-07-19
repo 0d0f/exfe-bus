@@ -2,6 +2,7 @@ package notifier
 
 import (
 	"broker"
+	"fmt"
 	"formatter"
 	"github.com/googollee/go-rest"
 	"model"
@@ -18,6 +19,7 @@ type User struct {
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
 	platform      *broker.Platform
+	domain        string
 }
 
 func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config, platform *broker.Platform) *User {
@@ -25,6 +27,7 @@ func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config, platf
 		localTemplate: localTemplate,
 		config:        config,
 		platform:      platform,
+		domain:        fmt.Sprintf("http://%s:%d", config.ExfeService.Addr, config.ExfeService.Port),
 	}
 }
 
@@ -35,17 +38,8 @@ func (u User) HandleWelcome(arg model.UserWelcome) {
 		return
 	}
 
-	to := arg.To
-	text, err := GenerateContent(u.localTemplate, "user_welcome", to.Provider, to.Language, arg)
-	if err != nil {
-		u.Error(http.StatusInternalServerError, err)
-		return
-	}
-	_, _, _, err = u.platform.Send(to, text)
-	if err != nil {
-		u.Error(http.StatusInternalServerError, err)
-		return
-	}
+	go SendAndSave(u.localTemplate, u.platform, &arg.To, arg, "user_welcome", u.domain+"/v3/notifier/user/welcome", &arg)
+	u.WriteHeader(http.StatusAccepted)
 }
 
 func (u User) HandleVerify(arg model.UserVerify) {
@@ -55,17 +49,8 @@ func (u User) HandleVerify(arg model.UserVerify) {
 		return
 	}
 
-	to := arg.To
-	text, err := GenerateContent(u.localTemplate, "user_verify", to.Provider, to.Language, arg)
-	if err != nil {
-		u.Error(http.StatusInternalServerError, err)
-		return
-	}
-	_, _, _, err = u.platform.Send(to, text)
-	if err != nil {
-		u.Error(http.StatusInternalServerError, err)
-		return
-	}
+	go SendAndSave(u.localTemplate, u.platform, &arg.To, arg, "user_verify", u.domain+"/v3/notifier/user/verify", &arg)
+	u.WriteHeader(http.StatusAccepted)
 }
 
 func (u User) HandleReset(arg model.UserVerify) {
@@ -75,15 +60,6 @@ func (u User) HandleReset(arg model.UserVerify) {
 		return
 	}
 
-	to := arg.To
-	text, err := GenerateContent(u.localTemplate, "user_resetpass", to.Provider, to.Language, arg)
-	if err != nil {
-		u.Error(http.StatusInternalServerError, err)
-		return
-	}
-	_, _, _, err = u.platform.Send(to, text)
-	if err != nil {
-		u.Error(http.StatusInternalServerError, err)
-		return
-	}
+	go SendAndSave(u.localTemplate, u.platform, &arg.To, arg, "user_resetpass", u.domain+"/v3/notifier/user/reset", &arg)
+	u.WriteHeader(http.StatusAccepted)
 }

@@ -79,7 +79,7 @@ func (im *IMessage) Provider() string {
 
 func (im *IMessage) SetPosterCallback(callback thirdpart.Callback) (time.Duration, bool) {
 	im.f = callback
-	return time.Second * 30, false
+	return 0, true
 }
 
 func (im *IMessage) Serve() {

@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"formatter"
+	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
 	l "github.com/googollee/go-logger"
 	"gobus"
@@ -15,6 +16,7 @@ import (
 	"os"
 	"routex"
 	"splitter"
+	"time"
 	"token"
 )
 
@@ -49,10 +51,25 @@ func main() {
 	}
 
 	redis_ := broker.NewRedisMultiplexer(&config)
-	redis, err := broker.NewRedisPool(&config)
+	redis__, err := broker.NewRedisPool(&config)
 	if err != nil {
-		logger.ERROR("redis connect error: %s", err)
+		logger.ERROR("redis__ connect error: %s", err)
 		return
+	}
+	redisPool := &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 30 * time.Minute,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", config.Redis.Netaddr)
+			if err != nil {
+				return nil, err
+			}
+			return c, nil
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
 	}
 
 	localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
@@ -123,18 +140,23 @@ func main() {
 		register("splitter", splitter, nil)
 	}
 
+	if config.ExfeService.Services.Thirdpart {
+		poster, err := registerThirdpart(&config, platform)
+		register("poster", poster, err)
+	}
+
 	if config.ExfeService.Services.Notifier {
+		err := notifier.SetupResponse(&config, notifier.NewResponseSaver(redisPool))
+		if err != nil {
+			logger.ERROR("can't setup response")
+			return
+		}
 		user := notifier.NewUser(localTemplate, &config, platform)
 		register("notifier/user", user, nil)
 		cross := notifier.NewCross(localTemplate, &config, platform)
 		register("notifier/cross", cross, nil)
 		routex := notifier.NewRoutex(localTemplate, &config, platform)
 		register("notifier/routex", routex, nil)
-	}
-
-	if config.ExfeService.Services.Thirdpart {
-		poster, err := registerThirdpart(&config, platform)
-		register("poster", poster, err)
 	}
 
 	if config.ExfeService.Services.Iom {
@@ -167,7 +189,7 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Routex {
-		location := &routex.BreadcrumbsSaver{redis}
+		location := &routex.BreadcrumbsSaver{redis__}
 		route := &routex.GeomarksSaver{database}
 		routex := routex.New(location, route, platform, &config)
 		register("routex", routex, nil)

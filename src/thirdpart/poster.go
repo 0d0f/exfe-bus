@@ -6,6 +6,7 @@ import (
 	"github.com/googollee/go-rest"
 	"io"
 	"io/ioutil"
+	"logger"
 	"model"
 	"net/http"
 	"time"
@@ -85,21 +86,27 @@ func (m Poster) HandlePost(text string) string {
 
 	ret, err := handler.poster.Post(m.Request().URL.Query().Get("from"), id, text)
 	if err != nil {
+		logger.INFO("poster", provider, "fail", id, err.Error())
 		m.Error(http.StatusInternalServerError, m.DetailError(2, "%s", err))
 		return ""
 	}
+	ontime := time.Now().Add(handler.waiting).Unix()
 	if handler.waiting > 0 {
-		m.Header().Set("Ontime", fmt.Sprintf("%d", time.Now().Add(handler.waiting).Unix()))
-		m.Header().Set("Default", fmt.Sprintf("%s", handler.defaultOK))
+		logger.INFO("poster", provider, "waiting", ret, id, "ontime", ontime, fmt.Sprintf("default %v", handler.defaultOK))
+		m.Header().Set("Ontime", fmt.Sprintf("%d", ontime))
+		m.Header().Set("Default", fmt.Sprintf("%v", handler.defaultOK))
 		m.WriteHeader(http.StatusAccepted)
 	} else {
+		logger.INFO("poster", provider, "ok", ret, id)
 		m.WriteHeader(http.StatusOK)
 	}
-	return fmt.Sprintf("%d-%d", provider, ret)
+	return fmt.Sprintf("%s-%s", provider, ret)
 }
 
 func (m Poster) HandleResponse(resp PostResponse) {
-	resp.Id = fmt.Sprintf("%s-%s", m.Vars()["provider"], m.Vars()["id"])
+	provider, id := m.Vars()["provider"], m.Vars()["id"]
+	logger.INFO("poster", provider, "response", id, resp.Ok, resp.Error)
+	resp.Id = fmt.Sprintf("%s-%s", provider, id)
 	m.watchChan.Send(resp)
 }
 

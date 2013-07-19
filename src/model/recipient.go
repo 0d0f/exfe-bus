@@ -19,23 +19,29 @@ func (i IdentityId) Split() (externalId, provider string, err error) {
 	return
 }
 
-type Fallback struct {
-	Id     string `json:"id"`
-	Ontime int64  `json:"ontime"`
+type Recipient struct {
+	IdentityID       int64    `json:"identity_id"`
+	UserID           int64    `json:"user_id"`
+	Name             string   `json:"name"`
+	AuthData         string   `json:"auth_data"`
+	Timezone         string   `json:"timezone"`
+	Token            string   `json:"token"`
+	Language         string   `json:"language"`
+	Provider         string   `json:"provider"`
+	ExternalID       string   `json:"external_id"`
+	ExternalUsername string   `json:"external_username"`
+	Fallbacks        []string `json:"fallbacks"`
 }
 
-type Recipient struct {
-	IdentityID       int64      `json:"identity_id"`
-	UserID           int64      `json:"user_id"`
-	Name             string     `json:"name"`
-	AuthData         string     `json:"auth_data"`
-	Timezone         string     `json:"timezone"`
-	Token            string     `json:"token"`
-	Language         string     `json:"language"`
-	Provider         string     `json:"provider"`
-	ExternalID       string     `json:"external_id"`
-	ExternalUsername string     `json:"external_username"`
-	Fallbacks        []Fallback `json:"fallback"`
+func (r *Recipient) PopRecipient() Recipient {
+	ret := *r
+	if len(r.Fallbacks) > 0 {
+		id := FromIdentityId(r.Fallbacks[0])
+		ret.ExternalID, ret.ExternalUsername, ret.Provider = id.ExternalID, id.ExternalUsername, id.Provider
+		r.Fallbacks = r.Fallbacks[1:]
+		ret.Fallbacks = r.Fallbacks
+	}
+	return ret
 }
 
 func (r Recipient) Equal(other *Recipient) bool {
