@@ -1,15 +1,16 @@
 package main
 
 import (
-	"broker"
 	"daemon"
 	"fmt"
+	"github.com/garyburd/redigo/redis"
 	logger_ "github.com/googollee/go-logger"
 	"gobus"
 	"launchpad.net/tomb"
 	"logger"
 	"model"
 	"os"
+	"time"
 )
 
 func main() {
@@ -34,14 +35,23 @@ func main() {
 		return
 	}
 
-	r, err := broker.NewRedisPool(&config)
-	if err != nil {
-		logger.ERROR("launch redis pool failed: %s", err)
-		os.Exit(-1)
-		return
+	redisPool := &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 30 * time.Minute,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", config.Redis.Netaddr)
+			if err != nil {
+				return nil, err
+			}
+			return c, nil
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
 	}
 
-	q, err := NewQueue(&config, r)
+	q, err := NewQueue(&config, redisPool)
 	if err != nil {
 		logger.ERROR("launch queue failed: %s", err)
 		os.Exit(-1)

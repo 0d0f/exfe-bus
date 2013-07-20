@@ -5,6 +5,7 @@ import (
 	"delayrepo"
 	"encoding/base64"
 	"fmt"
+	"github.com/garyburd/redigo/redis"
 	"github.com/googollee/go-rest"
 	"logger"
 	"model"
@@ -29,7 +30,7 @@ type Queue struct {
 	timer  *delayrepo.Timer
 }
 
-func NewQueue(config *model.Config, redis *broker.RedisPool) (*Queue, error) {
+func NewQueue(config *model.Config, redis *redis.Pool) (*Queue, error) {
 	ret := &Queue{
 		config:  config,
 		timeout: time.Second * 30,
