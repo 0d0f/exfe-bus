@@ -6,6 +6,7 @@ import (
 	"github.com/googollee/go-broadcast"
 	"github.com/googollee/go-rest"
 	"here"
+	"logger"
 	"math/rand"
 	"model"
 	"net/http"
@@ -90,14 +91,14 @@ func (h LiveService) HandleCard(data here.Data) []string {
 					break
 				}
 			}
-			h.config.Log.Debug("token %s can't find avatar", data.Token)
+			logger.DEBUG("token %s can't find avatar", data.Token)
 		} else {
-			h.config.Log.Debug("get avatar failed: %s", err)
+			logger.DEBUG("get avatar failed: %s", err)
 		}
 	}
 
 	err := h.here.Add(&data)
-	h.config.Log.Info("|live|add|t|%s|card|%s|name|%s|long|%s|lang|%s|acc|%s|trait|%s", data.Token, data.Card.Id, data.Card.Name, data.Longitude, data.Latitude, data.Accuracy, data.Traits)
+	logger.INFO("live", "add", "token", data.Token, "card", data.Card.Id, "name", data.Card.Name, "long", data.Longitude, "lat", data.Latitude, "acc", data.Accuracy, "traits", data.Traits)
 
 	if err != nil {
 		h.Error(http.StatusBadRequest, err)
@@ -143,7 +144,7 @@ func (h LiveService) HandleStreaming(s rest.Stream) {
 			}
 			err := s.Write(cards)
 			if err != nil || len(cards) == 0 {
-				h.config.Log.Info("|live|clear|t|%s|card||name||long||lang||acc||trait|", token)
+				logger.INFO("live", "clear", "token", token)
 				return
 			}
 		case <-time.After(broker.NetworkTimeout):

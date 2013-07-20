@@ -139,7 +139,7 @@ func (c Cross) HandleUpdate(updates []model.CrossUpdate) {
 
 	to := &updates[0].To
 	if to.SameUser(&updates[0].By) {
-		c.config.Log.Debug("not send with all self updates: %s", to)
+		logger.DEBUG("not send with all self updates: %s", to)
 		return
 	}
 
@@ -177,7 +177,7 @@ func (c Cross) HandleConversation(updates []model.ConversationUpdate) {
 		}
 	}
 	if !needSend {
-		c.config.Log.Debug("not send with all self updates: %s", to)
+		logger.DEBUG("not send with all self updates: %s", to)
 		return
 	}
 

@@ -4,20 +4,18 @@ import (
 	"broker"
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-logger"
+	"logger"
 	"model"
 	"net/url"
 )
 
 type DuanCaiWang struct {
 	url string
-	log *logger.SubLogger
 }
 
 func NewDuanCaiWang(config *model.Config) *DuanCaiWang {
 	return &DuanCaiWang{
 		url: config.Thirdpart.Sms.DuanCaiWang.Url,
-		log: config.Log.SubPrefix("sms-DuanCaiWang"),
 	}
 }
 
@@ -47,7 +45,7 @@ func (t *DuanCaiWang) Send(phone string, content string) (string, error) {
 	var reply duancaiwangReply
 	err = decoder.Decode(&reply)
 	if err != nil {
-		t.log.Err("send to %s reply decode failed: %s", phone, err)
+		logger.ERROR("send to %s reply decode failed: %s", phone, err)
 	}
 	if !reply.Result {
 		if reply.Msg == nil {

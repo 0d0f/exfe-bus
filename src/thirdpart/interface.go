@@ -44,8 +44,6 @@ type Helper interface {
 	UpdateIdentity(to *model.Recipient, externalUser ExternalUser) error
 	UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error
 	SendEmail(to string, content string) (id string, err error)
-
-	Log() *logger.Logger
 }
 
 type FakeHelper struct {

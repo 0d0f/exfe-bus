@@ -1,9 +1,5 @@
 package model
 
-import (
-	"github.com/googollee/go-logger"
-)
-
 type Config struct {
 	SiteUrl      string `json:"site_url"`
 	SiteApi      string `json:"site_api"`
@@ -138,6 +134,4 @@ type Config struct {
 			TimeoutInSecond uint   `json:"timeout_in_second"`
 		} `json:"email"`
 	} `json:"bot"`
-
-	Log *logger.Logger `json:"-"`
 }

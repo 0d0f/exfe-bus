@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-aws/smtp"
-	"github.com/googollee/go-logger"
+	"logger"
 	"model"
 	"net"
 	"net/url"
@@ -33,10 +33,6 @@ func NewHelper(config *model.Config) *HelperImp {
 		emailHost: config.Email.Host,
 		auth:      auth,
 	}
-}
-
-func (h *HelperImp) Log() *logger.Logger {
-	return h.config.Log
 }
 
 func (h *HelperImp) UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error {
@@ -99,28 +95,28 @@ func (h *HelperImp) SendEmail(to string, content string) (string, error) {
 
 	mx, err := net.LookupMX(host)
 	if err != nil {
-		h.Log().Notice("lookup mail exchange fail: %s", err)
+		logger.NOTICE("lookup mail exchange fail: %s", err)
 		goto SEND
 	}
 	if len(mx) == 0 {
-		h.Log().Notice("unreach mail exchange: %s", host)
+		logger.NOTICE("unreach mail exchange: %s", host)
 		goto SEND
 	}
 	addr = fmt.Sprintf("%s:25", mx[0].Host)
 	conn, err = net.DialTimeout("tcp", addr, time.Second)
 	if err != nil {
-		h.Log().Notice("conn %s fail: %s", addr, err)
+		logger.NOTICE("conn %s fail: %s", addr, err)
 		goto SEND
 	}
 	conn.SetDeadline(time.Now().Add(time.Second * 10))
 	s, err = smtp.NewClient(conn, host)
 	if err != nil {
-		h.Log().Notice("new smtp client %s fail: %s", mx[0].Host, err)
+		logger.NOTICE("new smtp client %s fail: %s", mx[0].Host, err)
 		goto SEND
 	}
 	err = s.Mail(h.emailFrom)
 	if err != nil {
-		h.Log().Notice("mail smtp %s command mail fail: %s", host, err)
+		logger.NOTICE("mail smtp %s command mail fail: %s", host, err)
 		goto SEND
 	}
 	err = s.Rcpt(to)

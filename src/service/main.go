@@ -8,7 +8,6 @@ import (
 	"formatter"
 	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
-	l "github.com/googollee/go-logger"
 	"gobus"
 	"logger"
 	"model"
@@ -22,18 +21,11 @@ import (
 
 func main() {
 	var config model.Config
-	output, quit := daemon.Init("exfe.json", &config)
+	_, quit := daemon.Init("exfe.json", &config)
 
 	if config.Proxy != "" {
 		broker.SetProxy(config.Proxy)
 	}
-
-	log, err := l.New(output, "service bus")
-	if err != nil {
-		panic(err)
-		return
-	}
-	config.Log = log
 
 	database, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4,utf8&autocommit=true",
 		config.DB.Username, config.DB.Password, config.DB.Addr, config.DB.Port, config.DB.DbName))
@@ -80,7 +72,7 @@ func main() {
 	}
 
 	addr := fmt.Sprintf("%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
-	log.Info("start at %s", addr)
+	logger.NOTICE("start at %s", addr)
 
 	bus, err := gobus.NewServer(addr)
 	if err != nil {
@@ -96,7 +88,7 @@ func main() {
 		os.Exit(-1)
 		return
 	}
-	log.Info("register Status")
+	logger.NOTICE("register Status")
 
 	register := func(name string, service interface{}, err error) {
 		if err != nil {
@@ -110,7 +102,7 @@ func main() {
 			os.Exit(-1)
 			return
 		}
-		log.Info("register %s", name)
+		logger.NOTICE("register %s", name)
 	}
 
 	if config.ExfeService.Services.Live {
@@ -162,7 +154,7 @@ func main() {
 			os.Exit(-1)
 			return
 		}
-		log.Info("register IOM")
+		logger.NOTICE("register IOM")
 	}
 
 	if config.ExfeService.Services.Thirdpart {
@@ -179,7 +171,7 @@ func main() {
 			os.Exit(-1)
 			return
 		}
-		log.Info("register Thirdpart")
+		logger.NOTICE("register Thirdpart")
 	}
 
 	if config.ExfeService.Services.Routex {
@@ -191,7 +183,7 @@ func main() {
 
 	go func() {
 		<-quit
-		log.Info("quit")
+		logger.NOTICE("quit")
 		os.Exit(-1)
 		return
 	}()
