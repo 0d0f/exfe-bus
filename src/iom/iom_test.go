@@ -1,10 +1,11 @@
 package iom
 
 import (
-	"broker"
 	"fmt"
+	"github.com/garyburd/redigo/redis"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestHashFromCount(t *testing.T) {
@@ -34,7 +35,21 @@ func TestHashFromCount(t *testing.T) {
 }
 
 func TestHashCreate(t *testing.T) {
-	redis := broker.NewRedisImp("", 0, "")
+	redis := &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 30 * time.Minute,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", "127.0.0.1:6379")
+			if err != nil {
+				return nil, err
+			}
+			return c, nil
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
+	}
 	handler := NewIom(redis)
 	h, _ := handler.Create("123", "http://123/a")
 	url, _ := handler.Get("123", h)
@@ -59,7 +74,21 @@ func TestHashCreate(t *testing.T) {
 }
 
 func TestHashUpdate(t *testing.T) {
-	redis := broker.NewRedisImp("", 0, "")
+	redis := &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 30 * time.Minute,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", "127.0.0.1:6379")
+			if err != nil {
+				return nil, err
+			}
+			return c, nil
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
+	}
 	handler := NewIom(redis)
 	for _, userid := range []string{"234", "345"} {
 		for _, crossid := range []string{"a", "b", "c", "d"} {
