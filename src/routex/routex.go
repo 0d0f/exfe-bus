@@ -45,7 +45,7 @@ func New(breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, conversion 
 	}
 }
 
-func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]Location {
+func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -104,9 +104,11 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]Locatio
 		}
 	}
 	breadcrumbs = append([]Location{breadcrumb}, breadcrumbs...)
-	ret := map[string]Location{
-		"mars":   mars,
-		"earth:": earth,
+	earthLat, earthLng, _, _ := earth.GetGeo()
+	marsLat, marsLng, _, _ := mars.GetGeo()
+	ret := map[string]string{
+		"earth_to_mars_latitude":  fmt.Sprintf("%.4f", marsLat-earthLat),
+		"earth_to_mars_longitude": fmt.Sprintf("%.4f", marsLng-earthLng),
 	}
 
 	broadcast, ok := m.broadcasts[token.Cross.ID]
