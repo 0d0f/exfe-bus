@@ -6,26 +6,45 @@ import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"logger"
+	"math"
 	"model"
 	"strconv"
 	"time"
 )
 
 type Location struct {
-	Id          string   `json:"id,omitempty"`
-	Type        string   `json:"type,omitempty"`
-	CreatedAt   int64    `json:"created_at,omitempty"`
-	CreatedBy   string   `json:"created_by,omitempty"`
-	UpdatedAt   int64    `json:"updated_at,omitempty"`
-	UpdatedBy   string   `json:"updated_by,omitempty"`
-	Tags        []string `json:"tags,omitempty"`
-	Icon        string   `json:"icon,omitempty"`
-	Title       string   `json:"title,omitempty"`
-	Description string   `json:"description,omitempty"`
-	Timestamp   int64    `json:"timestamp,omitempty"`
-	Accuracy    string   `json:"accuracy",omitempty`
-	Longitude   string   `json:"longitude"`
-	Latitude    string   `json:"latitude"`
+	Id          string     `json:"id,omitempty"`
+	Type        string     `json:"type,omitempty"`
+	CreatedAt   int64      `json:"created_at,omitempty"`
+	CreatedBy   string     `json:"created_by,omitempty"`
+	UpdatedAt   int64      `json:"updated_at,omitempty"`
+	UpdatedBy   string     `json:"updated_by,omitempty"`
+	Tags        []string   `json:"tags,omitempty"`
+	Icon        string     `json:"icon,omitempty"`
+	Title       string     `json:"title,omitempty"`
+	Description string     `json:"description,omitempty"`
+	Color       string     `json:"color,omitempty"`
+	Timestamp   int64      `json:"timestamp,omitempty"`
+	Accuracy    string     `json:"accuracy",omitempty`
+	Longitude   string     `json:"longitude,omitempty"`
+	Latitude    string     `json:"latitude,omitempty"`
+	Positions   []Location `json:"positions,omitempty"`
+}
+
+func (a Location) Distance(b Location) (float64, error) {
+	latA, lngA, _, err := a.GetGeo()
+	if err != nil {
+		return 0, err
+	}
+	latB, lngB, _, err := b.GetGeo()
+	if err != nil {
+		return 0, err
+	}
+	x := math.Cos(latA*math.Pi/180) * math.Cos(latB*math.Pi/180) * math.Cos((lngA-lngB)*math.Pi/180)
+	y := math.Sin(latA*math.Pi/180) * math.Sin(latB*math.Pi/180)
+	alpha := math.Acos(x + y)
+	distance := alpha * 6371000
+	return distance, nil
 }
 
 func (l Location) GetGeo() (float64, float64, float64, error) {
@@ -44,6 +63,24 @@ func (l Location) GetGeo() (float64, float64, float64, error) {
 	return lat, lng, acc, nil
 }
 
+func (l *Location) ToMars(c GeoConversionRepo) {
+	if l.Longitude != "" && l.Latitude != "" {
+		l.Latitude, l.Longitude = c.EarthToMars(l.Latitude, l.Longitude)
+	}
+	for i := range l.Positions {
+		l.Positions[i].ToMars(c)
+	}
+}
+
+func (l *Location) ToEarth(c GeoConversionRepo) {
+	if l.Longitude != "" && l.Latitude != "" {
+		l.Latitude, l.Longitude = c.MarsToEarth(l.Latitude, l.Longitude)
+	}
+	for i := range l.Positions {
+		l.Positions[i].ToEarth(c)
+	}
+}
+
 type Token struct {
 	TokenType  string `json:"token_type"`
 	UserId     int64  `json:"user_id"`
@@ -59,8 +96,13 @@ type BreadcrumbsRepo interface {
 }
 
 type GeomarksRepo interface {
-	Save(crossId uint64, content []map[string]interface{}) error
-	Load(crossId uint64) ([]map[string]interface{}, error)
+	Save(crossId uint64, content []Location) error
+	Load(crossId uint64) ([]Location, error)
+}
+
+type GeoConversionRepo interface {
+	EarthToMars(lat, long string) (string, string)
+	MarsToEarth(lat, long string) (string, string)
 }
 
 type BreadcrumbsSaver struct {
@@ -141,7 +183,7 @@ type GeomarksSaver struct {
 	Db *sql.DB
 }
 
-func (s *GeomarksSaver) Save(crossId uint64, data []map[string]interface{}) error {
+func (s *GeomarksSaver) Save(crossId uint64, data []Location) error {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -163,8 +205,7 @@ func (s *GeomarksSaver) Save(crossId uint64, data []map[string]interface{}) erro
 	return nil
 }
 
-func (s *GeomarksSaver) Load(crossId uint64) ([]map[string]interface{}, error) {
-	var row *sql.Rows
+func (s *GeomarksSaver) Load(crossId uint64) ([]Location, error) {
 	row, err := s.Db.Query(GEOMARKS_GET, crossId)
 	if err != nil {
 		return nil, err
@@ -179,10 +220,69 @@ func (s *GeomarksSaver) Load(crossId uint64) ([]map[string]interface{}, error) {
 	if !exist {
 		return nil, nil
 	}
-	var ret []map[string]interface{}
+	var ret []Location
 	err = json.Unmarshal([]byte(value), &ret)
 	if err != nil {
 		return nil, err
 	}
 	return ret, nil
+}
+
+const (
+	GEOCONVERSION_GET = "SELECT `offset_lat`, `offset_long` FROM `gps_conversion` WHERE `lat`=? AND `long`=?"
+)
+
+type GeoConversion struct {
+	Db *sql.DB
+}
+
+func (c *GeoConversion) Offset(lat, long float64) (float64, float64) {
+	latI := int(lat * 10)
+	longI := int(long * 10)
+	row, err := c.Db.Query(GEOCONVERSION_GET, latI, longI)
+	if err != nil {
+		return 0, 0
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return 0, 0
+	}
+	var offsetLat, offsetLong int
+	err = row.Scan(&offsetLat, &offsetLong)
+	if err != nil {
+		logger.ERROR("geo_conversion offset for lat=%s, long=%s is not int", lat, long)
+		return 0, 0
+	}
+	return float64(offsetLat) * 0.0001, float64(offsetLong) * 0.0001
+}
+
+func (c *GeoConversion) MarsToEarth(lat, long string) (string, string) {
+	latf, err := strconv.ParseFloat(lat, 64)
+	if err != nil {
+		return lat, long
+	}
+	longf, err := strconv.ParseFloat(long, 64)
+	if err != nil {
+		return lat, long
+	}
+	offsetLat, offsetLong := c.Offset(latf, longf)
+	latf = latf + offsetLat
+	longf = longf + offsetLong
+	return fmt.Sprintf("%f", latf), fmt.Sprintf("%f", longf)
+}
+
+func (c *GeoConversion) EarthToMars(lat, long string) (string, string) {
+	latf, err := strconv.ParseFloat(lat, 64)
+	if err != nil {
+		return lat, long
+	}
+	longf, err := strconv.ParseFloat(long, 64)
+	if err != nil {
+		return lat, long
+	}
+	offsetLat, offsetLong := c.Offset(latf, longf)
+	latf = latf - offsetLat
+	longf = longf - offsetLong
+	return fmt.Sprintf("%f", latf), fmt.Sprintf("%f", longf)
 }
