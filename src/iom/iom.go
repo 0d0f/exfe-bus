@@ -1,9 +1,9 @@
 package iom
 
 import (
-	"broker"
 	"encoding/base64"
 	"fmt"
+	"github.com/garyburd/redigo/redis"
 	"strings"
 	"time"
 )
@@ -28,10 +28,10 @@ func HashFromCount(count int64) (string, error) {
 }
 
 type Iom struct {
-	redis broker.Redis
+	redis *redis.Pool
 }
 
-func NewIom(redis broker.Redis) *Iom {
+func NewIom(redis *redis.Pool) *Iom {
 	return &Iom{
 		redis: redis,
 	}
@@ -39,7 +39,10 @@ func NewIom(redis broker.Redis) *Iom {
 
 func (h *Iom) Get(userid string, hash string) (string, error) {
 	hash = strings.ToUpper(hash)
-	url64, err := h.redis.Get(hashKey(userid, hash))
+	conn := h.redis.Get()
+	defer conn.Close()
+
+	url64, err := redis.Bytes(conn.Do("GET", hashKey(userid, hash)))
 	if err != nil {
 		return "", err
 	}
@@ -52,7 +55,10 @@ func (h *Iom) Get(userid string, hash string) (string, error) {
 }
 
 func (h *Iom) FindByData(userid string, data string) (string, error) {
-	hash, err := h.redis.Get(dataKey(userid, data))
+	conn := h.redis.Get()
+	defer conn.Close()
+
+	hash, err := redis.Bytes(conn.Do("GET", dataKey(userid, data)))
 	if err == nil {
 		err = h.Update(userid, string(hash))
 	}
@@ -60,21 +66,31 @@ func (h *Iom) FindByData(userid string, data string) (string, error) {
 }
 
 func (h *Iom) Update(userid string, hash string) error {
-	_, err := h.redis.Zadd(timeKey(userid), time.Now().UnixNano(), hash)
+	conn := h.redis.Get()
+	defer conn.Close()
+	_, err := conn.Do("ZADD", timeKey(userid), time.Now().UnixNano(), hash)
 	return err
 }
 
 func (h *Iom) FindLatestHash(userid string) (string, error) {
-	reply, err := h.redis.Zrangebyscore(timeKey(userid), "-inf", "+inf", "LIMIT", "0", "1")
+	conn := h.redis.Get()
+	defer conn.Close()
+	reply, err := redis.Values(conn.Do("ZRANGEBYSCORE", timeKey(userid), "-inf", "+inf", "LIMIT", "0", "1"))
 	if err != nil {
 		return "", err
 	}
-	return string(reply.Elems[0].Elem), nil
+	var ret string
+	if _, err := redis.Scan(reply, &ret); err != nil {
+		return "", err
+	}
+	return ret, nil
 }
 
 func (h *Iom) Create(userid string, data string) (string, error) {
+	conn := h.redis.Get()
+	defer conn.Close()
 	data64 := base64.URLEncoding.EncodeToString([]byte(data))
-	count, err := h.redis.Zcount(timeKey(userid), -Inf, +Inf)
+	count, err := redis.Int64(conn.Do("ZCOUNT", timeKey(userid), -Inf, +Inf))
 	if err != nil {
 		return "", err
 	}
@@ -89,19 +105,17 @@ func (h *Iom) Create(userid string, data string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		h.redis.Del(dataKey(userid, data))
+		conn.Do("DEL", dataKey(userid, data))
 	} else {
 		hash, err = HashFromCount(count)
 		if err != nil {
 			return "", nil
 		}
 	}
-	err = h.redis.Set(hashKey(userid, hash), data64)
-	if err != nil {
+	if _, err = conn.Do("SET", hashKey(userid, hash), data64); err != nil {
 		return "", err
 	}
-	err = h.redis.Set(dataKey(userid, data), hash)
-	if err != nil {
+	if _, err = conn.Do("SET", dataKey(userid, data), hash); err != nil {
 		return "", err
 	}
 	err = h.Update(userid, hash)

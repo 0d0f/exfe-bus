@@ -1,7 +1,7 @@
 package main
 
 import (
-	"broker"
+	"github.com/garyburd/redigo/redis"
 	"github.com/googollee/go-logger"
 	"gobus"
 	"iom"
@@ -13,7 +13,7 @@ type Iom struct {
 	log     *logger.SubLogger
 }
 
-func NewIom(config *model.Config, redis broker.Redis) *Iom {
+func NewIom(config *model.Config, redis *redis.Pool) *Iom {
 	return &Iom{
 		handler: iom.NewIom(redis),
 		log:     config.Log.SubPrefix("iom"),

@@ -50,12 +50,6 @@ func main() {
 		return
 	}
 
-	redis_ := broker.NewRedisMultiplexer(&config)
-	redis__, err := broker.NewRedisPool(&config)
-	if err != nil {
-		logger.ERROR("redis__ connect error: %s", err)
-		return
-	}
 	redisPool := &redis.Pool{
 		MaxIdle:     3,
 		IdleTimeout: 30 * time.Minute,
@@ -160,7 +154,7 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Iom {
-		iom := NewIom(&config, redis_)
+		iom := NewIom(&config, redisPool)
 
 		err = bus.Register(iom)
 		if err != nil {
@@ -189,7 +183,7 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Routex {
-		location := &routex.BreadcrumbsSaver{redis__}
+		location := &routex.BreadcrumbsSaver{redisPool}
 		route := &routex.GeomarksSaver{database}
 		routex := routex.New(location, route, platform, &config)
 		register("routex", routex, nil)

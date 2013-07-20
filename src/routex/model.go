@@ -1,12 +1,10 @@
 package routex
 
 import (
-	"broker"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
-	"github.com/googollee/go-multiplexer"
 	"logger"
 	"model"
 	"strconv"
@@ -66,7 +64,7 @@ type GeomarksRepo interface {
 }
 
 type BreadcrumbsSaver struct {
-	Redis *broker.RedisPool
+	Redis *redis.Pool
 }
 
 func (s *BreadcrumbsSaver) Save(id string, crossId uint64, l Location) error {
@@ -75,43 +73,31 @@ func (s *BreadcrumbsSaver) Save(id string, crossId uint64, l Location) error {
 		return err
 	}
 	key := s.key(id, crossId)
-	e := s.Redis.Do(func(i multiplexer.Instance) {
-		r := i.(*broker.RedisInstance_).Redis
+	conn := s.Redis.Get()
+	defer conn.Close()
 
-		err = r.Send("LPUSH", key, b)
-		if err != nil {
-			return
-		}
-		err = r.Send("EXPIRE", key, int(time.Hour*24/time.Second))
-		if err != nil {
-			return
-		}
-		err = r.Flush()
-		if err != nil {
-			return
-		}
-	})
-	if e != nil {
-		return e
-	}
+	err = conn.Send("LPUSH", key, b)
 	if err != nil {
 		return err
 	}
+	err = conn.Send("EXPIRE", key, int(time.Hour*24/time.Second))
+	if err != nil {
+		return err
+	}
+	err = conn.Flush()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (s *BreadcrumbsSaver) Load(id string, crossId uint64) ([]Location, error) {
 	key := s.key(id, crossId)
-	var lrange interface{}
-	var err error
-	e := s.Redis.Do(func(i multiplexer.Instance) {
-		r := i.(*broker.RedisInstance_).Redis
+	conn := s.Redis.Get()
+	defer conn.Close()
 
-		lrange, err = r.Do("LRANGE", key, 0, 100)
-	})
-	if e != nil {
-		return nil, e
-	}
+	lrange, err := conn.Do("LRANGE", key, 0, 100)
 	if err != nil {
 		return nil, err
 	}
