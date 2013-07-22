@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	l "github.com/googollee/go-logger"
 	"logger"
 	"model"
 	"os"
@@ -12,7 +11,7 @@ import (
 	"syscall"
 )
 
-func Init(defaultConfig string, config *model.Config) (loggerOutput *os.File, quit <-chan os.Signal) {
+func Init(defaultConfig string, config *model.Config) (quit <-chan os.Signal) {
 	var pidfile string
 	var configFile string
 	var syslog bool
@@ -40,12 +39,6 @@ func Init(defaultConfig string, config *model.Config) (loggerOutput *os.File, qu
 			panic(fmt.Sprintf("create pid %s error: %s", pidfile, err))
 		}
 		pid.WriteString(fmt.Sprintf("%d", os.Getpid()))
-	}
-
-	if syslog {
-		loggerOutput = l.Syslog
-	} else {
-		loggerOutput = l.Stderr
 	}
 
 	sigChan := make(chan os.Signal)

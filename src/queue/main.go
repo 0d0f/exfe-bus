@@ -14,7 +14,7 @@ import (
 
 func main() {
 	var config model.Config
-	_, quit := daemon.Init("exfe.json", &config)
+	quit := daemon.Init("exfe.json", &config)
 
 	tombs := make([]*tomb.Tomb, 0)
 
