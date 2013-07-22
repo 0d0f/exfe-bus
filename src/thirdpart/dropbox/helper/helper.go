@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-logger"
 	"github.com/mrjones/oauth"
 	"model"
 	"net/url"

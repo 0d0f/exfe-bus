@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-logger"
 	"model"
 	"net/url"
 )
@@ -47,11 +46,6 @@ type Helper interface {
 }
 
 type FakeHelper struct {
-	log *logger.Logger
-}
-
-func (h *FakeHelper) Log() *logger.Logger {
-	return h.log
 }
 
 func (h *FakeHelper) UpdateFriends(to *model.Recipient, externalUsers []ExternalUser) error {

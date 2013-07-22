@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-logger"
 	"io/ioutil"
 	"os"
 	"os/exec"
