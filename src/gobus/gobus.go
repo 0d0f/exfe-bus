@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-logger"
 	"github.com/googollee/go-rest"
 	"github.com/gorilla/mux"
 	"io"
@@ -30,7 +29,6 @@ type Service interface {
 type Server struct {
 	router *mux.Router
 	addr   string
-	log    *logger.Logger
 }
 
 func NewServer(addr string) (*Server, error) {
