@@ -267,8 +267,8 @@ func (c *GeoConversion) MarsToEarth(lat, long string) (string, string) {
 		return lat, long
 	}
 	offsetLat, offsetLong := c.Offset(latf, longf)
-	latf = latf + offsetLat
-	longf = longf + offsetLong
+	latf = latf - offsetLat
+	longf = longf - offsetLong
 	return fmt.Sprintf("%f", latf), fmt.Sprintf("%f", longf)
 }
 
@@ -282,7 +282,7 @@ func (c *GeoConversion) EarthToMars(lat, long string) (string, string) {
 		return lat, long
 	}
 	offsetLat, offsetLong := c.Offset(latf, longf)
-	latf = latf - offsetLat
-	longf = longf - offsetLong
+	latf = latf + offsetLat
+	longf = longf + offsetLong
 	return fmt.Sprintf("%f", latf), fmt.Sprintf("%f", longf)
 }
