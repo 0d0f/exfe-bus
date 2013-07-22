@@ -57,15 +57,19 @@ func NewPoster() (*Poster, error) {
 }
 
 func (m *Poster) Add(poster IPoster) {
+	provider := poster.Provider()
 	waiting, defaultOK := poster.SetPosterCallback(func(id string, err error) {
 		resp := PostResponse{
-			Id:    fmt.Sprintf("%s-%s", poster.Provider(), id),
-			Ok:    err == nil,
-			Error: err.Error(),
+			Id: fmt.Sprintf("%s-%s", provider, id),
+			Ok: err == nil,
 		}
-		m.HandleResponse(resp)
+		if !resp.Ok {
+			resp.Error = err.Error()
+		}
+		logger.INFO("poster", provider, "response", id, resp.Ok, resp.Error)
+		m.watchChan.Send(resp)
 	})
-	m.posters[poster.Provider()] = posterHandler{
+	m.posters[provider] = posterHandler{
 		poster:    poster,
 		waiting:   waiting,
 		defaultOK: defaultOK,

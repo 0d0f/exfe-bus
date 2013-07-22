@@ -8,7 +8,6 @@ import (
 	"github.com/stathat/consistent"
 	"logger"
 	"model"
-	"net"
 	"thirdpart"
 	"time"
 	"valve"
@@ -28,6 +27,7 @@ type Response struct {
 		Action string `json:"act"`
 		Id     string `json:"id"`
 		Err    string `json:"errmsg"`
+		Stage  string `json:"stage"`
 	} `json:"head"`
 }
 
@@ -45,7 +45,6 @@ type IMessage struct {
 	url     string
 	org     string
 	send    chan *CallArg
-	cancel  chan *CallArg
 	hash    *consistent.Consistent
 	valves  map[string]*valve.Valve
 	timeout time.Duration
@@ -64,7 +63,6 @@ func New(config *model.Config) (*IMessage, error) {
 		url:     config.Thirdpart.IMessage.Address,
 		org:     config.Thirdpart.IMessage.Origin,
 		send:    make(chan *CallArg),
-		cancel:  make(chan *CallArg),
 		hash:    hash,
 		valves:  valves,
 		timeout: broker.NetworkTimeout,
@@ -79,12 +77,12 @@ func (im *IMessage) Provider() string {
 
 func (im *IMessage) SetPosterCallback(callback thirdpart.Callback) (time.Duration, bool) {
 	im.f = callback
-	return 0, true
+	return 10, false
 }
 
 func (im *IMessage) Serve() {
 	for {
-		sio, err := socketio.Dial(im.url, im.org, time.Second)
+		client, err := socketio.Dial(im.url, im.org)
 		if err != nil {
 			logger.ERROR("can't connect imessage server: %s", err)
 			select {
@@ -94,65 +92,31 @@ func (im *IMessage) Serve() {
 			}
 			continue
 		}
-		syncId := make(map[string]*CallArg)
-		eventId := make(map[string]*CallArg)
-		for {
-			select {
-			case arg := <-im.send:
-				id, err := sio.Emit(true, "send", arg.request)
-				if err != nil {
-					arg.ret <- CallBack{err: err}
-				} else {
-					syncId[fmt.Sprintf("%d+", id)] = arg
-				}
-			case arg := <-im.cancel:
-				for k, v := range syncId {
-					if v == arg {
-						delete(syncId, k)
-					}
-				}
-				for k, v := range eventId {
-					if v == arg {
-						delete(eventId, k)
-					}
-				}
-			default:
-			}
-			var msg socketio.Message
-			err := sio.Receive(&msg)
+		client.On("send", func(ns *socketio.NameSpace, arg string) {
+			var resp Response
+			err := json.Unmarshal([]byte(arg), &resp)
 			if err != nil {
-				if e, ok := err.(net.Error); !ok || !e.Timeout() {
-					logger.ERROR("imessage breaked:", err)
-					break
-				}
+				logger.ERROR("can't parse event send: %s", arg)
+				return
 			}
-			switch msg.Type() {
-			case socketio.MessageACK:
-				if arg, ok := syncId[msg.EndPoint()]; ok {
-					delete(syncId, msg.EndPoint())
-					var ack Response
-					err := msg.ReadArguments(&ack)
-					if err != nil {
-						arg.ret <- CallBack{err: err}
-					} else {
-						eventId[ack.Head.Id] = arg
-					}
+			if resp.Head.Stage == "SENT" || resp.Head.Status != 0 {
+				var err error
+				if resp.Head.Status != 0 {
+					err = fmt.Errorf("%s", resp.Head.Err)
 				}
-			case socketio.MessageEvent:
-				var data string
-				err := msg.ReadArguments(&data)
-				if err == nil {
-					var ack Response
-					err = json.Unmarshal([]byte(data), &ack)
-					if err == nil {
-						if arg, ok := eventId[ack.Head.Id]; ok {
-							delete(eventId, ack.Head.Id)
-							arg.ret <- CallBack{resp: ack}
-						}
-					}
-				}
+				im.f(resp.Head.Id, err)
 			}
+		})
+
+		go client.Run()
+		time.Sleep(time.Second / 10)
+		for {
+			arg := <-im.send
+			var ret CallBack
+			ret.err = client.Call("send", im.timeout, []interface{}{&ret.resp}, arg.request)
+			arg.ret <- CallBack{err: err}
 		}
+		client.Quit()
 	}
 }
 
@@ -162,15 +126,14 @@ type Work struct {
 }
 
 func (w Work) Do() (interface{}, error) {
-	w.im.send <- &w.call
 	select {
-	case back := <-w.call.ret:
+	case w.im.send <- &w.call:
+		back := <-w.call.ret
 		if back.err != nil {
 			return nil, back.err
 		}
 		return back.resp, nil
 	case <-time.After(w.im.timeout):
-		w.im.cancel <- &w.call
 	}
 	return nil, fmt.Errorf("imessage timeout")
 }
