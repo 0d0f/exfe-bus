@@ -9,7 +9,6 @@ import (
 	"math"
 	"model"
 	"strconv"
-	"time"
 )
 
 type Location struct {
@@ -122,10 +121,10 @@ func (s *BreadcrumbsSaver) Save(id string, crossId uint64, l Location) error {
 	if err != nil {
 		return err
 	}
-	err = conn.Send("EXPIRE", key, int(time.Hour*24/time.Second))
-	if err != nil {
-		return err
-	}
+	// err = conn.Send("EXPIRE", key, int(time.Hour*24/time.Second))
+	// if err != nil {
+	// 	return err
+	// }
 	err = conn.Flush()
 	if err != nil {
 		return err
