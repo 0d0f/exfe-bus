@@ -14,7 +14,7 @@
 
 user="www-data:www-data"
 cmd="/exfe/exfebus/bin/wechat -config=/exfe/exfebus/exfe.json routex"
-name="exfe_hdmap"
+name="exfe_routex"
 
 pid_file="/var/run/exfebus/${name}.pid"
 stdout_log="/var/log/exfebus/${name}.log"
