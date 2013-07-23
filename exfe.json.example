@@ -72,7 +72,7 @@
     "port": 23334
   },
   "wechat": {
-    "hdmap": {
+    "routex": {
       "addr": "127.0.0.1",
       "port": 23335,
       "ping_id": "leaskh",
