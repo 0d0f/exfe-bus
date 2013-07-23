@@ -448,11 +448,12 @@ func (p *Platform) GetRecipientsById(id string) ([]model.Recipient, error) {
 }
 
 func (p *Platform) GetCrossByInvitationToken(token string) (model.Cross, error) {
-	post := fmt.Sprintf("invitation_token=%s", token)
+	query := make(url.Values)
+	query.Set("invitation_token", token)
 	u := fmt.Sprintf("%s/v2/crosses/getcrossbyinvitationtoken", p.config.SiteApi)
-	reader, err := HttpResponse(Http("POST", u, "application/x-www-form-urlencoded", []byte(post)))
+	reader, err := HttpResponse(Http("POST", u, "application/x-www-form-urlencoded", []byte(query.Encode())))
 	if err != nil {
-		logger.ERROR("post %s error: %s with %s", u, err, post)
+		logger.ERROR("post %s error: %s with %s", u, err, query.Encode())
 		return model.Cross{}, err
 	}
 	defer reader.Close()
@@ -468,7 +469,7 @@ func (p *Platform) GetCrossByInvitationToken(token string) (model.Cross, error) 
 	decoder := json.NewDecoder(reader)
 	err = decoder.Decode(&ret)
 	if err != nil {
-		logger.ERROR("decode %s error: %s with %s", u, err, post)
+		logger.ERROR("decode %s error: %s with %s", u, err, query.Encode())
 		return model.Cross{}, err
 	}
 	return ret.Response.Cross, nil
@@ -491,4 +492,18 @@ func (p *Platform) GetUserByIdentity(identity model.Identity) (model.User, strin
 		return resp.Data.User, "", err
 	}
 	return resp.Data.User, resp.Data.Authorization.Token, nil
+}
+
+func (p *Platform) SetPassword(userId int64, password string) error {
+	query := make(url.Values)
+	query.Set("user_id", fmt.Sprintf("%d", userId))
+	query.Set("password", password)
+	u := fmt.Sprintf("%s/v3/bus/setpassword", p.config.SiteApi)
+	reader, err := HttpResponse(Http("POST", u, "application/x-www-form-urlencoded", []byte(query.Encode())))
+	if err != nil {
+		logger.ERROR("post %s error: %s with %s", u, err, query.Encode())
+		return err
+	}
+	defer reader.Close()
+	return nil
 }

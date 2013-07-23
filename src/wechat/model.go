@@ -102,6 +102,7 @@ func (c Contact) ToIdentity(headerUrl string) model.Identity {
 		ExternalUsername: c.UserName,
 		Provider:         "wechat",
 		Nickname:         c.NickName,
+		Name:             c.NickName,
 		Avatar:           headerUrl,
 		Locale:           "zh_cn",
 		Timezone:         "Asia/Shanghai",

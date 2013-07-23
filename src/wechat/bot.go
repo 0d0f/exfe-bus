@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/googollee/go-aws/s3"
 	"logger"
+	"math/rand"
 	"model"
 	"net/http"
 	"strconv"
@@ -79,10 +80,27 @@ func (b *Bot) GreetNewFriend(username string) {
 	}
 
 	go func() {
-		user, _, err := b.platform.GetUserByIdentity(contact.ToIdentity(""))
+		headerUrl := "https://wx.qq.com" + contact.HeadImgUrl
+		resp, err := b.wc.request("GET", headerUrl, nil, nil)
+		if err == nil {
+			headerUrl, err = b.SaveHeader(contact.Uin, resp)
+			if err != nil {
+				logger.ERROR("save header failed: %s", err)
+			}
+		} else {
+			logger.ERROR("can't get header %s: %s", headerUrl, err)
+		}
+		user, _, err := b.platform.GetUserByIdentity(contact.ToIdentity(headerUrl))
 		if err != nil {
 			return
 		}
+		logger.INFO("wechat_newuser", "uin", contact.Uin, "user", user.Id)
+		password := fmt.Sprintf("%04d", rand.Intn(1e5))
+		err = b.platform.SetPassword(user.Id, password)
+		if err != nil {
+			return
+		}
+		b.wc.SendMessage(contact.UserName, fmt.Sprintf("活点地图”是 水滴·X· 群组工具的功能之一。为了避免您的微信账号被他人误领，您的·X·默认密码为： %s。", password))
 		if !user.Password {
 			b.SetPassword(user.Id)
 		}
@@ -152,6 +170,8 @@ func (b *Bot) ConvertCross(msg Message) (string, model.Cross, error) {
 			if err != nil {
 				logger.ERROR("can't save header: %s", err)
 			}
+		} else {
+			logger.ERROR("can't get user %s header at %s: %s", member.UserName, msg.FromUserName, err)
 		}
 		ret.Exfee.Invitations[i].Identity = model.Identity{
 			ExternalID:       fmt.Sprintf("%d", member.Uin),
