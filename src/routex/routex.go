@@ -52,6 +52,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string 
 
 	token, ok := m.auth()
 	if !ok {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
 	id := token.Identity.Id()
@@ -136,6 +137,7 @@ func (m RouteMap) HandleGetBreadcrums() map[string][]Location {
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
 	token, ok := m.auth()
 	if !ok {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
 	ret := make(map[string][]Location)
@@ -166,6 +168,7 @@ func (m RouteMap) HandleUpdateGeomarks(data []Location) {
 
 	token, ok := m.auth()
 	if !ok {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
 
@@ -196,6 +199,7 @@ func (m RouteMap) HandleGetGeomarks() []Location {
 
 	token, ok := m.auth()
 	if !ok {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
 	data, err := m.geomarksRepo.Load(token.Cross.ID)
@@ -399,6 +403,7 @@ func (m RouteMap) HandleSendRequest(id string) {
 
 	token, ok := m.auth()
 	if !ok {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
 
@@ -495,6 +500,5 @@ func (m *RouteMap) auth() (Token, bool) {
 		}
 	}
 
-	m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 	return token, false
 }
