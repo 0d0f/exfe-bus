@@ -250,7 +250,13 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 	token, ok := m.auth()
 	if !ok {
-		return
+		t := m.Request().URL.Query().Get("token")
+		cross, err := m.platform.GetCrossByInvitationToken(t)
+		if err != nil {
+			m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+			return
+		}
+		token.Cross = cross
 	}
 	b, ok := m.broadcasts[token.Cross.ID]
 	if !ok {
