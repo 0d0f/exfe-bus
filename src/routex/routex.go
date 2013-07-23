@@ -52,6 +52,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string 
 
 	token, ok := m.auth()
 	if !ok {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
 	id := token.Identity.Id()
@@ -136,6 +137,7 @@ func (m RouteMap) HandleGetBreadcrums() map[string][]Location {
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
 	token, ok := m.auth()
 	if !ok {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
 	ret := make(map[string][]Location)
@@ -166,6 +168,7 @@ func (m RouteMap) HandleUpdateGeomarks(data []Location) {
 
 	token, ok := m.auth()
 	if !ok {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
 
@@ -196,6 +199,7 @@ func (m RouteMap) HandleGetGeomarks() []Location {
 
 	token, ok := m.auth()
 	if !ok {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
 	data, err := m.geomarksRepo.Load(token.Cross.ID)
@@ -250,7 +254,13 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 	token, ok := m.auth()
 	if !ok {
-		return
+		t := m.Request().URL.Query().Get("token")
+		cross, err := m.platform.GetCrossByInvitationToken(t)
+		if err != nil {
+			m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+			return
+		}
+		token.Cross = cross
 	}
 	b, ok := m.broadcasts[token.Cross.ID]
 	if !ok {
@@ -393,6 +403,7 @@ func (m RouteMap) HandleSendRequest(id string) {
 
 	token, ok := m.auth()
 	if !ok {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
 
@@ -446,7 +457,6 @@ func (m *RouteMap) auth() (Token, bool) {
 	crossIdStr := m.Vars()["cross_id"]
 	crossId, err := strconv.ParseUint(crossIdStr, 10, 64)
 	if err != nil {
-		m.Error(http.StatusNotFound, m.DetailError(-1, "invalid cross id"))
 		return token, false
 	}
 
@@ -454,12 +464,10 @@ func (m *RouteMap) auth() (Token, bool) {
 	logger.DEBUG("auth data: %s", authData)
 
 	if err := json.Unmarshal([]byte(authData), &token); err != nil {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return token, false
 	}
 
 	if token.TokenType != "cross_access_token" && token.TokenType != "user_token" {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return token, false
 	}
 
@@ -469,7 +477,6 @@ func (m *RouteMap) auth() (Token, bool) {
 	}
 	token.Cross, err = m.platform.FindCross(int64(crossId), query)
 	if err != nil {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return token, false
 	}
 
@@ -489,6 +496,5 @@ func (m *RouteMap) auth() (Token, bool) {
 		}
 	}
 
-	m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 	return token, false
 }

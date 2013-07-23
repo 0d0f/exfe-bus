@@ -446,3 +446,30 @@ func (p *Platform) GetRecipientsById(id string) ([]model.Recipient, error) {
 	}
 	return ret.Data, nil
 }
+
+func (p *Platform) GetCrossByInvitationToken(token string) (model.Cross, error) {
+	post := fmt.Sprintf("invitation_token=%s", token)
+	u := fmt.Sprintf("%s/v2/crosses/getcrossbyinvitationtoken", p.config.SiteApi)
+	reader, err := HttpResponse(Http("POST", u, "application/x-www-form-urlencoded", []byte(post)))
+	if err != nil {
+		logger.ERROR("post %s error: %s with %s", u, err, post)
+		return model.Cross{}, err
+	}
+	defer reader.Close()
+	var ret struct {
+		Meta struct {
+			Code        int    `json:"code"`
+			ErrorDetail string `json:"errorDetail"`
+		} `json:"meta"`
+		Response struct {
+			Cross model.Cross `json:"cross"`
+		} `json:"response"`
+	}
+	decoder := json.NewDecoder(reader)
+	err = decoder.Decode(&ret)
+	if err != nil {
+		logger.ERROR("decode %s error: %s with %s", u, err, post)
+		return model.Cross{}, err
+	}
+	return ret.Response.Cross, nil
+}
