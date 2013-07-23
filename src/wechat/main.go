@@ -10,8 +10,6 @@ import (
 	"logger"
 	"model"
 	"os"
-	"strconv"
-	"time"
 )
 
 func main() {
@@ -67,6 +65,14 @@ func main() {
 
 	logger.NOTICE("login as %s", wc.userName)
 
+	bot := &Bot{
+		platform: platform,
+		config:   &config,
+		bucket:   bucket,
+		kvSaver:  kvSaver,
+		wc:       wc,
+	}
+
 	for {
 		select {
 		case <-quit:
@@ -79,11 +85,11 @@ func main() {
 			return
 		}
 		if ret == "0" {
-			err = wc.Ping(time.Minute * 30)
-			if err != nil {
-				logger.ERROR("ping error: %s", err)
-				return
-			}
+			// err = wc.Ping(time.Minute * 30)
+			// if err != nil {
+			// 	logger.ERROR("ping error: %s", err)
+			// 	return
+			// }
 			continue
 		}
 		resp, err := wc.GetLast()
@@ -92,80 +98,14 @@ func main() {
 			return
 		}
 		for _, msg := range resp.AddMsgList {
-			if msg.MsgType != JoinMessage {
-				continue
-			}
-			uin, cross, err := wc.ConvertCross(bucket, &msg)
-			if err != nil {
-				logger.ERROR("can't convert to cross: %s", err)
-				continue
-			}
-			uinStr := fmt.Sprintf("%d", uin)
-			idStr, exist, err := kvSaver.Check([]string{uinStr})
-			if err != nil {
-				logger.ERROR("can't check uin %s: %s", uinStr, err)
-				continue
-			}
-			if exist {
-				id, err := strconv.ParseInt(idStr, 10, 64)
-				if err != nil {
-					goto CREATE
-				}
-				oldCross, err := platform.FindCross(id, nil)
-				if err != nil {
-					goto CREATE
-				}
-				exfee := make(map[string]bool)
-				host := cross.Exfee.Invitations[0].Identity
-				for _, invitation := range cross.Exfee.Invitations {
-					exfee[invitation.Identity.Id()] = true
-					if invitation.Host {
-						host = invitation.Identity
-					}
-				}
-				for _, invitation := range oldCross.Exfee.Invitations {
-					if exfee[invitation.Identity.Id()] {
-						continue
-					}
-					invitation.Response = model.Removed
-					cross.Exfee.Invitations = append(cross.Exfee.Invitations, invitation)
-				}
-				err = platform.BotCrossUpdate("cross_id", idStr, cross, host)
-				if err != nil {
-					logger.ERROR("can't update cross %s: %s", idStr, err)
-					goto CREATE
-				}
-			}
-		CREATE:
-			cross, err = platform.BotCrossGather(cross)
-			if err != nil {
-				logger.ERROR("can't gather cross: %s", err)
-				continue
-			}
-			err = kvSaver.Save([]string{fmt.Sprintf("%d", uin)}, fmt.Sprintf("%d", cross.ID))
-			if err != nil {
-				logger.ERROR("can't save cross id: %s", err)
-			}
-			err = kvSaver.Save([]string{fmt.Sprintf("e%d@exfe", cross.Exfee.ID)}, fmt.Sprintf("%d@chatroom", uin))
-			if err != nil {
-				logger.ERROR("can't save exfee id: %s", err)
-			}
-			logger.INFO("wechat_gather", msg.FromUserName, uin, cross.ID, cross.Exfee.ID, err)
-			smith, err := cross.Exfee.FindInvitedUser(model.Identity{
-				ExternalID: fmt.Sprintf("%d", wc.baseRequest.Uin),
-				Provider:   "wechat",
-			})
-			if err != nil {
-				logger.ERROR("can't find Smith Exfer in cross %d: %s", cross.ID, err)
-				continue
-			}
-			chatroom := fmt.Sprintf("%d@chatroom", uin)
-			u := fmt.Sprintf("%s/#!token=%s/routex/", config.SiteUrl, smith.Token)
-			err = wc.SendMessage(chatroom, u)
-			logger.NOTICE("send %s to %s", u, chatroom)
-			if err != nil {
-				logger.ERROR("can't send %s to %s", u, chatroom)
-				continue
+			switch msg.MsgType {
+			case FriendRequest:
+				bot.JoinRequest(msg)
+			case JoinMessage:
+				bot.Join(msg)
+			case ChatMessage:
+			default:
+				logger.DEBUG("msg type: %d, content: %#v", msg.MsgType, msg)
 			}
 		}
 	}

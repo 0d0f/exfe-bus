@@ -3,15 +3,17 @@ package main
 type MessageType int
 
 const (
-	JoinMessage MessageType = 10000
-	ChatMessage             = 1
+	JoinMessage   MessageType = 10000
+	FriendRequest             = 37
+	SystemMessage             = 51
+	ChatMessage               = 1
 )
 
 type BaseRequest struct {
-	Uin      uint64
-	Sid      string
-	Skey     string
-	DeviceID string
+	Uin      uint64 `json:",omitempty"`
+	Sid      string `json:",omitempty"`
+	Skey     string `json:",omitempty"`
+	DeviceID string `json:",omitempty"`
 }
 
 type SyncKey struct {
@@ -26,10 +28,25 @@ type ContactRequest struct {
 
 type Request struct {
 	BaseRequest BaseRequest
-	Count       int              `json:"Count,omitempty"`
-	List        []ContactRequest `json:"List,omitempty"`
-	SyncKey     *SyncKey         `json:"SyncKey,omitempty"`
-	Msg         *Message         `json:"Msg,omitempty"`
+	Count       int              `json:",omitempty"`
+	List        []ContactRequest `json:",omitempty"`
+	SyncKey     *SyncKey         `json:",omitempty"`
+	Msg         *Message         `json:",omitempty"`
+}
+
+type VerifyUser struct {
+	Value            string
+	VerifyUserTicket string
+}
+
+type VerifyRequest struct {
+	BaseRequest        BaseRequest
+	Opcode             int
+	SceneList          []int
+	SceneListCount     int
+	VerifyContent      string
+	VerifyUserList     []VerifyUser
+	VerifyUserListSize int
 }
 
 type Member struct {
@@ -100,6 +117,11 @@ type Message struct {
 	Type                 int         `json:",omitempty"`
 	Url                  string      `json:",omitempty"`
 	VoiceLength          int         `json:",omitempty"`
+	RecommendInfo        struct {
+		UserName   string `json:",omitempty"`
+		Ticket     string `json:",omitempty"`
+		VerifyFlag int    `json:",omitempty"`
+	} `json:",omitempty"`
 }
 
 type Response struct {

@@ -7,27 +7,29 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-aws/s3"
 	"io"
 	"io/ioutil"
 	"logger"
+	"math/rand"
 	"model"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type WeChat struct {
-	client      *http.Client
-	baseRequest BaseRequest
-	syncKey     SyncKey
-	userName    string
-	lastPing    time.Time
-	pingId      string
-	pingIndex   int
+	grabSelector *regexp.Regexp
+	client       *http.Client
+	baseRequest  BaseRequest
+	syncKey      SyncKey
+	userName     string
+	lastPing     time.Time
+	pingId       string
+	pingIndex    int
 }
 
 func New(username, password, pingId string, config *model.Config) (*WeChat, error) {
@@ -35,31 +37,38 @@ func New(username, password, pingId string, config *model.Config) (*WeChat, erro
 	if err != nil {
 		return nil, err
 	}
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+	ret := &WeChat{
+		grabSelector: regexp.MustCompile(`selector:"(.*?)"`),
+		client: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
 			},
+			Jar: jar,
 		},
-		Jar: jar,
 	}
-	b, err := resp(http.Get("https://login.weixin.qq.com/jslogin?appid=wx782c26e4c19acffb&redirect_uri=https%3A%2F%2Fwx.qq.com%2Fcgi-bin%2Fmmwebwx-bin%2Fwebwxnewloginpage&fun=new&lang=zh_CN"))
+	ret.baseRequest.DeviceID = ret.getDeviceId()
+
+	query := make(url.Values)
+	query.Set("appid", "wx782c26e4c19acffb")
+	query.Set("redirect_uri", "https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxnewloginpage")
+	query.Set("fun", "new")
+	query.Set("lang", "en_US")
+	query.Set("_", fmt.Sprintf("%d", timestamp()))
+	b, err := resp(ret.request("GET", "https://login.weixin.qq.com/jslogin", query, nil))
 	if err != nil {
 		return nil, err
 	}
-	key := "window.QRLogin.uuid = \""
-	index := bytes.Index(b, []byte(key))
-	if index < 0 {
+
+	grabId := regexp.MustCompile(`window.QRLogin.uuid *= *"(.*?)"`)
+	ids := grabId.FindAllStringSubmatch(string(b), -1)
+	if len(ids) == 0 || len(ids[0]) == 0 {
 		return nil, fmt.Errorf("can't find key uuid in %s", string(b))
 	}
-	b = b[index+len(key):]
-	end := bytes.Index(b, []byte("\""))
-	if index < 0 {
-		return nil, fmt.Errorf("can't find key uuid in %s", string(b))
-	}
-	uuid := string(b[:end])
-	loginUrl := fmt.Sprintf("https://login.weixin.qq.com/qrcode/%s?t=webwx", uuid)
-	logger.NOTICE("login: %s", loginUrl)
+	uuid := ids[0][1]
+	loginQrUrl := fmt.Sprintf("https://login.weixin.qq.com/qrcode/%s?t=webwx", uuid)
+	logger.NOTICE("login: %s", loginQrUrl)
 
 	mail := fmt.Sprintf(`Content-Type: text/plain
 To: srv-op@exfe.com
@@ -69,101 +78,81 @@ Subject: =?utf-8?B?V2VjaGF0IFNlcnZpY2UgTm90aWZpY2F0aW9uCg==?=
 WeChat need login!!! Help!!!!
 QR: %s
 Username: %s
-Password: %s`, loginUrl, username, password)
+Password: %s`, loginQrUrl, username, password)
 	sendmail(config, mail)
 
-	params := make(url.Values)
-	params.Set("uuid", uuid)
-	params.Set("tip", "0")
+	grabLoginUri := regexp.MustCompile(`window.redirect_uri="(.*?)";`)
+	query = make(url.Values)
+	query.Set("uuid", uuid)
+	query.Set("tip", "0")
 	var tokenUrl string
 	startTime := time.Now()
 	for {
-		params.Set("_", fmt.Sprintf("%d", timestamp()))
 		now := time.Now()
 		if now.Sub(startTime) > 5*time.Minute {
 			return nil, fmt.Errorf("login timeout, need restart")
 		}
-		b, err = resp(client.Get("https://login.weixin.qq.com/cgi-bin/mmwebwx-bin/login?" + params.Encode()))
+		query.Set("_", fmt.Sprintf("%d", timestamp()))
+		r, err := resp(ret.request("GET", "https://login.weixin.qq.com/cgi-bin/mmwebwx-bin/login", query, nil))
 		if err != nil {
 			return nil, err
 		}
-		target := "window.redirect_uri=\""
-		index := bytes.Index(b, []byte(target))
-		if index < 0 {
-			continue
+		urls := grabLoginUri.FindAllStringSubmatch(string(r), -1)
+		if len(urls) > 0 && len(urls[0]) > 0 {
+			tokenUrl = urls[0][1]
+			break
 		}
-		b = b[index+len(target):]
-		end := bytes.Index(b, []byte("\""))
-		if end < 0 {
-			return nil, fmt.Errorf("can't find token end in %s", string(b))
-		}
-		tokenUrl = string(b[:end]) + "&fun=new"
-		break
 	}
 
-	re, err := client.Get(tokenUrl)
-	b, err = resp(re, err)
+	_, err = resp(ret.request("GET", tokenUrl, nil, nil))
 	if err != nil {
 		return nil, err
 	}
-
-	uin, sid, err := grabCookie(re)
+	u, err := url.Parse("https://wx.qq.com/")
 	if err != nil {
 		return nil, err
 	}
-
-	baseRequest := BaseRequest{
-		Uin:      uin,
-		Sid:      sid,
-		DeviceID: uuid,
+	cookies := ret.client.Jar.Cookies(u)
+	for _, c := range cookies {
+		switch c.Name {
+		case "wxsid":
+			ret.baseRequest.Sid = c.Value
+		case "wxuin":
+			ret.baseRequest.Uin, err = strconv.ParseUint(c.Value, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
+
 	req := Request{
-		BaseRequest: baseRequest,
+		BaseRequest: ret.baseRequest,
 	}
-
-	buf := bytes.NewBuffer(nil)
-	encoder := json.NewEncoder(buf)
-	err = encoder.Encode(req)
+	query = make(url.Values)
+	query.Set("r", fmt.Sprintf("%d", timestamp()))
+	var resp Response
+	err = ret.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxinit", query, req, &resp)
 	if err != nil {
 		return nil, err
 	}
-	var ret Response
-	re, err = client.Post("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxinit", "application/json", buf)
-	err = respJson(&ret, re, err)
-	if err != nil {
-		return nil, err
+	if resp.BaseResponse.Ret != 0 {
+		return nil, fmt.Errorf("webwxinit error: %s", resp.BaseResponse.ErrMsg)
 	}
-	if ret.BaseResponse.Ret != 0 {
-		return nil, fmt.Errorf("webwxinit error: %s", ret.BaseResponse.ErrMsg)
-	}
-	baseRequest.Skey = ret.Skey
 
-	buf = bytes.NewBuffer(nil)
-	encoder = json.NewEncoder(buf)
-	err = encoder.Encode(map[string]interface{}{
-		"BaseRequest":  baseRequest,
-		"Code":         3,
-		"FromUserName": ret.User.UserName,
-		"ToUserName":   ret.User.UserName,
-		"ClientMsgId":  timestamp(),
-	})
+	ret.baseRequest.Skey = resp.Skey
+	ret.syncKey = resp.SyncKey
+	ret.userName = resp.User.UserName
+	ret.lastPing = time.Now()
+	ret.pingId = pingId
 
 	sendmail(config, `Content-Type: text/plain
 To: srv-op@exfe.com
 From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
 Subject: =?utf-8?B?V2VjaGF0IFNlcnZpY2UgTm90aWZpY2F0aW9uCg==?=
 
-WeChat logined as `+ret.User.UserName)
+WeChat logined as `+ret.userName)
 
-	return &WeChat{
-		client:      client,
-		baseRequest: baseRequest,
-		syncKey:     ret.SyncKey,
-		userName:    ret.User.UserName,
-		lastPing:    time.Now(),
-		pingId:      pingId,
-		pingIndex:   0,
-	}, nil
+	return ret, nil
 }
 
 func (wc *WeChat) SendMessage(to, content string) error {
@@ -182,7 +171,7 @@ func (wc *WeChat) SendMessage(to, content string) error {
 	params := make(url.Values)
 	params.Set("sid", wc.baseRequest.Sid)
 	params.Set("r", fmt.Sprintf("%d", timestamp()))
-	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsendmsg?"+params.Encode(), req, &resp)
+	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsendmsg", params, req, &resp)
 	if err != nil {
 		return err
 	}
@@ -196,16 +185,36 @@ func (wc *WeChat) SendMessage(to, content string) error {
 
 func (wc *WeChat) Ping(timeout time.Duration) error {
 	if time.Now().Sub(wc.lastPing) < timeout {
-		fmt.Print(".")
 		return nil
 	}
-	fmt.Print("+")
 	msgs := []string{"早", "hi", "喂", "what", "敲", "lol"}
 	err := wc.SendMessage(wc.pingId, msgs[wc.pingIndex])
 	if err != nil {
 		return err
 	}
 	wc.pingIndex = (wc.pingIndex + 1) % len(msgs)
+	return nil
+}
+
+func (wc *WeChat) Verify(user, ticket string) error {
+	req := VerifyRequest{
+		BaseRequest:        wc.baseRequest,
+		Opcode:             3,
+		SceneList:          []int{0},
+		SceneListCount:     1,
+		VerifyUserList:     []VerifyUser{VerifyUser{user, ticket}},
+		VerifyUserListSize: 1,
+	}
+	query := make(url.Values)
+	query.Set("r", fmt.Sprintf("%d", timestamp()))
+	var resp Response
+	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxverifyuser", query, req, &resp)
+	if err != nil {
+		return err
+	}
+	if resp.BaseResponse.Ret != 0 {
+		return fmt.Errorf("(%d)%s", resp.BaseResponse.Ret, resp.BaseResponse.ErrMsg)
+	}
 	return nil
 }
 
@@ -217,41 +226,17 @@ func (wc *WeChat) Check() (string, error) {
 	params.Set("deviceid", wc.baseRequest.DeviceID)
 	params.Set("synckey", makeSyncQuery(wc.syncKey.List))
 	params.Set("_", fmt.Sprintf("%d", timestamp()))
-	resp, err := wc.get("https://webpush.weixin.qq.com/cgi-bin/mmwebwx-bin/synccheck?" + params.Encode())
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
+	resp, err := resp(wc.request("GET", "https://webpush.weixin.qq.com/cgi-bin/mmwebwx-bin/synccheck", params, nil))
 	if err != nil {
 		return "", err
 	}
 
-	const ret = "retcode:\""
-	index := bytes.Index(b, []byte(ret))
-	if index < 0 {
-		return "", fmt.Errorf("sync error, no retcode: %s", string(b))
-	}
-	s := b[index+len(ret):]
-	end := bytes.Index(s, []byte("\""))
-	if end < 0 {
-		return "", fmt.Errorf("sync error, no retcode: %s", string(b))
-	}
-	if retcode := string(s[:end]); retcode != "0" {
-		return "", fmt.Errorf("sync error: %s", retcode)
+	s := wc.grabSelector.FindAllStringSubmatch(string(resp), -1)
+	if len(s) == 0 || len(s[0]) == 0 {
+		return "", fmt.Errorf("sync error, no retcode: %s", string(resp))
 	}
 
-	const begin = "selector:\""
-	index = bytes.Index(b, []byte(begin))
-	if index < 0 {
-		return "", fmt.Errorf("sync error, no selector: %s", string(b))
-	}
-	s = b[index+len(begin):]
-	end = bytes.Index(s, []byte("\""))
-	if end < 0 {
-		return "", fmt.Errorf("sync error, no selector: %s", string(b))
-	}
-	return string(s[:end]), nil
+	return s[0][1], nil
 }
 
 func (wc *WeChat) GetLast() (*Response, error) {
@@ -259,8 +244,11 @@ func (wc *WeChat) GetLast() (*Response, error) {
 		BaseRequest: wc.baseRequest,
 		SyncKey:     &wc.syncKey,
 	}
+	query := make(url.Values)
+	query.Set("sid", wc.baseRequest.Sid)
+	query.Set("r", fmt.Sprintf("%d", timestamp()))
 	var resp Response
-	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsync?sid="+wc.baseRequest.Sid, req, &resp)
+	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsync", query, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -279,134 +267,60 @@ func (wc *WeChat) GetContact(reqContacts []ContactRequest) ([]Contact, error) {
 		List:        reqContacts,
 		SyncKey:     &wc.syncKey,
 	}
+	query := make(url.Values)
+	query.Set("type", "ex")
 	var resp Response
-	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxbatchgetcontact?type=ex", req, &resp)
+	err := wc.postJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxbatchgetcontact", query, req, &resp)
 	if err != nil {
 		return nil, err
 	}
 	return resp.ContactList, nil
 }
 
-func (wc *WeChat) ConvertCross(bucket *s3.Bucket, msg *Message) (uint64, model.Cross, error) {
-	if msg.MsgType != JoinMessage {
-		return 0, model.Cross{}, fmt.Errorf("%s", "not join message")
-	}
-	if !strings.HasSuffix(msg.FromUserName, "@chatroom") {
-		return 0, model.Cross{}, fmt.Errorf("%s", "not join chat room")
-	}
-	chatroomReq := []ContactRequest{
-		ContactRequest{
-			UserName: msg.FromUserName,
-		},
-	}
-	chatrooms, err := wc.GetContact(chatroomReq)
+func (wc *WeChat) GetChatroomHeader(username, chatroomId string) (*http.Response, error) {
+	query := make(url.Values)
+	query.Set("username", username)
+	query.Set("chatroomid", chatroomId)
+	resp, err := wc.request("GET", "https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxgeticon", query, nil)
 	if err != nil {
-		return 0, model.Cross{}, err
+		return nil, err
 	}
-	var chatroom Contact
-	for _, c := range chatrooms {
-		if c.UserName == msg.FromUserName {
-			chatroom = c
-			break
-		}
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, fmt.Errorf("%s", resp.Status)
 	}
-	if chatroom.UserName != msg.FromUserName {
-		return 0, model.Cross{}, fmt.Errorf("can't find chatroom %s", msg.FromUserName)
-	}
-	var contactsReq []ContactRequest
-	for _, m := range chatroom.MemberList {
-		contactsReq = append(contactsReq, ContactRequest{
-			UserName:   m.UserName,
-			ChatRoomId: chatroom.Uin,
-		})
-	}
-	contacts, err := wc.GetContact(contactsReq)
-	if err != nil {
-		return 0, model.Cross{}, err
-	}
-	ret := model.Cross{}
-	ret.Title = "Cross with "
-	ret.Exfee.Invitations = make([]model.Invitation, len(contacts))
-	var host *model.Identity
-	for i, member := range contacts {
-		if i < 3 {
-			ret.Title += member.NickName + ", "
-		}
-		headerUrl := "https://wx.qq.com" + member.HeadImgUrl
-		headerPath := fmt.Sprintf("/thirdpart/weichat/%d.jpg", member.Uin)
-		resp, err := wc.get(headerUrl)
-		if err == nil {
-			obj, err := bucket.CreateObject(headerPath, resp.Header.Get("Content-Type"))
-			if err == nil {
-				obj.SetDate(time.Now())
-				length, err := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
-				if err == nil {
-					err = obj.SaveReader(resp.Body, length)
-					if err == nil {
-						headerUrl = obj.URL()
-					}
-				}
-			}
-		}
-		ret.Exfee.Invitations[i].Identity = model.Identity{
-			ExternalID:       fmt.Sprintf("%d", member.Uin),
-			ExternalUsername: member.UserName,
-			Provider:         "wechat",
-			Nickname:         member.NickName,
-			Avatar:           headerUrl,
-		}
-		if member.Uin == chatroom.OwnerUin {
-			ret.Exfee.Invitations[i].Host = true
-			host = &ret.Exfee.Invitations[i].Identity
-		}
-	}
-	ret.Title = ret.Title[:len(ret.Title)-2]
-	ret.By = *host
-	for i := range ret.Exfee.Invitations {
-		ret.Exfee.Invitations[i].By = *host
-		ret.Exfee.Invitations[i].UpdatedBy = *host
-	}
-	return chatroom.Uin, ret, nil
+	return resp, nil
 }
 
-func (wc *WeChat) postJson(url string, data interface{}, reply interface{}) error {
+func (wc *WeChat) postJson(urlStr string, query url.Values, data interface{}, reply interface{}) error {
 	buf := bytes.NewBuffer(nil)
 	encoder := json.NewEncoder(buf)
 	err := encoder.Encode(data)
 	if err != nil {
 		return err
 	}
-	req, err := wc.request("POST", url, buf)
+	// fmt.Println("post json req:", buf.String())
+	resp, err := wc.request("POST", urlStr, query, buf)
 	if err != nil {
 		return err
 	}
-
-	re, err := wc.client.Do(req)
-	err = respJson(reply, re, err)
-	if err != nil {
-		return err
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("%s", resp.Status)
 	}
-	return nil
+
+	// b, err := ioutil.ReadAll(resp.Body)
+	// fmt.Println("post json reply:", string(b))
+	// return json.Unmarshal(b, &reply)
+
+	decoder := json.NewDecoder(resp.Body)
+	return decoder.Decode(reply)
 }
 
-func (wc *WeChat) get(url string) (*http.Response, error) {
-	req, err := wc.request("GET", url, nil)
-	if err != nil {
-		return nil, err
+func (wc *WeChat) request(method, urlStr string, query url.Values, body io.Reader) (*http.Response, error) {
+	if query != nil {
+		urlStr = urlStr + "?" + query.Encode()
 	}
-
-	re, err := wc.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if re.StatusCode != http.StatusOK {
-		re.Body.Close()
-		return nil, fmt.Errorf("%s", re.Status)
-	}
-	return re, nil
-}
-
-func (wc *WeChat) request(method, urlStr string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, urlStr, body)
 	if err != nil {
 		return nil, err
@@ -417,7 +331,13 @@ func (wc *WeChat) request(method, urlStr string, body io.Reader) (*http.Request,
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
 	req.Header.Set("Origin", "https://wx.qq.com")
 	req.Header.Set("Referer", "https://wx.qq.com/")
-	return req, nil
+	return wc.client.Do(req)
+}
+
+func (wc *WeChat) getDeviceId() string {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	d := r.Intn(1e16)
+	return fmt.Sprintf("e%d", d)
 }
 
 func timestamp() int64 {
@@ -438,18 +358,6 @@ func resp(r *http.Response, err error) ([]byte, error) {
 		return nil, fmt.Errorf("%s", r.Status)
 	}
 	return b, nil
-}
-
-func respJson(v interface{}, r *http.Response, err error) error {
-	if err != nil {
-		return err
-	}
-	defer r.Body.Close()
-	if r.StatusCode != http.StatusOK {
-		return fmt.Errorf("%s", r.Status)
-	}
-	decoder := json.NewDecoder(r.Body)
-	return decoder.Decode(v)
 }
 
 func grabCookie(resp *http.Response) (uint64, string, error) {
