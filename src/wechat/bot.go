@@ -95,7 +95,7 @@ func (b *Bot) GreetNewFriend(username string) {
 			return
 		}
 		logger.INFO("wechat_newuser", "uin", contact.Uin, "user", user.Id)
-		password := fmt.Sprintf("%04d", rand.Intn(1e5))
+		password := fmt.Sprintf("%04d", rand.Intn(1e4))
 		err = b.platform.SetPassword(user.Id, password)
 		if err != nil {
 			return
