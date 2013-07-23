@@ -212,8 +212,8 @@ func (b *Bot) GatherCross(chatroomId string, cross model.Cross) {
 	}
 	logger.INFO("wechat_gather", chatroomId, "cross", cross.ID, "exfee", cross.Exfee.ID)
 	smith, err := cross.Exfee.FindInvitedUser(model.Identity{
-		ExternalID: fmt.Sprintf("%d", b.wc.baseRequest.Uin),
-		Provider:   "wechat",
+		ExternalUsername: b.wc.userName,
+		Provider:         "wechat",
 	})
 	if err != nil {
 		logger.ERROR("can't find Smith Exfer in cross %d: %s", cross.ID, err)
