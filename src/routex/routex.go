@@ -457,7 +457,6 @@ func (m *RouteMap) auth() (Token, bool) {
 	crossIdStr := m.Vars()["cross_id"]
 	crossId, err := strconv.ParseUint(crossIdStr, 10, 64)
 	if err != nil {
-		m.Error(http.StatusNotFound, m.DetailError(-1, "invalid cross id"))
 		return token, false
 	}
 
@@ -465,12 +464,10 @@ func (m *RouteMap) auth() (Token, bool) {
 	logger.DEBUG("auth data: %s", authData)
 
 	if err := json.Unmarshal([]byte(authData), &token); err != nil {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return token, false
 	}
 
 	if token.TokenType != "cross_access_token" && token.TokenType != "user_token" {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return token, false
 	}
 
@@ -480,7 +477,6 @@ func (m *RouteMap) auth() (Token, bool) {
 	}
 	token.Cross, err = m.platform.FindCross(int64(crossId), query)
 	if err != nil {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return token, false
 	}
 
