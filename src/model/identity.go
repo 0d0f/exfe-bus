@@ -11,6 +11,7 @@ type Identity struct {
 	Nickname string `json:"nickname,omitempty"`
 	Bio      string `json:"bio,omitempty"`
 	Timezone string `json:"timezone,omitempty"`
+	Locale   string `json:"locale,omitempty"`
 	UserID   int64  `json:"connected_user_id,omitempty"`
 	Avatar   string `json:"avatar_filename,omitempty"`
 

@@ -6,6 +6,7 @@ import (
 	"github.com/googollee/go-aws/s3"
 	"logger"
 	"model"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -76,6 +77,39 @@ func (b *Bot) GreetNewFriend(username string) {
 		logger.ERROR("can't send to %s greet: %s", username, err)
 		return
 	}
+
+	go func() {
+		user, _, err := b.platform.GetUserByIdentity(contact.ToIdentity(""))
+		if err != nil {
+			return
+		}
+		if !user.Password {
+			b.SetPassword(user.Id)
+		}
+	}()
+}
+
+func (b *Bot) SetPassword(userId int64) {
+}
+
+func (b *Bot) SaveHeader(uin uint64, resp *http.Response) (string, error) {
+	defer resp.Body.Close()
+
+	headerPath := fmt.Sprintf("/thirdpart/weichat/%d.jpg", uin)
+	obj, err := b.bucket.CreateObject(headerPath, resp.Header.Get("Content-Type"))
+	if err != nil {
+		return "", err
+	}
+	obj.SetDate(time.Now())
+	length, err := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
+	if err != nil {
+		return "", err
+	}
+	err = obj.SaveReader(resp.Body, length)
+	if err != nil {
+		return "", err
+	}
+	return obj.URL(), nil
 }
 
 func (b *Bot) ConvertCross(msg Message) (string, model.Cross, error) {
@@ -112,19 +146,11 @@ func (b *Bot) ConvertCross(msg Message) (string, model.Cross, error) {
 			ret.Title += member.NickName + ", "
 		}
 		var headerUrl string
-		headerPath := fmt.Sprintf("/thirdpart/weichat/%d.jpg", member.Uin)
 		resp, err := b.wc.GetChatroomHeader(member.UserName, msg.FromUserName)
 		if err == nil {
-			obj, err := b.bucket.CreateObject(headerPath, resp.Header.Get("Content-Type"))
-			if err == nil {
-				obj.SetDate(time.Now())
-				length, err := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
-				if err == nil {
-					err = obj.SaveReader(resp.Body, length)
-					if err == nil {
-						headerUrl = obj.URL()
-					}
-				}
+			headerUrl, err = b.SaveHeader(member.Uin, resp)
+			if err != nil {
+				logger.ERROR("can't save header: %s", err)
 			}
 		}
 		ret.Exfee.Invitations[i].Identity = model.Identity{
@@ -133,6 +159,8 @@ func (b *Bot) ConvertCross(msg Message) (string, model.Cross, error) {
 			Provider:         "wechat",
 			Nickname:         member.NickName,
 			Avatar:           headerUrl,
+			Locale:           "zh_cn",
+			Timezone:         "Asia/Shanghai",
 		}
 		if member.Uin == chatroom.OwnerUin {
 			ret.Exfee.Invitations[i].Host = true

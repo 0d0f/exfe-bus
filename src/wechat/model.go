@@ -1,5 +1,10 @@
 package main
 
+import (
+	"fmt"
+	"model"
+)
+
 type MessageType int
 
 const (
@@ -89,6 +94,18 @@ type Contact struct {
 	UniFriend        int
 	UserName         string
 	VerifyFlag       int
+}
+
+func (c Contact) ToIdentity(headerUrl string) model.Identity {
+	return model.Identity{
+		ExternalID:       fmt.Sprintf("%d", c.Uin),
+		ExternalUsername: c.UserName,
+		Provider:         "wechat",
+		Nickname:         c.NickName,
+		Avatar:           headerUrl,
+		Locale:           "zh_cn",
+		Timezone:         "Asia/Shanghai",
+	}
 }
 
 type Message struct {

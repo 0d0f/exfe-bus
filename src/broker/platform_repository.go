@@ -473,3 +473,22 @@ func (p *Platform) GetCrossByInvitationToken(token string) (model.Cross, error) 
 	}
 	return ret.Response.Cross, nil
 }
+
+func (p *Platform) GetUserByIdentity(identity model.Identity) (model.User, string, error) {
+	var resp struct {
+		Data struct {
+			Authorization struct {
+				Token  string `json:"token"`
+				UserId int64  `json:"user_id"`
+			} `json:"authorization"`
+			User model.User `json:"user"`
+		} `json:"data"`
+	}
+	u := fmt.Sprintf("%s/v3/bus/users", p.config.SiteApi)
+	_, err := RestHttp("POST", u, "application/json", identity, &resp)
+	if err != nil {
+		logger.ERROR("post %s error: %s with %+v", u, err, identity)
+		return resp.Data.User, "", err
+	}
+	return resp.Data.User, resp.Data.Authorization.Token, nil
+}

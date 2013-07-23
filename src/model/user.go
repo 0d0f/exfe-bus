@@ -4,6 +4,11 @@ import (
 	"fmt"
 )
 
+type User struct {
+	Id       int64 `json:"id"`
+	Password bool  `json:"password"`
+}
+
 type UserWelcome struct {
 	To         Recipient `json:"to"`
 	NeedVerify bool      `json:"need_verify"`
