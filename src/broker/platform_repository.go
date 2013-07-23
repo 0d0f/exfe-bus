@@ -456,12 +456,20 @@ func (p *Platform) GetCrossByInvitationToken(token string) (model.Cross, error) 
 		return model.Cross{}, err
 	}
 	defer reader.Close()
-	var ret model.Cross
+	var ret struct {
+		Meta struct {
+			Code        int    `json:"code"`
+			ErrorDetail string `json:"errorDetail"`
+		} `json:"meta"`
+		Response struct {
+			Cross model.Cross `json:"cross"`
+		} `json:"response"`
+	}
 	decoder := json.NewDecoder(reader)
 	err = decoder.Decode(&ret)
 	if err != nil {
 		logger.ERROR("decode %s error: %s with %s", u, err, post)
 		return model.Cross{}, err
 	}
-	return ret, nil
+	return ret.Response.Cross, nil
 }
