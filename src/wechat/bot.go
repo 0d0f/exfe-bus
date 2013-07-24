@@ -221,7 +221,7 @@ func (b *Bot) ConvertCross(msg Message) (string, model.Cross, error) {
 			ExternalID:       fmt.Sprintf("%d", member.Uin),
 			ExternalUsername: member.UserName,
 			Provider:         "wechat",
-			Nickname:         member.NickName,
+			Name:             member.NickName,
 			Avatar:           headerUrl,
 			Locale:           "zh_cn",
 			Timezone:         "Asia/Shanghai",
@@ -232,6 +232,9 @@ func (b *Bot) ConvertCross(msg Message) (string, model.Cross, error) {
 		}
 	}
 	ret.Title = ret.Title[:len(ret.Title)-2]
+	if chatroom.NickName != "" {
+		ret.Title = chatroom.NickName
+	}
 	ret.By = *host
 	for i := range ret.Exfee.Invitations {
 		ret.Exfee.Invitations[i].By = *host

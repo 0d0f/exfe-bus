@@ -101,7 +101,6 @@ func (c Contact) ToIdentity(headerUrl string) model.Identity {
 		ExternalID:       fmt.Sprintf("%d", c.Uin),
 		ExternalUsername: c.UserName,
 		Provider:         "wechat",
-		Nickname:         c.NickName,
 		Name:             c.NickName,
 		Avatar:           headerUrl,
 		Locale:           "zh_cn",
