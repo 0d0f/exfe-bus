@@ -57,9 +57,10 @@ func (b *Bot) Join(msg Message) {
 			if err := b.UpdateCross(crossIdStr, cross); err != nil {
 				return
 			}
-		}
-		if cross.ID, err = b.GatherCross(chatroomId, cross); err != nil {
-			return
+		} else {
+			if cross.ID, err = b.GatherCross(chatroomId, cross); err != nil {
+				return
+			}
 		}
 
 		routexUrl, err := b.platform.GetRouteXUrl(cross.ID)
