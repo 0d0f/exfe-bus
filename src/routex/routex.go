@@ -306,7 +306,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	if err == nil {
 		if data == nil {
 			data = make([]Location, 0)
-			if token.Cross.Place.Lng != "" && token.Cross.Place.Lat != "" {
+			if token.Cross.Place != nil && token.Cross.Place.Lng != "" && token.Cross.Place.Lat != "" {
 				createdAt, err := time.Parse("2006-01-02 15:04:05 -0700", token.Cross.CreatedAt)
 				if err != nil {
 					createdAt = time.Now()
@@ -461,7 +461,11 @@ func (m *RouteMap) auth() (Token, bool) {
 	}
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	logger.DEBUG("auth data: %s", authData)
+	// if authData == "" {
+	// 	// token: 345ac9296016c858a752a7e5fea35b7682fa69f922c4cefa30cfc22741da3109
+	// 	authData = `{"token_type":"cross_access_token","cross_id":100758,"identity_id":907,"user_id":652,"created_time":1374636534,"updated_time":1374636534}`
+	// }
+	// logger.DEBUG("auth data: %s", authData)
 
 	if err := json.Unmarshal([]byte(authData), &token); err != nil {
 		return token, false
