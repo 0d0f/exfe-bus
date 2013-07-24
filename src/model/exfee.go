@@ -56,6 +56,7 @@ func (e Exfee) Equal(other *Exfee) bool {
 
 func (e Exfee) FindInvitedUser(identity Identity) (Invitation, error) {
 	for _, inv := range e.Invitations {
+		fmt.Printf("inv: %+v\n", inv)
 		if inv.Identity.SameUser(identity) {
 			return inv, nil
 		}

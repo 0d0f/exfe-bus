@@ -80,8 +80,8 @@ func (b *Bot) GreetNewFriend(username string) {
 	}
 
 	go func() {
-		headerUrl := "https://wx.qq.com" + contact.HeadImgUrl
-		resp, err := b.wc.request("GET", headerUrl, nil, nil)
+		var headerUrl string
+		resp, err := b.wc.request("GET", "https://wx.qq.com"+contact.HeadImgUrl, nil, nil)
 		if err == nil {
 			headerUrl, err = b.SaveHeader(contact.Uin, resp)
 			if err != nil {
@@ -211,19 +211,14 @@ func (b *Bot) GatherCross(chatroomId string, cross model.Cross) {
 		logger.ERROR("can't save exfee id: %s", err)
 	}
 	logger.INFO("wechat_gather", chatroomId, "cross", cross.ID, "exfee", cross.Exfee.ID)
-	smith, err := cross.Exfee.FindInvitedUser(model.Identity{
-		ExternalUsername: b.wc.userName,
-		Provider:         "wechat",
-	})
+	routexUrl, err := b.platform.GetRouteXUrl(cross.ID)
 	if err != nil {
-		logger.ERROR("can't find Smith Exfer in cross %d: %s", cross.ID, err)
 		return
 	}
-	u := fmt.Sprintf("%s/#!token=%s/routex/", b.config.SiteUrl, smith.Token)
-	err = b.wc.SendMessage(chatroomId, u)
-	logger.NOTICE("send %s to %s", u, chatroomId)
+	err = b.wc.SendMessage(chatroomId, routexUrl)
+	logger.NOTICE("send %s to %s", routexUrl, chatroomId)
 	if err != nil {
-		logger.ERROR("can't send %s to %s", u, chatroomId)
+		logger.ERROR("can't send %s to %s", routexUrl, chatroomId)
 		return
 	}
 }

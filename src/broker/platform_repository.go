@@ -507,3 +507,25 @@ func (p *Platform) SetPassword(userId int64, password string) error {
 	defer reader.Close()
 	return nil
 }
+
+func (p *Platform) GetRouteXUrl(crossId uint64) (string, error) {
+	query := make(url.Values)
+	query.Set("cross_id", fmt.Sprintf("%d", crossId))
+	u := fmt.Sprintf("%s/v3/bus/getroutexurl?%s", p.config.SiteApi, query.Encode())
+	reader, err := HttpResponse(Http("GET", u, "", nil))
+	if err != nil {
+		logger.ERROR("get %s error: %s", u, err)
+		return "", err
+	}
+	defer reader.Close()
+	var ret struct {
+		Data string `json:"data"`
+	}
+	decoder := json.NewDecoder(reader)
+	err = decoder.Decode(&ret)
+	if err != nil {
+		logger.ERROR("decode %s error: %s", u, err)
+		return "", err
+	}
+	return ret.Data, nil
+}
