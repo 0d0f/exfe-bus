@@ -54,7 +54,11 @@ func (b *Bot) Join(msg Message) {
 			return
 		}
 		if exist {
-			if err := b.UpdateCross(crossIdStr, cross); err != nil {
+			if cross.ID, err = strconv.ParseUint(crossIdStr, 10, 64); err != nil {
+				logger.ERROR("can't parse cross id %s: %s", crossIdStr, err)
+				return
+			}
+			if err := b.UpdateCross(cross); err != nil {
 				return
 			}
 		} else {
@@ -88,7 +92,6 @@ func (b *Bot) Message(msg Message) {
 
 func (b *Bot) ChatroomMessage(msg Message) {
 	mentions := b.mentionRegexp.FindAllStringSubmatch(msg.Content, -1)
-	fmt.Println("mention:", mentions)
 	if len(mentions) == 0 || len(mentions[0]) == 0 {
 		return
 	}
@@ -181,7 +184,6 @@ func (b *Bot) ConvertCross(msg Message) (string, model.Cross, error) {
 			UserName: msg.FromUserName,
 		},
 	}
-	fmt.Println("get contact list")
 	chatrooms, err := b.wc.GetContact(chatroomReq)
 	if err != nil {
 		return "", model.Cross{}, err
@@ -256,12 +258,9 @@ func (b *Bot) GatherCross(chatroomId string, cross model.Cross) (uint64, error) 
 	return cross.ID, nil
 }
 
-func (b *Bot) UpdateCross(crossIdStr string, cross model.Cross) error {
-	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
-	if err != nil {
-		return fmt.Errorf("invalid cross id %s: %s", crossIdStr, err)
-	}
-	oldCross, err := b.platform.FindCross(crossId, nil)
+func (b *Bot) UpdateCross(cross model.Cross) error {
+	crossId := cross.ID
+	oldCross, err := b.platform.FindCross(int64(crossId), nil)
 	if err != nil {
 		return fmt.Errorf("can't find cross by id %d: %s", crossId, err)
 	}
@@ -280,10 +279,10 @@ func (b *Bot) UpdateCross(crossIdStr string, cross model.Cross) error {
 		invitation.Response = model.Removed
 		cross.Exfee.Invitations = append(cross.Exfee.Invitations, invitation)
 	}
-	err = b.platform.BotCrossUpdate("cross_id", crossIdStr, cross, host)
+	err = b.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", crossId), cross, host)
 	if err != nil {
-		logger.ERROR("can't update cross %s: %s", crossIdStr, err)
+		logger.ERROR("can't update cross %d: %s", crossId, err)
 	}
-	logger.INFO("wechat_update", "cross", crossIdStr)
+	logger.INFO("wechat_update", "cross", crossId)
 	return nil
 }
