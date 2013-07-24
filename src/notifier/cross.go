@@ -150,7 +150,7 @@ func (c Cross) HandleUpdate(updates []model.CrossUpdate) {
 	}
 
 	if !arg.IsChanged() {
-		c.Error(http.StatusBadRequest, err)
+		c.Error(http.StatusBadRequest, fmt.Errorf("not changed"))
 		return
 	}
 
