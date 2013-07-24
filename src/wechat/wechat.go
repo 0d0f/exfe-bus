@@ -27,6 +27,7 @@ type WeChat struct {
 	baseRequest  BaseRequest
 	syncKey      SyncKey
 	userName     string
+	nickName     string
 	lastPing     time.Time
 	pingId       string
 	pingIndex    int
@@ -142,15 +143,17 @@ Password: %s`, loginQrUrl, username, password)
 	ret.baseRequest.Skey = resp.Skey
 	ret.syncKey = resp.SyncKey
 	ret.userName = resp.User.UserName
+	ret.nickName = resp.User.NickName
 	ret.lastPing = time.Now()
 	ret.pingId = pingId
 
-	sendmail(config, `Content-Type: text/plain
+	mail = fmt.Sprintf(`Content-Type: text/plain
 To: srv-op@exfe.com
 From: =?utf-8?B?U2VydmljZSBOb3RpZmljYXRpb24=?= <x@exfe.com>
 Subject: =?utf-8?B?V2VjaGF0IFNlcnZpY2UgTm90aWZpY2F0aW9uCg==?=
 
-WeChat logined as `+ret.userName)
+WeChat logined as %s(%s)`, ret.nickName, ret.userName)
+	sendmail(config, mail)
 
 	return ret, nil
 }

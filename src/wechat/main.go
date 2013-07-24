@@ -57,13 +57,10 @@ func main() {
 		logger.ERROR("can't create wechat: %s", err)
 		return
 	}
-	defer func() {
-		logger.NOTICE("quit")
-	}()
 
 	go runServer(work.Addr, work.Port, wc, kvSaver)
 
-	logger.NOTICE("login as %s", wc.userName)
+	logger.NOTICE("login as %s(%s)", wc.nickName, wc.userName)
 
 	bot := &Bot{
 		platform: platform,
@@ -72,13 +69,16 @@ func main() {
 		kvSaver:  kvSaver,
 		wc:       wc,
 	}
+	bot.init()
+
+	go func() {
+		<-quit
+		logger.NOTICE("quit")
+		os.Exit(-1)
+		return
+	}()
 
 	for {
-		select {
-		case <-quit:
-			return
-		default:
-		}
 		ret, err := wc.Check()
 		if err != nil {
 			logger.ERROR("can't get last message: %s", err)
@@ -104,6 +104,7 @@ func main() {
 			case JoinMessage:
 				bot.Join(msg)
 			case ChatMessage:
+				bot.Message(msg)
 			default:
 				logger.DEBUG("msg type: %d, content: %#v", msg.MsgType, msg)
 			}

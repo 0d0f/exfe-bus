@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"model"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +20,13 @@ type Bot struct {
 	bucket   *s3.Bucket
 	kvSaver  *broker.KVSaver
 	wc       *WeChat
+
+	mentionRegexp *regexp.Regexp
+}
+
+func (b *Bot) init() {
+	mention := fmt.Sprintf(`@(活点地图|%s)(.*)`, b.wc.nickName)
+	b.mentionRegexp = regexp.MustCompile(mention)
 }
 
 func (b *Bot) JoinRequest(msg Message) {
@@ -67,6 +75,26 @@ func (b *Bot) Join(msg Message) {
 	} else {
 		b.GreetNewFriend(msg.FromUserName)
 	}
+}
+
+func (b *Bot) Message(msg Message) {
+	if strings.HasSuffix(msg.FromUserName, "@chatroom") {
+		b.ChatroomMessage(msg)
+	} else {
+		b.PersonMessage(msg)
+	}
+}
+
+func (b *Bot) ChatroomMessage(msg Message) {
+	mentions := b.mentionRegexp.FindAllStringSubmatch(msg.Content, -1)
+	fmt.Println("mention:", mentions)
+	if len(mentions) == 0 || len(mentions[0]) == 0 {
+		return
+	}
+	b.Join(msg)
+}
+
+func (b *Bot) PersonMessage(msg Message) {
 }
 
 func (b *Bot) GreetNewFriend(username string) {
