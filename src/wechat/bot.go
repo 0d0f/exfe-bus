@@ -46,11 +46,24 @@ func (b *Bot) Join(msg Message) {
 			return
 		}
 		if exist {
-			if err := b.UpdateCross(crossIdStr, cross); err == nil {
+			if err := b.UpdateCross(crossIdStr, cross); err != nil {
 				return
 			}
 		}
-		b.GatherCross(chatroomId, cross)
+		if cross.ID, err = b.GatherCross(chatroomId, cross); err != nil {
+			return
+		}
+
+		routexUrl, err := b.platform.GetRouteXUrl(cross.ID)
+		if err != nil {
+			return
+		}
+		err = b.wc.SendMessage(chatroomId, routexUrl)
+		logger.NOTICE("send %s to %s", routexUrl, chatroomId)
+		if err != nil {
+			logger.ERROR("can't send %s to %s", routexUrl, chatroomId)
+		}
+		return
 	} else {
 		b.GreetNewFriend(msg.FromUserName)
 	}
@@ -196,11 +209,11 @@ func (b *Bot) ConvertCross(msg Message) (string, model.Cross, error) {
 	return chatroom.UserName, ret, nil
 }
 
-func (b *Bot) GatherCross(chatroomId string, cross model.Cross) {
+func (b *Bot) GatherCross(chatroomId string, cross model.Cross) (uint64, error) {
 	cross, err := b.platform.BotCrossGather(cross)
 	if err != nil {
 		logger.ERROR("can't gather cross: %s", err)
-		return
+		return 0, err
 	}
 	err = b.kvSaver.Save([]string{chatroomId}, fmt.Sprintf("%d", cross.ID))
 	if err != nil {
@@ -211,16 +224,7 @@ func (b *Bot) GatherCross(chatroomId string, cross model.Cross) {
 		logger.ERROR("can't save exfee id: %s", err)
 	}
 	logger.INFO("wechat_gather", chatroomId, "cross", cross.ID, "exfee", cross.Exfee.ID)
-	routexUrl, err := b.platform.GetRouteXUrl(cross.ID)
-	if err != nil {
-		return
-	}
-	err = b.wc.SendMessage(chatroomId, routexUrl)
-	logger.NOTICE("send %s to %s", routexUrl, chatroomId)
-	if err != nil {
-		logger.ERROR("can't send %s to %s", routexUrl, chatroomId)
-		return
-	}
+	return cross.ID, nil
 }
 
 func (b *Bot) UpdateCross(crossIdStr string, cross model.Cross) error {
