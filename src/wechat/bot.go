@@ -200,7 +200,7 @@ func (b *Bot) ConvertCross(msg Message) (string, model.Cross, error) {
 	}
 
 	ret := model.Cross{}
-	ret.Title = "Cross with "
+	ret.Title = "·X· "
 	ret.Exfee.Invitations = make([]model.Invitation, len(chatroom.MemberList))
 	var host *model.Identity
 	for i, member := range chatroom.MemberList {
