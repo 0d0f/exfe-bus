@@ -57,9 +57,13 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string 
 	}
 	id := token.Identity.Id()
 
-	_, _, _, err := breadcrumb.GetGeo()
+	_, _, acc, err := breadcrumb.GetGeo()
 	if err != nil {
 		m.Error(http.StatusBadRequest, err)
+		return nil
+	}
+	if acc > 70 {
+		m.Error(http.StatusBadRequest, fmt.Errorf("accuracy too large: %d", acc))
 		return nil
 	}
 
