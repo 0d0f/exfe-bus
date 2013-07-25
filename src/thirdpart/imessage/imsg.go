@@ -108,7 +108,7 @@ func (im *IMessage) Serve() {
 			}
 		})
 
-		// go client.Run()
+		go client.Run()
 		time.Sleep(time.Second / 10)
 		for {
 			arg := <-im.send
