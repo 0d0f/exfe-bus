@@ -114,7 +114,7 @@ func (im *IMessage) Serve() {
 			arg := <-im.send
 			var ret CallBack
 			ret.err = client.Call("send", im.timeout, []interface{}{&ret.resp}, arg.request)
-			arg.ret <- CallBack{err: err}
+			arg.ret <- ret
 		}
 		client.Quit()
 	}
