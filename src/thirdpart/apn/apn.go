@@ -102,7 +102,7 @@ SEND:
 		}
 	case <-time.After(time.Second / 10):
 	}
-	return fmt.Sprint("%d", ret), nil
+	return fmt.Sprintf("%d", ret), nil
 }
 
 func listenError(errChan <-chan error, h ErrorHandler) {
