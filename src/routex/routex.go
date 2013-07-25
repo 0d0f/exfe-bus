@@ -283,8 +283,8 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
 
-	ret := make(map[string][]Location)
 	for _, invitation := range token.Cross.Exfee.Invitations {
+		ret := make(map[string][]Location)
 		id := invitation.Identity.Id()
 		breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
 		if err != nil {
@@ -300,13 +300,13 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 			}
 		}
 		ret[id] = breadcrumbs
-	}
-	err := stream.Write(map[string]interface{}{
-		"type": "/v3/crosses/routex/breadcrumbs",
-		"data": ret,
-	})
-	if err != nil {
-		return
+		err = stream.Write(map[string]interface{}{
+			"type": "/v3/crosses/routex/breadcrumbs",
+			"data": ret,
+		})
+		if err != nil {
+			return
+		}
 	}
 
 	data, err := m.geomarksRepo.Load(token.Cross.ID)
