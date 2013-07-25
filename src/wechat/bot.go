@@ -43,40 +43,9 @@ func (b *Bot) JoinRequest(msg Message) {
 
 func (b *Bot) Join(msg Message) {
 	if strings.HasSuffix(msg.FromUserName, "@chatroom") {
-		chatroomId, cross, err := b.ConvertCross(msg)
-		if err != nil {
-			logger.ERROR("can't convert to cross: %s", err)
-			return
+		if strings.Index(msg.Content, "加入了群聊") >= 0 {
+			b.SyncCross(msg)
 		}
-		crossIdStr, exist, err := b.kvSaver.Check([]string{chatroomId})
-		if err != nil {
-			logger.ERROR("can't check uin %s: %s", chatroomId, err)
-			return
-		}
-		if exist {
-			if cross.ID, err = strconv.ParseUint(crossIdStr, 10, 64); err != nil {
-				logger.ERROR("can't parse cross id %s: %s", crossIdStr, err)
-				return
-			}
-			if err := b.UpdateCross(cross); err != nil {
-				return
-			}
-		} else {
-			if cross.ID, err = b.GatherCross(chatroomId, cross); err != nil {
-				return
-			}
-		}
-
-		routexUrl, err := b.platform.GetRouteXUrl(cross.ID)
-		if err != nil {
-			return
-		}
-		err = b.wc.SendMessage(chatroomId, routexUrl)
-		logger.NOTICE("send %s to %s", routexUrl, chatroomId)
-		if err != nil {
-			logger.ERROR("can't send %s to %s", routexUrl, chatroomId)
-		}
-		return
 	} else {
 		b.GreetNewFriend(msg.FromUserName)
 	}
@@ -95,10 +64,47 @@ func (b *Bot) ChatroomMessage(msg Message) {
 	if len(mentions) == 0 || len(mentions[0]) == 0 {
 		return
 	}
-	b.Join(msg)
+	b.SyncCross(msg)
 }
 
 func (b *Bot) PersonMessage(msg Message) {
+}
+
+func (b *Bot) SyncCross(msg Message) {
+	chatroomId, cross, err := b.ConvertCross(msg)
+	if err != nil {
+		logger.ERROR("can't convert to cross: %s", err)
+		return
+	}
+	crossIdStr, exist, err := b.kvSaver.Check([]string{chatroomId})
+	if err != nil {
+		logger.ERROR("can't check uin %s: %s", chatroomId, err)
+		return
+	}
+	if exist {
+		if cross.ID, err = strconv.ParseUint(crossIdStr, 10, 64); err != nil {
+			logger.ERROR("can't parse cross id %s: %s", crossIdStr, err)
+			return
+		}
+		if err := b.UpdateCross(cross); err != nil {
+			return
+		}
+	} else {
+		if cross.ID, err = b.GatherCross(chatroomId, cross); err != nil {
+			return
+		}
+	}
+
+	routexUrl, err := b.platform.GetRouteXUrl(cross.ID)
+	if err != nil {
+		return
+	}
+	err = b.wc.SendMessage(chatroomId, routexUrl)
+	logger.NOTICE("send %s to %s", routexUrl, chatroomId)
+	if err != nil {
+		logger.ERROR("can't send %s to %s", routexUrl, chatroomId)
+	}
+	return
 }
 
 func (b *Bot) GreetNewFriend(username string) {
