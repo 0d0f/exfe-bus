@@ -123,7 +123,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string 
 		delete(m.broadcasts, token.Cross.ID)
 		return ret
 	}
-	fmt.Printf("broadcast: %+v\n", breadcrumbs)
+	fmt.Printf("broadcast: %v\n", breadcrumbs)
 	broadcast.Send(map[string]interface{}{
 		"type": "/v3/crosses/routex/breadcrumbs",
 		"data": map[string][]Location{
