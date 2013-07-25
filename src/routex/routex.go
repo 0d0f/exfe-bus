@@ -63,6 +63,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string 
 		return nil
 	}
 
+	logger.DEBUG("enter breadcrum: %+v", breadcrumb)
 	earth := breadcrumb
 	mars := breadcrumb
 	if m.Request().URL.Query().Get("coordinate") == "mars" {
@@ -71,6 +72,8 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string 
 	} else {
 		mars.ToMars(m.conversion)
 	}
+	logger.DEBUG("earth breadcrum: %+v", earth)
+	logger.DEBUG("mars breadcrum: %+v", mars)
 
 	breadcrumb.Timestamp = time.Now().Unix()
 	breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
@@ -353,9 +356,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 			if toMars {
 				if data, ok := d.(map[string]interface{}); ok {
 					sendData := data["data"]
-					fmt.Println("data:", sendData)
 					if breadcrumbs, ok := sendData.(map[string][]Location); ok {
-						fmt.Println("as breadcrumbs")
 						for k, v := range breadcrumbs {
 							for i := range v {
 								v[i].ToMars(m.conversion)

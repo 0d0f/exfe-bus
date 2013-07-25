@@ -235,6 +235,7 @@ func (b *Bot) ConvertCross(msg Message) (string, model.Cross, error) {
 	if chatroom.NickName != "" {
 		ret.Title = chatroom.NickName
 	}
+	ret.Exfee.Name = ret.Title
 	ret.By = *host
 	for i := range ret.Exfee.Invitations {
 		ret.Exfee.Invitations[i].By = *host
