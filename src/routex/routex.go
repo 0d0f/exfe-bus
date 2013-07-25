@@ -362,14 +362,18 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 					if breadcrumbs, ok := sendData.(map[string][]Location); ok {
 						for k, v := range breadcrumbs {
 							for i := range v {
-								v[i].ToMars(m.conversion)
+								d := v[i]
+								d.ToMars(m.conversion)
+								v[i] = d
 							}
 							breadcrumbs[k] = v
 						}
 						sendData = breadcrumbs
 					} else if marks, ok := sendData.([]Location); ok {
 						for i := range marks {
-							marks[i].ToMars(m.conversion)
+							d := marks[i]
+							d.ToMars(m.conversion)
+							marks[i] = d
 						}
 						sendData = marks
 					} else {
