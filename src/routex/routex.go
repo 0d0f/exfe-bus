@@ -209,7 +209,7 @@ func (m RouteMap) HandleGetGeomarks() []Location {
 		return nil
 	}
 	if data == nil {
-		if token.Cross.Place.Lng != "" && token.Cross.Place.Lat != "" {
+		if token.Cross.Place != nil && token.Cross.Place.Lng != "" && token.Cross.Place.Lat != "" {
 			createdAt, err := time.Parse("2006-01-02 15:04:05 -0700", token.Cross.CreatedAt)
 			if err != nil {
 				createdAt = time.Now()
