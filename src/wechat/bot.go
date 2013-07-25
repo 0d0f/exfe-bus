@@ -164,7 +164,7 @@ func (b *Bot) SetPassword(userId int64) {
 func (b *Bot) SaveHeader(uin uint64, resp *http.Response) (string, error) {
 	defer resp.Body.Close()
 
-	headerPath := fmt.Sprintf("/thirdpart/weichat/%d.jpg", uin)
+	headerPath := fmt.Sprintf("/thirdpart/wechat/%d.jpg", uin)
 	obj, err := b.bucket.CreateObject(headerPath, resp.Header.Get("Content-Type"))
 	if err != nil {
 		return "", err
