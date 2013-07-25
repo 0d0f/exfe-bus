@@ -465,9 +465,6 @@ func (m *RouteMap) auth() (Token, bool) {
 		return token, false
 	}
 
-	token.Cross.ID = crossId
-	return token, true
-
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
 	// if authData == "" {
 	// 	// token: 345ac9296016c858a752a7e5fea35b7682fa69f922c4cefa30cfc22741da3109
