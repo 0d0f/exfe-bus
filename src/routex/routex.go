@@ -352,7 +352,9 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 			if toMars {
 				if data, ok := d.(map[string]interface{}); ok {
 					sendData := data["data"]
+					fmt.Println("data:", sendData)
 					if breadcrumbs, ok := sendData.(map[string][]Location); ok {
+						fmt.Println("as breadcrumbs")
 						for k, v := range breadcrumbs {
 							for i := range v {
 								v[i].ToMars(m.conversion)
@@ -465,7 +467,7 @@ func (m *RouteMap) auth() (Token, bool) {
 	// 	// token: 345ac9296016c858a752a7e5fea35b7682fa69f922c4cefa30cfc22741da3109
 	// 	authData = `{"token_type":"cross_access_token","cross_id":100758,"identity_id":907,"user_id":652,"created_time":1374636534,"updated_time":1374636534}`
 	// }
-	// logger.DEBUG("auth data: %s", authData)
+	logger.DEBUG("auth data: %s", authData)
 
 	if err := json.Unmarshal([]byte(authData), &token); err != nil {
 		return token, false

@@ -201,10 +201,13 @@ func (p *Platform) FindCross(id int64, query url.Values) (model.Cross, error) {
 	if err != nil {
 		switch resp.StatusCode {
 		case 304:
+			logger.ERROR("get %s error: %s", url, err)
 			return ret.Data, Error{CROSS_NOT_MODIFIED, err.Error()}
 		case 403:
+			logger.ERROR("get %s error: %s", url, err)
 			return ret.Data, Error{CROSS_FORBIDDEN, err.Error()}
 		case 404:
+			logger.ERROR("get %s error: %s", url, err)
 			return ret.Data, Error{CROSS_NOT_FOUND, err.Error()}
 		}
 		logger.ERROR("get %s error: %s", url, err)
