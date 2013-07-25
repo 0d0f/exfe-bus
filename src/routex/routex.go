@@ -123,6 +123,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string 
 		delete(m.broadcasts, token.Cross.ID)
 		return ret
 	}
+	fmt.Printf("broadcast: %+v", breadcrumbs)
 	broadcast.Send(map[string]interface{}{
 		"type": "/v3/crosses/routex/breadcrumbs",
 		"data": map[string][]Location{
@@ -464,10 +465,10 @@ func (m *RouteMap) auth() (Token, bool) {
 	}
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	// if authData == "" {
-	// 	// token: 345ac9296016c858a752a7e5fea35b7682fa69f922c4cefa30cfc22741da3109
-	// 	authData = `{"token_type":"cross_access_token","cross_id":100758,"identity_id":907,"user_id":652,"created_time":1374636534,"updated_time":1374636534}`
-	// }
+	if authData == "" {
+		// token: 345ac9296016c858a752a7e5fea35b7682fa69f922c4cefa30cfc22741da3109
+		authData = `{"token_type":"cross_access_token","cross_id":100758,"identity_id":907,"user_id":652,"created_time":1374636534,"updated_time":1374636534}`
+	}
 	logger.DEBUG("auth data: %s", authData)
 
 	if err := json.Unmarshal([]byte(authData), &token); err != nil {
