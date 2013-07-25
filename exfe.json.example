@@ -119,7 +119,7 @@
       }
     },
     "imessage": {
-      "address": "http://www.kufuwu.com:1888/socket.io/",
+      "address": "http://www.kufuwu.com:1888",
       "origin": "http://www.kufuwu.com/p.html",
       "queue_depth": 2,
       "channels": ["1", "2"],

@@ -57,9 +57,13 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string 
 	}
 	id := token.Identity.Id()
 
-	_, _, _, err := breadcrumb.GetGeo()
+	_, _, acc, err := breadcrumb.GetGeo()
 	if err != nil {
 		m.Error(http.StatusBadRequest, err)
+		return nil
+	}
+	if acc > 70 {
+		m.Error(http.StatusBadRequest, fmt.Errorf("accuracy too large: %d", acc))
 		return nil
 	}
 
@@ -279,8 +283,8 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
 
-	ret := make(map[string][]Location)
 	for _, invitation := range token.Cross.Exfee.Invitations {
+		ret := make(map[string][]Location)
 		id := invitation.Identity.Id()
 		breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
 		if err != nil {
@@ -296,13 +300,13 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 			}
 		}
 		ret[id] = breadcrumbs
-	}
-	err := stream.Write(map[string]interface{}{
-		"type": "/v3/crosses/routex/breadcrumbs",
-		"data": ret,
-	})
-	if err != nil {
-		return
+		err = stream.Write(map[string]interface{}{
+			"type": "/v3/crosses/routex/breadcrumbs",
+			"data": ret,
+		})
+		if err != nil {
+			return
+		}
 	}
 
 	data, err := m.geomarksRepo.Load(token.Cross.ID)
@@ -360,15 +364,18 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 						for k, v := range breadcrumbs {
 							logger.DEBUG("parse %s", k)
 							for i := range v {
-								logger.DEBUG("parse %d: %v", i, v)
-								v[i].ToMars(m.conversion)
+								d := v[i]
+								d.ToMars(m.conversion)
+								v[i] = d
 							}
 							breadcrumbs[k] = v
 						}
 						sendData = breadcrumbs
 					} else if marks, ok := sendData.([]Location); ok {
 						for i := range marks {
-							marks[i].ToMars(m.conversion)
+							d := marks[i]
+							d.ToMars(m.conversion)
+							marks[i] = d
 						}
 						sendData = marks
 					} else {
@@ -467,11 +474,11 @@ func (m *RouteMap) auth() (Token, bool) {
 	}
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	if authData == "" {
-		// token: 345ac9296016c858a752a7e5fea35b7682fa69f922c4cefa30cfc22741da3109
-		authData = `{"token_type":"cross_access_token","cross_id":100758,"identity_id":907,"user_id":652,"created_time":1374636534,"updated_time":1374636534}`
-	}
-	logger.DEBUG("auth data: %s", authData)
+	// if authData == "" {
+	// 	// token: 345ac9296016c858a752a7e5fea35b7682fa69f922c4cefa30cfc22741da3109
+	// 	authData = `{"token_type":"cross_access_token","cross_id":100758,"identity_id":907,"user_id":652,"created_time":1374636534,"updated_time":1374636534}`
+	// }
+	// logger.DEBUG("auth data: %s", authData)
 
 	if err := json.Unmarshal([]byte(authData), &token); err != nil {
 		return token, false
