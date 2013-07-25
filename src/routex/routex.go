@@ -349,6 +349,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	for {
 		select {
 		case d := <-c:
+			logger.DEBUG("raw data: %+v", d)
 			if toMars {
 				if data, ok := d.(map[string]interface{}); ok {
 					sendData := data["data"]
@@ -362,11 +363,13 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 							breadcrumbs[k] = v
 						}
 						sendData = breadcrumbs
+						logger.DEBUG("breadcrumbs data: %+v", sendData)
 					} else if marks, ok := sendData.([]Location); ok {
 						for i := range marks {
 							marks[i].ToMars(m.conversion)
 						}
 						sendData = marks
+						logger.DEBUG("geomarks data: %+v", sendData)
 					} else {
 						continue
 					}
