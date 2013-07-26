@@ -127,10 +127,14 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string 
 		delete(m.broadcasts, token.Cross.ID)
 		return ret
 	}
+	d := make([]Location, len(breadcrumbs))
+	for i := range breadcrumbs {
+		d[i] = breadcrumbs[i]
+	}
 	broadcast.Send(map[string]interface{}{
 		"type": "/v3/crosses/routex/breadcrumbs",
 		"data": map[string][]Location{
-			id: breadcrumbs,
+			id: d,
 		},
 	})
 	return ret
@@ -389,13 +393,11 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	for {
 		select {
 		case d := <-c:
-			logger.DEBUG("raw data: %v", d)
 			if toMars {
 				if data, ok := d.(map[string]interface{}); ok {
 					sendData := data["data"]
 					if breadcrumbs, ok := sendData.(map[string][]Location); ok {
 						for k, v := range breadcrumbs {
-							logger.DEBUG("parse %s", k)
 							for i := range v {
 								d := v[i]
 								d.ToMars(m.conversion)
