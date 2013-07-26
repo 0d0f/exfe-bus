@@ -283,29 +283,62 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
 
-	for _, invitation := range token.Cross.Exfee.Invitations {
+	if token.Cross.ID == 100582 {
 		ret := make(map[string][]Location)
-		id := invitation.Identity.Id()
-		breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
-		if err != nil {
-			logger.ERROR("can't get breadcrumbs %s of cross %d: %s", id, token.Cross.ID, err)
-			continue
-		}
-		if breadcrumbs == nil {
-			continue
-		}
-		if toMars {
-			for i := range breadcrumbs {
-				breadcrumbs[i].ToMars(m.conversion)
+		for _, invitation := range token.Cross.Exfee.Invitations {
+			id := invitation.Identity.Id()
+			breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
+			if err != nil {
+				logger.ERROR("can't get breadcrumbs %s of cross %d: %s", id, token.Cross.ID, err)
+				continue
 			}
+			if breadcrumbs == nil {
+				continue
+			}
+			if toMars {
+				for i := range breadcrumbs {
+					breadcrumbs[i].ToMars(m.conversion)
+				}
+			}
+			ret[id] = breadcrumbs
+			ret[id+"1"] = breadcrumbs
+			ret[id+"2"] = breadcrumbs
+			ret[id+"3"] = breadcrumbs
+			ret[id+"4"] = breadcrumbs
+			ret[id+"5"] = breadcrumbs
 		}
-		ret[id] = breadcrumbs
-		err = stream.Write(map[string]interface{}{
+		err := stream.Write(map[string]interface{}{
 			"type": "/v3/crosses/routex/breadcrumbs",
 			"data": ret,
 		})
 		if err != nil {
 			return
+		}
+	} else {
+		for _, invitation := range token.Cross.Exfee.Invitations {
+			ret := make(map[string][]Location)
+			id := invitation.Identity.Id()
+			breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
+			if err != nil {
+				logger.ERROR("can't get breadcrumbs %s of cross %d: %s", id, token.Cross.ID, err)
+				continue
+			}
+			if breadcrumbs == nil {
+				continue
+			}
+			if toMars {
+				for i := range breadcrumbs {
+					breadcrumbs[i].ToMars(m.conversion)
+				}
+			}
+			ret[id] = breadcrumbs
+			err = stream.Write(map[string]interface{}{
+				"type": "/v3/crosses/routex/breadcrumbs",
+				"data": ret,
+			})
+			if err != nil {
+				return
+			}
 		}
 	}
 
