@@ -475,6 +475,9 @@ func (p *Platform) GetCrossByInvitationToken(token string) (model.Cross, error) 
 		logger.ERROR("decode %s error: %s with %s", u, err, query.Encode())
 		return model.Cross{}, err
 	}
+	if ret.Meta.Code != 200 {
+		return model.Cross{}, fmt.Errorf("%s", ret.Meta.ErrorDetail)
+	}
 	return ret.Response.Cross, nil
 }
 

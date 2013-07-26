@@ -46,94 +46,101 @@ func New(breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, conversion 
 }
 
 func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
+	for {
+		m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
+		m.Header().Set("Access-Control-Allow-Credentials", "true")
+		m.Header().Set("Cache-Control", "no-cache")
 
-	token, ok := m.auth()
-	if !ok {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
-		return nil
-	}
-	id := token.Identity.Id()
-
-	_, _, acc, err := breadcrumb.GetGeo()
-	if err != nil {
-		m.Error(http.StatusBadRequest, err)
-		return nil
-	}
-	if acc > 70 {
-		m.Error(http.StatusBadRequest, fmt.Errorf("accuracy too large: %d", acc))
-		return nil
-	}
-
-	logger.DEBUG("enter breadcrum: %+v", breadcrumb)
-	earth := breadcrumb
-	mars := breadcrumb
-	if m.Request().URL.Query().Get("coordinate") == "mars" {
-		breadcrumb.ToEarth(m.conversion)
-		earth = breadcrumb
-	} else {
-		mars.ToMars(m.conversion)
-	}
-	logger.DEBUG("earth breadcrum: %+v", earth)
-	logger.DEBUG("mars breadcrum: %+v", mars)
-
-	breadcrumb.Timestamp = time.Now().Unix()
-	breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
-	if err != nil {
-		logger.ERROR("can't get breadcrumbs %s of cross %d: %s", id, token.Cross.ID, err)
-	}
-	if len(breadcrumbs) == 0 {
-		logger.INFO("routex", "cross", token.Cross.ID, id, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy)
-		if err := m.breadcrumbsRepo.Save(id, token.Cross.ID, breadcrumb); err != nil {
-			logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrumb)
-			m.Error(http.StatusInternalServerError, err)
+		token, ok := m.auth()
+		if !ok {
+			m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 			return nil
 		}
-	} else {
-		distance, err := breadcrumb.Distance(breadcrumbs[0])
+		id := token.Identity.Id()
+
+		_, _, acc, err := breadcrumb.GetGeo()
 		if err != nil {
-			logger.INFO("routex", "cross", token.Cross.ID, id, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "err", err)
-			if err := m.breadcrumbsRepo.Save(id, token.Cross.ID, breadcrumb); err != nil {
-				logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrumb)
-				m.Error(http.StatusInternalServerError, err)
-				return nil
-			}
-		} else if distance > 30 {
-			logger.INFO("routex", "cross", token.Cross.ID, id, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "distance", distance)
+			m.Error(http.StatusBadRequest, err)
+			return nil
+		}
+		if acc > 70 {
+			m.Error(http.StatusBadRequest, fmt.Errorf("accuracy too large: %d", acc))
+			return nil
+		}
+
+		logger.DEBUG("enter breadcrum: %+v", breadcrumb)
+		earth := breadcrumb
+		mars := breadcrumb
+		if m.Request().URL.Query().Get("coordinate") == "mars" {
+			breadcrumb.ToEarth(m.conversion)
+			earth = breadcrumb
+		} else {
+			mars.ToMars(m.conversion)
+		}
+		logger.DEBUG("earth breadcrum: %+v", earth)
+		logger.DEBUG("mars breadcrum: %+v", mars)
+
+		breadcrumb.Timestamp = time.Now().Unix()
+		breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
+		if err != nil {
+			logger.ERROR("can't get breadcrumbs %s of cross %d: %s", id, token.Cross.ID, err)
+		}
+		if len(breadcrumbs) == 0 {
+			logger.INFO("routex", "cross", token.Cross.ID, id, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy)
 			if err := m.breadcrumbsRepo.Save(id, token.Cross.ID, breadcrumb); err != nil {
 				logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrumb)
 				m.Error(http.StatusInternalServerError, err)
 				return nil
 			}
 		} else {
-			logger.INFO("routex", "cross", token.Cross.ID, id, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "distance", distance, "nosave")
+			distance, err := breadcrumb.Distance(breadcrumbs[0])
+			if err != nil {
+				logger.INFO("routex", "cross", token.Cross.ID, id, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "err", err)
+				if err := m.breadcrumbsRepo.Save(id, token.Cross.ID, breadcrumb); err != nil {
+					logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrumb)
+					m.Error(http.StatusInternalServerError, err)
+					return nil
+				}
+			} else if distance > 30 {
+				logger.INFO("routex", "cross", token.Cross.ID, id, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "distance", distance)
+				if err := m.breadcrumbsRepo.Save(id, token.Cross.ID, breadcrumb); err != nil {
+					logger.ERROR("can't save repo %s of cross %d: %s with %+v", id, token.Cross.ID, err, breadcrumb)
+					m.Error(http.StatusInternalServerError, err)
+					return nil
+				}
+			} else {
+				logger.INFO("routex", "cross", token.Cross.ID, id, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "distance", distance, "nosave")
+			}
 		}
-	}
-	breadcrumbs = append([]Location{breadcrumb}, breadcrumbs...)
-	earthLat, earthLng, _, _ := earth.GetGeo()
-	marsLat, marsLng, _, _ := mars.GetGeo()
-	ret := map[string]string{
-		"earth_to_mars_latitude":  fmt.Sprintf("%.4f", marsLat-earthLat),
-		"earth_to_mars_longitude": fmt.Sprintf("%.4f", marsLng-earthLng),
-	}
+		breadcrumbs = append([]Location{breadcrumb}, breadcrumbs...)
+		earthLat, earthLng, _, _ := earth.GetGeo()
+		marsLat, marsLng, _, _ := mars.GetGeo()
+		ret := map[string]string{
+			"earth_to_mars_latitude":  fmt.Sprintf("%.4f", marsLat-earthLat),
+			"earth_to_mars_longitude": fmt.Sprintf("%.4f", marsLng-earthLng),
+		}
 
-	broadcast, ok := m.broadcasts[token.Cross.ID]
-	if !ok {
-		return ret
+		broadcast, ok := m.broadcasts[token.Cross.ID]
+		if !ok {
+			return ret
+		}
+		if broadcast == nil {
+			delete(m.broadcasts, token.Cross.ID)
+			return ret
+		}
+		d := make([]Location, len(breadcrumbs))
+		for i := range breadcrumbs {
+			d[i] = breadcrumbs[i]
+		}
+		broadcast.Send(map[string]interface{}{
+			"type": "/v3/crosses/routex/breadcrumbs",
+			"data": map[string][]Location{
+				id: d,
+			},
+		})
+		time.Sleep(time.Second)
 	}
-	if broadcast == nil {
-		delete(m.broadcasts, token.Cross.ID)
-		return ret
-	}
-	broadcast.Send(map[string]interface{}{
-		"type": "/v3/crosses/routex/breadcrumbs",
-		"data": map[string][]Location{
-			id: breadcrumbs,
-		},
-	})
-	return ret
+	return nil
 }
 
 func (m RouteMap) HandleGetBreadcrums() map[string][]Location {
@@ -262,7 +269,9 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	token, ok := m.auth()
 	if !ok {
 		t := m.Request().URL.Query().Get("token")
+		fmt.Println("token:", t)
 		cross, err := m.platform.GetCrossByInvitationToken(t)
+		fmt.Println("cross:", cross, "err", err)
 		if err != nil {
 			m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 			return
@@ -474,11 +483,11 @@ func (m *RouteMap) auth() (Token, bool) {
 	}
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	// if authData == "" {
-	// 	// token: 345ac9296016c858a752a7e5fea35b7682fa69f922c4cefa30cfc22741da3109
-	// 	authData = `{"token_type":"cross_access_token","cross_id":100758,"identity_id":907,"user_id":652,"created_time":1374636534,"updated_time":1374636534}`
-	// }
-	// logger.DEBUG("auth data: %s", authData)
+	if authData == "" {
+		// token: 345ac9296016c858a752a7e5fea35b7682fa69f922c4cefa30cfc22741da3109
+		authData = `{"token_type":"cross_access_token","cross_id":100758,"identity_id":907,"user_id":652,"created_time":1374636534,"updated_time":1374636534}`
+	}
+	logger.DEBUG("auth data: %s", authData)
 
 	if err := json.Unmarshal([]byte(authData), &token); err != nil {
 		return token, false
