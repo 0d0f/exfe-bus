@@ -283,7 +283,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
 
-	if token.Cross.ID == 100582 {
+	if m.Vars()["cross_id"] == "100582" {
 		ret := make(map[string][]Location)
 		for _, invitation := range token.Cross.Exfee.Invitations {
 			id := invitation.Identity.Id()
