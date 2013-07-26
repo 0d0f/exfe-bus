@@ -517,6 +517,7 @@ func (m *RouteMap) auth() (Token, bool) {
 	if authData == "" {
 		// token: 345ac9296016c858a752a7e5fea35b7682fa69f922c4cefa30cfc22741da3109
 		authData = `{"token_type":"cross_access_token","cross_id":100758,"identity_id":907,"user_id":652,"created_time":1374636534,"updated_time":1374636534}`
+		authData = `{"token_type":"user_token","user_id":8,"signin_time":1374685106,"last_authenticate":1374685106}`
 	}
 	logger.DEBUG("auth data: %s", authData)
 
