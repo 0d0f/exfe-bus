@@ -66,8 +66,9 @@ func (l *Location) ToMars(c GeoConversionRepo) {
 	if l.Longitude != "" && l.Latitude != "" {
 		l.Latitude, l.Longitude = c.EarthToMars(l.Latitude, l.Longitude)
 	}
-	for i := range l.Positions {
-		l.Positions[i].ToMars(c)
+	for i, p := range l.Positions {
+		p.ToMars(c)
+		l.Positions[i] = p
 	}
 }
 
@@ -75,18 +76,21 @@ func (l *Location) ToEarth(c GeoConversionRepo) {
 	if l.Longitude != "" && l.Latitude != "" {
 		l.Latitude, l.Longitude = c.MarsToEarth(l.Latitude, l.Longitude)
 	}
-	for i := range l.Positions {
-		l.Positions[i].ToEarth(c)
+	for i, p := range l.Positions {
+		p.ToEarth(c)
+		l.Positions[i] = p
 	}
 }
 
 type Token struct {
 	TokenType  string `json:"token_type"`
 	UserId     int64  `json:"user_id"`
+	CrossId    uint64 `json:"cross_id"`
 	IdentityId int64  `json:"identity_id"`
 
 	Cross    model.Cross    `json:"-"`
 	Identity model.Identity `json:"-"`
+	Readonly bool           `json:"-"`
 }
 
 type BreadcrumbsRepo interface {

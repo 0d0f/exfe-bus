@@ -51,7 +51,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string 
 	m.Header().Set("Cache-Control", "no-cache")
 
 	token, ok := m.auth()
-	if !ok {
+	if !ok || token.Readonly {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
@@ -67,7 +67,6 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string 
 		return nil
 	}
 
-	logger.DEBUG("enter breadcrum: %+v", breadcrumb)
 	earth := breadcrumb
 	mars := breadcrumb
 	if m.Request().URL.Query().Get("coordinate") == "mars" {
@@ -76,8 +75,6 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumb Location) map[string]string 
 	} else {
 		mars.ToMars(m.conversion)
 	}
-	logger.DEBUG("earth breadcrum: %+v", earth)
-	logger.DEBUG("mars breadcrum: %+v", mars)
 
 	breadcrumb.Timestamp = time.Now().Unix()
 	breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
@@ -178,7 +175,7 @@ func (m RouteMap) HandleUpdateGeomarks(data []Location) {
 	m.Header().Set("Cache-Control", "no-cache")
 
 	token, ok := m.auth()
-	if !ok {
+	if !ok || token.Readonly {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
@@ -265,16 +262,10 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 	token, ok := m.auth()
 	if !ok {
-		t := m.Request().URL.Query().Get("token")
-		fmt.Println("token:", t)
-		cross, err := m.platform.GetCrossByInvitationToken(t)
-		fmt.Println("cross:", cross, "err", err)
-		if err != nil {
-			m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
-			return
-		}
-		token.Cross = cross
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		return
 	}
+
 	b, ok := m.broadcasts[token.Cross.ID]
 	if !ok {
 		b = broadcast.NewBroadcast(-1)
@@ -289,62 +280,29 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
 
-	if m.Vars()["cross_id"] == "100582" {
+	for _, invitation := range token.Cross.Exfee.Invitations {
 		ret := make(map[string][]Location)
-		for _, invitation := range token.Cross.Exfee.Invitations {
-			id := invitation.Identity.Id()
-			breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
-			if err != nil {
-				logger.ERROR("can't get breadcrumbs %s of cross %d: %s", id, token.Cross.ID, err)
-				continue
-			}
-			if breadcrumbs == nil {
-				continue
-			}
-			if toMars {
-				for i := range breadcrumbs {
-					breadcrumbs[i].ToMars(m.conversion)
-				}
-			}
-			ret[id] = breadcrumbs
-			ret[id+"1"] = breadcrumbs
-			ret[id+"2"] = breadcrumbs
-			ret[id+"3"] = breadcrumbs
-			ret[id+"4"] = breadcrumbs
-			ret[id+"5"] = breadcrumbs
+		id := invitation.Identity.Id()
+		breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
+		if err != nil {
+			logger.ERROR("can't get breadcrumbs %s of cross %d: %s", id, token.Cross.ID, err)
+			continue
 		}
-		err := stream.Write(map[string]interface{}{
+		if breadcrumbs == nil {
+			continue
+		}
+		if toMars {
+			for i := range breadcrumbs {
+				breadcrumbs[i].ToMars(m.conversion)
+			}
+		}
+		ret[id] = breadcrumbs
+		err = stream.Write(map[string]interface{}{
 			"type": "/v3/crosses/routex/breadcrumbs",
 			"data": ret,
 		})
 		if err != nil {
 			return
-		}
-	} else {
-		for _, invitation := range token.Cross.Exfee.Invitations {
-			ret := make(map[string][]Location)
-			id := invitation.Identity.Id()
-			breadcrumbs, err := m.breadcrumbsRepo.Load(id, token.Cross.ID)
-			if err != nil {
-				logger.ERROR("can't get breadcrumbs %s of cross %d: %s", id, token.Cross.ID, err)
-				continue
-			}
-			if breadcrumbs == nil {
-				continue
-			}
-			if toMars {
-				for i := range breadcrumbs {
-					breadcrumbs[i].ToMars(m.conversion)
-				}
-			}
-			ret[id] = breadcrumbs
-			err = stream.Write(map[string]interface{}{
-				"type": "/v3/crosses/routex/breadcrumbs",
-				"data": ret,
-			})
-			if err != nil {
-				return
-			}
 		}
 	}
 
@@ -452,7 +410,7 @@ func (m RouteMap) HandleSendRequest(id string) {
 	m.Header().Set("Cache-Control", "no-cache")
 
 	token, ok := m.auth()
-	if !ok {
+	if !ok || token.Readonly {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
@@ -521,14 +479,24 @@ func (m *RouteMap) auth() (Token, bool) {
 		return token, false
 	}
 
-	if token.TokenType != "cross_access_token" && token.TokenType != "user_token" {
-		return token, false
+	query := make(url.Values)
+	switch token.TokenType {
+	case "user_token":
+		query.Set("user_id", fmt.Sprintf("%d", token.UserId))
+	case "cross_access_token":
+		if token.CrossId != crossId {
+			return token, false
+		}
+	default:
+		t := m.Request().URL.Query().Get("token")
+		cross, err := m.platform.GetCrossByInvitationToken(t)
+		if err != nil {
+			return token, false
+		}
+		token.Cross, token.Readonly = cross, true
+		return token, true
 	}
 
-	query := make(url.Values)
-	if token.TokenType == "user_token" {
-		query.Set("user_id", fmt.Sprintf("%d", token.UserId))
-	}
 	token.Cross, err = m.platform.FindCross(int64(crossId), query)
 	if err != nil {
 		return token, false
