@@ -299,27 +299,46 @@ const (
 	GEOCONVERSION_GET = "SELECT `offset_lat`, `offset_long` FROM `gps_conversion` WHERE `lat`=? AND `long`=?"
 )
 
+type Offset struct {
+	latOffset int
+	lngOffset int
+}
+
 type GeoConversion struct {
-	Db *sql.DB
+	db    *sql.DB
+	cache map[string]Offset
+}
+
+func NewGeoConversion(db *sql.DB) *GeoConversion {
+	return &GeoConversion{
+		db:    db,
+		cache: make(map[string]Offset),
+	}
 }
 
 func (c *GeoConversion) Offset(lat, long float64) (float64, float64) {
 	latI := int(lat * 10)
 	longI := int(long * 10)
-	row, err := c.Db.Query(GEOCONVERSION_GET, latI, longI)
-	if err != nil {
-		return 0, 0
-	}
-	defer row.Close()
-
-	if !row.Next() {
-		return 0, 0
-	}
+	key := fmt.Sprintf("%d,%d", latI, longI)
 	var offsetLat, offsetLong int
-	err = row.Scan(&offsetLat, &offsetLong)
-	if err != nil {
-		logger.ERROR("geo_conversion offset for lat=%s, long=%s is not int", lat, long)
-		return 0, 0
+	if offset, ok := c.cache[key]; ok {
+		offsetLat, offsetLong = offset.latOffset, offset.lngOffset
+	} else {
+		row, err := c.db.Query(GEOCONVERSION_GET, latI, longI)
+		if err != nil {
+			return 0, 0
+		}
+		defer row.Close()
+
+		if !row.Next() {
+			return 0, 0
+		}
+		err = row.Scan(&offsetLat, &offsetLong)
+		if err != nil {
+			logger.ERROR("geo_conversion offset for lat=%s, long=%s is not int", lat, long)
+			return 0, 0
+		}
+		c.cache[key] = Offset{offsetLat, offsetLong}
 	}
 	return float64(offsetLat) * 0.0001, float64(offsetLong) * 0.0001
 }

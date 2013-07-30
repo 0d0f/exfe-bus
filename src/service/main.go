@@ -184,7 +184,7 @@ func main() {
 
 		b := &routex.BreadcrumbsSaver{redisPool}
 		g := &routex.GeomarksSaver{database}
-		c := &routex.GeoConversion{database}
+		c := routex.NewGeoConversion(database)
 		rx := routex.New(b, g, c, platform, &config)
 		register("routex", rx, nil)
 	}
