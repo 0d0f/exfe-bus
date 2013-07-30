@@ -401,7 +401,7 @@ func (p *Platform) GetIcs(token string) (string, error) {
 	return string(b), nil
 }
 
-func (p *Platform) GetIdentityById(id uint64) (model.Identity, error) {
+func (p *Platform) GetIdentityById(id int64) (model.Identity, error) {
 	u := fmt.Sprintf("%s/v2/identities/%d", p.config.SiteApi, id)
 	reader, err := HttpResponse(Http("GET", u, "applicatioin/json", nil))
 	if err != nil {
