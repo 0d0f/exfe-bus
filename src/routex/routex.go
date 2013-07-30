@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"notifier"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -33,6 +34,7 @@ type RouteMap struct {
 	platform        *broker.Platform
 	config          *model.Config
 	crossCast       map[uint64]*broadcast.Broadcast
+	castLocker      sync.RWMutex
 }
 
 func New(breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, conversion GeoConversionRepo, platform *broker.Platform, config *model.Config) *RouteMap {
@@ -142,12 +144,10 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) map[strin
 		return ret
 	}
 	for _, cross := range crosses {
+		m.castLocker.RLock()
 		b, ok := m.crossCast[cross]
+		m.castLocker.RUnlock()
 		if !ok {
-			continue
-		}
-		if b == nil {
-			delete(m.crossCast, cross)
 			continue
 		}
 		b.Send(route)
@@ -197,7 +197,9 @@ func (m RouteMap) HandleUpdateGeomarks(data []Geomark) {
 		return
 	}
 
+	m.castLocker.RLock()
 	broadcast := m.crossCast[token.Cross.ID]
+	m.castLocker.RUnlock()
 	mars := m.Request().URL.Query().Get("coordinate") == "mars"
 	if broadcast != nil || mars {
 		for i, d := range data {
@@ -288,16 +290,24 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 		return
 	}
 
+	m.castLocker.Lock()
 	b, ok := m.crossCast[token.Cross.ID]
 	if !ok {
 		b = broadcast.NewBroadcast(-1)
 		m.crossCast[token.Cross.ID] = b
 	}
+	m.castLocker.Unlock()
 	c := make(chan interface{})
 	b.Register(c)
 	defer func() {
 		b.Unregister(c)
 		close(c)
+
+		if b.Len() == 0 {
+			m.castLocker.Lock()
+			delete(m.crossCast, token.Cross.ID)
+			m.castLocker.Unlock()
+		}
 	}()
 
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
