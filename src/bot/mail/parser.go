@@ -306,13 +306,14 @@ func (h *Parser) GetCross() (cross model.Cross) {
 		ExternalID:       h.from.Address,
 		ExternalUsername: h.from.Address,
 	}
+	cross.Attribute.State = "draft"
 	for _, addr := range h.addrList {
 		if pre := len(h.config.Email.Prefix) + 1; len(addr.Address) > pre &&
 			(addr.Address[:pre] == h.config.Email.Prefix+"@" || addr.Address[:pre] == h.config.Email.Prefix+"+") &&
 			strings.HasSuffix(addr.Address, h.domain) {
 			continue
 		}
-		if strings.HasSuffix(addr.Address, "googlemail.com") {
+		if strings.HasSuffix(addr.Address, "amazonaws.com") {
 			continue
 		}
 		if _, ok := check[fmt.Sprintf("%s@email", addr.Address)]; ok {
