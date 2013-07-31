@@ -313,7 +313,7 @@ func (h *Parser) GetCross() (cross model.Cross) {
 			strings.HasSuffix(addr.Address, h.domain) {
 			continue
 		}
-		if strings.Index(addr.Address, "amazonaws.com") {
+		if strings.HasSuffix(addr.Address, "amazonaws.com") {
 			continue
 		}
 		if _, ok := check[fmt.Sprintf("%s@email", addr.Address)]; ok {
