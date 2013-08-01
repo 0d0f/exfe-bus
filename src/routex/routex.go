@@ -19,7 +19,7 @@ import (
 type RouteMap struct {
 	rest.Service `prefix:"/v3/routex" mime:"application/json"`
 
-	SetUser           rest.Processor `path:"/user" method:"POST"`
+	SetUser           rest.Processor `path:"/user/crosses" method:"POST"`
 	UpdateBreadcrums  rest.Processor `path:"/breadcrumbs" method:"POST"`
 	GetBreadcrums     rest.Processor `path:"/crosses/:cross_id/breadcrumbs" method:"GET"`
 	GetUserBreadcrums rest.Processor `path:"/crosses/:cross_id/breadcrumbs/users/:user_id" method:"GET"`
