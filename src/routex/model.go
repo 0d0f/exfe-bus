@@ -8,7 +8,6 @@ import (
 	"logger"
 	"math"
 	"model"
-	"strconv"
 	"strings"
 )
 
@@ -41,6 +40,10 @@ func (l *SimpleLocation) ToMars(c GeoConversionRepo) {
 
 func (l *SimpleLocation) ToEarth(c GeoConversionRepo) {
 	l.Latitude, l.Longitude = c.MarsToEarth(l.Latitude, l.Longitude)
+}
+
+func (l *SimpleLocation) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`{"ts":%d,"acc":%.0f,"lat":%.6f,"lng":%.6f}`, l.Timestamp, l.Accuracy, l.Latitude, l.Longitude)), nil
 }
 
 type Geomark struct {
@@ -95,12 +98,22 @@ type Token struct {
 	Readonly bool        `json:"-"`
 }
 
+type BreadcrumbCrossControl interface {
+	EnableCross(userId, crossId int64, afterInSecond int) error
+	DisableCross(userId, crossId int64) error
+}
+
+type BreadcrumbCache interface {
+	BreadcrumbCrossControl
+	Save(userId int64, l SimpleLocation) (cross_ids []int64, err error)
+	Load(userId int64) (SimpleLocation, error)
+	LoadCross(userId, crossId int64) (SimpleLocation, error)
+}
+
 type BreadcrumbsRepo interface {
-	EnableCross(userId int64, crossId uint64) error
-	DisableCross(userId int64, crossId uint64) error
-	Crosses(userId int64) ([]uint64, error)
+	BreadcrumbCrossControl
 	Save(userId int64, l SimpleLocation) error
-	Load(userId int64) (Geomark, error)
+	Load(userId, crossId int64) ([]SimpleLocation, error)
 }
 
 type GeomarksRepo interface {
@@ -113,33 +126,120 @@ type GeoConversionRepo interface {
 	MarsToEarth(lat, long float64) (float64, float64)
 }
 
+const (
+	BREADCRUMBS_UPDATE_START = "UPDATE `breadcrumbs_windows` (`end_at`) VALUES (UNIX_TIMESTAMP()+?) WHERE `user_id`=? AND `cross_id`=? AND `end_at`>UNIX_TIMESTAMP()"
+	BREADCRUMBS_INSERT_START = "INSERT INTO `breadcrumbs_windows` (`user_id`, `cross_id`, `start_at`, `end_at`) VALUES(?, ?, ?, UNIX_TIMESTAMP()+?)"
+	BREADCRUMBS_UPDATE_END   = "UPDATE `breadcrumbs_windows` SET `end_at`=UNIX_TIMESTAMP()-1 WHERE user_id=? AND cross_id=? AND end_at>=UNIX_TIMESTAMP()"
+	BREADCRUMBS_SAVE         = "INSERT INTO `breadcrumbs` (`user_id`, `lat`, `lng`, `acc`, `timestamp`) values(?, ?, ?, ?, ?);"
+	BREADCRUMBS_GET          = "SELECT b.lat, b.lng, b.acc, b.timestamp FROM breadcrumbs AS b, breadcrumbs_windows AS w WHERE b.user_id=w.user_id AND b.timestamp BETWEEN w.start_at AND w.end_at AND w.user_id=? AND w.cross_id=? LIMIT 100"
+)
+
 type BreadcrumbsSaver struct {
-	Redis *redis.Pool
+	db *sql.DB
 }
 
-func (s *BreadcrumbsSaver) bkey(userId int64) string {
-	return fmt.Sprintf("exfe:v3:routex:breadcrumbs:user_%d", userId)
-}
-
-func (s *BreadcrumbsSaver) ckey(crossId interface{}, userId int64) string {
-	switch crossId.(type) {
-	case int64:
-		return fmt.Sprintf("exfe:v3:routex:user_%d:cross:%d", userId, crossId)
-	case uint64:
-		return fmt.Sprintf("exfe:v3:routex:user_%d:cross:%d", userId, crossId)
-	default:
-		return fmt.Sprintf("exfe:v3:routex:user_%d:cross:%v", userId, crossId)
+func NewBreadcrumbsSaver(db *sql.DB) *BreadcrumbsSaver {
+	ret := &BreadcrumbsSaver{
+		db: db,
 	}
+	return ret
 }
 
-func (s *BreadcrumbsSaver) EnableCross(userId int64, crossId uint64) error {
-	key, conn := s.ckey(crossId, userId), s.Redis.Get()
-	defer conn.Close()
-
-	if err := conn.Send("SET", key, crossId); err != nil {
+func (s *BreadcrumbsSaver) EnableCross(userId, crossId int64, afterInSecond int) error {
+	res, err := s.db.Exec(BREADCRUMBS_UPDATE_START, afterInSecond, userId, crossId)
+	if err != nil {
 		return err
 	}
-	if err := conn.Send("EXPIRE", key, 7200); err != nil {
+	r, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if r > 0 {
+		return nil
+	}
+	if _, err := s.db.Exec(BREADCRUMBS_INSERT_START, userId, crossId, afterInSecond); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *BreadcrumbsSaver) DisableCross(userId, crossId int64) error {
+	if _, err := s.db.Exec(BREADCRUMBS_UPDATE_END, userId, crossId); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *BreadcrumbsSaver) Save(userId int64, l SimpleLocation) error {
+	b, err := json.Marshal(l)
+	if err != nil {
+		return err
+	}
+	if _, err := s.db.Exec(BREADCRUMBS_SAVE, userId, l.Latitude, l.Longitude, l.Accuracy, l.Timestamp); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *BreadcrumbsSaver) Load(userId int64, crossId int64) ([]SimpleLocation, error) {
+	rows, err := s.db.Query(BREADCRUMBS_GET, userId, crossId)
+	if err != nil {
+		return nil, err
+	}
+	var ret []SimpleLocation
+	for rows.Next() {
+		var l SimpleLocation
+		err := rows.Scan(&l.Latitude, &l.Longitude, &l.Accuracy, &l.Timestamp)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, l)
+	}
+	return ret, nil
+}
+
+type BreadcrumbsCacheSaver struct {
+	r          *redis.Pool
+	saveScript *redis.Script
+}
+
+func NewBreadcrumbsCacheSaver(r *redis.Pool) *BreadcrumbsCacheSaver {
+	ret := &BreadcrumbsCacheSaver{
+		r: r,
+	}
+	ret.saveScript = redis.NewScript(1, `
+		local user_id = KEYS[1]
+		local data = ARGV[1]
+		local keys = redis.Do("KEYS", "exfe:v3:routex:user_"..user_id..":cross:*")
+		local ret = {}
+		local keyprefix = string.len(keys)
+		redis.Do("SET", "exfe:v3:routex:user_"..user_id, data)
+		for i = 1, #keys do
+			local k = keys[i]
+			redis.Do("SET", k, data)
+			table.insert(ret, string.sub(k, keyprefix))
+		end
+		return ret
+	`)
+	return ret
+}
+
+func (s *BreadcrumbsCacheSaver) ukey(userId int64) string {
+	return fmt.Sprintf("exfe:v3:routex:user_%d", userId)
+}
+
+func (s *BreadcrumbsCacheSaver) ckey(crossId, userId int64) string {
+	return fmt.Sprintf("exfe:v3:routex:user_%d:cross:%d", userId, crossId)
+}
+
+func (s *BreadcrumbsCacheSaver) EnableCross(userId, crossId int64, afterInSecond int) error {
+	key, conn := s.ckey(crossId, userId), s.r.Get()
+	defer conn.Close()
+
+	if err := conn.Send("SET", key, ""); err != nil {
+		return err
+	}
+	if err := conn.Send("EXPIRE", key, afterInSecond); err != nil {
 		return err
 	}
 	if err := conn.Flush(); err != nil {
@@ -148,8 +248,8 @@ func (s *BreadcrumbsSaver) EnableCross(userId int64, crossId uint64) error {
 	return nil
 }
 
-func (s *BreadcrumbsSaver) DisableCross(userId int64, crossId uint64) error {
-	key, conn := s.ckey(crossId, userId), s.Redis.Get()
+func (s *BreadcrumbsCacheSaver) DisableCross(userId, crossId int64) error {
+	key, conn := s.ckey(crossId, userId), s.r.Get()
 	defer conn.Close()
 
 	if _, err := conn.Do("DELETE", key); err != nil {
@@ -158,85 +258,59 @@ func (s *BreadcrumbsSaver) DisableCross(userId int64, crossId uint64) error {
 	return nil
 }
 
-func (s *BreadcrumbsSaver) Crosses(userId int64) ([]uint64, error) {
-	key, prefixLen, conn := s.ckey("*", userId), len(s.ckey("", userId)), s.Redis.Get()
-	defer conn.Close()
-
-	values, err := redis.Values(conn.Do("KEYS", key))
-	if err != nil && err != redis.ErrNil {
+func (s *BreadcrumbsCacheSaver) Save(userId int64, l SimpleLocation) ([]int64, error) {
+	b, err := json.Marshal(l)
+	if err != nil {
 		return nil, err
 	}
+	conn := s.r.Get()
+	defer conn.Close()
 
-	var ret []uint64
-	for len(values) > 0 {
-		var crossKey string
-		values, err = redis.Scan(values, &crossKey)
+	reply, err := redis.Values(s.saveScript.Do(conn, userId, b))
+	if err != nil {
+		return nil, err
+	}
+	var ret []int64
+	for len(reply) > 0 {
+		var crossId int64
+		reply, err = redis.Scan(reply, &crossId)
 		if err != nil {
-			logger.ERROR("can't parse to string: %s", err)
-			continue
-		}
-		crossId, err := strconv.ParseUint(crossKey[prefixLen:], 10, 64)
-		if err != nil {
-			logger.ERROR("can't parse cross id %s: %s", crossKey[prefixLen:], err)
-			continue
+			return nil, err
 		}
 		ret = append(ret, crossId)
 	}
 	return ret, nil
 }
 
-func (s *BreadcrumbsSaver) Save(userId int64, l SimpleLocation) error {
-	b, err := json.Marshal(l)
-	if err != nil {
-		return err
-	}
-	key, conn := s.bkey(userId), s.Redis.Get()
+func (s *BreadcrumbsCacheSaver) Load(userId int64) (SimpleLocation, error) {
+	key, conn := s.ukey(userId), s.r.Get()
 	defer conn.Close()
 
-	if err := conn.Send("LPUSH", key, b); err != nil {
-		return err
+	var ret SimpleLocation
+	reply, err := redis.Bytes(conn.Do("GET", key))
+	if err != nil {
+		return ret, err
 	}
-	if err := conn.Send("EXPIRE", key, 7200); err != nil {
-		return err
+	if err := json.Unmarshal(reply, &ret); err != nil {
+		logger.ERROR("can't unmashal location value: %s with %s", err, string(reply))
+		return ret, err
 	}
-	if err := conn.Flush(); err != nil {
-		return err
-	}
-	return nil
+	return ret, nil
 }
 
-func (s *BreadcrumbsSaver) Load(userId int64) (Geomark, error) {
-	key, conn := s.bkey(userId), s.Redis.Get()
+func (s *BreadcrumbsCacheSaver) LoadCross(userId, crossId int64) (SimpleLocation, error) {
+	key, conn := s.ckey(crossId, userId), s.r.Get()
 	defer conn.Close()
 
-	ret := Geomark{}
-	lrange, err := conn.Do("LRANGE", key, 0, 100)
+	var ret SimpleLocation
+	reply, err := redis.Bytes(conn.Do("GET", key))
 	if err != nil {
 		return ret, err
 	}
-
-	if lrange == nil {
-		return ret, nil
-	}
-	values, err := redis.Values(lrange, err)
-	if err != nil {
+	if err := json.Unmarshal(reply, &ret); err != nil {
+		logger.ERROR("can't unmashal location value: %s with %s", err, string(reply))
 		return ret, err
 	}
-	for len(values) > 0 {
-		var b []byte
-		values, err = redis.Scan(values, &b)
-		if err != nil {
-			return ret, err
-		}
-		var location SimpleLocation
-		err := json.Unmarshal(b, &location)
-		if err != nil {
-			logger.ERROR("can't unmashal location value: %s with %s", err, string(b))
-			continue
-		}
-		ret.Positions = append(ret.Positions, location)
-	}
-	ret.Id, ret.Type, ret.Tags = fmt.Sprintf("%d", userId), "route", []string{"breadcrumbs"}
 	return ret, nil
 }
 

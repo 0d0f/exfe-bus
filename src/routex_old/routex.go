@@ -16,7 +16,7 @@ import (
 )
 
 type RouteMap struct {
-	rest.Service `prefix:"/v3/routex" mime:"application/json"`
+	rest.Service `prefix:"/v3/routex_old" mime:"application/json"`
 
 	UpdateBreadcrums rest.Processor `path:"/crosses/:cross_id/breadcrumbs" method:"POST"`
 	GetBreadcrums    rest.Processor `path:"/crosses/:cross_id/breadcrumbs" method:"GET"`

@@ -28,6 +28,7 @@ type RouteMap struct {
 	SendRequest      rest.Processor `path:"/crosses/:cross_id/request" method:"POST"`
 	Options          rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
 
+	breadcrumbCache BreadcrumbCache
 	breadcrumbsRepo BreadcrumbsRepo
 	geomarksRepo    GeomarksRepo
 	conversion      GeoConversionRepo
@@ -37,8 +38,9 @@ type RouteMap struct {
 	castLocker      sync.RWMutex
 }
 
-func New(breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, conversion GeoConversionRepo, platform *broker.Platform, config *model.Config) *RouteMap {
+func New(breadcrumbCache BreadcrumbCache, breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, conversion GeoConversionRepo, platform *broker.Platform, config *model.Config) *RouteMap {
 	return &RouteMap{
+		breadcrumbCache: breadcrumbCache,
 		breadcrumbsRepo: breadcrumbsRepo,
 		geomarksRepo:    geomarksRepo,
 		conversion:      conversion,
@@ -49,8 +51,9 @@ func New(breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, conversion 
 }
 
 type UserCrossSetup struct {
-	CrossId         uint64 `json:"cross_id,omitempty"`
-	SaveBreadcrumbs bool   `json:"save_breadcrumbs,omitempty"`
+	CrossId         int64 `json:"cross_id,omitempty"`
+	SaveBreadcrumbs bool  `json:"save_breadcrumbs,omitempty"`
+	AfterInSeconds  int   `json:"after_in_seconds,omitempty"`
 }
 
 func (m RouteMap) HandleSetUser(setup []UserCrossSetup) {
@@ -65,38 +68,61 @@ func (m RouteMap) HandleSetUser(setup []UserCrossSetup) {
 		return
 	}
 
-	var err error
 	userId := token.UserId
+	go func() {
+		for _, s := range setup {
+			var err error
+			if s.SaveBreadcrumbs {
+				err = m.breadcrumbsRepo.EnableCross(userId, s.CrossId, s.AfterInSeconds)
+			} else {
+				err = m.breadcrumbsRepo.DisableCross(userId, s.CrossId)
+			}
+			if err != nil {
+				logger.ERROR("set user %d to cross %d breadcrumbs repo failed: %s", userId, s.CrossId, err)
+			}
+		}
+	}()
+
 	for _, s := range setup {
+		var err error
 		if s.SaveBreadcrumbs {
-			err = m.breadcrumbsRepo.EnableCross(userId, s.CrossId)
+			err = m.breadcrumbsRepo.EnableCross(userId, s.CrossId, 7200)
 		} else {
 			err = m.breadcrumbsRepo.DisableCross(userId, s.CrossId)
 		}
-	}
-	if err != nil {
-		logger.ERROR("setup user cross failed: %s", err)
-		m.Error(http.StatusInternalServerError, err)
+		if err != nil {
+			logger.ERROR("set user %d to cross %d breadcrumb cache failed: %s", userId, s.CrossId, err)
+		}
 	}
 }
 
-func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) map[string]float64 {
+type BreadcrumbOffset struct {
+	Latitude  float64 `json:"earth_to_mars_latitude"`
+	Longitude float64 `json:"earth_to_mars_longitude"`
+}
+
+func (o BreadcrumbOffset) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`{"earth_to_mars_latitude":%.4f,"earth_to_mars_longitude":%.4f}`, o.Latitude, o.Longitude)), nil
+}
+
+func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) BreadcrumbOffset {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
 	var token Token
+	var ret BreadcrumbOffset
 	token, ok := m.auth()
 	if !ok || token.Readonly {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
-		return nil
+		return ret
 	}
 	userId := token.UserId
 
 	breadcrumb := breadcrumbs[0]
 	if breadcrumb.Accuracy > 70 {
 		m.Error(http.StatusBadRequest, fmt.Errorf("accuracy too large: %d", breadcrumb.Accuracy))
-		return nil
+		return ret
 	}
 
 	if m.Request().URL.Query().Get("coordinate") == "mars" {
@@ -104,38 +130,32 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) map[strin
 	}
 
 	breadcrumb.Timestamp = time.Now().Unix()
-	route, err := m.breadcrumbsRepo.Load(userId)
+	last, err := m.breadcrumbCache.Load(userId, int64(token.Cross.ID))
 	if err != nil {
-		logger.ERROR("can't get route %s: %s", userId, err)
+		logger.ERROR("can't get breadcrumb cache %s: %s", userId, err)
 	}
-	if len(route.Positions) == 0 {
-		logger.INFO("routex", userId, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy)
-		if err := m.breadcrumbsRepo.Save(userId, breadcrumb); err != nil {
-			logger.ERROR("can't save repo %s: %s with %+v", userId, err, breadcrumb)
+	distance := Distance(breadcrumb.Latitude, breadcrumb.Longitude, last.Latitude, last.Longitude)
+	if distance > 30 {
+		logger.INFO("routex", userId, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "distance", distance)
+		if err := m.breadcrumbCache.Save(userId, breadcrumb); err != nil {
+			logger.ERROR("can't save cache %s: %s with %+v", userId, err, breadcrumb)
 			m.Error(http.StatusInternalServerError, err)
-			return nil
+			return ret
 		}
+		go func () {
+			if err :=  m.breadcrumbsRepo.Save(userId, breadcrumb); err!= nil{
+			logger.ERROR("can't save repo %s: %s with %+v", userId, err, breadcrumb)
+			}()
 	} else {
-		distance := Distance(breadcrumb.Latitude, breadcrumb.Longitude, route.Positions[0].Latitude, route.Positions[0].Longitude)
-		if distance > 30 {
-			logger.INFO("routex", userId, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "distance", distance)
-			if err := m.breadcrumbsRepo.Save(userId, breadcrumb); err != nil {
-				logger.ERROR("can't save repo %s: %s with %+v", userId, err, breadcrumb)
-				m.Error(http.StatusInternalServerError, err)
-				return nil
-			}
-		} else {
-			logger.INFO("routex", userId, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "distance", distance, "nosave")
-		}
+		logger.INFO("routex", userId, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "distance", distance, "nosave")
 	}
-	route.Positions = append([]SimpleLocation{breadcrumb}, route.Positions...)
 
 	earth := breadcrumb
 	mars := breadcrumb
 	mars.ToMars(m.conversion)
-	ret := map[string]float64{
-		"earth_to_mars_latitude":  mars.Latitude - earth.Latitude,
-		"earth_to_mars_longitude": mars.Longitude - earth.Longitude,
+	ret = BreadcrumbOffset{
+		Latitude:  mars.Latitude - earth.Latitude,
+		Longitude: mars.Longitude - earth.Longitude,
 	}
 
 	crosses, err := m.breadcrumbsRepo.Crosses(userId)
@@ -234,13 +254,13 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 		return nil
 	}
 	if data == nil {
-		lng, err := strconv.ParseFloat(token.Cross.Place.Lng, 64)
-		if err != nil {
-			token.Cross.Place = nil
-		}
-		lat, err := strconv.ParseFloat(token.Cross.Place.Lat, 64)
-		if err != nil {
-			token.Cross.Place = nil
+		var lat, lng float64
+		if token.Cross.Place != nil {
+			if lng, err = strconv.ParseFloat(token.Cross.Place.Lng, 64); err != nil {
+				token.Cross.Place = nil
+			} else if lat, err = strconv.ParseFloat(token.Cross.Place.Lat, 64); err != nil {
+				token.Cross.Place = nil
+			}
 		}
 		if token.Cross.Place != nil {
 			createdAt, err := time.Parse("2006-01-02 15:04:05 -0700", token.Cross.CreatedAt)
@@ -331,13 +351,13 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	marks, err := m.geomarksRepo.Load(token.Cross.ID)
 	if err == nil {
 		if marks == nil {
-			lng, err := strconv.ParseFloat(token.Cross.Place.Lng, 64)
-			if err != nil {
-				token.Cross.Place = nil
-			}
-			lat, err := strconv.ParseFloat(token.Cross.Place.Lat, 64)
-			if err != nil {
-				token.Cross.Place = nil
+			var lat, lng float64
+			if token.Cross.Place != nil {
+				if lng, err = strconv.ParseFloat(token.Cross.Place.Lng, 64); err != nil {
+					token.Cross.Place = nil
+				} else if lat, err = strconv.ParseFloat(token.Cross.Place.Lat, 64); err != nil {
+					token.Cross.Place = nil
+				}
 			}
 			if token.Cross.Place != nil {
 				createdAt, err := time.Parse("2006-01-02 15:04:05 -0700", token.Cross.CreatedAt)
@@ -470,14 +490,14 @@ func (m RouteMap) HandleSendRequest(id string) {
 }
 
 func (m *RouteMap) auth() (Token, bool) {
+	logger.DEBUG("Here")
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	// if authData == "" {
-	// 	// token: 345ac9296016c858a752a7e5fea35b7682fa69f922c4cefa30cfc22741da3109
-	// 	authData = `{"token_type":"cross_access_token","cross_id":100758,"identity_id":907,"user_id":652,"created_time":1374636534,"updated_time":1374636534}`
-	// }
-	// logger.DEBUG("auth data: %s", authData)
+	if authData == "" {
+		authData = `{"token_type":"user_token","user_id":475,"signin_time":1373599864,"last_authenticate":1373599864}`
+	}
+	logger.DEBUG("auth data: %s", authData)
 
 	if err := json.Unmarshal([]byte(authData), &token); err != nil {
 		return token, false
