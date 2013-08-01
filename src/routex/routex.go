@@ -475,8 +475,10 @@ func (m *RouteMap) auth() (Token, bool) {
 	// }
 	// logger.DEBUG("auth data: %s", authData)
 
-	if err := json.Unmarshal([]byte(authData), &token); err != nil {
-		return token, false
+	if authData != "" {
+		if err := json.Unmarshal([]byte(authData), &token); err != nil {
+			return token, false
+		}
 	}
 
 	query := make(url.Values)
