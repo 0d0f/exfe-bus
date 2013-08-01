@@ -19,14 +19,15 @@ import (
 type RouteMap struct {
 	rest.Service `prefix:"/v3/routex" mime:"application/json"`
 
-	SetUser          rest.Processor `path:"/user" method:"POST"`
-	UpdateBreadcrums rest.Processor `path:"/breadcrumbs" method:"POST"`
-	GetBreadcrums    rest.Processor `path:"/crosses/:cross_id/breadcrumbs" method:"GET"`
-	UpdateGeomarks   rest.Processor `path:"/crosses/:cross_id/geomarks" method:"POST"`
-	GetGeomarks      rest.Processor `path:"/crosses/:cross_id/geomarks" method:"GET"`
-	Notification     rest.Streaming `path:"/crosses/:cross_id" method:"POST"`
-	SendRequest      rest.Processor `path:"/crosses/:cross_id/request" method:"POST"`
-	Options          rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
+	SetUser           rest.Processor `path:"/user" method:"POST"`
+	UpdateBreadcrums  rest.Processor `path:"/breadcrumbs" method:"POST"`
+	GetBreadcrums     rest.Processor `path:"/crosses/:cross_id/breadcrumbs" method:"GET"`
+	GetUserBreadcrums rest.Processor `path:"/crosses/:cross_id/breadcrumbs/users/:user_id" method:"GET"`
+	UpdateGeomarks    rest.Processor `path:"/crosses/:cross_id/geomarks" method:"POST"`
+	GetGeomarks       rest.Processor `path:"/crosses/:cross_id/geomarks" method:"GET"`
+	Notification      rest.Streaming `path:"/crosses/:cross_id" method:"POST"`
+	SendRequest       rest.Processor `path:"/crosses/:cross_id/request" method:"POST"`
+	Options           rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
 
 	breadcrumbCache BreadcrumbCache
 	breadcrumbsRepo BreadcrumbsRepo
@@ -34,7 +35,7 @@ type RouteMap struct {
 	conversion      GeoConversionRepo
 	platform        *broker.Platform
 	config          *model.Config
-	crossCast       map[uint64]*broadcast.Broadcast
+	crossCast       map[int64]*broadcast.Broadcast
 	castLocker      sync.RWMutex
 }
 
@@ -46,7 +47,7 @@ func New(breadcrumbCache BreadcrumbCache, breadcrumbsRepo BreadcrumbsRepo, geoma
 		conversion:      conversion,
 		platform:        platform,
 		config:          config,
-		crossCast:       make(map[uint64]*broadcast.Broadcast),
+		crossCast:       make(map[int64]*broadcast.Broadcast),
 	}
 }
 
@@ -71,27 +72,33 @@ func (m RouteMap) HandleSetUser(setup []UserCrossSetup) {
 	userId := token.UserId
 	go func() {
 		for _, s := range setup {
-			var err error
 			if s.SaveBreadcrumbs {
-				err = m.breadcrumbsRepo.EnableCross(userId, s.CrossId, s.AfterInSeconds)
+				if s.AfterInSeconds == 0 {
+					s.AfterInSeconds = 7200
+				}
+				if err := m.breadcrumbsRepo.EnableCross(userId, s.CrossId, s.AfterInSeconds); err != nil {
+					logger.ERROR("set user %d enable cross %d breadcrumbs repo failed: %s", userId, s.CrossId, err)
+				}
 			} else {
-				err = m.breadcrumbsRepo.DisableCross(userId, s.CrossId)
-			}
-			if err != nil {
-				logger.ERROR("set user %d to cross %d breadcrumbs repo failed: %s", userId, s.CrossId, err)
+				if err := m.breadcrumbsRepo.DisableCross(userId, s.CrossId); err != nil {
+					logger.ERROR("set user %d disable cross %d breadcrumbs repo failed: %s", userId, s.CrossId, err)
+				}
 			}
 		}
 	}()
 
 	for _, s := range setup {
-		var err error
 		if s.SaveBreadcrumbs {
-			err = m.breadcrumbsRepo.EnableCross(userId, s.CrossId, 7200)
+			if s.AfterInSeconds == 0 {
+				s.AfterInSeconds = 7200
+			}
+			if err := m.breadcrumbCache.EnableCross(userId, s.CrossId, s.AfterInSeconds); err != nil {
+				logger.ERROR("set user %d enable cross %d breadcrumb cache failed: %s", userId, s.CrossId, err)
+			}
 		} else {
-			err = m.breadcrumbsRepo.DisableCross(userId, s.CrossId)
-		}
-		if err != nil {
-			logger.ERROR("set user %d to cross %d breadcrumb cache failed: %s", userId, s.CrossId, err)
+			if err := m.breadcrumbCache.DisableCross(userId, s.CrossId); err != nil {
+				logger.ERROR("set user %d disable cross %d breadcrumb cache failed: %s", userId, s.CrossId, err)
+			}
 		}
 	}
 }
@@ -117,9 +124,8 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) Breadcrum
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return ret
 	}
-	userId := token.UserId
 
-	breadcrumb := breadcrumbs[0]
+	userId, breadcrumb := token.UserId, breadcrumbs[0]
 	if breadcrumb.Accuracy > 70 {
 		m.Error(http.StatusBadRequest, fmt.Errorf("accuracy too large: %d", breadcrumb.Accuracy))
 		return ret
@@ -130,24 +136,28 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) Breadcrum
 	}
 
 	breadcrumb.Timestamp = time.Now().Unix()
-	last, err := m.breadcrumbCache.Load(userId, int64(token.Cross.ID))
-	if err != nil {
-		logger.ERROR("can't get breadcrumb cache %s: %s", userId, err)
-	}
+	last, err := m.breadcrumbCache.Load(userId)
 	distance := Distance(breadcrumb.Latitude, breadcrumb.Longitude, last.Latitude, last.Longitude)
-	if distance > 30 {
-		logger.INFO("routex", userId, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "distance", distance)
-		if err := m.breadcrumbCache.Save(userId, breadcrumb); err != nil {
+	var crossIds []int64
+	if err != nil || distance > 30 {
+		logger.INFO("routex", userId, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy)
+		if crossIds, err = m.breadcrumbCache.Save(userId, breadcrumb); err != nil {
 			logger.ERROR("can't save cache %s: %s with %+v", userId, err, breadcrumb)
 			m.Error(http.StatusInternalServerError, err)
 			return ret
 		}
-		go func () {
-			if err :=  m.breadcrumbsRepo.Save(userId, breadcrumb); err!= nil{
-			logger.ERROR("can't save repo %s: %s with %+v", userId, err, breadcrumb)
-			}()
+		go func() {
+			if err := m.breadcrumbsRepo.Save(userId, breadcrumb); err != nil {
+				logger.ERROR("can't save user %d breadcrumb: %s with %+v", userId, err, breadcrumb)
+			}
+		}()
 	} else {
 		logger.INFO("routex", userId, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "distance", distance, "nosave")
+		if crossIds, err = m.breadcrumbCache.Save(userId, breadcrumb); err != nil {
+			logger.ERROR("can't save cache %s: %s with %+v", userId, err, breadcrumb)
+			m.Error(http.StatusInternalServerError, err)
+			return ret
+		}
 	}
 
 	earth := breadcrumb
@@ -158,20 +168,28 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) Breadcrum
 		Longitude: mars.Longitude - earth.Longitude,
 	}
 
-	crosses, err := m.breadcrumbsRepo.Crosses(userId)
-	if err != nil {
-		logger.ERROR("can't get user %d cross: %s", err)
-		return ret
-	}
-	for _, cross := range crosses {
-		m.castLocker.RLock()
-		b, ok := m.crossCast[cross]
-		m.castLocker.RUnlock()
-		if !ok {
-			continue
+	go func() {
+		route := Geomark{
+			Id:   fmt.Sprintf("%d", userId),
+			Type: "route",
+			Tags: []string{"breadcrumbs"},
 		}
-		b.Send(route)
-	}
+		for _, cross := range crossIds {
+			m.castLocker.RLock()
+			b, ok := m.crossCast[cross]
+			m.castLocker.RUnlock()
+			if !ok {
+				continue
+			}
+			l, err := m.breadcrumbCache.LoadCross(userId, cross)
+			if err != nil {
+				logger.ERROR("get user %d last breadcrumb from cross %d failed: %s", userId, cross, err)
+				continue
+			}
+			route.Positions = []SimpleLocation{l}
+			b.Send(route)
+		}
+	}()
 
 	return ret
 }
@@ -190,9 +208,13 @@ func (m RouteMap) HandleGetBreadcrums() []Geomark {
 	var ret []Geomark
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
-		route, err := m.breadcrumbsRepo.Load(userId)
-		if err != nil {
-			logger.ERROR("can't get user %d breadcrumbs: %s", userId, err)
+		route := Geomark{
+			Id:   fmt.Sprintf("%d", userId),
+			Type: "route",
+		}
+		var err error
+		if route.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID)); err != nil {
+			logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
 			continue
 		}
 		if len(route.Positions) == 0 {
@@ -202,6 +224,41 @@ func (m RouteMap) HandleGetBreadcrums() []Geomark {
 			route.ToMars(m.conversion)
 		}
 		ret = append(ret, route)
+	}
+	return ret
+}
+
+func (m RouteMap) HandleGetUserBreadcrums() Geomark {
+	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
+	m.Header().Set("Access-Control-Allow-Credentials", "true")
+	m.Header().Set("Cache-Control", "no-cache")
+
+	toMars, userIdStr := m.Request().URL.Query().Get("coordinate") == "mars", m.Vars()["user_id"]
+	token, ok := m.auth()
+	var ret Geomark
+	if !ok {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		return ret
+	}
+	var userId int64
+	for _, invitation := range token.Cross.Exfee.Invitations {
+		if fmt.Sprintf("%d", invitation.Identity.UserID) == userIdStr {
+			userId = invitation.Identity.UserID
+			break
+		}
+	}
+	if userId == 0 {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		return ret
+	}
+	var err error
+	if ret.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID)); err != nil {
+		logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
+		return ret
+	}
+	ret.Id, ret.Type = fmt.Sprintf("%d", userId), "route"
+	if toMars {
+		ret.ToMars(m.conversion)
 	}
 	return ret
 }
@@ -218,7 +275,7 @@ func (m RouteMap) HandleUpdateGeomarks(data []Geomark) {
 	}
 
 	m.castLocker.RLock()
-	broadcast := m.crossCast[token.Cross.ID]
+	broadcast := m.crossCast[int64(token.Cross.ID)]
 	m.castLocker.RUnlock()
 	mars := m.Request().URL.Query().Get("coordinate") == "mars"
 	if broadcast != nil || mars {
@@ -311,10 +368,10 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 
 	m.castLocker.Lock()
-	b, ok := m.crossCast[token.Cross.ID]
+	b, ok := m.crossCast[int64(token.Cross.ID)]
 	if !ok {
 		b = broadcast.NewBroadcast(-1)
-		m.crossCast[token.Cross.ID] = b
+		m.crossCast[int64(token.Cross.ID)] = b
 	}
 	m.castLocker.Unlock()
 	c := make(chan interface{})
@@ -325,7 +382,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 
 		if b.Len() == 0 {
 			m.castLocker.Lock()
-			delete(m.crossCast, token.Cross.ID)
+			delete(m.crossCast, int64(token.Cross.ID))
 			m.castLocker.Unlock()
 		}
 	}()
@@ -334,9 +391,18 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
-		route, err := m.breadcrumbsRepo.Load(userId)
+		route := Geomark{
+			Id:   fmt.Sprintf("%d", userId),
+			Type: "route",
+			Tags: []string{"breadcrumbs"},
+		}
+		l, err := m.breadcrumbCache.LoadCross(userId, int64(token.Cross.ID))
 		if err != nil {
-			logger.ERROR("can't get user %d breadcrumbs: %s", userId, err)
+			logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
+			continue
+		}
+		route.Positions = append(route.Positions, l)
+		if len(route.Positions) == 0 {
 			continue
 		}
 		if toMars {
@@ -490,14 +556,12 @@ func (m RouteMap) HandleSendRequest(id string) {
 }
 
 func (m *RouteMap) auth() (Token, bool) {
-	logger.DEBUG("Here")
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
 	if authData == "" {
 		authData = `{"token_type":"user_token","user_id":475,"signin_time":1373599864,"last_authenticate":1373599864}`
 	}
-	logger.DEBUG("auth data: %s", authData)
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
