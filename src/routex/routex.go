@@ -486,8 +486,9 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 
 	marks, err := m.geomarksRepo.Get(int64(token.Cross.ID))
+	fmt.Println(marks, err)
 	if err == nil {
-		if marks == nil {
+		if len(marks) == 0 {
 			var lat, lng float64
 			if token.Cross.Place != nil {
 				if lng, err = strconv.ParseFloat(token.Cross.Place.Lng, 64); err != nil {
@@ -630,9 +631,9 @@ func (m *RouteMap) auth() (Token, bool) {
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	if authData == "" {
-		authData = `{"token_type":"user_token","user_id":475,"signin_time":1373599864,"last_authenticate":1373599864}`
-	}
+	// if authData == "" {
+	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1373599864,"last_authenticate":1373599864}`
+	// }
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
