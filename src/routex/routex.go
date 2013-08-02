@@ -170,7 +170,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) Breadcrum
 
 	go func() {
 		route := Geomark{
-			Id:   fmt.Sprintf("%d", userId),
+			Id:   fmt.Sprintf("%d@exfe", userId),
 			Type: "route",
 			Tags: []string{"breadcrumbs"},
 		}
@@ -209,7 +209,7 @@ func (m RouteMap) HandleGetBreadcrums() []Geomark {
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
-			Id:   fmt.Sprintf("%d", userId),
+			Id:   fmt.Sprintf("%d@exfe", userId),
 			Type: "route",
 		}
 		var err error
@@ -392,7 +392,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
-			Id:   fmt.Sprintf("%d", userId),
+			Id:   fmt.Sprintf("%d@exfe", userId),
 			Type: "route",
 			Tags: []string{"breadcrumbs"},
 		}
