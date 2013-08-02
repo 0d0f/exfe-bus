@@ -429,7 +429,6 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
-	m.Header().Set("abc", "123")
 
 	token, ok := m.auth()
 	if !ok {
