@@ -342,7 +342,7 @@ func (m RouteMap) HandleCreateGeomark(mark Geomark) string {
 	if m.Request().URL.Query().Get("coordinate") == "mars" {
 		mark.ToEarth(m.conversion)
 	}
-	mark.CreatedAt, mark.UpdatedAt = time.Now().Unix(), time.Now().Unix()
+	mark.CreatedAt, mark.UpdatedAt, mark.Action = time.Now().Unix(), time.Now().Unix(), ""
 	id, err := m.geomarksRepo.Create(int64(token.Cross.ID), mark)
 	if err != nil {
 		m.Error(http.StatusInternalServerError, err)
@@ -373,7 +373,7 @@ func (m RouteMap) HandleUpdateGeomark(mark Geomark) {
 		return
 	}
 
-	mark.Id, mark.UpdatedAt = m.Vars()["mark_id"], time.Now().Unix()
+	mark.Id, mark.UpdatedAt, mark.Action = m.Vars()["mark_id"], time.Now().Unix(), ""
 	if m.Request().URL.Query().Get("coordinate") == "mars" {
 		mark.ToEarth(m.conversion)
 	}
@@ -413,6 +413,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 	}
 
 	go func() {
+		mark.Action = "delete"
 		m.castLocker.RLock()
 		broadcast := m.crossCast[int64(token.Cross.ID)]
 		m.castLocker.RUnlock()
@@ -486,7 +487,6 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 
 	marks, err := m.geomarksRepo.Get(int64(token.Cross.ID))
-	fmt.Println(marks, err)
 	if err == nil {
 		if len(marks) == 0 {
 			var lat, lng float64

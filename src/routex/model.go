@@ -51,6 +51,7 @@ func (l *SimpleLocation) MarshalJSON() ([]byte, error) {
 type Geomark struct {
 	Id          string           `json:"id,omitempty"`
 	Type        string           `json:"type,omitempty"`
+	Action      string           `json:"action,omitempty"`
 	CreatedAt   int64            `json:"created_at,omitempty"`
 	CreatedBy   string           `json:"created_by,omitempty"`
 	UpdatedAt   int64            `json:"updated_at,omitempty"`
