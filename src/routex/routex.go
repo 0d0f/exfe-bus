@@ -429,6 +429,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
+	m.Header().Set("abc", "123")
 
 	token, ok := m.auth()
 	if !ok {
@@ -436,9 +437,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
-	logger.DEBUG("write ok")
 	m.WriteHeader(http.StatusOK)
-	stream.Write("\n")
 
 	m.castLocker.Lock()
 	b, ok := m.crossCast[int64(token.Cross.ID)]
