@@ -436,8 +436,6 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
-	m.WriteHeader(http.StatusOK)
-	stream.Write(map[string]string{})
 
 	m.castLocker.Lock()
 	b, ok := m.crossCast[int64(token.Cross.ID)]
