@@ -438,7 +438,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 	logger.DEBUG("write ok")
 	m.WriteHeader(http.StatusOK)
-	stream.Write("adsafdasfdasfdasfdsafasdfadsfdasfdasfdasfdasfadsfdafdasfdasfadsfdafdasfdasfdas")
+	stream.Write("\n")
 
 	m.castLocker.Lock()
 	b, ok := m.crossCast[int64(token.Cross.ID)]
