@@ -22,7 +22,7 @@ type RouteMap struct {
 	GetBreadcrums    rest.Processor `path:"/crosses/:cross_id/breadcrumbs" method:"GET"`
 	UpdateGeomarks   rest.Processor `path:"/crosses/:cross_id/geomarks" method:"POST"`
 	GetGeomarks      rest.Processor `path:"/crosses/:cross_id/geomarks" method:"GET"`
-	Notification     rest.Streaming `path:"/crosses/:cross_id" method:"POST"`
+	Notification     rest.Streaming `path:"/crosses/:cross_id" method:"WATCH"`
 	Options          rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
 	SendRequest      rest.Processor `path:"/crosses/:cross_id/request" method:"POST"`
 
@@ -256,10 +256,6 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
-	if m.Request().URL.Query().Get("_method") != "WATCH" {
-		m.Error(http.StatusBadRequest, m.DetailError(-1, "method not watch"))
-		return
-	}
 	token, ok := m.auth()
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))

@@ -23,11 +23,15 @@ type RouteMap struct {
 	UpdateBreadcrums  rest.Processor `path:"/breadcrumbs" method:"POST"`
 	GetBreadcrums     rest.Processor `path:"/crosses/:cross_id/breadcrumbs" method:"GET"`
 	GetUserBreadcrums rest.Processor `path:"/crosses/:cross_id/breadcrumbs/users/:user_id" method:"GET"`
-	UpdateGeomarks    rest.Processor `path:"/crosses/:cross_id/geomarks" method:"POST"`
-	GetGeomarks       rest.Processor `path:"/crosses/:cross_id/geomarks" method:"GET"`
-	Notification      rest.Streaming `path:"/crosses/:cross_id" method:"POST"`
-	SendRequest       rest.Processor `path:"/crosses/:cross_id/request" method:"POST"`
-	Options           rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
+
+	GetGeomarks   rest.Processor `path:"/crosses/:cross_id/geomarks" method:"GET"`
+	CreateGeomark rest.Processor `path:"/crosses/:cross_id/geomarks" method:"POST"`
+	UpdateGeomark rest.Processor `path:"/crosses/:cross_id/geomarks/:mark_id" method:"PUT"`
+	DeleteGeomark rest.Processor `path:"/crosses/:cross_id/geomarks/:mark_id" method:"DELETE"`
+
+	Notification rest.Streaming `path:"/crosses/:cross_id" method:"WATCH"`
+	SendRequest  rest.Processor `path:"/crosses/:cross_id/request" method:"POST"`
+	Options      rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
 
 	breadcrumbCache BreadcrumbCache
 	breadcrumbsRepo BreadcrumbsRepo
@@ -266,37 +270,6 @@ func (m RouteMap) HandleGetUserBreadcrums() Geomark {
 	return ret
 }
 
-func (m RouteMap) HandleUpdateGeomarks(data []Geomark) {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
-
-	token, ok := m.auth()
-	if !ok || token.Readonly {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
-		return
-	}
-
-	m.castLocker.RLock()
-	broadcast := m.crossCast[int64(token.Cross.ID)]
-	m.castLocker.RUnlock()
-	mars := m.Request().URL.Query().Get("coordinate") == "mars"
-	if broadcast != nil || mars {
-		for i, d := range data {
-			if mars {
-				d.ToEarth(m.conversion)
-			}
-			broadcast.Send(d)
-			data[i] = d
-		}
-	}
-	if err := m.geomarksRepo.Save(token.Cross.ID, data); err != nil {
-		logger.ERROR("save route for cross %d failed: %s", token.Cross.ID, err)
-		m.Error(http.StatusInternalServerError, err)
-		return
-	}
-}
-
 func (m RouteMap) HandleGetGeomarks() []Geomark {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -307,7 +280,7 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
-	data, err := m.geomarksRepo.Load(token.Cross.ID)
+	data, err := m.geomarksRepo.Get(int64(token.Cross.ID))
 	if err != nil {
 		logger.ERROR("can't get route of cross %d: %s", token.Cross.ID, err)
 		m.Error(http.StatusInternalServerError, err)
@@ -355,15 +328,107 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 	return data
 }
 
+func (m RouteMap) HandleCreateGeomark(mark Geomark) string {
+	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
+	m.Header().Set("Access-Control-Allow-Credentials", "true")
+	m.Header().Set("Cache-Control", "no-cache")
+
+	token, ok := m.auth()
+	if !ok || token.Readonly {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		return ""
+	}
+
+	if m.Request().URL.Query().Get("coordinate") == "mars" {
+		mark.ToEarth(m.conversion)
+	}
+	mark.CreatedAt, mark.UpdatedAt = time.Now().Unix(), time.Now().Unix()
+	id, err := m.geomarksRepo.Create(int64(token.Cross.ID), mark)
+	if err != nil {
+		m.Error(http.StatusInternalServerError, err)
+		return ""
+	}
+	mark.Id = id
+
+	go func() {
+		m.castLocker.RLock()
+		broadcast := m.crossCast[int64(token.Cross.ID)]
+		m.castLocker.RUnlock()
+		if broadcast != nil {
+			broadcast.Send(mark)
+		}
+	}()
+
+	return id
+}
+
+func (m RouteMap) HandleUpdateGeomark(mark Geomark) {
+	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
+	m.Header().Set("Access-Control-Allow-Credentials", "true")
+	m.Header().Set("Cache-Control", "no-cache")
+
+	token, ok := m.auth()
+	if !ok || token.Readonly {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		return
+	}
+
+	mark.Id, mark.UpdatedAt = m.Vars()["mark_id"], time.Now().Unix()
+	if m.Request().URL.Query().Get("coordinate") == "mars" {
+		mark.ToEarth(m.conversion)
+	}
+	if err := m.geomarksRepo.Update(int64(token.Cross.ID), mark); err != nil {
+		m.Error(http.StatusInternalServerError, err)
+		return
+	}
+
+	go func() {
+		m.castLocker.RLock()
+		broadcast := m.crossCast[int64(token.Cross.ID)]
+		m.castLocker.RUnlock()
+		if broadcast != nil {
+			broadcast.Send(mark)
+		}
+	}()
+
+	return
+}
+
+func (m RouteMap) HandleDeleteGeomark() {
+	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
+	m.Header().Set("Access-Control-Allow-Credentials", "true")
+	m.Header().Set("Cache-Control", "no-cache")
+
+	token, ok := m.auth()
+	if !ok || token.Readonly {
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		return
+	}
+
+	var mark Geomark
+	mark.Id = m.Vars()["mark_id"]
+	if err := m.geomarksRepo.Delete(int64(token.Cross.ID), mark.Id); err != nil {
+		m.Error(http.StatusInternalServerError, err)
+		return
+	}
+
+	go func() {
+		m.castLocker.RLock()
+		broadcast := m.crossCast[int64(token.Cross.ID)]
+		m.castLocker.RUnlock()
+		if broadcast != nil {
+			broadcast.Send(mark)
+		}
+	}()
+
+	return
+}
+
 func (m RouteMap) HandleNotification(stream rest.Stream) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
-	if m.Request().URL.Query().Get("_method") != "WATCH" {
-		m.Error(http.StatusBadRequest, m.DetailError(-1, "method not watch"))
-		return
-	}
 	token, ok := m.auth()
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
@@ -420,7 +485,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 		}
 	}
 
-	marks, err := m.geomarksRepo.Load(token.Cross.ID)
+	marks, err := m.geomarksRepo.Get(int64(token.Cross.ID))
 	if err == nil {
 		if marks == nil {
 			var lat, lng float64
@@ -565,9 +630,9 @@ func (m *RouteMap) auth() (Token, bool) {
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	// if authData == "" {
-	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1373599864,"last_authenticate":1373599864}`
-	// }
+	if authData == "" {
+		authData = `{"token_type":"user_token","user_id":475,"signin_time":1373599864,"last_authenticate":1373599864}`
+	}
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {

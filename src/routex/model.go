@@ -8,6 +8,7 @@ import (
 	"logger"
 	"math"
 	"model"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -118,8 +119,10 @@ type BreadcrumbsRepo interface {
 }
 
 type GeomarksRepo interface {
-	Save(crossId uint64, content []Geomark) error
-	Load(crossId uint64) ([]Geomark, error)
+	Create(crossId int64, mark Geomark) (string, error)
+	Update(crossId int64, mark Geomark) error
+	Get(crossId int64) ([]Geomark, error)
+	Delete(crossId int64, id string) error
 }
 
 type GeoConversionRepo interface {
@@ -318,58 +321,95 @@ func (s *BreadcrumbCacheSaver) LoadCross(userId, crossId int64) (SimpleLocation,
 }
 
 const (
-	GEOMARKS_INSERT = "INSERT IGNORE INTO `routex` (`cross_id`, `route`, `touched_at`) VALUES (?, ?, NOW())"
-	GEOMARKS_UPDATE = "UPDATE `routex` SET `route`=?, `touched_at`=NOW() WHERE `cross_id`=?"
-	GEOMARKS_GET    = "SELECT `route` FROM `routex` WHERE `cross_id`=?"
+	GEOMARKS_CREATE    = "INSERT INTO `geomarks` (`cross_id`, `mark`, `touched_at`) VALUES (?, ?, UNIX_TIMESTAMP())"
+	GEOMARKS_UPDATE    = "UPDATE `geomarks` SET `mark`=?, `touched_at`=UNIX_TIMESTAMP() WHERE `id`=? AND `cross_id`=?"
+	GEOMARKS_GET       = "SELECT `id`, `mark` FROM `geomarks` WHERE `cross_id`=?"
+	GEOMARKS_DELETE    = "DELETE FROM `geomarks` WHERE `id`=? AND `cross_id`=?"
+	GEOMARKS_ID_SUFFIX = "@geomark"
 )
 
 type GeomarksSaver struct {
 	Db *sql.DB
 }
 
-func (s *GeomarksSaver) Save(crossId uint64, data []Geomark) error {
-	b, err := json.Marshal(data)
+func (s *GeomarksSaver) Create(crossId int64, mark Geomark) (string, error) {
+	mark.CreatedAt, mark.UpdatedAt = time.Now().Unix(), time.Now().Unix()
+	b, err := json.Marshal(mark)
+	if err != nil {
+		return "", err
+	}
+	n, err := s.Db.Exec(GEOMARKS_CREATE, crossId, string(b))
+	if err != nil {
+		return "", err
+	}
+	ret, err := n.LastInsertId()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%d"+GEOMARKS_ID_SUFFIX, ret), nil
+}
+
+func (s *GeomarksSaver) Update(crossId int64, mark Geomark) error {
+	id, err := s.getId(mark.Id)
 	if err != nil {
 		return err
 	}
-	n, err := s.Db.Exec(GEOMARKS_INSERT, crossId, string(b))
+	mark.Id, mark.UpdatedAt = "", time.Now().Unix()
+	b, err := json.Marshal(mark)
 	if err != nil {
 		return err
 	}
-	rows, err := n.RowsAffected()
-	if err != nil {
+	if _, err := s.Db.Exec(GEOMARKS_UPDATE, string(b), id, crossId); err != nil {
 		return err
-	}
-	if rows == 0 {
-		_, err := s.Db.Exec(GEOMARKS_UPDATE, string(b), crossId)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
 
-func (s *GeomarksSaver) Load(crossId uint64) ([]Geomark, error) {
-	row, err := s.Db.Query(GEOMARKS_GET, crossId)
+func (s *GeomarksSaver) Get(crossId int64) ([]Geomark, error) {
+	rows, err := s.Db.Query(GEOMARKS_GET, crossId)
 	if err != nil {
 		return nil, err
 	}
-	defer row.Close()
+	defer rows.Close()
 
-	value, exist := "", false
-	for row.Next() {
-		row.Scan(&value)
-		exist = true
-	}
-	if !exist {
-		return nil, nil
-	}
 	var ret []Geomark
-	err = json.Unmarshal([]byte(value), &ret)
-	if err != nil {
-		return nil, err
+	for rows.Next() {
+		var id int64
+		var b string
+		if err := rows.Scan(&id, &b); err != nil {
+			return nil, err
+		}
+		var mark Geomark
+		if err := json.Unmarshal([]byte(b), &mark); err != nil {
+			return nil, err
+		}
+		mark.Id = fmt.Sprintf("%d"+GEOMARKS_ID_SUFFIX, id)
+		ret = append(ret, mark)
 	}
 	return ret, nil
+}
+
+func (s *GeomarksSaver) Delete(crossId int64, markId string) error {
+	id, err := s.getId(markId)
+	if err != nil {
+		return err
+	}
+	if _, err := s.Db.Exec(GEOMARKS_DELETE, id, crossId); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *GeomarksSaver) getId(markId string) (int64, error) {
+	if !strings.HasSuffix(markId, GEOMARKS_ID_SUFFIX) {
+		return 0, fmt.Errorf("invalid id: %s", markId)
+	}
+	markId = markId[:len(markId)-len(GEOMARKS_ID_SUFFIX)]
+	id, err := strconv.ParseInt(markId, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid id: %s"+GEOMARKS_ID_SUFFIX, markId)
+	}
+	return id, nil
 }
 
 const (
