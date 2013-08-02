@@ -9,6 +9,7 @@ import (
 	"math"
 	"model"
 	"strings"
+	"time"
 )
 
 func redisScript(r redis.Conn, hash string, script string, args ...interface{}) (interface{}, error) {
@@ -107,7 +108,7 @@ type BreadcrumbCache interface {
 	BreadcrumbCrossControl
 	Save(userId int64, l SimpleLocation) (cross_ids []int64, err error)
 	Load(userId int64) (SimpleLocation, error)
-	LoadCross(userId, crossId int64) (SimpleLocation, error)
+	LoadCross(userId, crossId int64) (SimpleLocation, bool, error)
 }
 
 type BreadcrumbsRepo interface {
@@ -206,15 +207,15 @@ func NewBreadcrumbCacheSaver(r *redis.Pool) *BreadcrumbCacheSaver {
 	ret.saveScript = redis.NewScript(1, `
 		local user_id = KEYS[1]
 		local data = ARGV[1]
-		local matchkey = "exfe:v3:routex:user_"..user_id..":cross:*"
-		local keys = redis.call("KEYS", matchkey)
-		local ret = {}
-		local keyprefix = string.len(matchkey)
+		local now = ARGV[2]
 		redis.call("SET", "exfe:v3:routex:user_"..user_id, data, "EX", "60")
-		for i = 1, #keys do
-			local k = keys[i]
-			redis.call("SET", k, data)
-			table.insert(ret, string.sub(k, keyprefix))
+		local matchkey = "exfe:v3:routex:user_"..user_id..":cross"
+		local crosses = redis.call("ZRANGEBYSCORE", matchkey, now, "+INF")
+		local ret = {}
+		for i = 1, #crosses do
+			local c = crosses[i]
+			redis.call("SET", matchkey..":"..c, data, "EX", "7200")
+			table.insert(ret, c)
 		end
 		return ret
 	`)
@@ -230,13 +231,14 @@ func (s *BreadcrumbCacheSaver) ckey(crossId, userId int64) string {
 }
 
 func (s *BreadcrumbCacheSaver) EnableCross(userId, crossId int64, afterInSecond int) error {
-	key, conn := s.ckey(crossId, userId), s.r.Get()
+	key, conn := s.ukey(userId)+":cross", s.r.Get()
 	defer conn.Close()
 
-	if err := conn.Send("SET", key, "", "NX"); err != nil {
+	till := time.Now().Add(time.Duration(afterInSecond) * time.Second).Unix()
+	if err := conn.Send("ZADD", key, till, crossId); err != nil {
 		return err
 	}
-	if err := conn.Send("EXPIRE", key, afterInSecond); err != nil {
+	if err := conn.Send("EXPIRE", key, 7200); err != nil {
 		return err
 	}
 	if err := conn.Flush(); err != nil {
@@ -246,10 +248,11 @@ func (s *BreadcrumbCacheSaver) EnableCross(userId, crossId int64, afterInSecond 
 }
 
 func (s *BreadcrumbCacheSaver) DisableCross(userId, crossId int64) error {
-	key, conn := s.ckey(crossId, userId), s.r.Get()
+	key, conn := s.ukey(userId)+":cross", s.r.Get()
 	defer conn.Close()
 
-	if _, err := conn.Do("DEL", key); err != nil {
+	till := time.Now().Unix()
+	if _, err := conn.Do("ZADD", key, till, crossId); err != nil {
 		return err
 	}
 	return nil
@@ -263,7 +266,7 @@ func (s *BreadcrumbCacheSaver) Save(userId int64, l SimpleLocation) ([]int64, er
 	conn := s.r.Get()
 	defer conn.Close()
 
-	reply, err := redis.Values(s.saveScript.Do(conn, userId, b))
+	reply, err := redis.Values(s.saveScript.Do(conn, userId, b, time.Now().Unix()))
 	if err != nil {
 		return nil, err
 	}
@@ -295,20 +298,23 @@ func (s *BreadcrumbCacheSaver) Load(userId int64) (SimpleLocation, error) {
 	return ret, nil
 }
 
-func (s *BreadcrumbCacheSaver) LoadCross(userId, crossId int64) (SimpleLocation, error) {
+func (s *BreadcrumbCacheSaver) LoadCross(userId, crossId int64) (SimpleLocation, bool, error) {
 	key, conn := s.ckey(crossId, userId), s.r.Get()
 	defer conn.Close()
 
 	var ret SimpleLocation
 	reply, err := redis.Bytes(conn.Do("GET", key))
+	if err == redis.ErrNil {
+		return ret, false, nil
+	}
 	if err != nil {
-		return ret, err
+		return ret, false, err
 	}
 	if err := json.Unmarshal(reply, &ret); err != nil {
 		logger.ERROR("can't unmashal location value: %s with %s", err, string(reply))
-		return ret, err
+		return ret, false, err
 	}
-	return ret, nil
+	return ret, true, nil
 }
 
 const (
