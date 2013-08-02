@@ -438,6 +438,7 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 	}
 	logger.DEBUG("write ok")
 	m.WriteHeader(http.StatusOK)
+	stream.Write("adsafdasfdasfdasfdsafasdfadsfdasfdasfdasfdasfadsfdafdasfdasfadsfdafdasfdasfdas")
 
 	m.castLocker.Lock()
 	b, ok := m.crossCast[int64(token.Cross.ID)]
@@ -683,7 +684,9 @@ func (m *RouteMap) auth() (Token, bool) {
 		if err != nil {
 			return token, false
 		}
-		logger.DEBUG("cross id", cross.ID)
+		if cross.ID != crossId {
+			return token, false
+		}
 		token.Cross, token.Readonly = cross, true
 		return token, true
 	}
