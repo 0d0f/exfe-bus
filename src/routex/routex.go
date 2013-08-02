@@ -432,9 +432,11 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 
 	token, ok := m.auth()
 	if !ok {
+		logger.DEBUG("invalid token")
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
+	logger.DEBUG("write ok")
 	m.WriteHeader(http.StatusOK)
 
 	m.castLocker.Lock()
