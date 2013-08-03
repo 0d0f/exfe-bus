@@ -68,26 +68,24 @@ type Geomark struct {
 }
 
 func (g *Geomark) ToMars(c GeoConversionRepo) {
-	switch g.Type {
-	case "location":
-		g.Latitude, g.Longitude = c.EarthToMars(g.Latitude, g.Longitude)
-	case "route":
-		for i, p := range g.Positions {
-			p.Latitude, p.Longitude = c.EarthToMars(p.Latitude, p.Longitude)
-			g.Positions[i] = p
-		}
-	}
+	g.convert(c.EarthToMars)
 }
 
 func (g *Geomark) ToEarth(c GeoConversionRepo) {
+	g.convert(c.MarsToEarth)
+}
+
+func (g *Geomark) convert(f func(lat, lng float64) (float64, float64)) {
 	switch g.Type {
 	case "location":
-		g.Latitude, g.Longitude = c.MarsToEarth(g.Latitude, g.Longitude)
+		g.Latitude, g.Longitude = f(g.Latitude, g.Longitude)
 	case "route":
+		pos := make([]SimpleLocation, len(g.Positions))
 		for i, p := range g.Positions {
-			p.Latitude, p.Longitude = c.MarsToEarth(p.Latitude, p.Longitude)
-			g.Positions[i] = p
+			p.Latitude, p.Longitude = f(p.Latitude, p.Longitude)
+			pos[i] = p
 		}
+		g.Positions = pos
 	}
 }
 
