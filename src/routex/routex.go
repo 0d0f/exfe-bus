@@ -146,7 +146,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) Breadcrum
 	if err != nil || distance > 30 {
 		logger.INFO("routex", userId, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy)
 		if crossIds, err = m.breadcrumbCache.Save(userId, breadcrumb); err != nil {
-			logger.ERROR("can't save cache %s: %s with %+v", userId, err, breadcrumb)
+			logger.ERROR("can't save cache %d: %s with %+v", userId, err, breadcrumb)
 			m.Error(http.StatusInternalServerError, err)
 			return ret
 		}
