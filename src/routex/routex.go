@@ -212,7 +212,7 @@ func (m RouteMap) HandleGetBreadcrums() []Geomark {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
-	var ret []Geomark
+	ret := make([]Geomark, 0)
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
