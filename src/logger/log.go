@@ -76,7 +76,7 @@ func (f Func) Quit() {
 }
 
 func INFO(prefix string, arg ...interface{}) {
-	sys, err := syslog.New(syslog.LOG_INFO, prefix)
+	sys, err := syslog.New(syslog.LOG_USER|syslog.LOG_INFO, prefix)
 	if err != nil {
 		ERROR("can't open syslog: %s", err)
 		return
