@@ -54,6 +54,7 @@ func SendAndSave(localTemplate *formatter.LocalTemplate, platform *broker.Platfo
 		}
 		id, ontime, defaultOk, err = platform.Send(fallback, text)
 		if err != nil {
+			logger.INFO("notifier", id, template, to, "error", err)
 			continue
 		}
 		needResponse = true
@@ -62,5 +63,6 @@ func SendAndSave(localTemplate *formatter.LocalTemplate, platform *broker.Platfo
 	if !needResponse {
 		return
 	}
+	logger.INFO("notifier", id, template, to)
 	WaitResponse(id, ontime, defaultOk, *to, failUrl, failArg)
 }

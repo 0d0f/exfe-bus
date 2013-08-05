@@ -145,7 +145,7 @@ func (b *Bot) GreetNewFriend(username string) {
 		if err != nil {
 			return
 		}
-		logger.INFO("wechat_newuser", "uin", contact.Uin, "user", user.Id)
+		logger.INFO("wechat", "newuser", "uin", contact.Uin, "user", user.Id)
 		password := fmt.Sprintf("%04d", rand.Intn(1e4))
 		err = b.platform.SetPassword(user.Id, password)
 		if err != nil {
@@ -264,7 +264,7 @@ func (b *Bot) GatherCross(chatroomId string, cross model.Cross) (uint64, error) 
 	if err != nil {
 		logger.ERROR("can't save exfee id: %s", err)
 	}
-	logger.INFO("wechat_gather", chatroomId, "cross", cross.ID, "exfee", cross.Exfee.ID)
+	logger.INFO("wechat", "gather", chatroomId, "cross", cross.ID, "exfee", cross.Exfee.ID)
 	return cross.ID, nil
 }
 
@@ -293,6 +293,6 @@ func (b *Bot) UpdateCross(cross model.Cross) error {
 	if err != nil {
 		logger.ERROR("can't update cross %d: %s", crossId, err)
 	}
-	logger.INFO("wechat_update", "cross", crossId)
+	logger.INFO("wechat", "update", "cross", crossId)
 	return nil
 }

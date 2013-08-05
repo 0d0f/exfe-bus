@@ -72,6 +72,7 @@ func (q *Queue) Do(key string, datas [][]byte) {
 					logger.ERROR("%s %s: %s, with %s", method, service, err, string(data))
 				} else {
 					resp.Close()
+					logger.INFO("queue", "do", method, service, mergeKey)
 				}
 			}()
 		}
@@ -84,6 +85,7 @@ func (q *Queue) Do(key string, datas [][]byte) {
 				logger.ERROR("%s %s: %s, with %s", method, service, err, string(args))
 			} else {
 				resp.Close()
+				logger.INFO("queue", "do", method, service, mergeKey)
 			}
 		}()
 	}
@@ -156,6 +158,7 @@ func (q Queue) HandlePush(data string) {
 		q.Error(http.StatusInternalServerError, q.DetailError(7, err.Error()))
 		return
 	}
+	logger.INFO("queue", "push", method, service, mergeKey, ontime)
 }
 
 func (q Queue) HandleDelete() {
@@ -190,4 +193,5 @@ func (q Queue) HandleDelete() {
 		q.Error(http.StatusInternalServerError, q.DetailError(7, err.Error()))
 		return
 	}
+	logger.INFO("queue", "delete", method, service, mergeKey)
 }
