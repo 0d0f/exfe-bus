@@ -14,7 +14,6 @@ import (
 	"notifier"
 	"os"
 	"routex"
-	routex_old "routex_old"
 	"splitter"
 	"time"
 	"token"
@@ -176,12 +175,6 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Routex {
-		location := &routex_old.BreadcrumbsSaver{redisPool}
-		route := &routex_old.GeomarksSaver{database}
-		conversion := &routex_old.GeoConversion{database}
-		routex_old := routex_old.New(location, route, conversion, platform, &config)
-		register("routex_old", routex_old, nil)
-
 		saver := routex.NewBreadcrumbsSaver(database)
 		cache := routex.NewBreadcrumbCacheSaver(redisPool)
 		geomark := &routex.GeomarksSaver{database}
