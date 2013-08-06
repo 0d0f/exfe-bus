@@ -175,11 +175,12 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Routex {
-		saver := routex.NewBreadcrumbsSaver(database)
-		cache := routex.NewBreadcrumbCacheSaver(redisPool)
-		geomark := &routex.GeomarksSaver{database}
+		routexSaver := routex.NewRoutexSaver(database)
+		breadcrumbsSaver := routex.NewBreadcrumbsSaver(database)
+		breadcrumbsCache := routex.NewBreadcrumbCacheSaver(redisPool)
+		geomarksSaver := &routex.GeomarksSaver{database}
 		c := routex.NewGeoConversion(database)
-		rx := routex.New(cache, saver, geomark, c, platform, &config)
+		rx := routex.New(routexSaver, breadcrumbsCache, breadcrumbsSaver, geomarksSaver, c, platform, &config)
 		register("routex", rx, nil)
 	}
 

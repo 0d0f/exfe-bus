@@ -19,7 +19,10 @@ import (
 type RouteMap struct {
 	rest.Service `prefix:"/v3/routex" mime:"application/json"`
 
-	SetUser           rest.Processor `path:"/user/crosses" method:"POST"`
+	SetUser      rest.Processor `path:"/user/crosses" method:"POST"`
+	SearchRoutex rest.Processor `path:"/_inner/crosses" method:"POST"`
+	GetRoutex    rest.Processor `path:"/_inner/user/:user_id/crosses/:cross_id" method:"GET"`
+
 	UpdateBreadcrums  rest.Processor `path:"/breadcrumbs" method:"POST"`
 	GetBreadcrums     rest.Processor `path:"/crosses/:cross_id/breadcrumbs" method:"GET"`
 	GetUserBreadcrums rest.Processor `path:"/crosses/:cross_id/breadcrumbs/users/:user_id" method:"GET"`
@@ -32,6 +35,7 @@ type RouteMap struct {
 	SendRequest  rest.Processor `path:"/crosses/:cross_id/request" method:"POST"`
 	Options      rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
 
+	routexRepo      RoutexRepo
 	breadcrumbCache BreadcrumbCache
 	breadcrumbsRepo BreadcrumbsRepo
 	geomarksRepo    GeomarksRepo
@@ -42,8 +46,9 @@ type RouteMap struct {
 	castLocker      sync.RWMutex
 }
 
-func New(breadcrumbCache BreadcrumbCache, breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, conversion GeoConversionRepo, platform *broker.Platform, config *model.Config) *RouteMap {
+func New(routexRepo RoutexRepo, breadcrumbCache BreadcrumbCache, breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, conversion GeoConversionRepo, platform *broker.Platform, config *model.Config) *RouteMap {
 	return &RouteMap{
+		routexRepo:      routexRepo,
 		breadcrumbCache: breadcrumbCache,
 		breadcrumbsRepo: breadcrumbsRepo,
 		geomarksRepo:    geomarksRepo,
@@ -79,10 +84,16 @@ func (m RouteMap) HandleSetUser(setup []UserCrossSetup) {
 				if s.AfterInSeconds == 0 {
 					s.AfterInSeconds = 7200
 				}
+				if err := m.routexRepo.EnableCross(userId, s.CrossId, s.AfterInSeconds); err != nil {
+					logger.ERROR("set user %d enable cross %d routex repo failed: %s", userId, s.CrossId, err)
+				}
 				if err := m.breadcrumbsRepo.EnableCross(userId, s.CrossId, s.AfterInSeconds); err != nil {
 					logger.ERROR("set user %d enable cross %d breadcrumbs repo failed: %s", userId, s.CrossId, err)
 				}
 			} else {
+				if err := m.routexRepo.DisableCross(userId, s.CrossId); err != nil {
+					logger.ERROR("set user %d disable cross %d routex repo failed: %s", userId, s.CrossId, err)
+				}
 				if err := m.breadcrumbsRepo.DisableCross(userId, s.CrossId); err != nil {
 					logger.ERROR("set user %d disable cross %d breadcrumbs repo failed: %s", userId, s.CrossId, err)
 				}
@@ -104,6 +115,40 @@ func (m RouteMap) HandleSetUser(setup []UserCrossSetup) {
 			}
 		}
 	}
+}
+
+func (m RouteMap) HandleSearchRoutex(crossIds []int64) []Routex {
+	ret, err := m.routexRepo.Search(crossIds)
+	if err != nil {
+		logger.ERROR("search for route failed: %s with %+v", err, crossIds)
+		m.Error(http.StatusInternalServerError, err)
+		return nil
+	}
+	return ret
+}
+
+func (m RouteMap) HandleGetRoutex() *bool {
+	userIdStr, crossIdStr := m.Vars()["user_id"], m.Vars()["cross_id"]
+	userId, err := strconv.ParseInt(userIdStr, 10, 64)
+	if err != nil {
+		m.Error(http.StatusBadRequest, fmt.Errorf("invalid user id %s", userIdStr))
+		return nil
+	}
+	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
+	if err != nil {
+		m.Error(http.StatusBadRequest, fmt.Errorf("invalid user id %s", crossIdStr))
+		return nil
+	}
+	route, err := m.routexRepo.Get(userId, crossId)
+	if err != nil {
+		logger.ERROR("get user %d cross %d routex failed: %s", userId, crossId, err)
+		m.Error(http.StatusInternalServerError, err)
+		return nil
+	}
+	if route == nil {
+		return nil
+	}
+	return &route.Enable
 }
 
 type BreadcrumbOffset struct {

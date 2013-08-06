@@ -98,20 +98,32 @@ type Token struct {
 	Readonly bool        `json:"-"`
 }
 
-type BreadcrumbCrossControl interface {
+type Routex struct {
+	CrossId   int64 `json:"cross_id,omitempty"`
+	Enable    bool  `json:"enable,omitempty"`
+	UpdatedAt int64 `json:"updated_at, omitempty"`
+}
+
+type RoutexControl interface {
 	EnableCross(userId, crossId int64, afterInSecond int) error
 	DisableCross(userId, crossId int64) error
 }
 
+type RoutexRepo interface {
+	RoutexControl
+	Search(crossIds []int64) ([]Routex, error)
+	Get(userId, crossId int64) (*Routex, error)
+}
+
 type BreadcrumbCache interface {
-	BreadcrumbCrossControl
+	RoutexControl
 	Save(userId int64, l SimpleLocation) (cross_ids []int64, err error)
 	Load(userId int64) (SimpleLocation, error)
 	LoadCross(userId, crossId int64) (SimpleLocation, bool, error)
 }
 
 type BreadcrumbsRepo interface {
-	BreadcrumbCrossControl
+	RoutexControl
 	Save(userId int64, l SimpleLocation) error
 	Load(userId, crossId int64) ([]SimpleLocation, error)
 }
@@ -125,6 +137,94 @@ type GeomarksRepo interface {
 type GeoConversionRepo interface {
 	EarthToMars(lat, long float64) (float64, float64)
 	MarsToEarth(lat, long float64) (float64, float64)
+}
+
+const (
+	ROUTEX_SETUP_INSERT = "INSERT IGNORE INTO `routex` (`user_id`, `cross_id`, `enable`, `updated_at`) VALUES(?, ?, ?, UNIX_TIMESTAMP())"
+	ROUTEX_SETUP_UPDATE = "UPDATE `routex` SET `enable`=?, `updated_at`=UNIX_TIMESTAMP() WHERE `user_id`=? AND `cross_id`=?"
+	ROUTEX_SETUP_SEARCH = "SELECT `cross_id`, `enable`, `updated_at` FROM `routex` WHERE `cross_id` IN (%s) ORDER BY `updated_at` DESC"
+	ROUTEX_SETUP_GET    = "SELECT `cross_id`, `enable`, `updated_at` FROM `routex` WHERE `user_id`=? AND `cross_id`=? LIMIT 1"
+)
+
+type RoutexSaver struct {
+	db *sql.DB
+}
+
+func NewRoutexSaver(db *sql.DB) *RoutexSaver {
+	return &RoutexSaver{
+		db: db,
+	}
+}
+
+func (s *RoutexSaver) EnableCross(userId, crossId int64, afterInSecond int) error {
+	res, err := s.db.Exec(ROUTEX_SETUP_UPDATE, true, userId, crossId)
+	if err != nil {
+		return err
+	}
+	r, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if r == 0 {
+		if _, err := s.db.Exec(ROUTEX_SETUP_INSERT, userId, crossId, true); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *RoutexSaver) DisableCross(userId, crossId int64) error {
+	res, err := s.db.Exec(ROUTEX_SETUP_UPDATE, false, userId, crossId)
+	if err != nil {
+		return err
+	}
+	r, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if r == 0 {
+		if _, err := s.db.Exec(ROUTEX_SETUP_INSERT, userId, crossId, false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *RoutexSaver) Search(crossIds []int64) ([]Routex, error) {
+	ids := ""
+	for _, id := range crossIds {
+		ids = fmt.Sprintf("%s,%d", ids, id)
+	}
+	ids = ids[1:]
+	sql := fmt.Sprintf(ROUTEX_SETUP_SEARCH, ids)
+	row, err := s.db.Query(sql)
+	if err != nil {
+		return nil, err
+	}
+	var ret []Routex
+	for row.Next() {
+		var routex Routex
+		if err := row.Scan(&routex.CrossId, &routex.Enable, &routex.UpdatedAt); err != nil {
+			return nil, err
+		}
+		ret = append(ret, routex)
+	}
+	return ret, nil
+}
+
+func (s *RoutexSaver) Get(userId, crossId int64) (*Routex, error) {
+	row, err := s.db.Query(ROUTEX_SETUP_GET, userId, crossId)
+	if err != nil {
+		return nil, err
+	}
+	if !row.Next() {
+		return nil, nil
+	}
+	var ret Routex
+	if err := row.Scan(&ret.CrossId, &ret.Enable, &ret.UpdatedAt); err != nil {
+		return nil, err
+	}
+	return &ret, nil
 }
 
 const (
