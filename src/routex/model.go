@@ -8,7 +8,6 @@ import (
 	"logger"
 	"math"
 	"model"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -118,10 +117,9 @@ type BreadcrumbsRepo interface {
 }
 
 type GeomarksRepo interface {
-	Create(crossId int64, mark Geomark) (string, error)
-	Update(crossId int64, mark Geomark) error
+	Set(crossId int64, mark Geomark) error
 	Get(crossId int64) ([]Geomark, error)
-	Delete(crossId int64, id string) error
+	Delete(crossId int64, type_, id string) error
 }
 
 type GeoConversionRepo interface {
@@ -320,46 +318,39 @@ func (s *BreadcrumbCacheSaver) LoadCross(userId, crossId int64) (SimpleLocation,
 }
 
 const (
-	GEOMARKS_CREATE    = "INSERT INTO `geomarks` (`cross_id`, `mark`, `touched_at`) VALUES (?, ?, UNIX_TIMESTAMP())"
-	GEOMARKS_UPDATE    = "UPDATE `geomarks` SET `mark`=?, `touched_at`=UNIX_TIMESTAMP() WHERE `id`=? AND `cross_id`=?"
-	GEOMARKS_GET       = "SELECT `id`, `mark` FROM `geomarks` WHERE `cross_id`=?"
-	GEOMARKS_DELETE    = "DELETE FROM `geomarks` WHERE `id`=? AND `cross_id`=?"
-	GEOMARKS_ID_SUFFIX = "@geomark"
+	GEOMARKS_CREATE = "INSERT IGNORE INTO `geomarks` (`id`, `type`, `cross_id`, `mark`, `touched_at`, `deleted`) VALUES (?, ?, ?, ?, UNIX_TIMESTAMP(), FALSE)"
+	GEOMARKS_UPDATE = "UPDATE `geomarks` SET `mark`=?, `touched_at`=UNIX_TIMESTAMP() WHERE `id`=? AND `type`=? AND `cross_id`=? AND `deleted`=FALSE"
+	GEOMARKS_GET    = "SELECT  `mark` FROM `geomarks` WHERE `cross_id`=? AND `deleted`=FALSE"
+	GEOMARKS_DELETE = "UPDATE `geomarks` SET `deleted`=TRUE, `touched_at`=UNIX_TIMESTAMP() WHERE `id`=? AND `type`=? AND `cross_id`=? AND `deleted`=FALSE"
 )
 
 type GeomarksSaver struct {
 	Db *sql.DB
 }
 
-func (s *GeomarksSaver) Create(crossId int64, mark Geomark) (string, error) {
-	mark.CreatedAt, mark.UpdatedAt = time.Now().Unix(), time.Now().Unix()
-	b, err := json.Marshal(mark)
-	if err != nil {
-		return "", err
-	}
-	n, err := s.Db.Exec(GEOMARKS_CREATE, crossId, string(b))
-	if err != nil {
-		return "", err
-	}
-	ret, err := n.LastInsertId()
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%d"+GEOMARKS_ID_SUFFIX, ret), nil
-}
-
-func (s *GeomarksSaver) Update(crossId int64, mark Geomark) error {
-	id, err := s.getId(mark.Id)
-	if err != nil {
-		return err
-	}
-	mark.Id, mark.UpdatedAt = "", time.Now().Unix()
+func (s *GeomarksSaver) Set(crossId int64, mark Geomark) error {
 	b, err := json.Marshal(mark)
 	if err != nil {
 		return err
 	}
-	if _, err := s.Db.Exec(GEOMARKS_UPDATE, string(b), id, crossId); err != nil {
+	n, err := s.Db.Exec(GEOMARKS_UPDATE, string(b), mark.Id, mark.Type, crossId)
+	if err != nil {
 		return err
+	}
+	ret, err := n.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if ret == 0 {
+		mark.CreatedAt = mark.UpdatedAt
+		b, err = json.Marshal(mark)
+		if err != nil {
+			return err
+		}
+		_, err = s.Db.Exec(GEOMARKS_CREATE, mark.Id, mark.Type, crossId, string(b))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -373,42 +364,24 @@ func (s *GeomarksSaver) Get(crossId int64) ([]Geomark, error) {
 
 	var ret []Geomark
 	for rows.Next() {
-		var id int64
 		var b string
-		if err := rows.Scan(&id, &b); err != nil {
+		if err := rows.Scan(&b); err != nil {
 			return nil, err
 		}
 		var mark Geomark
 		if err := json.Unmarshal([]byte(b), &mark); err != nil {
 			return nil, err
 		}
-		mark.Id = fmt.Sprintf("%d"+GEOMARKS_ID_SUFFIX, id)
 		ret = append(ret, mark)
 	}
 	return ret, nil
 }
 
-func (s *GeomarksSaver) Delete(crossId int64, markId string) error {
-	id, err := s.getId(markId)
-	if err != nil {
-		return err
-	}
-	if _, err := s.Db.Exec(GEOMARKS_DELETE, id, crossId); err != nil {
+func (s *GeomarksSaver) Delete(crossId int64, markType, markId string) error {
+	if _, err := s.Db.Exec(GEOMARKS_DELETE, markId, markType, crossId); err != nil {
 		return err
 	}
 	return nil
-}
-
-func (s *GeomarksSaver) getId(markId string) (int64, error) {
-	if !strings.HasSuffix(markId, GEOMARKS_ID_SUFFIX) {
-		return 0, fmt.Errorf("invalid id: %s", markId)
-	}
-	markId = markId[:len(markId)-len(GEOMARKS_ID_SUFFIX)]
-	id, err := strconv.ParseInt(markId, 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("invalid id: %s"+GEOMARKS_ID_SUFFIX, markId)
-	}
-	return id, nil
 }
 
 const (

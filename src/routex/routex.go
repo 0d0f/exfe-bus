@@ -25,9 +25,8 @@ type RouteMap struct {
 	GetUserBreadcrums rest.Processor `path:"/crosses/:cross_id/breadcrumbs/users/:user_id" method:"GET"`
 
 	GetGeomarks   rest.Processor `path:"/crosses/:cross_id/geomarks" method:"GET"`
-	CreateGeomark rest.Processor `path:"/crosses/:cross_id/geomarks" method:"POST"`
-	UpdateGeomark rest.Processor `path:"/crosses/:cross_id/geomarks/:mark_id" method:"PUT"`
-	DeleteGeomark rest.Processor `path:"/crosses/:cross_id/geomarks/:mark_id" method:"DELETE"`
+	SetGeomark    rest.Processor `path:"/crosses/:cross_id/geomarks/:mark_type/:mark_id" method:"PUT"`
+	DeleteGeomark rest.Processor `path:"/crosses/:cross_id/geomarks/:mark_type/:mark_id" method:"DELETE"`
 
 	Notification rest.Streaming `path:"/crosses/:cross_id" method:"WATCH"`
 	SendRequest  rest.Processor `path:"/crosses/:cross_id/request" method:"POST"`
@@ -318,6 +317,9 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 				Longitude:   lng,
 				Latitude:    lat,
 			}
+			go func() {
+				m.geomarksRepo.Set(int64(token.Cross.ID), destinaion)
+			}()
 			data = []Geomark{destinaion}
 		}
 	}
@@ -329,41 +331,7 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 	return data
 }
 
-func (m RouteMap) HandleCreateGeomark(mark Geomark) string {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
-
-	token, ok := m.auth()
-	if !ok || token.Readonly {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
-		return ""
-	}
-
-	if m.Request().URL.Query().Get("coordinate") == "mars" {
-		mark.ToEarth(m.conversion)
-	}
-	mark.CreatedAt, mark.UpdatedAt, mark.Action = time.Now().Unix(), time.Now().Unix(), ""
-	id, err := m.geomarksRepo.Create(int64(token.Cross.ID), mark)
-	if err != nil {
-		m.Error(http.StatusInternalServerError, err)
-		return ""
-	}
-	mark.Id = id
-
-	go func() {
-		m.castLocker.RLock()
-		broadcast := m.crossCast[int64(token.Cross.ID)]
-		m.castLocker.RUnlock()
-		if broadcast != nil {
-			broadcast.Send(mark)
-		}
-	}()
-
-	return id
-}
-
-func (m RouteMap) HandleUpdateGeomark(mark Geomark) {
+func (m RouteMap) HandleSetGeomark(mark Geomark) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -374,16 +342,17 @@ func (m RouteMap) HandleUpdateGeomark(mark Geomark) {
 		return
 	}
 
-	mark.Id, mark.UpdatedAt, mark.Action = m.Vars()["mark_id"], time.Now().Unix(), ""
+	mark.Type, mark.Id, mark.UpdatedAt, mark.Action = m.Vars()["mark_type"], m.Vars()["mark_id"], time.Now().Unix(), ""
 	if m.Request().URL.Query().Get("coordinate") == "mars" {
 		mark.ToEarth(m.conversion)
 	}
-	if err := m.geomarksRepo.Update(int64(token.Cross.ID), mark); err != nil {
+	if err := m.geomarksRepo.Set(int64(token.Cross.ID), mark); err != nil {
 		m.Error(http.StatusInternalServerError, err)
 		return
 	}
 
 	go func() {
+		mark.Action = "update"
 		m.castLocker.RLock()
 		broadcast := m.crossCast[int64(token.Cross.ID)]
 		m.castLocker.RUnlock()
@@ -407,8 +376,8 @@ func (m RouteMap) HandleDeleteGeomark() {
 	}
 
 	var mark Geomark
-	mark.Id = m.Vars()["mark_id"]
-	if err := m.geomarksRepo.Delete(int64(token.Cross.ID), mark.Id); err != nil {
+	mark.Type, mark.Id = m.Vars()["mark_type"], m.Vars()["mark_id"]
+	if err := m.geomarksRepo.Delete(int64(token.Cross.ID), mark.Type, mark.Id); err != nil {
 		m.Error(http.StatusInternalServerError, err)
 		return
 	}
@@ -522,6 +491,9 @@ func (m RouteMap) HandleNotification(stream rest.Stream) {
 					Longitude:   lng,
 					Latitude:    lat,
 				}
+				go func() {
+					m.geomarksRepo.Set(int64(token.Cross.ID), destinaion)
+				}()
 				marks = append(marks, destinaion)
 			}
 		}
@@ -634,9 +606,9 @@ func (m *RouteMap) auth() (Token, bool) {
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	// if authData == "" {
-	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	// }
+	if authData == "" {
+		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	}
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
