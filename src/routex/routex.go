@@ -172,6 +172,10 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) Breadcrum
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return ret
 	}
+	if len(breadcrumbs) == 0 {
+		m.Error(http.StatusBadRequest, m.DetailError(-1, "invalid breadcrumbs"))
+		return ret
+	}
 
 	userId, breadcrumb := token.UserId, breadcrumbs[0]
 	if breadcrumb.Accuracy > 70 {
