@@ -333,7 +333,7 @@ func (s *GeomarksSaver) Set(crossId int64, mark Geomark) error {
 	if err != nil {
 		return err
 	}
-	n, err := s.Db.Exec(GEOMARKS_UPDATE, string(b), mark.Id, mark.Type, crossId)
+	n, err := s.Db.Exec(GEOMARKS_CREATE, mark.Id, mark.Type, crossId, string(b))
 	if err != nil {
 		return err
 	}
@@ -347,7 +347,7 @@ func (s *GeomarksSaver) Set(crossId int64, mark Geomark) error {
 		if err != nil {
 			return err
 		}
-		_, err = s.Db.Exec(GEOMARKS_CREATE, mark.Id, mark.Type, crossId, string(b))
+		_, err := s.Db.Exec(GEOMARKS_UPDATE, string(b), mark.Id, mark.Type, crossId)
 		if err != nil {
 			return err
 		}
