@@ -9,6 +9,7 @@ import (
 	"model"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 type Cross struct {
@@ -70,12 +71,24 @@ func (c Cross) HandleDigest(requests []model.CrossDigestRequest) {
 		conversations = conversations[0:3]
 	}
 
+	weatherIcon := ""
+	if t, err := cross.Time.BeginAt.UTCTime("2006-01-02 15:04:05"); err == nil && cross.Place != nil {
+		lat, err := strconv.ParseFloat(cross.Place.Lat, 64)
+		if err == nil {
+			lng, err := strconv.ParseFloat(cross.Place.Lng, 64)
+			if err == nil {
+				weatherIcon = c.platform.GetWeatherIcon(lat, lng, t)
+			}
+		}
+	}
+
 	arg := map[string]interface{}{
 		"To":                 to,
 		"Cross":              cross,
 		"Config":             c.config,
 		"FoldedConversation": foldedConversation,
 		"Conversations":      conversations,
+		"WeatherIcon":        weatherIcon,
 	}
 
 	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_digest", c.domain+"/v3/notifier/cross/digest", &failArg)
@@ -101,10 +114,22 @@ func (c Cross) HandleRemind(requests []model.CrossDigestRequest) {
 	}
 	cross.Updated = nil
 
+	weatherIcon := ""
+	if t, err := cross.Time.BeginAt.UTCTime("2006-01-02 15:04:05"); err == nil && cross.Place != nil {
+		lat, err := strconv.ParseFloat(cross.Place.Lat, 64)
+		if err == nil {
+			lng, err := strconv.ParseFloat(cross.Place.Lng, 64)
+			if err == nil {
+				weatherIcon = c.platform.GetWeatherIcon(lat, lng, t)
+			}
+		}
+	}
+
 	arg := map[string]interface{}{
-		"To":     to,
-		"Cross":  cross,
-		"Config": c.config,
+		"To":          to,
+		"Cross":       cross,
+		"Config":      c.config,
+		"WeatherIcon": weatherIcon,
 	}
 	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_remind", c.domain+"/v3/notifier/cross/remind", &failArg)
 	c.WriteHeader(http.StatusAccepted)
@@ -122,6 +147,15 @@ func (c Cross) HandleInvitation(invitation model.CrossInvitation) {
 		return
 	}
 	invitation.Cross = cross
+	if t, err := cross.Time.BeginAt.UTCTime("2006-01-02 15:04:05"); err == nil && cross.Place != nil {
+		lat, err := strconv.ParseFloat(cross.Place.Lat, 64)
+		if err == nil {
+			lng, err := strconv.ParseFloat(cross.Place.Lng, 64)
+			if err == nil {
+				invitation.WeatherIcon = c.platform.GetWeatherIcon(lat, lng, t)
+			}
+		}
+	}
 
 	go SendAndSave(c.localTemplate, c.platform, to, invitation, "cross_invitation", c.domain+"/v3/notifier/cross/invitation", &invitation)
 	c.WriteHeader(http.StatusAccepted)

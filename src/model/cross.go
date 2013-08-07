@@ -116,7 +116,8 @@ type CrossInvitation struct {
 	Cross   Cross     `json:"cross"`
 	By      Identity  `json:"by"`
 
-	Config *Config `json:"-"`
+	Config      *Config `json:"-"`
+	WeatherIcon string  `json:"-"`
 }
 
 func (a CrossInvitation) String() string {

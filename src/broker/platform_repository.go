@@ -535,3 +535,55 @@ func (p *Platform) GetRouteXUrl(crossId uint64) (string, error) {
 	}
 	return ret.Data, nil
 }
+
+func (p *Platform) GetWeatherIcon(lat, lng float64, date string) string {
+	iconMap := map[string]string{
+		"01d": "sun@2x.png",
+		"02d": "sun@2x.png",
+		"03d": "cloud_sun@2x.png",
+		"04d": "cloud@2x.png",
+		"09d": "drizzle_sun@2x.png",
+		"10d": "drizzle@2x.png",
+		"11d": "lightning@2x.png",
+		"13d": "snow@2x.png",
+		"50d": "tornado@2x.png",
+		"01n": "moon@2x.png",
+		"02n": "moon@2x.png",
+		"03n": "cloud_moon@2x.png",
+		"04n": "cloud@2x.png",
+		"09n": "drizzle_moon@2x.png",
+		"10n": "drizzle@2x.png",
+		"11n": "lightning@2x.png",
+		"13n": "snow@2x.png",
+		"50n": "tornado@2x.png",
+	}
+	type Resp struct {
+		List []struct {
+			DtTxt   string `json:"dt_txt"`
+			Weather []struct {
+				Icon string `json:"icon"`
+			} `json:"weather"`
+		} `json:"list"`
+	}
+	u := fmt.Sprintf("http://api.openweathermap.org/data/2.5/forecast?lat=%.7f&lon=%.7f", lat, lng)
+	var resp Resp
+	_, err := RestHttp("GET", u, "application/json", nil, &resp)
+	if err != nil {
+		logger.ERROR("get weather %s failed: %s", u, err)
+		return ""
+	}
+	icon := ""
+	for _, list := range resp.List {
+		if list.DtTxt <= date && len(list.Weather) > 0 {
+			icon = list.Weather[0].Icon
+		}
+		if list.DtTxt > date {
+			break
+		}
+	}
+	ret, ok := iconMap[icon]
+	if !ok {
+		return ""
+	}
+	return fmt.Sprintf("%s/static/img/climacons/%s", p.config.SiteUrl, ret)
+}

@@ -16,7 +16,19 @@
 			<table cellpadding="0" cellspacing="0" style="display:inline-block; width:100%; border-spacing:0; vertical-align:top; background:url({{.Config.SiteApi}}/v3/mails/titleimage?background={{.Cross.Background .Config | base64url}}&lat={{.Cross.Place.Lat}}&lng={{.Cross.Place.Lng}}&ribbon=false); border-bottom:1px solid #E6E6E6; background-color:#545454;">
 				<tbody>
 					<tr>
-						<td style="width:50px; height:100%; vertical-align:top; text-align:right;"><img src="{{.Config.SiteApi}}/v2/crosses/{{.Cross.ID}}/touch?user_id={{.To.UserID}}" /></td>
+						<td style="width:50px; height:100%; vertical-align:top; text-align:right;">
+							<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+								<tbody>
+									<tr><td style="color:white; padding-bottom:12px; max-height:20px; overflow:hidden; display:inline-block; text-overflow:ellipsis; line-height:25px; text-align:left;">
+										<img src="{{.Config.SiteApi}}/v2/crosses/{{.Cross.ID}}/touch?user_id={{.To.UserID}}" />
+									</td></tr>
+									<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;"></td></tr>
+									<tr><td style="padding:0 9px 0 0;">
+									{{if .WeatherIcon}}<img src="{{.WeatherIcon}}" width="32px" height="32px" />{{end}}
+									</td></tr>
+								</tbody>
+							</table>
+						</td>
 						<td style="width:2px; height:100%; vertical-align:top;"></td>
 						<td style="padding:5px 10px 5px 10px; max-width:498px;">
 							<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
