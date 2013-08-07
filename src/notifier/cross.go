@@ -59,10 +59,23 @@ func (c Cross) HandleDigest(requests []model.CrossDigestRequest) {
 		return
 	}
 
+	conversations, err := c.platform.GetConversation(cross.Exfee.ID, updatedAt, false, "newer", -1)
+	if err != nil {
+		c.Error(http.StatusBadRequest, err)
+		return
+	}
+	foldedConversation := 0
+	if l := len(conversations); l > 3 {
+		foldedConversation = l
+		conversations = conversations[0:3]
+	}
+
 	arg := map[string]interface{}{
-		"To":     to,
-		"Cross":  cross,
-		"Config": c.config,
+		"To":                 to,
+		"Cross":              cross,
+		"Config":             c.config,
+		"FoldedConversation": foldedConversation,
+		"Conversations":      conversations,
 	}
 
 	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_digest", c.domain+"/v3/notifier/cross/digest", &failArg)
@@ -181,7 +194,7 @@ func (c Cross) HandleConversation(updates []model.ConversationUpdate) {
 		return
 	}
 
-	oldPosts, err := c.platform.GetConversation(arg.Cross.Exfee.ID, to.Token, arg.Posts[0].CreatedAt, false, "older", 2)
+	oldPosts, err := c.platform.GetConversation(arg.Cross.Exfee.ID, arg.Posts[0].CreatedAt, false, "older", 2)
 	if err != nil {
 		logger.ERROR("get conversation error: %s", err)
 	} else {

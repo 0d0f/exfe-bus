@@ -199,7 +199,37 @@
 			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
 			<td height="30px">&nbsp;</td>
 		</tr>
+		<tr style="vertical-align:top; background-color:#E6E6E6">
+			<td></td>
+			<td style="width:2px;"></td>
+			<td height="2px"></td>
+		</tr>
 	</tbody></table>
+	<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+		<tbody>
+			{{$timezone := .Cross.Timezone .To}}{{$url := .Cross.Link .To .Config}}
+			{{$site := .Config.SiteUrl}}
+			{{if .FoldedConversation}}
+			<tr>
+				<td width="50px"></td>
+				<td width="550px" style="color:#B2B2B2; padding-top:10px;"> …… ({{.FoldedConversation}} new {{plural "post" "posts" .FoldedConversation}} in conversation)</td>
+			</tr>
+			{{end}}
+			{{range .Conversations}}
+			<tr>
+				<td width="50px" style="padding-top:10px; vertical-align:top;"><img src="{{$site}}/v2/avatar/render?url={{.By.Avatar | base64url}}&width=30&height=30&resolution=2x" width="30px" height="30px" style="margin-left:10px;" /></td>
+				<td width="550px" style="color:#333333; padding-top:10px;">
+					{{.By.Name | html}}: {{.Content | html | replace "\n" "<br />"}}<br />
+					<span style="color:#B2B2B2; font-size:11px; line-height:15px;">{{.CreatedAtInZone $timezone | html}}</span>
+				</td>
+			</tr>
+			{{end}}
+			<tr style="vertical-align:top">
+				<td width="50px"></td>
+				<td height="30px">&nbsp;</td>
+			</tr>
+		</tbody>
+	</table>
 </a>
 
 			</td></tr>

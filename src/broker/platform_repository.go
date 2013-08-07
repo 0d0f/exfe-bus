@@ -160,7 +160,7 @@ func (p *Platform) FindIdentity(identity model.Identity) (model.Identity, error)
 	return ret.Data, nil
 }
 
-func (p *Platform) GetConversation(exfeeId int64, token string, updatedAt string, clear bool, direction string, quantity int) ([]model.Post, error) {
+func (p *Platform) GetConversation(exfeeId int64, updatedAt string, clear bool, direction string, quantity int) ([]model.Post, error) {
 	query := make(url.Values)
 	query.Set("updated_at", updatedAt)
 	query.Set("clear", fmt.Sprintf("%v", clear))
