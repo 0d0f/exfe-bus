@@ -142,7 +142,7 @@ type GeoConversionRepo interface {
 const (
 	ROUTEX_SETUP_INSERT = "INSERT IGNORE INTO `routex` (`user_id`, `cross_id`, `enable`, `updated_at`) VALUES(?, ?, ?, UNIX_TIMESTAMP())"
 	ROUTEX_SETUP_UPDATE = "UPDATE `routex` SET `enable`=?, `updated_at`=UNIX_TIMESTAMP() WHERE `user_id`=? AND `cross_id`=?"
-	ROUTEX_SETUP_SEARCH = "SELECT `cross_id`, `enable`, `updated_at` FROM `routex` WHERE `cross_id` IN (%s) ORDER BY `updated_at` DESC"
+	ROUTEX_SETUP_SEARCH = "SELECT `cross_id`, `enable`, `updated_at` FROM `routex` WHERE `cross_id` IN (%s) GROUP By `cross_id` ORDER BY `updated_at` DESC"
 	ROUTEX_SETUP_GET    = "SELECT `cross_id`, `enable`, `updated_at` FROM `routex` WHERE `user_id`=? AND `cross_id`=? LIMIT 1"
 )
 
