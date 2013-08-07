@@ -554,8 +554,8 @@ func (p *Platform) GetWeatherIcon(lat, lng float64, date string) string {
 		"09n": "drizzle_moon@2x.png",
 		"10n": "drizzle@2x.png",
 		"11n": "lightning@2x.png",
-		"13n": "snow@2x.png",
-		"50n": "tornado@2x.png",
+		"50n": "fog@2x.png",
+		"13n": "haze@2x.png",
 	}
 	type Resp struct {
 		List []struct {
