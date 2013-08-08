@@ -21,6 +21,7 @@ type RouteMap struct {
 
 	SetUser      rest.Processor `path:"/user/crosses" method:"POST"`
 	SearchRoutex rest.Processor `path:"/_inner/crosses" method:"POST"`
+	SetUserInner rest.Processor `path:"/_inner/user/:user_id/crosses" method:"POST"`
 	GetRoutex    rest.Processor `path:"/_inner/user/:user_id/crosses/:cross_id" method:"GET"`
 
 	UpdateBreadcrums  rest.Processor `path:"/breadcrumbs" method:"POST"`
@@ -77,7 +78,17 @@ func (m RouteMap) HandleSetUser(setup []UserCrossSetup) {
 		return
 	}
 
-	userId := token.UserId
+	m.Vars()["user_id"] = fmt.Sprintf("%d", token.UserId)
+	m.HandleSetUserInner(setup)
+}
+
+func (m RouteMap) HandleSetUserInner(setup []UserCrossSetup) {
+	userIdStr := m.Vars()["user_id"]
+	userId, err := strconv.ParseInt(userIdStr, 10, 64)
+	if err != nil {
+		m.Error(http.StatusBadRequest, err)
+		return
+	}
 	go func() {
 		for _, s := range setup {
 			if s.SaveBreadcrumbs {
