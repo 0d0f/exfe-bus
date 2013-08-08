@@ -19,22 +19,23 @@ import (
 type RouteMap struct {
 	rest.Service `prefix:"/v3/routex" mime:"application/json"`
 
-	SetUser      rest.Processor `path:"/user/crosses" method:"POST"`
-	SearchRoutex rest.Processor `path:"/_inner/crosses" method:"POST"`
-	SetUserInner rest.Processor `path:"/_inner/user/:user_id/crosses" method:"POST"`
-	GetRoutex    rest.Processor `path:"/_inner/user/:user_id/crosses/:cross_id" method:"GET"`
+	SearchRoutex rest.Processor `path:"/_inner/search/crosses" method:"POST"`
+	SetUserInner rest.Processor `path:"/_inner/users/:user_id/crosses" method:"POST"`
+	GetRoutex    rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"GET"`
+	SetUser      rest.Processor `path:"/users/crosses" method:"POST"`
 
 	UpdateBreadcrums  rest.Processor `path:"/breadcrumbs" method:"POST"`
-	GetBreadcrums     rest.Processor `path:"/crosses/:cross_id/breadcrumbs" method:"GET"`
-	GetUserBreadcrums rest.Processor `path:"/crosses/:cross_id/breadcrumbs/users/:user_id" method:"GET"`
+	GetBreadcrums     rest.Processor `path:"/breadcrumbs/crosses/:cross_id" method:"GET"`
+	GetUserBreadcrums rest.Processor `path:"/breadcrumbs/crosses/:cross_id/users/:user_id" method:"GET"`
 
-	GetGeomarks   rest.Processor `path:"/crosses/:cross_id/geomarks" method:"GET"`
-	SetGeomark    rest.Processor `path:"/crosses/:cross_id/geomarks/:mark_type/:mark_id" method:"PUT"`
-	DeleteGeomark rest.Processor `path:"/crosses/:cross_id/geomarks/:mark_type/:mark_id" method:"DELETE"`
+	GetGeomarks   rest.Processor `path:"/geomarks/crosses/:cross_id" method:"GET"`
+	SetGeomark    rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id" method:"PUT"`
+	DeleteGeomark rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id" method:"DELETE"`
 
-	Notification rest.Streaming `path:"/crosses/:cross_id" method:"WATCH"`
-	SendRequest  rest.Processor `path:"/crosses/:cross_id/request" method:"POST"`
-	Options      rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
+	Stream  rest.Streaming `path:"/crosses/:cross_id" method:"WATCH"`
+	Options rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
+
+	SendNotification rest.Processor `path:"/crosses/notification/:cross_id/:identity_id" method:"POST"`
 
 	routexRepo      RoutexRepo
 	breadcrumbCache BreadcrumbCache
@@ -455,7 +456,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 	return
 }
 
-func (m RouteMap) HandleNotification(stream rest.Stream) {
+func (m RouteMap) HandleStream(stream rest.Stream) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -600,7 +601,7 @@ func (m RouteMap) HandleOptions() {
 	m.WriteHeader(http.StatusNoContent)
 }
 
-func (m RouteMap) HandleSendRequest(id string) {
+func (m RouteMap) HandleSendNotification() {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -611,6 +612,7 @@ func (m RouteMap) HandleSendRequest(id string) {
 		return
 	}
 
+	id := m.Vars()["identity_id"]
 	identity, ok := model.FromIdentityId(id), false
 	for _, inv := range token.Cross.Exfee.Invitations {
 		if inv.Identity.Equal(identity) {
