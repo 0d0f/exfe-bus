@@ -24,9 +24,10 @@ type RouteMap struct {
 	GetRoutex    rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"GET"`
 	SetUser      rest.Processor `path:"/users/crosses" method:"POST"`
 
-	UpdateBreadcrums  rest.Processor `path:"/breadcrumbs" method:"POST"`
-	GetBreadcrums     rest.Processor `path:"/breadcrumbs/crosses/:cross_id" method:"GET"`
-	GetUserBreadcrums rest.Processor `path:"/breadcrumbs/crosses/:cross_id/users/:user_id" method:"GET"`
+	UpdateBreadcrums      rest.Processor `path:"/breadcrumbs" method:"POST"`
+	UpdateBreadcrumsInner rest.Processor `path:"/_inner/breadcrumbs/users/:user_id" method:"POST"`
+	GetBreadcrums         rest.Processor `path:"/breadcrumbs/crosses/:cross_id" method:"GET"`
+	GetUserBreadcrums     rest.Processor `path:"/breadcrumbs/crosses/:cross_id/users/:user_id" method:"GET"`
 
 	GetGeomarks   rest.Processor `path:"/geomarks/crosses/:cross_id" method:"GET"`
 	SetGeomark    rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id" method:"PUT"`
@@ -184,12 +185,20 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) Breadcrum
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return ret
 	}
-	if len(breadcrumbs) == 0 {
-		m.Error(http.StatusBadRequest, m.DetailError(-1, "invalid breadcrumbs"))
+	m.Vars()["user_id"] = fmt.Sprintf("%d", token.UserId)
+
+	return m.HandleUpdateBreadcrumsInner(breadcrumbs)
+}
+
+func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) BreadcrumbOffset {
+	var ret BreadcrumbOffset
+
+	userIdStr, breadcrumb := m.Vars()["user_id"], breadcrumbs[0]
+	userId, err := strconv.ParseInt(userIdStr, 10, 64)
+	if err != nil {
+		m.Error(http.StatusBadRequest, err)
 		return ret
 	}
-
-	userId, breadcrumb := token.UserId, breadcrumbs[0]
 	if breadcrumb.Accuracy > 70 {
 		m.Error(http.StatusBadRequest, fmt.Errorf("accuracy too large: %d", breadcrumb.Accuracy))
 		return ret
