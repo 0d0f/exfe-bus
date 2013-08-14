@@ -1,3 +1,5 @@
+go get $1 github.com/stretchrcom/testify/assert
+go get $1 github.com/googollee/go-assert
 find . -name *_test.go | sed 's/^\.\/src\///g' | sed 's/\/[^/]*_test.go$//g' | sort | uniq | while read l
 do
   echo testing $l...

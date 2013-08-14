@@ -5,7 +5,6 @@ go get $1 github.com/garyburd/redigo/redis
 go get $1 github.com/googollee/go-socket.io
 go get $1 github.com/googollee/go-rest
 go get $1 github.com/googollee/go-broadcast
-go get $1 github.com/googollee/go-assert
 go get $1 github.com/stathat/consistent
 go get $1 github.com/googollee/go-gcm
 go get $1 github.com/googollee/go-aws/smtp
