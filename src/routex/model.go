@@ -419,7 +419,7 @@ func (s *BreadcrumbCacheSaver) LoadCross(userId, crossId int64) (SimpleLocation,
 
 const (
 	GEOMARKS_CREATE = "INSERT IGNORE INTO `geomarks` (`id`, `type`, `cross_id`, `mark`, `touched_at`, `deleted`) VALUES (?, ?, ?, ?, UNIX_TIMESTAMP(), FALSE)"
-	GEOMARKS_UPDATE = "UPDATE `geomarks` SET `mark`=?, `touched_at`=UNIX_TIMESTAMP() WHERE `id`=? AND `type`=? AND `cross_id`=? AND `deleted`=FALSE"
+	GEOMARKS_UPDATE = "UPDATE `geomarks` SET `mark`=?, `touched_at`=UNIX_TIMESTAMP(), `deleted`=FALSE WHERE `id`=? AND `type`=? AND `cross_id`=?"
 	GEOMARKS_GET    = "SELECT  `mark` FROM `geomarks` WHERE `cross_id`=? AND `deleted`=FALSE"
 	GEOMARKS_DELETE = "UPDATE `geomarks` SET `deleted`=TRUE, `touched_at`=UNIX_TIMESTAMP() WHERE `id`=? AND `type`=? AND `cross_id`=? AND `deleted`=FALSE"
 )
