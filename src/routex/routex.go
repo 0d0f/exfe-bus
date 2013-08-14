@@ -217,11 +217,6 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) Breadcrum
 		}()
 	} else {
 		logger.INFO("routex", "user", userId, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "distance", distance, "nosave")
-		if crossIds, err = m.breadcrumbCache.Save(userId, breadcrumb); err != nil {
-			logger.ERROR("can't save cache %s: %s with %+v", userId, err, breadcrumb)
-			m.Error(http.StatusInternalServerError, err)
-			return ret
-		}
 	}
 
 	earth := breadcrumb
