@@ -117,8 +117,9 @@ type RoutexRepo interface {
 
 type BreadcrumbCache interface {
 	RoutexControl
-	Save(userId int64, l SimpleLocation, updateType string) (cross_ids []int64, err error)
+	Save(userId int64, l SimpleLocation) error
 	Load(userId int64) (SimpleLocation, error)
+	SaveCross(userId int64, l SimpleLocation) (cross_ids []int64, err error)
 	LoadCross(userId, crossId int64) (SimpleLocation, bool, error)
 }
 
@@ -308,10 +309,6 @@ func NewBreadcrumbCacheSaver(r *redis.Pool) *BreadcrumbCacheSaver {
 		local user_id = KEYS[1]
 		local data = ARGV[1]
 		local now = ARGV[2]
-		local update = ARGV[3]
-		if update == "all" then
-			redis.call("SET", "exfe:v3:routex:user_"..user_id, data, "EX", "60")
-		end
 		local matchkey = "exfe:v3:routex:user_"..user_id..":cross"
 		local crosses = redis.call("ZRANGEBYSCORE", matchkey, now, "+INF")
 		local ret = {}
@@ -361,7 +358,7 @@ func (s *BreadcrumbCacheSaver) DisableCross(userId, crossId int64) error {
 	return nil
 }
 
-func (s *BreadcrumbCacheSaver) Save(userId int64, l SimpleLocation, updateType string) ([]int64, error) {
+func (s *BreadcrumbCacheSaver) SaveCross(userId int64, l SimpleLocation) ([]int64, error) {
 	b, err := json.Marshal(l)
 	if err != nil {
 		return nil, err
@@ -369,7 +366,7 @@ func (s *BreadcrumbCacheSaver) Save(userId int64, l SimpleLocation, updateType s
 	conn := s.r.Get()
 	defer conn.Close()
 
-	reply, err := redis.Values(s.saveScript.Do(conn, userId, b, time.Now().Unix(), updateType))
+	reply, err := redis.Values(s.saveScript.Do(conn, userId, b, time.Now().Unix()))
 	if err != nil {
 		return nil, err
 	}
@@ -381,22 +378,6 @@ func (s *BreadcrumbCacheSaver) Save(userId int64, l SimpleLocation, updateType s
 			return nil, err
 		}
 		ret = append(ret, crossId)
-	}
-	return ret, nil
-}
-
-func (s *BreadcrumbCacheSaver) Load(userId int64) (SimpleLocation, error) {
-	key, conn := s.ukey(userId), s.r.Get()
-	defer conn.Close()
-
-	var ret SimpleLocation
-	reply, err := redis.Bytes(conn.Do("GET", key))
-	if err != nil {
-		return ret, err
-	}
-	if err := json.Unmarshal(reply, &ret); err != nil {
-		logger.ERROR("can't unmashal location value: %s with %s", err, string(reply))
-		return ret, err
 	}
 	return ret, nil
 }
@@ -418,6 +399,36 @@ func (s *BreadcrumbCacheSaver) LoadCross(userId, crossId int64) (SimpleLocation,
 		return ret, false, err
 	}
 	return ret, true, nil
+}
+
+func (s *BreadcrumbCacheSaver) Save(userId int64, l SimpleLocation) error {
+	key, conn := s.ukey(userId), s.r.Get()
+	defer conn.Close()
+
+	b, err := json.Marshal(l)
+	if err != nil {
+		return err
+	}
+	if _, err := conn.Do("SET", key, b, "EX", 60); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *BreadcrumbCacheSaver) Load(userId int64) (SimpleLocation, error) {
+	key, conn := s.ukey(userId), s.r.Get()
+	defer conn.Close()
+
+	var ret SimpleLocation
+	reply, err := redis.Bytes(conn.Do("GET", key))
+	if err != nil {
+		return ret, err
+	}
+	if err := json.Unmarshal(reply, &ret); err != nil {
+		logger.ERROR("can't unmashal location value: %s with %s", err, string(reply))
+		return ret, err
+	}
+	return ret, nil
 }
 
 const (
