@@ -409,7 +409,7 @@ func (s *BreadcrumbCacheSaver) Save(userId int64, l SimpleLocation) error {
 	if err != nil {
 		return err
 	}
-	if _, err := conn.Do("SET", key, b, "EX", 60); err != nil {
+	if _, err := conn.Do("SET", key, b, "EX", 600); err != nil {
 		return err
 	}
 	return nil
