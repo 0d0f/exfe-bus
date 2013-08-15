@@ -17,7 +17,7 @@ import (
 	"thirdpart/email"
 	"thirdpart/facebook"
 	"thirdpart/gcm"
-	"thirdpart/imessage"
+	// "thirdpart/imessage"
 	"thirdpart/phone"
 	"thirdpart/photostream"
 	"thirdpart/twitter"
@@ -60,11 +60,11 @@ func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdp
 	gcm_ := gcm.New(gcms_)
 	poster.Add(gcm_)
 
-	imsg_, err := imessage.New(config)
-	if err != nil {
-		return nil, fmt.Errorf("can't connect imessage: %s", err)
-	}
-	poster.Add(imsg_)
+	// imsg_, err := imessage.New(config)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("can't connect imessage: %s", err)
+	// }
+	// poster.Add(imsg_)
 
 	phone_, err := phone.New(config)
 	if err != nil {
