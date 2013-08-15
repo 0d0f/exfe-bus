@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"notifier"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -45,11 +46,27 @@ type RouteMap struct {
 	conversion      GeoConversionRepo
 	platform        *broker.Platform
 	config          *model.Config
+	tutorialDatas   map[int64][]TutorialData
 	crossCast       map[int64]*broadcast.Broadcast
 	castLocker      sync.RWMutex
 }
 
-func New(routexRepo RoutexRepo, breadcrumbCache BreadcrumbCache, breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, conversion GeoConversionRepo, platform *broker.Platform, config *model.Config) *RouteMap {
+func New(routexRepo RoutexRepo, breadcrumbCache BreadcrumbCache, breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, conversion GeoConversionRepo, platform *broker.Platform, config *model.Config) (*RouteMap, error) {
+	tutorialDatas := make(map[int64][]TutorialData)
+	for _, userId := range config.TutorialBotUserIds {
+		file := config.Routex.TutorialDataFile[fmt.Sprintf("%d", userId)]
+		f, err := os.Open(file)
+		if err != nil {
+			return nil, fmt.Errorf("can't find tutorial file %s for tutorial bot %d", file, userId)
+		}
+		var datas []TutorialData
+		decoder := json.NewDecoder(f)
+		err = decoder.Decode(&datas)
+		if err != nil {
+			return nil, fmt.Errorf("invalid tutorial data %s for tutorial bot %d: %s", file, userId, err)
+		}
+		tutorialDatas[userId] = datas
+	}
 	return &RouteMap{
 		routexRepo:      routexRepo,
 		breadcrumbCache: breadcrumbCache,
@@ -57,9 +74,10 @@ func New(routexRepo RoutexRepo, breadcrumbCache BreadcrumbCache, breadcrumbsRepo
 		geomarksRepo:    geomarksRepo,
 		conversion:      conversion,
 		platform:        platform,
+		tutorialDatas:   tutorialDatas,
 		config:          config,
 		crossCast:       make(map[int64]*broadcast.Broadcast),
-	}
+	}, nil
 }
 
 type UserCrossSetup struct {

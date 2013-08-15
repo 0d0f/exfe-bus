@@ -7,6 +7,7 @@
   "default_lang": "en_US",
   "access_domain": "api.exfe.com",
   "proxy": "",
+  "tutorial_bot_user_ids": [],
 
   "debug": false,
 
@@ -88,6 +89,10 @@
     "threshold": 0.001,
     "sign_threshold": 1.0,
     "timeout_in_second": 60
+  },
+  "routex": {
+    "tutorial_data_file": {
+    }
   },
   "thirdpart": {
     "max_state_cache": 1000,

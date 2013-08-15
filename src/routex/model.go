@@ -8,17 +8,8 @@ import (
 	"logger"
 	"math"
 	"model"
-	"strings"
 	"time"
 )
-
-func redisScript(r redis.Conn, hash string, script string, args ...interface{}) (interface{}, error) {
-	reply, err := r.Do("EVALSHA", append([]interface{}{hash}, args...)...)
-	if err != nil && strings.HasPrefix(err.Error(), "NOSCRIPT") {
-		reply, err = r.Do("EVAL", append([]interface{}{script}, args...)...)
-	}
-	return reply, err
-}
 
 func Distance(latA, lngA, latB, lngB float64) float64 {
 	x := math.Cos(latA*math.Pi/180) * math.Cos(latB*math.Pi/180) * math.Cos((lngA-lngB)*math.Pi/180)
@@ -26,6 +17,13 @@ func Distance(latA, lngA, latB, lngB float64) float64 {
 	alpha := math.Acos(x + y)
 	distance := alpha * 6371000
 	return distance
+}
+
+type TutorialData struct {
+	Offset    int64   `json:"offset"`
+	Accuracy  float64 `json:"acc"`
+	Latitude  float64 `json:"lat"`
+	Longitude float64 `json:"lng"`
 }
 
 type SimpleLocation struct {

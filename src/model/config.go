@@ -1,14 +1,15 @@
 package model
 
 type Config struct {
-	SiteUrl      string `json:"site_url"`
-	SiteApi      string `json:"site_api"`
-	SiteImg      string `json:"site_img"`
-	AppUrl       string `json:"app_url"`
-	TemplatePath string `json:"template_path"`
-	DefaultLang  string `json:"default_lang"`
-	AccessDomain string `json:"access_domain"`
-	Proxy        string `json:"proxy"`
+	SiteUrl            string  `json:"site_url"`
+	SiteApi            string  `json:"site_api"`
+	SiteImg            string  `json:"site_img"`
+	AppUrl             string  `json:"app_url"`
+	TemplatePath       string  `json:"template_path"`
+	DefaultLang        string  `json:"default_lang"`
+	AccessDomain       string  `json:"access_domain"`
+	Proxy              string  `json:"proxy"`
+	TutorialBotUserIds []int64 `json:"tutorial_bot_user_ids"`
 
 	Debug bool `json:"debug"`
 
@@ -82,6 +83,9 @@ type Config struct {
 		SignThreshold   float64 `json:"sign_threshold"`
 		TimeoutInSecond int     `json:"timeout_in_second"`
 	} `json:"here"`
+	Routex struct {
+		TutorialDataFile map[string]string `json:"tutorial_data_file"`
+	}
 	Thirdpart struct {
 		MaxStateCache uint `json:"max_state_cache"`
 		Twitter       struct {
