@@ -67,7 +67,7 @@ func New(routexRepo RoutexRepo, breadcrumbCache BreadcrumbCache, breadcrumbsRepo
 		}
 		tutorialDatas[userId] = datas
 	}
-	return &RouteMap{
+	ret := &RouteMap{
 		routexRepo:      routexRepo,
 		breadcrumbCache: breadcrumbCache,
 		breadcrumbsRepo: breadcrumbsRepo,
@@ -77,7 +77,42 @@ func New(routexRepo RoutexRepo, breadcrumbCache BreadcrumbCache, breadcrumbsRepo
 		tutorialDatas:   tutorialDatas,
 		config:          config,
 		crossCast:       make(map[int64]*broadcast.Broadcast),
-	}, nil
+	}
+	return ret, nil
+}
+
+func (m *RouteMap) getTutorialData(currentTime time.Time, userId int64, number int) []SimpleLocation {
+	data, ok := m.tutorialDatas[userId]
+	if !ok {
+		return nil
+	}
+	currentTime = currentTime.UTC()
+	now := currentTime.Unix()
+	todayTime, _ := time.Parse("2006-01-02 15:04:05", currentTime.Format("2006-01-02 00:00:00"))
+	today := todayTime.Unix()
+
+	oneDaySeconds := int64(24 * time.Hour / time.Second)
+	totalPoint := len(data)
+	fmt.Println("current second:", now-today)
+	currentPoint := int((now - today) * int64(totalPoint) / oneDaySeconds)
+	fmt.Println("current point:", currentPoint, "total:", totalPoint)
+
+	var ret []SimpleLocation
+	for ; number > 0; number-- {
+		ret = append(ret, SimpleLocation{
+			Timestamp: today + data[currentPoint].Offset,
+			Accuracy:  data[currentPoint].Accuracy,
+			Latitude:  data[currentPoint].Latitude,
+			Longitude: data[currentPoint].Longitude,
+		})
+		if currentPoint > 0 {
+			currentPoint--
+		} else {
+			currentPoint = totalPoint - 1
+			today -= oneDaySeconds
+		}
+	}
+	return ret
 }
 
 type UserCrossSetup struct {
