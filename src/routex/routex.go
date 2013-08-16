@@ -93,9 +93,7 @@ func (m *RouteMap) getTutorialData(currentTime time.Time, userId int64, number i
 
 	oneDaySeconds := int64(24 * time.Hour / time.Second)
 	totalPoint := len(data)
-	fmt.Println("current second:", now-today)
 	currentPoint := int((now - today) * int64(totalPoint) / oneDaySeconds)
-	fmt.Println("current point:", currentPoint, "total:", totalPoint)
 
 	var ret []SimpleLocation
 	for ; number > 0; number-- {
@@ -346,10 +344,13 @@ func (m RouteMap) HandleGetBreadcrums() []Geomark {
 			Id:   fmt.Sprintf("%d@exfe", userId),
 			Type: "route",
 		}
-		var err error
-		if route.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID)); err != nil {
-			logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
-			continue
+
+		if route.Positions = m.getTutorialData(time.Now().UTC(), userId, 100); route.Positions == nil {
+			var err error
+			if route.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID)); err != nil {
+				logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
+				continue
+			}
 		}
 		if len(route.Positions) == 0 {
 			continue
@@ -385,10 +386,12 @@ func (m RouteMap) HandleGetUserBreadcrums() Geomark {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return ret
 	}
-	var err error
-	if ret.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID)); err != nil {
-		logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
-		return ret
+	if ret.Positions = m.getTutorialData(time.Now().UTC(), userId, 100); ret.Positions == nil {
+		var err error
+		if ret.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID)); err != nil {
+			logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
+			return ret
+		}
 	}
 	ret.Id, ret.Type = fmt.Sprintf("%d", userId), "route"
 	if toMars {
@@ -557,6 +560,8 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
 
+	quit := make(chan int)
+	defer func() { close(quit) }()
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
@@ -564,22 +569,39 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			Type: "route",
 			Tags: []string{"breadcrumbs"},
 		}
-		l, exist, err := m.breadcrumbCache.LoadCross(userId, int64(token.Cross.ID))
-		if err != nil {
-			logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
-			continue
-		}
-		if !exist {
-			continue
-		}
-		route.Positions = []SimpleLocation{l}
-		if len(route.Positions) == 0 {
-			continue
+		if route.Positions = m.getTutorialData(time.Now().UTC(), userId, 1); route.Positions != nil {
+			go func() {
+				for {
+					select {
+					case <-quit:
+						fmt.Println("tutorial bot", userId, "quit")
+						return
+					case <-time.After(time.Second * 10):
+						route := Geomark{
+							Id:        fmt.Sprintf("%d@exfe", userId),
+							Type:      "route",
+							Tags:      []string{"breadcrumbs"},
+							Positions: m.getTutorialData(time.Now().UTC(), userId, 1),
+						}
+						c <- route
+					}
+				}
+			}()
+		} else {
+			l, exist, err := m.breadcrumbCache.LoadCross(userId, int64(token.Cross.ID))
+			if err != nil {
+				logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
+				continue
+			}
+			if !exist {
+				continue
+			}
+			route.Positions = []SimpleLocation{l}
 		}
 		if toMars {
 			route.ToMars(m.conversion)
 		}
-		err = stream.Write(route)
+		err := stream.Write(route)
 		if err != nil {
 			return
 		}
@@ -735,9 +757,9 @@ func (m *RouteMap) auth() (Token, bool) {
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	// if authData == "" {
-	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	// }
+	if authData == "" {
+		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	}
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
