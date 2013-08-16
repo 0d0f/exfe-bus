@@ -45,6 +45,9 @@
       "bucket_prefix": "exfe"
     }
   },
+  "google": {
+    "key": ""
+  },
 
   "dispatcher": {
     "bus://exfe_service/notifier/conversation": {"_default": "http://127.0.0.1:23333/notifier/conversation"},

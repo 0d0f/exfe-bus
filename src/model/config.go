@@ -47,6 +47,9 @@ type Config struct {
 			BucketPrefix string `json:"bucket_prefix"`
 		} `json:"s3"`
 	}
+	Google struct {
+		Key string `json:"key"`
+	} `json:"google"`
 
 	Dispatcher map[string]map[string]string `json:"dispatcher"`
 

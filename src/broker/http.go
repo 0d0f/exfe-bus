@@ -24,7 +24,7 @@ func SetProxy(host string) {
 	}
 	transport := &http.Transport{
 		Proxy: func(r *http.Request) (*url.URL, error) {
-			sites := []string{"twitter.com", "facebook.com", "dropbox.com"}
+			sites := []string{"twitter.com", "facebook.com", "dropbox.com", "googleapis.com"}
 			for _, site := range sites {
 				if strings.HasSuffix(r.URL.Host, site) {
 					return &url.URL{Host: host}, nil
@@ -48,13 +48,17 @@ func (e HttpError) Error() string {
 }
 
 func RestHttp(method, url, mime string, arg interface{}, reply interface{}) (int, error) {
-	buf := bytes.NewBuffer(nil)
-	encoder := json.NewEncoder(buf)
-	err := encoder.Encode(arg)
-	if err != nil {
-		return -1, err
+	var body []byte
+	if arg != nil {
+		buf := bytes.NewBuffer(nil)
+		encoder := json.NewEncoder(buf)
+		err := encoder.Encode(arg)
+		if err != nil {
+			return -1, err
+		}
+		body = buf.Bytes()
 	}
-	resp, err := HttpResponse(Http(method, url, mime, buf.Bytes()))
+	resp, err := HttpResponse(Http(method, url, mime, body))
 	if err != nil {
 		if e, ok := err.(HttpError); ok {
 			return e.Code, err
@@ -72,8 +76,11 @@ func RestHttp(method, url, mime string, arg interface{}, reply interface{}) (int
 }
 
 func Http(method, url, mime string, body []byte) (*http.Response, error) {
-	buf := bytes.NewBuffer(body)
-	req, err := http.NewRequest(method, url, buf)
+	var reader io.Reader
+	if body != nil {
+		reader = bytes.NewBuffer(body)
+	}
+	req, err := http.NewRequest(method, url, reader)
 	if err != nil {
 		return nil, err
 	}

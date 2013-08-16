@@ -20,6 +20,7 @@ import (
 type RouteMap struct {
 	rest.Service `prefix:"/v3/routex" mime:"application/json"`
 
+	SetTutorial  rest.Processor `path:"/_inner/tutorial/users/:user_id" method:"POST"`
 	SearchRoutex rest.Processor `path:"/_inner/search/crosses" method:"POST"`
 	SetUserInner rest.Processor `path:"/_inner/users/:user_id/crosses" method:"POST"`
 	GetRoutex    rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"GET"`
@@ -111,6 +112,81 @@ func (m *RouteMap) getTutorialData(currentTime time.Time, userId int64, number i
 		}
 	}
 	return ret
+}
+
+func (m RouteMap) HandleSetTutorial() {
+	userIdStr := m.Vars()["user_id"]
+	userId, err := strconv.ParseInt(userIdStr, 10, 64)
+	if err != nil {
+		m.Error(http.StatusBadRequest, err)
+		return
+	}
+	crossIdStr := m.Request().URL.Query().Get("cross_id")
+	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
+	if err != nil {
+		m.Error(http.StatusBadRequest, err)
+		return
+	}
+	latStr := m.Request().URL.Query().Get("lat")
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		m.Error(http.StatusBadRequest, err)
+		return
+	}
+	lngStr := m.Request().URL.Query().Get("lng")
+	lng, err := strconv.ParseFloat(lngStr, 64)
+	if err != nil {
+		m.Error(http.StatusBadRequest, err)
+		return
+	}
+	language := m.Request().URL.Query().Get("language")
+
+	query := make(url.Values)
+	query.Set("keyword", "attractions")
+	places, err := m.platform.GetPlace(lat, lng, language, 10000, query)
+	if err != nil {
+		m.Error(http.StatusInternalServerError, err)
+		return
+	}
+	if len(places) == 0 {
+		places, err = m.platform.GetPlace(lat, lng, language, 50000, nil)
+		if err != nil {
+			m.Error(http.StatusInternalServerError, err)
+			return
+		}
+	}
+	if len(places) == 0 {
+		m.Error(http.StatusNotFound, fmt.Errorf("can't find attraction place near %.7f,%.7f", lat, lng))
+		return
+	}
+	place := places[0]
+	if lng, err = strconv.ParseFloat(place.Lng, 64); err != nil {
+		m.Error(http.StatusInternalServerError, err)
+		return
+	}
+	if lat, err = strconv.ParseFloat(place.Lat, 64); err != nil {
+		m.Error(http.StatusInternalServerError, err)
+		return
+	}
+	now := time.Now().Unix()
+	destination := Geomark{
+		Id:          "destination",
+		Type:        "location",
+		CreatedAt:   now,
+		CreatedBy:   fmt.Sprintf("%d@exfe", userId),
+		UpdatedAt:   now,
+		UpdatedBy:   fmt.Sprintf("%d@exfe", userId),
+		Tags:        []string{"destination"},
+		Icon:        "http://panda.0d0f.com/static/img/map_pin_blue@2x.png",
+		Title:       place.Title,
+		Description: place.Description,
+		Longitude:   lng,
+		Latitude:    lat,
+	}
+	if err := m.geomarksRepo.Set(crossId, destination); err != nil {
+		m.Error(http.StatusInternalServerError, err)
+		return
+	}
 }
 
 type UserCrossSetup struct {

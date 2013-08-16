@@ -587,3 +587,55 @@ func (p *Platform) GetWeatherIcon(lat, lng float64, date string) string {
 	}
 	return fmt.Sprintf("%s/static/img/climacons/%s", p.config.SiteUrl, ret)
 }
+
+func (p *Platform) GetPlace(lat, lng float64, language string, radius int, query url.Values) ([]model.Place, error) {
+	if query == nil {
+		query = make(url.Values)
+	}
+	query.Set("key", p.config.Google.Key)
+	query.Set("sensor", "false")
+	query.Set("location", fmt.Sprintf("%07f,%07f", lat, lng))
+	query.Set("radius", fmt.Sprintf("%d", radius))
+	query.Set("language", language)
+	u := fmt.Sprintf("https://maps.googleapis.com/maps/api/place/nearbysearch/json?%s", query.Encode())
+	type Resp struct {
+		Results []struct {
+			Id       string
+			Geometry struct {
+				Location struct {
+					Lat float64
+					Lng float64
+				}
+			}
+			Name     string
+			Vicinity string
+		}
+		Status string
+	}
+	var resp Resp
+	_, err := RestHttp("GET", u, "", nil, &resp)
+	if err != nil {
+		logger.ERROR("get place from google api %s failed: %s", u, err)
+		return nil, err
+	}
+	if resp.Status != "OK" {
+		logger.ERROR("get place from google api %s failed: %s", u, resp.Status)
+		return nil, fmt.Errorf(resp.Status)
+	}
+	if len(resp.Results) == 0 {
+		logger.ERROR("get place from google api %s failed: no place", u)
+		return nil, nil
+	}
+	ret := make([]model.Place, len(resp.Results))
+	for i, l := range resp.Results {
+		ret[i] = model.Place{
+			Title:       l.Name,
+			Description: l.Vicinity,
+			Lng:         fmt.Sprintf("%.7f", l.Geometry.Location.Lng),
+			Lat:         fmt.Sprintf("%.7f", l.Geometry.Location.Lat),
+			Provider:    "google",
+			ExternalID:  l.Id,
+		}
+	}
+	return ret, nil
+}
