@@ -574,7 +574,6 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 				for {
 					select {
 					case <-quit:
-						fmt.Println("tutorial bot", userId, "quit")
 						return
 					case <-time.After(time.Second * 10):
 						route := Geomark{
@@ -757,9 +756,9 @@ func (m *RouteMap) auth() (Token, bool) {
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	if authData == "" {
-		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	}
+	// if authData == "" {
+	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	// }
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
