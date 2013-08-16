@@ -347,7 +347,7 @@ func (m RouteMap) HandleGetBreadcrums() []Geomark {
 
 		if route.Positions = m.getTutorialData(time.Now().UTC(), userId, 100); route.Positions == nil {
 			var err error
-			if route.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID)); err != nil {
+			if route.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID), time.Now().Unix()); err != nil {
 				logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
 				continue
 			}
@@ -386,9 +386,18 @@ func (m RouteMap) HandleGetUserBreadcrums() Geomark {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return ret
 	}
-	if ret.Positions = m.getTutorialData(time.Now().UTC(), userId, 100); ret.Positions == nil {
+	after := time.Now().UTC()
+	if afterTimstamp := m.Request().URL.Query().Get("after_timestamp"); afterTimstamp != "" {
+		timestamp, err := strconv.ParseInt(afterTimstamp, 10, 64)
+		if err != nil {
+			m.Error(http.StatusBadRequest, err)
+			return ret
+		}
+		after = time.Unix(timestamp, 0)
+	}
+	if ret.Positions = m.getTutorialData(after, userId, 100); ret.Positions == nil {
 		var err error
-		if ret.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID)); err != nil {
+		if ret.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID), after.Unix()); err != nil {
 			logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
 			return ret
 		}
