@@ -17,6 +17,8 @@ import (
 	"time"
 )
 
+const CrossPlaceTag = "cross_place"
+
 type RouteMap struct {
 	rest.Service `prefix:"/v3/routex" mime:"application/json"`
 
@@ -31,9 +33,10 @@ type RouteMap struct {
 	GetBreadcrums         rest.Processor `path:"/breadcrumbs/crosses/:cross_id" method:"GET"`
 	GetUserBreadcrums     rest.Processor `path:"/breadcrumbs/crosses/:cross_id/users/:user_id" method:"GET"`
 
-	GetGeomarks   rest.Processor `path:"/geomarks/crosses/:cross_id" method:"GET"`
-	SetGeomark    rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id" method:"PUT"`
-	DeleteGeomark rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id" method:"DELETE"`
+	SearchGeomarks rest.Processor `path:"/_inner/geomarks/crosses/:cross_id" method:"GET"`
+	GetGeomarks    rest.Processor `path:"/geomarks/crosses/:cross_id" method:"GET"`
+	SetGeomark     rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id" method:"PUT"`
+	DeleteGeomark  rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id" method:"DELETE"`
 
 	Stream  rest.Streaming `path:"/crosses/:cross_id" method:"WATCH"`
 	Options rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
@@ -481,6 +484,46 @@ func (m RouteMap) HandleGetUserBreadcrums() Geomark {
 	ret.Id, ret.Type = fmt.Sprintf("%d", userId), "route"
 	if toMars {
 		ret.ToMars(m.conversion)
+	}
+	return ret
+}
+
+func (m RouteMap) HandleSearchGeomarks() []Geomark {
+	crossIdStr := m.Vars()["cross_id"]
+	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
+	if err != nil {
+		m.Error(http.StatusBadRequest, err)
+		return nil
+	}
+	ret := make([]Geomark, 0)
+	tag := m.Request().URL.Query().Get("tag")
+	if tag == "" {
+		return ret
+	}
+	data, err := m.geomarksRepo.Get(crossId)
+	if err != nil {
+		logger.ERROR("can't get route of cross %d: %s", crossId, err)
+		m.Error(http.StatusInternalServerError, err)
+		return nil
+	}
+	if data == nil {
+		return ret
+	}
+	for _, geomark := range data {
+		ok := false
+		for _, t := range geomark.Tags {
+			if t == tag {
+				ok = true
+				ret = append(ret, geomark)
+			}
+			if t == CrossPlaceTag {
+				ok = false
+				break
+			}
+		}
+		if ok {
+			ret = append(ret, geomark)
+		}
 	}
 	return ret
 }
