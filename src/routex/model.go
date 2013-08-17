@@ -64,7 +64,7 @@ func (l *SimpleLocation) MarshalJSON() ([]byte, error) {
 	}
 	if l := gps.Len(); l > 0 {
 		gps.Truncate(l - 1)
-		if _, err := ret.WriteString(`,"l":[`); err != nil {
+		if _, err := ret.WriteString(`,"gps":[`); err != nil {
 			return nil, err
 		}
 		if _, err := ret.Write(gps.Bytes()); err != nil {
