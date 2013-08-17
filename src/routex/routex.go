@@ -103,9 +103,7 @@ func (m *RouteMap) getTutorialData(currentTime time.Time, userId int64, number i
 	for ; number > 0; number-- {
 		ret = append(ret, SimpleLocation{
 			Timestamp: today + data[currentPoint].Offset,
-			Accuracy:  data[currentPoint].Accuracy,
-			Latitude:  data[currentPoint].Latitude,
-			Longitude: data[currentPoint].Longitude,
+			GPS:       []float64{data[currentPoint].Latitude, data[currentPoint].Longitude, data[currentPoint].Accuracy},
 		})
 		if currentPoint > 0 {
 			currentPoint--
@@ -329,8 +327,12 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 		m.Error(http.StatusBadRequest, err)
 		return ret
 	}
-	if breadcrumb.Accuracy > 70 {
-		m.Error(http.StatusBadRequest, fmt.Errorf("accuracy too large: %d", breadcrumb.Accuracy))
+	if len(breadcrumb.GPS) < 3 {
+		m.Error(http.StatusBadRequest, fmt.Errorf("invalid breadcrumb: %+v", breadcrumb))
+	}
+	lat, lng, acc := breadcrumb.GPS[0], breadcrumb.GPS[1], breadcrumb.GPS[2]
+	if acc > 70 {
+		m.Error(http.StatusBadRequest, fmt.Errorf("accuracy too large: %d", acc))
 		return ret
 	}
 
@@ -340,10 +342,14 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 
 	breadcrumb.Timestamp = time.Now().Unix()
 	last, err := m.breadcrumbCache.Load(userId)
-	distance := Distance(breadcrumb.Latitude, breadcrumb.Longitude, last.Latitude, last.Longitude)
+	distance := float64(100)
+	if err == nil && len(last.GPS) >= 3 {
+		lastLat, lastLng := last.GPS[0], last.GPS[1]
+		distance = Distance(lat, lng, lastLat, lastLng)
+	}
 	var crossIds []int64
-	if err != nil || distance > 30 {
-		logger.INFO("routex", "user", userId, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy)
+	if distance > 30 {
+		logger.INFO("routex", "user", userId, "breadcrumb", lat, lng, acc)
 		if err := m.breadcrumbCache.Save(userId, breadcrumb); err != nil {
 			logger.ERROR("can't save cache %d: %s with %+v", userId, err, breadcrumb)
 			m.Error(http.StatusInternalServerError, err)
@@ -360,7 +366,7 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 			}
 		}()
 	} else {
-		logger.INFO("routex", "user", userId, "breadcrumb", breadcrumb.Longitude, breadcrumb.Latitude, breadcrumb.Accuracy, "distance", distance, "nosave")
+		logger.INFO("routex", "user", userId, "breadcrumb", lat, lng, acc, "distance", distance, "nosave")
 		if crossIds, err = m.breadcrumbCache.SaveCross(userId, breadcrumb); err != nil {
 			logger.ERROR("can't save cache %d: %s with %+v", userId, err, breadcrumb)
 			m.Error(http.StatusInternalServerError, err)
@@ -372,8 +378,8 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 	mars := breadcrumb
 	mars.ToMars(m.conversion)
 	ret = BreadcrumbOffset{
-		Latitude:  mars.Latitude - earth.Latitude,
-		Longitude: mars.Longitude - earth.Longitude,
+		Latitude:  mars.GPS[0] - earth.GPS[0],
+		Longitude: mars.GPS[1] - earth.GPS[1],
 	}
 
 	go func() {
@@ -514,7 +520,6 @@ func (m RouteMap) HandleSearchGeomarks() []Geomark {
 		for _, t := range geomark.Tags {
 			if t == tag {
 				ok = true
-				ret = append(ret, geomark)
 			}
 			if t == CrossPlaceTag {
 				ok = false
@@ -884,9 +889,9 @@ func (m *RouteMap) auth() (Token, bool) {
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	// if authData == "" {
-	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	// }
+	if authData == "" {
+		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	}
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {

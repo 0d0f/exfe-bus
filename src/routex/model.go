@@ -1,6 +1,7 @@
 package routex
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -27,22 +28,56 @@ type TutorialData struct {
 }
 
 type SimpleLocation struct {
-	Timestamp int64   `json:"ts,omitempty"`
-	Accuracy  float64 `json:"acc,omitempty"`
-	Latitude  float64 `json:"lat,omitempty"`
-	Longitude float64 `json:"lng,omitempty"`
+	Timestamp int64     `json:"t,omitempty"`
+	GPS       []float64 `json:"gps,omitempty"` // latitude, longitude, accuracy
 }
 
 func (l *SimpleLocation) ToMars(c GeoConversionRepo) {
-	l.Latitude, l.Longitude = c.EarthToMars(l.Latitude, l.Longitude)
+	if len(l.GPS) < 2 {
+		return
+	}
+	lat, lng := l.GPS[0], l.GPS[1]
+	lat, lng = c.EarthToMars(lat, lng)
+	l.GPS[0], l.GPS[1] = lat, lng
 }
 
 func (l *SimpleLocation) ToEarth(c GeoConversionRepo) {
-	l.Latitude, l.Longitude = c.MarsToEarth(l.Latitude, l.Longitude)
+	if len(l.GPS) < 2 {
+		return
+	}
+	lat, lng := l.GPS[0], l.GPS[1]
+	lat, lng = c.MarsToEarth(lat, lng)
+	l.GPS[0], l.GPS[1] = lat, lng
 }
 
 func (l *SimpleLocation) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`{"ts":%d,"acc":%.0f,"lat":%.6f,"lng":%.6f}`, l.Timestamp, l.Accuracy, l.Latitude, l.Longitude)), nil
+	gps := bytes.NewBuffer(nil)
+	for _, p := range l.GPS {
+		if _, err := gps.WriteString(fmt.Sprintf("%.7f,", p)); err != nil {
+			return nil, err
+		}
+	}
+
+	ret := bytes.NewBuffer(nil)
+	if _, err := ret.WriteString(fmt.Sprintf(`{"t":%d`, l.Timestamp)); err != nil {
+		return nil, err
+	}
+	if l := gps.Len(); l > 0 {
+		gps.Truncate(l - 1)
+		if _, err := ret.WriteString(`,"l":[`); err != nil {
+			return nil, err
+		}
+		if _, err := ret.Write(gps.Bytes()); err != nil {
+			return nil, err
+		}
+		if _, err := ret.WriteString(`]`); err != nil {
+			return nil, err
+		}
+	}
+	if _, err := ret.WriteString("}"); err != nil {
+		return nil, err
+	}
+	return ret.Bytes(), nil
 }
 
 type Geomark struct {
@@ -79,8 +114,10 @@ func (g *Geomark) convert(f func(lat, lng float64) (float64, float64)) {
 	case "route":
 		pos := make([]SimpleLocation, len(g.Positions))
 		for i, p := range g.Positions {
-			p.Latitude, p.Longitude = f(p.Latitude, p.Longitude)
-			pos[i] = p
+			if len(p.GPS) >= 2 {
+				p.GPS[0], p.GPS[1] = f(p.GPS[0], p.GPS[1])
+				pos[i] = p
+			}
 		}
 		g.Positions = pos
 	}
@@ -271,7 +308,10 @@ func (s *BreadcrumbsSaver) DisableCross(userId, crossId int64) error {
 }
 
 func (s *BreadcrumbsSaver) Save(userId int64, l SimpleLocation) error {
-	if _, err := s.db.Exec(BREADCRUMBS_SAVE, userId, l.Latitude, l.Longitude, l.Accuracy, l.Timestamp); err != nil {
+	if len(l.GPS) < 3 {
+		return fmt.Errorf("invalid simple location: %s", l)
+	}
+	if _, err := s.db.Exec(BREADCRUMBS_SAVE, userId, l.GPS[0], l.GPS[1], l.GPS[2], l.Timestamp); err != nil {
 		return err
 	}
 	return nil
@@ -285,10 +325,12 @@ func (s *BreadcrumbsSaver) Load(userId, crossId, afterTimestamp int64) ([]Simple
 	var ret []SimpleLocation
 	for rows.Next() {
 		var l SimpleLocation
-		err := rows.Scan(&l.Latitude, &l.Longitude, &l.Accuracy, &l.Timestamp)
+		var lat, lng, accuracy float64
+		err := rows.Scan(&lat, &lng, &accuracy, &l.Timestamp)
 		if err != nil {
 			return nil, err
 		}
+		l.GPS = []float64{lat, lng, accuracy}
 		ret = append(ret, l)
 	}
 	return ret, nil
