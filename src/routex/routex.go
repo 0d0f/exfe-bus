@@ -574,7 +574,7 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 				CreatedBy:   token.Cross.By.Id(),
 				UpdatedAt:   updatedAt.Unix(),
 				UpdatedBy:   token.Cross.By.Id(),
-				Tags:        []string{"destination"},
+				Tags:        []string{"destination", CrossPlaceTag},
 				Icon:        "http://panda.0d0f.com/static/img/map_pin_blue@2x.png",
 				Title:       token.Cross.Place.Title,
 				Description: token.Cross.Place.Description,
@@ -587,10 +587,19 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 			data = []Geomark{destinaion}
 		}
 	}
-	if m.Request().URL.Query().Get("coordinate") == "mars" {
-		for i := range data {
-			data[i].ToMars(m.conversion)
+
+	for i, d := range data {
+		for _, t := range d.Tags {
+			if t == CrossPlaceTag && token.Cross.Place != nil {
+				d.Latitude, _ = strconv.ParseFloat(token.Cross.Place.Lat, 64)
+				d.Longitude, _ = strconv.ParseFloat(token.Cross.Place.Lng, 64)
+				break
+			}
 		}
+		if m.Request().URL.Query().Get("coordinate") == "mars" {
+			d.ToMars(m.conversion)
+		}
+		data[i] = d
 	}
 	return data
 }
@@ -766,7 +775,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 					CreatedBy:   token.Cross.By.Id(),
 					UpdatedAt:   updatedAt.Unix(),
 					UpdatedBy:   token.Cross.By.Id(),
-					Tags:        []string{"destination"},
+					Tags:        []string{"destination", CrossPlaceTag},
 					Icon:        "http://panda.0d0f.com/static/img/map_pin_blue@2x.png",
 					Title:       token.Cross.Place.Title,
 					Description: token.Cross.Place.Description,
@@ -780,7 +789,16 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			}
 		}
 		for _, d := range marks {
-			d.ToMars(m.conversion)
+			for _, t := range d.Tags {
+				if t == CrossPlaceTag && token.Cross.Place != nil {
+					d.Longitude, _ = strconv.ParseFloat(token.Cross.Place.Lng, 64)
+					d.Latitude, _ = strconv.ParseFloat(token.Cross.Place.Lat, 64)
+					break
+				}
+			}
+			if toMars {
+				d.ToMars(m.conversion)
+			}
 			err := stream.Write(d)
 			if err != nil {
 				return
