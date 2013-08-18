@@ -879,6 +879,8 @@ func (m RouteMap) HandleSendNotification() {
 	}
 	for _, recipient := range recipients {
 		switch recipient.Provider {
+		case "wechat":
+			fallthrough
 		case "iOS":
 			fallthrough
 		case "Android":
