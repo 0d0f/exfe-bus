@@ -36,6 +36,11 @@ func (l *SimpleLocation) ToMars(c GeoConversionRepo) {
 	if len(l.GPS) < 2 {
 		return
 	}
+	gps := make([]float64, len(l.GPS))
+	for i, p := range l.GPS {
+		gps[i] = p
+	}
+	l.GPS = gps
 	lat, lng := l.GPS[0], l.GPS[1]
 	lat, lng = c.EarthToMars(lat, lng)
 	l.GPS[0], l.GPS[1] = lat, lng
@@ -44,6 +49,10 @@ func (l *SimpleLocation) ToMars(c GeoConversionRepo) {
 func (l *SimpleLocation) ToEarth(c GeoConversionRepo) {
 	if len(l.GPS) < 2 {
 		return
+	}
+	gps := make([]float64, len(l.GPS))
+	for i, p := range l.GPS {
+		gps[i] = p
 	}
 	lat, lng := l.GPS[0], l.GPS[1]
 	lat, lng = c.MarsToEarth(lat, lng)
@@ -114,10 +123,14 @@ func (g *Geomark) convert(f func(lat, lng float64) (float64, float64)) {
 	case "route":
 		pos := make([]SimpleLocation, len(g.Positions))
 		for i, p := range g.Positions {
-			if len(p.GPS) >= 2 {
-				p.GPS[0], p.GPS[1] = f(p.GPS[0], p.GPS[1])
-				pos[i] = p
+			gps := make([]float64, len(p.GPS))
+			for i, d := range p.GPS {
+				gps[i] = d
 			}
+			lat, lng := p.GPS[0], p.GPS[1]
+			lat, lng = f(lat, lng)
+			p.GPS[0], p.GPS[1] = lat, lng
+			pos[i] = p
 		}
 		g.Positions = pos
 	}
