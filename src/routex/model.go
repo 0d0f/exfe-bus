@@ -123,13 +123,15 @@ func (g *Geomark) convert(f func(lat, lng float64) (float64, float64)) {
 	case "route":
 		pos := make([]SimpleLocation, len(g.Positions))
 		for i, p := range g.Positions {
-			gps := make([]float64, len(p.GPS))
-			for i, d := range p.GPS {
-				gps[i] = d
+			if len(p.GPS) >= 2 {
+				gps := make([]float64, len(p.GPS))
+				for i, d := range p.GPS {
+					gps[i] = d
+				}
+				lat, lng := p.GPS[0], p.GPS[1]
+				lat, lng = f(lat, lng)
+				p.GPS[0], p.GPS[1] = lat, lng
 			}
-			lat, lng := p.GPS[0], p.GPS[1]
-			lat, lng = f(lat, lng)
-			p.GPS[0], p.GPS[1] = lat, lng
 			pos[i] = p
 		}
 		g.Positions = pos
