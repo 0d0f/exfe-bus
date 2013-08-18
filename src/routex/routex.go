@@ -327,13 +327,13 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 		m.Error(http.StatusBadRequest, err)
 		return ret
 	}
-	if len(breadcrumb.GPS) < 3 || breadcrumb.GPS[2] == 0 {
+	if len(breadcrumb.GPS) < 3 {
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid breadcrumb: %+v", breadcrumb))
 		return ret
 	}
 	lat, lng, acc := breadcrumb.GPS[0], breadcrumb.GPS[1], breadcrumb.GPS[2]
-	if acc > 70 {
-		m.Error(http.StatusBadRequest, fmt.Errorf("accuracy too large: %d", acc))
+	if acc <= 0 || acc > 70 {
+		m.Error(http.StatusBadRequest, fmt.Errorf("invalid accuracy: %f", acc))
 		return ret
 	}
 
