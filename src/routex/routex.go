@@ -901,6 +901,7 @@ func (m RouteMap) HandleSendNotification() {
 			return
 		}
 	}
+	m.Error(http.StatusNotAcceptable, fmt.Errorf("can't find provider avaliable"))
 	return
 }
 
