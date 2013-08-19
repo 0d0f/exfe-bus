@@ -48,16 +48,20 @@ func main() {
 	totalInput := len(locations)
 	totalOutput := (end - start) / 10
 	var ret []Location
-	for i, o := 0, 0; i < totalInput; i++ {
-		if float64(i)/float64(totalInput) < float64(o)/float64(totalOutput) {
-			continue
-		}
-		ret = append(ret, locations[i])
-		o++
+	for o := 0; o < totalOutput; o++ {
+		r := float64(o) * float64(totalInput-1) / float64(totalOutput)
+		i := int(r)
+		r = r - float64(i)
+		ret = append(ret, Location{
+			Lat: (locations[i+1].Lat-locations[i].Lat)*r + locations[i].Lat,
+			Lng: (locations[i+1].Lng-locations[i].Lng)*r + locations[i].Lng,
+		})
+		i++
 	}
 
+	offset := start
 	for _, l := range ret {
 		fmt.Printf("{\"offset\":%d, \"lat\":%.7f, \"lng\":%.7f, \"acc\":10},\n", offset, l.Lat, l.Lng)
-		offset += interval
+		offset += 10
 	}
 }
