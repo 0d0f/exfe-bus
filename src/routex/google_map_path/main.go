@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 )
 
 type Location struct {
@@ -13,57 +14,49 @@ type Location struct {
 
 const allPoints = 8640
 
-// stdin google map api route path:
-//   http://maps.googleapis.com/maps/api/directions/json?origin=Tiananmen+Square&destination=Tiananmen+Square&waypoints=shanghai&sensor=false
-// stdout location array
+// echo '[{"lat":x.xxx,"lng":y.yy},...]' | tutorial 15:10 19:00
 func main() {
-	var ret Map
+	if len(os.Args) != 3 {
+		fmt.Println(`echo '[{"lat":x.xxx,"lng":y.yy},...]' | tutorial 15:10 19:00`)
+		return
+	}
+
+	startStr := os.Args[1]
+	startTime, err := time.Parse("15:04", startStr)
+	if err != nil {
+		fmt.Println("invalid start time %s: %s", startStr, err)
+		return
+	}
+	start := startTime.Hour()*60*60 + startTime.Minute()*60
+
+	endStr := os.Args[2]
+	endTime, err := time.Parse("15:04", endStr)
+	if err != nil {
+		fmt.Println("invalid start time %s: %s", endStr, err)
+		return
+	}
+
+	end := endTime.Hour()*60*60 + endTime.Minute()*60
+
+	var locations []Location
 	decoder := json.NewDecoder(os.Stdin)
-	err := decoder.Decode(&ret)
+	err = decoder.Decode(&locations)
 	if err != nil {
 		panic(err)
 	}
-	var total = int64(allPoints)
-	var steps []Step
-	for _, route := range ret.Routes {
-		for _, leg := range route.Legs {
-			steps = append(steps, leg.Steps...)
+
+	totalInput := len(locations)
+	totalOutput := (end - start) / 10
+	var ret []Location
+	for i, o := 0, 0; i < totalInput; i++ {
+		if float64(i)/float64(totalInput) < float64(o)/float64(totalOutput) {
+			continue
 		}
+		ret = append(ret, locations[i])
+		o++
 	}
-	sum := int64(0)
-	points := make([]int64, len(steps))
-	for _, step := range steps {
-		sum += step.Distance.Value
-	}
-	for i, step := range steps {
-		points[i] = total * step.Distance.Value / sum
-		if points[i] == 0 {
-			points[i] = 1
-		}
-		sum -= step.Distance.Value
-		total -= points[i]
-	}
-	sum = 0
-	for _, p := range points {
-		sum += p
-	}
-	var locations []Location
-	total -= 1
-	for i, step := range steps {
-		ls := make([]Location, points[i])
-		latStep := (step.EndLocation.Lat - step.StartLocation.Lat) / float64(points[i])
-		lngStep := (step.EndLocation.Lng - step.StartLocation.Lng) / float64(points[i])
-		for j := int64(0); j < points[i]; j++ {
-			ls[j] = Location{
-				Lat: float64(j)*latStep + step.StartLocation.Lat,
-				Lng: float64(j)*lngStep + step.StartLocation.Lng,
-			}
-		}
-		locations = append(locations, ls...)
-	}
-	offset := 0
-	interval := 24 * 60 * 60 / allPoints
-	for _, l := range locations {
+
+	for _, l := range ret {
 		fmt.Printf("{\"offset\":%d, \"lat\":%.7f, \"lng\":%.7f, \"acc\":10},\n", offset, l.Lat, l.Lng)
 		offset += interval
 	}

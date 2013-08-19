@@ -26,7 +26,7 @@ type RouteMap struct {
 	SearchRoutex rest.Processor `path:"/_inner/search/crosses" method:"POST"`
 	SetUserInner rest.Processor `path:"/_inner/users/:user_id/crosses" method:"POST"`
 	GetRoutex    rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"GET"`
-	SetUser      rest.Processor `path:"/users/crosses" method:"POST"`
+	SetUser      rest.Processor `path:"/users/crosses/:cross_id" method:"POST"`
 
 	UpdateBreadcrums      rest.Processor `path:"/breadcrumbs" method:"POST"`
 	UpdateBreadcrumsInner rest.Processor `path:"/_inner/breadcrumbs/users/:user_id" method:"POST"`
@@ -41,7 +41,7 @@ type RouteMap struct {
 	Stream  rest.Streaming `path:"/crosses/:cross_id" method:"WATCH"`
 	Options rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
 
-	SendNotification rest.Processor `path:"/crosses/notification/:cross_id/:identity_id" method:"POST"`
+	SendNotification rest.Processor `path:"/notification/crosses/:cross_id/:identity_id" method:"POST"`
 
 	routexRepo      RoutexRepo
 	breadcrumbCache BreadcrumbCache
@@ -191,12 +191,11 @@ func (m RouteMap) HandleSetTutorial() {
 }
 
 type UserCrossSetup struct {
-	CrossId         int64 `json:"cross_id,omitempty"`
-	SaveBreadcrumbs bool  `json:"save_breadcrumbs,omitempty"`
-	AfterInSeconds  int   `json:"after_in_seconds,omitempty"`
+	SaveBreadcrumbs bool `json:"save_breadcrumbs,omitempty"`
+	AfterInSeconds  int  `json:"after_in_seconds,omitempty"`
 }
 
-func (m RouteMap) HandleSetUser(setup []UserCrossSetup) {
+func (m RouteMap) HandleSetUser(setup UserCrossSetup) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -212,48 +211,50 @@ func (m RouteMap) HandleSetUser(setup []UserCrossSetup) {
 	m.HandleSetUserInner(setup)
 }
 
-func (m RouteMap) HandleSetUserInner(setup []UserCrossSetup) {
+func (m RouteMap) HandleSetUserInner(setup UserCrossSetup) {
 	userIdStr := m.Vars()["user_id"]
 	userId, err := strconv.ParseInt(userIdStr, 10, 64)
 	if err != nil {
 		m.Error(http.StatusBadRequest, err)
 		return
 	}
+	crossIdStr := m.Vars()["cross_id"]
+	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
+	if err != nil {
+		m.Error(http.StatusBadRequest, err)
+		return
+	}
 	go func() {
-		for _, s := range setup {
-			if s.SaveBreadcrumbs {
-				if s.AfterInSeconds == 0 {
-					s.AfterInSeconds = 7200
-				}
-				if err := m.routexRepo.EnableCross(userId, s.CrossId, s.AfterInSeconds); err != nil {
-					logger.ERROR("set user %d enable cross %d routex repo failed: %s", userId, s.CrossId, err)
-				}
-				if err := m.breadcrumbsRepo.EnableCross(userId, s.CrossId, s.AfterInSeconds); err != nil {
-					logger.ERROR("set user %d enable cross %d breadcrumbs repo failed: %s", userId, s.CrossId, err)
-				}
-			} else {
-				if err := m.routexRepo.DisableCross(userId, s.CrossId); err != nil {
-					logger.ERROR("set user %d disable cross %d routex repo failed: %s", userId, s.CrossId, err)
-				}
-				if err := m.breadcrumbsRepo.DisableCross(userId, s.CrossId); err != nil {
-					logger.ERROR("set user %d disable cross %d breadcrumbs repo failed: %s", userId, s.CrossId, err)
-				}
+		if setup.SaveBreadcrumbs {
+			if setup.AfterInSeconds == 0 {
+				setup.AfterInSeconds = 7200
+			}
+			if err := m.routexRepo.EnableCross(userId, crossId, setup.AfterInSeconds); err != nil {
+				logger.ERROR("set user %d enable cross %d routex repo failed: %s", userId, crossId, err)
+			}
+			if err := m.breadcrumbsRepo.EnableCross(userId, crossId, setup.AfterInSeconds); err != nil {
+				logger.ERROR("set user %d enable cross %d breadcrumbs repo failed: %s", userId, crossId, err)
+			}
+		} else {
+			if err := m.routexRepo.DisableCross(userId, crossId); err != nil {
+				logger.ERROR("set user %d disable cross %d routex repo failed: %s", userId, crossId, err)
+			}
+			if err := m.breadcrumbsRepo.DisableCross(userId, crossId); err != nil {
+				logger.ERROR("set user %d disable cross %d breadcrumbs repo failed: %s", userId, crossId, err)
 			}
 		}
 	}()
 
-	for _, s := range setup {
-		if s.SaveBreadcrumbs {
-			if s.AfterInSeconds == 0 {
-				s.AfterInSeconds = 7200
-			}
-			if err := m.breadcrumbCache.EnableCross(userId, s.CrossId, s.AfterInSeconds); err != nil {
-				logger.ERROR("set user %d enable cross %d breadcrumb cache failed: %s", userId, s.CrossId, err)
-			}
-		} else {
-			if err := m.breadcrumbCache.DisableCross(userId, s.CrossId); err != nil {
-				logger.ERROR("set user %d disable cross %d breadcrumb cache failed: %s", userId, s.CrossId, err)
-			}
+	if setup.SaveBreadcrumbs {
+		if setup.AfterInSeconds == 0 {
+			setup.AfterInSeconds = 7200
+		}
+		if err := m.breadcrumbCache.EnableCross(userId, crossId, setup.AfterInSeconds); err != nil {
+			logger.ERROR("set user %d enable cross %d breadcrumb cache failed: %s", userId, crossId, err)
+		}
+	} else {
+		if err := m.breadcrumbCache.DisableCross(userId, crossId); err != nil {
+			logger.ERROR("set user %d disable cross %d breadcrumb cache failed: %s", userId, crossId, err)
 		}
 	}
 }
