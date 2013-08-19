@@ -69,6 +69,8 @@ func (i Identity) ScreenId() string {
 		return i.ExternalUsername
 	case "twitter":
 		return "@" + i.ExternalUsername + "@" + i.Provider
+	case "wechat":
+		return "@" + i.Provider
 	}
 	return i.ExternalUsername + "@" + i.Provider
 }
