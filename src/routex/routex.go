@@ -201,7 +201,7 @@ func (m RouteMap) HandleSetUser(setup UserCrossSetup) {
 	m.Header().Set("Cache-Control", "no-cache")
 
 	var token Token
-	token, ok := m.auth()
+	token, ok := m.auth(true)
 	if !ok || token.Readonly {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
@@ -309,7 +309,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) Breadcrum
 
 	var token Token
 	var ret BreadcrumbOffset
-	token, ok := m.auth()
+	token, ok := m.auth(false)
 	if !ok || token.Readonly {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return ret
@@ -419,7 +419,7 @@ func (m RouteMap) HandleGetBreadcrums() []Geomark {
 	m.Header().Set("Cache-Control", "no-cache")
 
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
-	token, ok := m.auth()
+	token, ok := m.auth(true)
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
@@ -456,7 +456,7 @@ func (m RouteMap) HandleGetUserBreadcrums() Geomark {
 	m.Header().Set("Cache-Control", "no-cache")
 
 	toMars, userIdStr := m.Request().URL.Query().Get("coordinate") == "mars", m.Vars()["user_id"]
-	token, ok := m.auth()
+	token, ok := m.auth(true)
 	var ret Geomark
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
@@ -540,7 +540,7 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
-	token, ok := m.auth()
+	token, ok := m.auth(true)
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
@@ -611,7 +611,7 @@ func (m RouteMap) HandleSetGeomark(mark Geomark) {
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
-	token, ok := m.auth()
+	token, ok := m.auth(true)
 	if !ok || token.Readonly {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
@@ -644,7 +644,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
-	token, ok := m.auth()
+	token, ok := m.auth(true)
 	if !ok || token.Readonly {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
@@ -675,7 +675,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
-	token, ok := m.auth()
+	token, ok := m.auth(true)
 	if !ok {
 		logger.DEBUG("invalid token")
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
@@ -848,7 +848,7 @@ func (m RouteMap) HandleSendNotification() {
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
-	token, ok := m.auth()
+	token, ok := m.auth(true)
 	if !ok || token.Readonly {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
@@ -909,7 +909,7 @@ func (m RouteMap) HandleSendNotification() {
 	return
 }
 
-func (m *RouteMap) auth() (Token, bool) {
+func (m *RouteMap) auth(checkCross bool) (Token, bool) {
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
@@ -923,26 +923,14 @@ func (m *RouteMap) auth() (Token, bool) {
 		}
 	}
 
-	crossIdStr := m.Vars()["cross_id"]
-	if crossIdStr == "" {
-		switch token.TokenType {
-		case "user_token":
-			return token, true
-		case "cross_access_token":
-			var err error
-			token.Cross, err = m.platform.FindCross(int64(token.CrossId), nil)
-			if err != nil {
-				return token, false
-			}
-			identity, err := m.platform.GetIdentityById(token.IdentityId)
-			if err != nil {
-				return token, false
-			}
-			token.UserId = identity.UserID
+	if !checkCross {
+		if token.TokenType == "user_token" {
 			return token, true
 		}
 		return token, false
 	}
+
+	crossIdStr := m.Vars()["cross_id"]
 	crossId, err := strconv.ParseUint(crossIdStr, 10, 64)
 	if err != nil {
 		return token, false
