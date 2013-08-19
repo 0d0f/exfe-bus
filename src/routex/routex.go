@@ -503,7 +503,7 @@ func (m RouteMap) HandleSearchGeomarks() []Geomark {
 		return nil
 	}
 	ret := make([]Geomark, 0)
-	tag := m.Request().URL.Query().Get("tag")
+	tag := m.Request().URL.Query().Get("tags")
 	if tag == "" {
 		return ret
 	}
@@ -703,6 +703,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
 
+	m.WriteHeader(http.StatusOK)
 	quit := make(chan int)
 	defer func() { close(quit) }()
 	for _, invitation := range token.Cross.Exfee.Invitations {

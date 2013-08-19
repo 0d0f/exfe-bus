@@ -6,36 +6,6 @@ import (
 	"os"
 )
 
-type Step struct {
-	Distance struct {
-		Text  string
-		Value int64
-	}
-	Duration struct {
-		Text  string
-		Value int64
-	}
-	EndLocation   Location `json:"end_location"`
-	StartLocation Location `json:"start_location"`
-}
-
-type Map struct {
-	Routes []struct {
-		Bounds struct {
-			Northeast Location
-			Southwest Location
-		}
-		Copyrights string
-		Legs       []struct {
-			Step
-			EndAddress   string
-			StartAddress string
-			Steps        []Step
-		}
-	}
-	Status string
-}
-
 type Location struct {
 	Lat float64
 	Lng float64
