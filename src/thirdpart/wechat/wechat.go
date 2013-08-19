@@ -9,16 +9,13 @@ import (
 )
 
 type Wechat struct {
-	bots map[string]string
+	url string
 }
 
 func New(config *model.Config) *Wechat {
-	bots := make(map[string]string)
-	for k, v := range config.Wechat {
-		bots[k] = fmt.Sprintf("http://%s:%d/send?to=%%s", v.Addr, v.Port)
-	}
+	u := fmt.Sprintf("%s/v3/bus/sendWechatMessage", config.SiteApi)
 	return &Wechat{
-		bots: bots,
+		url: u,
 	}
 }
 
@@ -31,11 +28,7 @@ func (w *Wechat) SetPosterCallback(callback thirdpart.Callback) (time.Duration, 
 }
 
 func (w *Wechat) Post(from, to, content string) (string, error) {
-	bot, ok := w.bots[from]
-	if !ok {
-		return "", fmt.Errorf("can't find bot: %s", from)
-	}
-	resp, err := broker.Http("POST", fmt.Sprintf(bot, to), "text/plain", []byte(content))
+	resp, err := broker.Http("POST", w.url, "application/javascript", []byte(content))
 	if err != nil {
 		return "", err
 	}
