@@ -23,8 +23,8 @@ type RouteMap struct {
 
 	SetTutorial  rest.Processor `path:"/_inner/tutorial/users/:user_id" method:"POST"`
 	SearchRoutex rest.Processor `path:"/_inner/search/crosses" method:"POST"`
-	SetUserInner rest.Processor `path:"/_inner/users/:user_id/crosses" method:"POST"`
 	GetRoutex    rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"GET"`
+	SetUserInner rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"POST"`
 	SetUser      rest.Processor `path:"/users/crosses/:cross_id" method:"POST"`
 
 	UpdateBreadcrums      rest.Processor `path:"/breadcrumbs" method:"POST"`
