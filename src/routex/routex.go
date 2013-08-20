@@ -83,36 +83,6 @@ func New(routexRepo RoutexRepo, breadcrumbCache BreadcrumbCache, breadcrumbsRepo
 	return ret, nil
 }
 
-func (m *RouteMap) getTutorialData(currentTime time.Time, userId int64, number int) []SimpleLocation {
-	data, ok := m.tutorialDatas[userId]
-	if !ok {
-		return nil
-	}
-	currentTime = currentTime.UTC()
-	now := currentTime.Unix()
-	todayTime, _ := time.Parse("2006-01-02 15:04:05", currentTime.Format("2006-01-02 00:00:00"))
-	today := todayTime.Unix()
-
-	oneDaySeconds := int64(24 * time.Hour / time.Second)
-	totalPoint := len(data)
-	currentPoint := int((now - today) * int64(totalPoint) / oneDaySeconds)
-
-	var ret []SimpleLocation
-	for ; number > 0; number-- {
-		ret = append(ret, SimpleLocation{
-			Timestamp: today + data[currentPoint].Offset,
-			GPS:       []float64{data[currentPoint].Latitude, data[currentPoint].Longitude, data[currentPoint].Accuracy},
-		})
-		if currentPoint > 0 {
-			currentPoint--
-		} else {
-			currentPoint = totalPoint - 1
-			today -= oneDaySeconds
-		}
-	}
-	return ret
-}
-
 func (m RouteMap) HandleSetTutorial() {
 	userIdStr := m.Vars()["user_id"]
 	userId, err := strconv.ParseInt(userIdStr, 10, 64)
@@ -328,6 +298,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	m.WriteHeader(http.StatusOK)
 	quit := make(chan int)
 	defer func() { close(quit) }()
+
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
@@ -372,63 +343,15 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		}
 	}
 
-	marks, err := m.geomarksRepo.Get(int64(token.Cross.ID))
+	marks, err := m.getGeomarks(token.Cross, toMars)
 	if err == nil {
-		if len(marks) == 0 {
-			var lat, lng float64
-			if token.Cross.Place != nil {
-				if lng, err = strconv.ParseFloat(token.Cross.Place.Lng, 64); err != nil {
-					token.Cross.Place = nil
-				} else if lat, err = strconv.ParseFloat(token.Cross.Place.Lat, 64); err != nil {
-					token.Cross.Place = nil
-				}
-			}
-			if token.Cross.Place != nil {
-				createdAt, err := time.Parse("2006-01-02 15:04:05 -0700", token.Cross.CreatedAt)
-				if err != nil {
-					createdAt = time.Now()
-				}
-				updatedAt, err := time.Parse("2006-01-02 15:04:05 -0700", token.Cross.UpdatedAt)
-				if err != nil {
-					updatedAt = time.Now()
-				}
-				destinaion := Geomark{
-					Id:          "destination",
-					Type:        "location",
-					CreatedAt:   createdAt.Unix(),
-					CreatedBy:   token.Cross.By.Id(),
-					UpdatedAt:   updatedAt.Unix(),
-					UpdatedBy:   token.Cross.By.Id(),
-					Tags:        []string{"destination", CrossPlaceTag},
-					Icon:        "http://panda.0d0f.com/static/img/map_pin_blue@2x.png",
-					Title:       token.Cross.Place.Title,
-					Description: token.Cross.Place.Description,
-					Longitude:   lng,
-					Latitude:    lat,
-				}
-				go func() {
-					m.geomarksRepo.Set(int64(token.Cross.ID), destinaion)
-				}()
-				marks = append(marks, destinaion)
-			}
-		}
 		for _, d := range marks {
-			for _, t := range d.Tags {
-				if t == CrossPlaceTag && token.Cross.Place != nil {
-					d.Longitude, _ = strconv.ParseFloat(token.Cross.Place.Lng, 64)
-					d.Latitude, _ = strconv.ParseFloat(token.Cross.Place.Lat, 64)
-					break
-				}
-			}
-			if toMars {
-				d.ToMars(m.conversion)
-			}
 			err := stream.Write(d)
 			if err != nil {
 				return
 			}
 		}
-	} else if err != nil {
+	} else {
 		logger.ERROR("can't get route of cross %d: %s", token.Cross.ID, err)
 	}
 

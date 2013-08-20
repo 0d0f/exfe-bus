@@ -3,10 +3,41 @@ package routex
 import (
 	"fmt"
 	"logger"
+	"model"
 	"net/http"
 	"strconv"
 	"time"
 )
+
+func (m *RouteMap) getTutorialData(currentTime time.Time, userId int64, number int) []SimpleLocation {
+	data, ok := m.tutorialDatas[userId]
+	if !ok {
+		return nil
+	}
+	currentTime = currentTime.UTC()
+	now := currentTime.Unix()
+	todayTime, _ := time.Parse("2006-01-02 15:04:05", currentTime.Format("2006-01-02 00:00:00"))
+	today := todayTime.Unix()
+
+	oneDaySeconds := int64(24 * time.Hour / time.Second)
+	totalPoint := len(data)
+	currentPoint := int((now - today) * int64(totalPoint) / oneDaySeconds)
+
+	var ret []SimpleLocation
+	for ; number > 0; number-- {
+		ret = append(ret, SimpleLocation{
+			Timestamp: today + data[currentPoint].Offset,
+			GPS:       []float64{data[currentPoint].Latitude, data[currentPoint].Longitude, data[currentPoint].Accuracy},
+		})
+		if currentPoint > 0 {
+			currentPoint--
+		} else {
+			currentPoint = totalPoint - 1
+			today -= oneDaySeconds
+		}
+	}
+	return ret
+}
 
 type BreadcrumbOffset struct {
 	Latitude  float64 `json:"earth_to_mars_latitude"`
@@ -139,8 +170,12 @@ func (m RouteMap) HandleGetBreadcrums() []Geomark {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
+	return m.getBreadcrumbs(token.Cross, toMars)
+}
+
+func (m RouteMap) getBreadcrumbs(cross model.Cross, toMars bool) []Geomark {
 	ret := make([]Geomark, 0)
-	for _, invitation := range token.Cross.Exfee.Invitations {
+	for _, invitation := range cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
 			Id:   fmt.Sprintf("%d@exfe", userId),
@@ -149,8 +184,8 @@ func (m RouteMap) HandleGetBreadcrums() []Geomark {
 
 		if route.Positions = m.getTutorialData(time.Now().UTC(), userId, 100); route.Positions == nil {
 			var err error
-			if route.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID), time.Now().Unix()); err != nil {
-				logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
+			if route.Positions, err = m.breadcrumbsRepo.Load(userId, int64(cross.ID), time.Now().Unix()); err != nil {
+				logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, cross.ID, err)
 				continue
 			}
 		}

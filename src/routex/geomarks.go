@@ -2,6 +2,7 @@ package routex
 
 import (
 	"logger"
+	"model"
 	"net/http"
 	"strconv"
 	"time"
@@ -58,27 +59,39 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
-	data, err := m.geomarksRepo.Get(int64(token.Cross.ID))
+	toMars := false
+	if m.Request().URL.Query().Get("coordinate") == "mars" {
+		toMars = true
+	}
+	ret, err := m.getGeomarks(token.Cross, toMars)
 	if err != nil {
 		logger.ERROR("can't get route of cross %d: %s", token.Cross.ID, err)
 		m.Error(http.StatusInternalServerError, err)
 		return nil
 	}
+	return ret
+}
+
+func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]Geomark, error) {
+	data, err := m.geomarksRepo.Get(int64(cross.ID))
+	if err != nil {
+		return nil, err
+	}
 	if data == nil {
 		var lat, lng float64
-		if token.Cross.Place != nil {
-			if lng, err = strconv.ParseFloat(token.Cross.Place.Lng, 64); err != nil {
-				token.Cross.Place = nil
-			} else if lat, err = strconv.ParseFloat(token.Cross.Place.Lat, 64); err != nil {
-				token.Cross.Place = nil
+		if cross.Place != nil {
+			if lng, err = strconv.ParseFloat(cross.Place.Lng, 64); err != nil {
+				cross.Place = nil
+			} else if lat, err = strconv.ParseFloat(cross.Place.Lat, 64); err != nil {
+				cross.Place = nil
 			}
 		}
-		if token.Cross.Place != nil {
-			createdAt, err := time.Parse("2006-01-02 15:04:05 -0700", token.Cross.CreatedAt)
+		if cross.Place != nil {
+			createdAt, err := time.Parse("2006-01-02 15:04:05 -0700", cross.CreatedAt)
 			if err != nil {
 				createdAt = time.Now()
 			}
-			updatedAt, err := time.Parse("2006-01-02 15:04:05 -0700", token.Cross.UpdatedAt)
+			updatedAt, err := time.Parse("2006-01-02 15:04:05 -0700", cross.UpdatedAt)
 			if err != nil {
 				updatedAt = time.Now()
 			}
@@ -86,18 +99,18 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 				Id:          "destination",
 				Type:        "location",
 				CreatedAt:   createdAt.Unix(),
-				CreatedBy:   token.Cross.By.Id(),
+				CreatedBy:   cross.By.Id(),
 				UpdatedAt:   updatedAt.Unix(),
-				UpdatedBy:   token.Cross.By.Id(),
+				UpdatedBy:   cross.By.Id(),
 				Tags:        []string{"destination", CrossPlaceTag},
 				Icon:        "http://panda.0d0f.com/static/img/map_pin_blue@2x.png",
-				Title:       token.Cross.Place.Title,
-				Description: token.Cross.Place.Description,
+				Title:       cross.Place.Title,
+				Description: cross.Place.Description,
 				Longitude:   lng,
 				Latitude:    lat,
 			}
 			go func() {
-				m.geomarksRepo.Set(int64(token.Cross.ID), destinaion)
+				m.geomarksRepo.Set(int64(cross.ID), destinaion)
 			}()
 			data = []Geomark{destinaion}
 		}
@@ -105,18 +118,18 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 
 	for i, d := range data {
 		for _, t := range d.Tags {
-			if t == CrossPlaceTag && token.Cross.Place != nil {
-				d.Latitude, _ = strconv.ParseFloat(token.Cross.Place.Lat, 64)
-				d.Longitude, _ = strconv.ParseFloat(token.Cross.Place.Lng, 64)
+			if t == CrossPlaceTag && cross.Place != nil {
+				d.Latitude, _ = strconv.ParseFloat(cross.Place.Lat, 64)
+				d.Longitude, _ = strconv.ParseFloat(cross.Place.Lng, 64)
 				break
 			}
 		}
-		if m.Request().URL.Query().Get("coordinate") == "mars" {
+		if toMars {
 			d.ToMars(m.conversion)
 		}
 		data[i] = d
 	}
-	return data
+	return data, nil
 }
 
 func (m RouteMap) HandleSetGeomark(mark Geomark) {
