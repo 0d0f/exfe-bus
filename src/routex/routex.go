@@ -7,6 +7,7 @@ import (
 	"github.com/googollee/go-broadcast"
 	"github.com/googollee/go-rest"
 	"logger"
+	"math/rand"
 	"model"
 	"net/http"
 	"net/url"
@@ -41,6 +42,7 @@ type RouteMap struct {
 
 	SendNotification rest.Processor `path:"/notification/crosses/:cross_id/:identity_id" method:"POST"`
 
+	rand            *rand.Rand
 	routexRepo      RoutexRepo
 	breadcrumbCache BreadcrumbCache
 	breadcrumbsRepo BreadcrumbsRepo
@@ -70,6 +72,7 @@ func New(routexRepo RoutexRepo, breadcrumbCache BreadcrumbCache, breadcrumbsRepo
 		tutorialDatas[userId] = datas
 	}
 	ret := &RouteMap{
+		rand:            rand.New(rand.NewSource(time.Now().Unix())),
 		routexRepo:      routexRepo,
 		breadcrumbCache: breadcrumbCache,
 		breadcrumbsRepo: breadcrumbsRepo,
