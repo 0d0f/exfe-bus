@@ -149,10 +149,9 @@ func (m RouteMap) HandleSetGeomark(mark Geomark) {
 		return
 	}
 
-	for _, tag := range mark.Tags {
-		if tag == CrossPlaceTag {
-			m.Error(http.StatusBadRequest, fmt.Errorf("mark should not include %s tag", CrossPlaceTag))
-			return
+	for i := len(mark.Tags) - 1; i >= 0; i-- {
+		if mark.Tags[i] == CrossPlaceTag {
+			mark.Tags = append(mark.Tags[:i], mark.Tags[i+1:]...)
 		}
 	}
 
