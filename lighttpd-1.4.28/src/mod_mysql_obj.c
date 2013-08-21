@@ -346,10 +346,6 @@ URIHANDLER_FUNC(mod_mysql_obj_uri_handler) {
 	while (mysql_next_result(p->mysql) == 0);
 #endif
 
-	for (uint i = 0; i<con->request.headers->used; i++) {
-		data_unset *d = con->request.headers->data[i];
-	}
-
 	return HANDLER_GO_ON;
 }
 
