@@ -164,6 +164,7 @@ func (m RouteMap) HandleSetGeomark(mark Geomark) {
 		m.Error(http.StatusInternalServerError, err)
 		return
 	}
+	m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
 
 	go func() {
 		mark.Action = "update"
@@ -195,6 +196,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 		m.Error(http.StatusInternalServerError, err)
 		return
 	}
+	m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
 
 	go func() {
 		mark.Action = "delete"

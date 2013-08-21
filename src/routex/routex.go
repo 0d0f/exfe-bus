@@ -421,6 +421,7 @@ func (m RouteMap) HandleSendNotification() {
 		return
 	}
 
+	m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
 	var fromIdentity model.Identity
 	for _, inv := range token.Cross.Exfee.Invitations {
 		if inv.Identity.UserID == token.UserId {
