@@ -94,6 +94,7 @@
     "timeout_in_second": 60
   },
   "routex": {
+    "tutorial_creator": 0,
     "tutorial_data_file": {
     }
   },

@@ -87,6 +87,7 @@ type Config struct {
 		TimeoutInSecond int     `json:"timeout_in_second"`
 	} `json:"here"`
 	Routex struct {
+		TutorialCreator  int64             `json:"tutorial_creator"`
 		TutorialDataFile map[string]string `json:"tutorial_data_file"`
 	}
 	Thirdpart struct {
