@@ -128,9 +128,8 @@ func (g *Geomark) convert(f func(lat, lng float64) (float64, float64)) {
 				for i, d := range p.GPS {
 					gps[i] = d
 				}
-				lat, lng := p.GPS[0], p.GPS[1]
-				lat, lng = f(lat, lng)
-				p.GPS[0], p.GPS[1] = lat, lng
+				gps[0], gps[1] = f(p.GPS[0], p.GPS[1])
+				p.GPS = gps
 			}
 			pos[i] = p
 		}
