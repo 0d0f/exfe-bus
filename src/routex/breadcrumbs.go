@@ -115,7 +115,7 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 			}
 		}()
 	} else {
-		logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7d", lat), fmt.Sprintf("%.7d", lng), acc, "distance", fmt.Sprintf("%.2f", distance), "nosave")
+		logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7f", lat), fmt.Sprintf("%.7f", lng), acc, "distance", fmt.Sprintf("%.2f", distance), "nosave")
 		if err := m.breadcrumbCache.Save(userId, breadcrumb); err != nil {
 			logger.ERROR("can't save cache %d: %s with %+v", userId, err, breadcrumb)
 			m.Error(http.StatusInternalServerError, err)
