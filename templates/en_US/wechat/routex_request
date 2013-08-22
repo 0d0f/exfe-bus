@@ -1,0 +1,9 @@
+{
+  "touser": "{{.To.ExternalID}}",
+  "template_id": "user_location_request",
+  "locale": "{{.To.Language}}",
+  "data":{
+ 	"identity": {"name": "{{.From.Name}}"},
+ 	"cross": {"title": "{{.Cross.Title}}"}
+  }
+}

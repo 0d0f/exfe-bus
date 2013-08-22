@@ -1,1 +1,1 @@
-@{{.From.Name}} wonders your current location. {{.Config.SiteUrl}}/#!{{.CrossId}}/routex/{{.To.Token}}
+@{{.From.Name}} wonders your current location in RouteX {{.Cross.Title}}. {{.Config.SiteUrl}}/#!{{.Cross.ID}}/routex/{{.To.Token}}

@@ -28,10 +28,11 @@ func (w *Wechat) SetPosterCallback(callback thirdpart.Callback) (time.Duration, 
 }
 
 func (w *Wechat) Post(from, to, content string) (string, error) {
-	resp, err := broker.Http("POST", w.url, "application/javascript", []byte(content))
+	resp, err := broker.HttpResponse(broker.Http("POST", w.url, "application/javascript", []byte(content)))
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer resp.Close()
+
 	return "", nil
 }
