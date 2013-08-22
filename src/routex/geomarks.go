@@ -122,7 +122,7 @@ func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]Geomark, error)
 				UpdatedAt:   updatedAt.Unix(),
 				UpdatedBy:   cross.By.Id(),
 				Tags:        []string{CrossPlaceTag},
-				Icon:        "http://panda.0d0f.com/static/img/map_pin_blue@2x.png",
+				Icon:        "",
 				Title:       cross.Place.Title,
 				Description: cross.Place.Description,
 				Longitude:   lng,

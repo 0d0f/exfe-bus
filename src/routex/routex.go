@@ -119,7 +119,7 @@ func (m RouteMap) setTutorial(lat, lng float64, userId, crossId int64, locale st
 		UpdatedAt:   now,
 		UpdatedBy:   fmt.Sprintf("%d@exfe", userId),
 		Tags:        []string{"destination"},
-		Icon:        "http://panda.0d0f.com/static/img/map_pin_blue@2x.png",
+		Icon:        "",
 		Title:       place.Title,
 		Description: place.Description,
 		Longitude:   lng,
