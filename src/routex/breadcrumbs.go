@@ -2,6 +2,7 @@ package routex
 
 import (
 	"fmt"
+	"github.com/garyburd/redigo/redis"
 	"logger"
 	"model"
 	"net/http"
@@ -235,11 +236,43 @@ func (m RouteMap) HandleGetUserBreadcrums() Geomark {
 	if ret.Positions = m.getTutorialData(after, userId, 100); ret.Positions == nil {
 		var err error
 		if ret.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID), after.Unix()); err != nil {
-			logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
+			if err == redis.ErrNil {
+				m.Error(http.StatusNotFound, err)
+			} else {
+				logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
+				m.Error(http.StatusInternalServerError, err)
+			}
 			return ret
 		}
 	}
 	ret.Id, ret.Type = fmt.Sprintf("%d", userId), "route"
+	if toMars {
+		ret.ToMars(m.conversion)
+	}
+	return ret
+}
+
+func (m RouteMap) HandleGetUserBreadcrumsInner() Geomark {
+	toMars, userIdStr := m.Request().URL.Query().Get("coordinate") == "mars", m.Vars()["user_id"]
+	var ret Geomark
+	userId, err := strconv.ParseInt(userIdStr, 10, 64)
+	if err != nil {
+		m.Error(http.StatusBadRequest, err)
+		return ret
+	}
+
+	l, err := m.breadcrumbCache.Load(userId)
+	if err != nil {
+		if err == redis.ErrNil {
+			m.Error(http.StatusNotFound, err)
+		} else {
+			logger.ERROR("can't get user %d breadcrumbs: %s", userId, err)
+			m.Error(http.StatusInternalServerError, err)
+		}
+		return ret
+	}
+	ret.Id, ret.Type = fmt.Sprintf("%d", userId), "route"
+	ret.Positions = []SimpleLocation{l}
 	if toMars {
 		ret.ToMars(m.conversion)
 	}

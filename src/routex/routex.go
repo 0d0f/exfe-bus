@@ -26,10 +26,11 @@ type RouteMap struct {
 	SetUserInner rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"POST"`
 	SetUser      rest.Processor `path:"/users/crosses/:cross_id" method:"POST"`
 
-	UpdateBreadcrums      rest.Processor `path:"/breadcrumbs" method:"POST"`
-	UpdateBreadcrumsInner rest.Processor `path:"/_inner/breadcrumbs/users/:user_id" method:"POST"`
-	GetBreadcrums         rest.Processor `path:"/breadcrumbs/crosses/:cross_id" method:"GET"`
-	GetUserBreadcrums     rest.Processor `path:"/breadcrumbs/crosses/:cross_id/users/:user_id" method:"GET"`
+	UpdateBreadcrums       rest.Processor `path:"/breadcrumbs" method:"POST"`
+	UpdateBreadcrumsInner  rest.Processor `path:"/_inner/breadcrumbs/users/:user_id" method:"POST"`
+	GetBreadcrums          rest.Processor `path:"/breadcrumbs/crosses/:cross_id" method:"GET"`
+	GetUserBreadcrums      rest.Processor `path:"/breadcrumbs/crosses/:cross_id/users/:user_id" method:"GET"`
+	GetUserBreadcrumsInner rest.Processor `path:"/_inner/breadcrumbs/users/:user_id" method:"GET"`
 
 	SearchGeomarks rest.Processor `path:"/_inner/geomarks/crosses/:cross_id" method:"GET"`
 	GetGeomarks    rest.Processor `path:"/geomarks/crosses/:cross_id" method:"GET"`
