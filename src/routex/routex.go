@@ -367,11 +367,9 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 					}
 				}
 			}
-			fmt.Println("to marsin:", mark)
 			if toMars {
 				mark.ToMars(m.conversion)
 			}
-			fmt.Println("to marsed:", mark)
 			stream.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
 			err := stream.Write(mark)
 			if err != nil {
