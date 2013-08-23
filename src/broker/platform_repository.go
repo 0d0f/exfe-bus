@@ -277,9 +277,9 @@ func (p *Platform) BotCrossGather(cross model.Cross) (model.Cross, error) {
 	return ret.Data, ret.Warning
 }
 
-func (p *Platform) BotCrossUpdate(to, id string, cross model.Cross, by model.Identity) error {
+func (p *Platform) BotCrossUpdate(objectType, objectId string, cross model.Cross, by model.Identity) error {
 	arg := make(map[string]interface{})
-	arg[to] = id
+	arg[objectType] = objectId
 	arg["cross"] = cross
 	arg["by_identity"] = by
 

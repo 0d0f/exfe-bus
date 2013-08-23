@@ -269,7 +269,7 @@ func (m RouteMap) HandleGetUserBreadcrumsInner() Geomark {
 	l, err := m.breadcrumbCache.Load(userId)
 	if err != nil {
 		if err == redis.ErrNil {
-			m.Error(http.StatusNotFound, err)
+			m.Error(http.StatusNotFound, fmt.Errorf("can't find any breadcrumbs"))
 		} else {
 			logger.ERROR("can't get user %d breadcrumbs: %s", userId, err)
 			m.Error(http.StatusInternalServerError, err)
