@@ -385,9 +385,11 @@ func NewBreadcrumbCacheSaver(r *redis.Pool) *BreadcrumbCacheSaver {
 		local user_id = KEYS[1]
 		local data = ARGV[1]
 		local now = ARGV[2]
+		local userkey = "exfe:v3:routex:user_"..user_id
 		local matchkey = "exfe:v3:routex:user_"..user_id..":cross"
 		local crosses = redis.call("ZRANGEBYSCORE", matchkey, now, "+INF")
 		local ret = {}
+		redis.call("EXPIRE", userkey, 600)
 		for i = 1, #crosses do
 			local c = crosses[i]
 			redis.call("SET", matchkey..":"..c, data, "EX", "7200")
