@@ -117,6 +117,9 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 			m.Error(http.StatusInternalServerError, err)
 			return ret
 		}
+		if err := m.breadcrumbsRepo.Update(userId, breadcrumb); err != nil {
+			logger.ERROR("can't update user %d breadcrumb: %s with %+v", userId, err, breadcrumb)
+		}
 	}
 
 	earth := breadcrumb

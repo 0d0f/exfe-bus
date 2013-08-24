@@ -177,6 +177,7 @@ type BreadcrumbsRepo interface {
 	RoutexControl
 	Save(userId int64, l SimpleLocation) error
 	Load(userId, crossId, afterTimestamp int64) ([]SimpleLocation, error)
+	Update(userId int64, l SimpleLocation) error
 }
 
 type GeomarksRepo interface {
@@ -291,8 +292,9 @@ const (
 	BREADCRUMBS_UPDATE_START = "UPDATE `breadcrumbs_windows` SET `end_at`=UNIX_TIMESTAMP()+? WHERE `user_id`=? AND `cross_id`=? AND `end_at`>=UNIX_TIMESTAMP()"
 	BREADCRUMBS_INSERT_START = "INSERT INTO `breadcrumbs_windows` (`user_id`, `cross_id`, `start_at`, `end_at`) VALUES(?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+?)"
 	BREADCRUMBS_UPDATE_END   = "UPDATE `breadcrumbs_windows` SET `end_at`=UNIX_TIMESTAMP()-1 WHERE `user_id`=? AND `cross_id`=? AND `end_at`>=UNIX_TIMESTAMP()"
-	BREADCRUMBS_SAVE         = "INSERT INTO `breadcrumbs` (`user_id`, `lat`, `lng`, `acc`, `timestamp`) VALUES(?, ?, ?, ?, ?);"
+	BREADCRUMBS_SAVE         = "INSERT INTO `breadcrumbs` (`user_id`, `lat`, `lng`, `acc`, `timestamp`) VALUES(?, ?, ?, ?, UNIX_TIMESTAMP());"
 	BREADCRUMBS_GET          = "SELECT b.lat, b.lng, b.acc, b.timestamp FROM breadcrumbs AS b, breadcrumbs_windows AS w WHERE b.user_id=w.user_id AND b.timestamp BETWEEN w.start_at AND w.end_at AND w.user_id=? AND w.cross_id=? AND b.timestamp<=? ORDER BY b.timestamp DESC LIMIT 100"
+	BREADCRUMBS_UPDATE       = "UPDATE `breadcrumbs` SET lat=?, lng=?, acc=?, timestamp=UNIX_TIMESTAMP() WHERE user_id=? ORDER BY timestamp DESC LIMIT 1"
 )
 
 type BreadcrumbsSaver struct {
@@ -335,7 +337,17 @@ func (s *BreadcrumbsSaver) Save(userId int64, l SimpleLocation) error {
 	if len(l.GPS) < 3 {
 		return fmt.Errorf("invalid simple location: %s", l)
 	}
-	if _, err := s.db.Exec(BREADCRUMBS_SAVE, userId, l.GPS[0], l.GPS[1], l.GPS[2], l.Timestamp); err != nil {
+	if _, err := s.db.Exec(BREADCRUMBS_SAVE, userId, l.GPS[0], l.GPS[1], l.GPS[2]); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *BreadcrumbsSaver) Update(userId int64, l SimpleLocation) error {
+	if len(l.GPS) < 3 {
+		return fmt.Errorf("invalid simple location: %s", l)
+	}
+	if _, err := s.db.Exec(BREADCRUMBS_UPDATE, l.GPS[0], l.GPS[1], l.GPS[2], userId); err != nil {
 		return err
 	}
 	return nil
