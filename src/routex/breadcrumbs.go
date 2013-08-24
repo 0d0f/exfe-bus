@@ -99,21 +99,17 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 	var crossIds []int64
 	if distance > 30 {
 		logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7f", lat), fmt.Sprintf("%.7f", lng), acc)
-		if err := m.breadcrumbCache.Save(userId, breadcrumb); err != nil {
-			logger.ERROR("can't save cache %d: %s with %+v", userId, err, breadcrumb)
-			m.Error(http.StatusInternalServerError, err)
-			return ret
-		}
 		if crossIds, err = m.breadcrumbCache.SaveCross(userId, breadcrumb); err != nil {
 			logger.ERROR("can't save cache %d: %s with %+v", userId, err, breadcrumb)
 			m.Error(http.StatusInternalServerError, err)
 			return ret
 		}
-		go func() {
-			if err := m.breadcrumbsRepo.Save(userId, breadcrumb); err != nil {
-				logger.ERROR("can't save user %d breadcrumb: %s with %+v", userId, err, breadcrumb)
-			}
-		}()
+		if err := m.breadcrumbCache.Save(userId, breadcrumb); err != nil {
+			logger.ERROR("can't save cache %d: %s with %+v", userId, err, breadcrumb)
+		}
+		if err := m.breadcrumbsRepo.Save(userId, breadcrumb); err != nil {
+			logger.ERROR("can't save user %d breadcrumb: %s with %+v", userId, err, breadcrumb)
+		}
 	} else {
 		logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7f", lat), fmt.Sprintf("%.7f", lng), acc, "distance", fmt.Sprintf("%.2f", distance), "nosave")
 		if crossIds, err = m.breadcrumbCache.SaveCross(userId, breadcrumb); err != nil {
