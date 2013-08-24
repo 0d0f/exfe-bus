@@ -541,7 +541,7 @@ func (s *GeomarksSaver) Set(crossId int64, mark Geomark) error {
 		return err
 	}
 	if ret == 0 {
-		mark.CreatedAt = mark.UpdatedAt
+		mark.CreatedBy, mark.CreatedAt = mark.UpdatedBy, mark.UpdatedAt
 		b, err = json.Marshal(mark)
 		if err != nil {
 			return err

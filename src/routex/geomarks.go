@@ -163,10 +163,18 @@ func (m RouteMap) HandleSetGeomark(mark Geomark) {
 		return
 	}
 
+	by := ""
+	for _, i := range token.Cross.Exfee.Invitations {
+		if i.Identity.UserID == token.UserId {
+			by = i.Identity.Id()
+			break
+		}
+	}
+
 	mark.Type = m.Vars()["mark_type"]
 	mark.Id = fmt.Sprintf("%s.%s", m.Vars()["mark_id"], m.Vars()["suffix"])
 	suffix := m.Vars()["suffix"]
-	mark.UpdatedAt, mark.Action = time.Now().Unix(), ""
+	mark.UpdatedBy, mark.UpdatedAt, mark.Action = by, time.Now().Unix(), ""
 	if m.Request().URL.Query().Get("coordinate") == "mars" {
 		mark.ToEarth(m.conversion)
 	}

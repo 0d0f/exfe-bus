@@ -86,7 +86,7 @@ func New(routexRepo RoutexRepo, breadcrumbCache BreadcrumbCache, breadcrumbsRepo
 	return ret, nil
 }
 
-func (m RouteMap) setTutorial(lat, lng float64, userId, crossId int64, locale string) (Geomark, error) {
+func (m RouteMap) setTutorial(lat, lng float64, userId, crossId int64, locale, by string) (Geomark, error) {
 	var ret Geomark
 	query := make(url.Values)
 	query.Set("keyword", "attractions")
@@ -112,12 +112,12 @@ func (m RouteMap) setTutorial(lat, lng float64, userId, crossId int64, locale st
 	}
 	now := time.Now().Unix()
 	ret = Geomark{
-		Id:          fmt.Sprintf("%08d@location", m.rand.Intn(1e8)),
+		Id:          fmt.Sprintf("%04d@location", m.rand.Intn(1e4)),
 		Type:        "location",
 		CreatedAt:   now,
-		CreatedBy:   fmt.Sprintf("%d@exfe", userId),
+		CreatedBy:   by,
 		UpdatedAt:   now,
-		UpdatedBy:   fmt.Sprintf("%d@exfe", userId),
+		UpdatedBy:   by,
 		Tags:        []string{"destination"},
 		Icon:        "",
 		Title:       place.Title,
@@ -345,14 +345,14 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			}
 			if isTutorial && !hasCreated {
 				if mark.Id == fmt.Sprintf("%d@exfe", token.UserId) {
-					locale := ""
+					locale, by := "", ""
 					for _, i := range token.Cross.Exfee.Invitations {
 						if i.Identity.UserID == token.UserId {
-							locale = i.Identity.Locale
+							locale, by = i.Identity.Locale, i.Identity.Id()
 							break
 						}
 					}
-					tutorialMark, err := m.setTutorial(mark.Latitude, mark.Longitude, token.UserId, int64(token.Cross.ID), locale)
+					tutorialMark, err := m.setTutorial(mark.Latitude, mark.Longitude, token.UserId, int64(token.Cross.ID), locale, by)
 					if err != nil {
 						logger.ERROR("create tutorial geomark for user %d in cross %d failed: %s", token.UserId, token.Cross.ID, err)
 					} else {
