@@ -189,6 +189,11 @@ func (m RouteMap) HandleSetGeomark(mark Geomark) {
 		}
 	}
 
+	if suffix != "location" || suffix != "route" {
+		m.Error(http.StatusBadRequest, fmt.Errorf("invalid suffix: %s", suffix))
+		return
+	}
+
 	if err := m.geomarksRepo.Set(int64(token.Cross.ID), mark); err != nil {
 		m.Error(http.StatusInternalServerError, err)
 		return
