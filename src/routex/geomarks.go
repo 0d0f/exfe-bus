@@ -6,7 +6,6 @@ import (
 	"model"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -150,7 +149,10 @@ func (m RouteMap) HandleSetGeomark(mark Geomark) {
 		return
 	}
 
-	mark.Type, mark.Id, mark.UpdatedAt, mark.Action = m.Vars()["mark_type"], m.Vars()["mark_id"], time.Now().Unix(), ""
+	mark.Type = m.Vars()["mark_type"]
+	mark.Id = fmt.Sprintf("%s.%s", m.Vars()["mark_id"], m.Vars()["suffix"])
+	suffix := m.Vars()["suffix"]
+	mark.UpdatedAt, mark.Action = time.Now().Unix(), ""
 	if m.Request().URL.Query().Get("coordinate") == "mars" {
 		mark.ToEarth(m.conversion)
 	}
@@ -158,25 +160,30 @@ func (m RouteMap) HandleSetGeomark(mark Geomark) {
 	for i := len(mark.Tags) - 1; i >= 0; i-- {
 		if mark.Tags[i] == CrossPlaceTag {
 			go func() {
-				if err := m.syncCrossPlace(&mark, int64(token.Cross.ID)); err != nil {
+				if err := m.syncCrossPlace(&mark, token.Cross, mark.UpdatedBy); err != nil {
 					logger.ERROR("can't set cross %d place: %s", token.Cross.ID, err)
-				} else {
+				}
+				m.castLocker.RLock()
+				broadcast := m.crossCast[int64(token.Cross.ID)]
+				m.castLocker.RUnlock()
+
+				if suffix != CrossPlaceTag {
 					if err := m.geomarksRepo.Delete(int64(token.Cross.ID), mark.Type, mark.Id); err != nil {
 						logger.ERROR("can't delete cross %d geomark %s %s: %s", token.Cross.ID, mark.Type, mark.Id, err)
 					}
 					m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
-
 					mark.Action = "delete"
-					m.castLocker.RLock()
-					broadcast := m.crossCast[int64(token.Cross.ID)]
-					m.castLocker.RUnlock()
 					if broadcast != nil {
 						broadcast.Send(mark)
-						mark.Id, mark.Action = m.xplaceId(int64(token.Cross.ID)), ""
-						broadcast.Send(mark)
 					}
-					return
+					time.Sleep(time.Second / 10)
 				}
+
+				if broadcast != nil {
+					mark.Id, mark.Action = m.xplaceId(int64(token.Cross.ID)), ""
+					broadcast.Send(mark)
+				}
+				return
 			}()
 			return
 		}
@@ -213,8 +220,10 @@ func (m RouteMap) HandleDeleteGeomark() {
 	}
 
 	var mark Geomark
-	mark.Type, mark.Id = m.Vars()["mark_type"], m.Vars()["mark_id"]
-	if strings.HasSuffix(mark.Id, ".location") || strings.HasSuffix(mark.Id, ".route") {
+	mark.Type = m.Vars()["mark_type"]
+	mark.Id = fmt.Sprintf("%s.%s", m.Vars()["mark_id"], m.Vars()["suffix"])
+	suffix := m.Vars()["suffix"]
+	if suffix == "location" || suffix == "route" {
 		if err := m.geomarksRepo.Delete(int64(token.Cross.ID), mark.Type, mark.Id); err != nil {
 			m.Error(http.StatusInternalServerError, err)
 			return
@@ -223,8 +232,14 @@ func (m RouteMap) HandleDeleteGeomark() {
 	m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
 
 	go func() {
-		if mark.Id == m.xplaceId(int64(token.Cross.ID)) {
-			if err := m.syncCrossPlace(nil, int64(token.Cross.ID)); err != nil {
+		if suffix == CrossPlaceTag {
+			by := ""
+			for _, i := range token.Cross.Exfee.Invitations {
+				if i.Identity.UserID == token.UserId {
+					by = i.Identity.Id()
+				}
+			}
+			if err := m.syncCrossPlace(nil, token.Cross, by); err != nil {
 				logger.ERROR("remove cross %d place error: %s", token.Cross.ID, err)
 			}
 		}
@@ -244,18 +259,21 @@ func (m RouteMap) xplaceId(crossId int64) string {
 	return fmt.Sprintf("%d."+CrossPlaceTag, crossId)
 }
 
-func (m RouteMap) syncCrossPlace(geomark *Geomark, crossId int64) error {
-	updatedBy := model.FromIdentityId(geomark.UpdatedBy)
-	cross := model.Cross{}
-	if geomark != nil {
-		cross.Place = &model.Place{
-			Title:       geomark.Title,
-			Description: geomark.Description,
-			Lng:         fmt.Sprintf("%.7f", geomark.Longitude),
-			Lat:         fmt.Sprintf("%.7f", geomark.Latitude),
-			Provider:    "routex",
-			ExternalID:  fmt.Sprintf("%d", crossId),
-		}
+func (m RouteMap) syncCrossPlace(geomark *Geomark, cross model.Cross, by string) error {
+	updatedBy := model.FromIdentityId(by)
+	place := model.Place{}
+
+	if cross.Place != nil {
+		place.ID = cross.Place.ID
 	}
-	return m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", crossId), cross, updatedBy)
+	if geomark != nil {
+		place.Title = geomark.Title
+		place.Description = geomark.Description
+		place.Lng = fmt.Sprintf("%.7f", geomark.Longitude)
+		place.Lat = fmt.Sprintf("%.7f", geomark.Latitude)
+		place.Provider = "routex"
+		place.ExternalID = fmt.Sprintf("%d", cross.ID)
+	}
+	updateCross := map[string]interface{}{"place": place}
+	return m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", cross.ID), updateCross, updatedBy)
 }
