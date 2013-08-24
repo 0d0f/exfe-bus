@@ -14,6 +14,7 @@ import (
 
 func init() {
 	rest.RegisterMarshaller("plain/text", new(PlainText))
+
 }
 
 type Callback func(id string, err error)
