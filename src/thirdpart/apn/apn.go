@@ -1,21 +1,18 @@
 package apn
 
 import (
+	"apns"
+	"broker"
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-broadcast"
-	"github.com/virushuo/Go-Apns"
 	"logger"
+	"model"
 	"regexp"
 	"strings"
+	"sync"
 	"thirdpart"
 	"time"
 )
-
-type Broker interface {
-	Send(n *apns.Notification) error
-	GetErrorChan() <-chan error
-}
 
 type sendArg struct {
 	id      uint
@@ -23,23 +20,44 @@ type sendArg struct {
 }
 
 type Apn struct {
-	broker    Broker
-	id        uint32
-	broadcast *broadcast.Broadcast
+	id         uint32
+	apps       map[string]*apns.Apn
+	defaultApp string
+	callback   thirdpart.Callback
+	locker     sync.RWMutex
 }
 
-type ErrorHandler func(err apns.NotificationError)
-
-func New(broker Broker) *Apn {
+func New(config *model.Config) (*Apn, error) {
 	ret := &Apn{
-		broker:    broker,
-		broadcast: broadcast.NewBroadcast(-1),
-		id:        0,
+		id:         0,
+		apps:       make(map[string]*apns.Apn),
+		defaultApp: config.Thirdpart.Apn.Default,
 	}
-	go listenError(broker.GetErrorChan(), func(err apns.NotificationError) {
-		ret.broadcast.Send(err)
-	})
-	return ret
+	for k, app := range config.Thirdpart.Apn.Apps {
+		apn, err := apns.New(app.Server, app.Cert, app.Key, broker.NetworkTimeout)
+		if err != nil {
+			return nil, fmt.Errorf("apn %s error: %s", k, err)
+		}
+		ret.apps[k] = apn
+		go func(name string) {
+			for {
+				err := apn.Serve()
+				if notificationError, ok := err.(apns.NotificationError); ok && notificationError.Status == apns.ErrorInvalidToken {
+					ret.locker.RLock()
+					ret.callback(ret.postId(name, notificationError.Identifier), notificationError)
+					ret.locker.RUnlock()
+				} else {
+					logger.ERROR("app %s push error: %s", name, err)
+				}
+			}
+		}(k)
+	}
+
+	return ret, nil
+}
+
+func (a *Apn) postId(app string, id uint32) string {
+	return fmt.Sprintf("%s-%d", app, id)
 }
 
 func (a *Apn) Provider() string {
@@ -47,7 +65,10 @@ func (a *Apn) Provider() string {
 }
 
 func (a *Apn) SetPosterCallback(callback thirdpart.Callback) (time.Duration, bool) {
-	return 0, true
+	a.locker.Lock()
+	defer a.locker.Unlock()
+	a.callback = callback
+	return 10 * time.Second, true
 }
 
 func (a *Apn) Post(from, id, text string) (string, error) {
@@ -65,8 +86,10 @@ func (a *Apn) Post(from, id, text string) (string, error) {
 	text = strings.Trim(text[:last], " \r\n")
 	text = tailUrlRegex.ReplaceAllString(text, "")
 
+	a.locker.Lock()
 	ret := a.id
 	a.id++
+	a.locker.Unlock()
 
 	payload := apns.Payload{}
 	payload.Aps.Alert.Body = text
@@ -81,40 +104,20 @@ func (a *Apn) Post(from, id, text string) (string, error) {
 		Payload:     &payload,
 	}
 
-	c := make(chan interface{})
-	a.broadcast.Register(c)
-	defer a.broadcast.Unregister(c)
+	spliter := strings.LastIndex(id, "@")
+	appName := a.defaultApp
+	if spliter >= 0 {
+		appName = id[spliter+1:]
+		id = id[:spliter]
+	}
 
-SEND:
-	err = a.broker.Send(&notification)
-	if err != nil {
-		return fmt.Sprint("%d", ret), fmt.Errorf("send %d error: %s", ret, err)
+	retId := a.postId(appName, notification.Identifier)
+	app, ok := a.apps[appName]
+	if !ok {
+		return retId, fmt.Errorf("invalid app name: %s", appName)
 	}
-	select {
-	case e := <-c:
-		err, ok := e.(apns.NotificationError)
-		if ok {
-			if ret == err.Identifier {
-				return "", err
-			}
-		} else if ret > err.Identifier {
-			goto SEND
-		}
-	case <-time.After(time.Second / 10):
-	}
-	return fmt.Sprintf("%d", ret), nil
-}
-
-func listenError(errChan <-chan error, h ErrorHandler) {
-	for {
-		err := <-errChan
-		e, ok := err.(apns.NotificationError)
-		if !ok {
-			logger.ERROR("unknow err: %s", err)
-			continue
-		}
-		h(e)
-	}
+	err = app.Send(&notification)
+	return retId, err
 }
 
 var tailUrlRegex = regexp.MustCompile(` *(http|https):\/\/exfe.com(\/[\w#!:.?+=&%@!\-\/]*)?$`)

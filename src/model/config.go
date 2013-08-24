@@ -100,11 +100,13 @@ type Config struct {
 			ScreenName   string `json:"screen_name"`
 		} `json:"twitter"`
 		Apn struct {
-			Cert             string `json:"cert"`
-			Key              string `json:"key"`
-			Server           string `json:"server"`
-			RootCA           string `json:"rootca"`
-			TimeoutInMinutes uint   `json:"timeout_in_minutes"`
+			Apps map[string]struct {
+				Cert   string `json:"cert"`
+				Key    string `json:"key"`
+				Server string `json:"server"`
+				RootCA string `json:"rootca"`
+			} `json:"apps"`
+			Default string `json:"default"`
 		} `json:"apn"`
 		Gcm struct {
 			Key string `json:"key"`

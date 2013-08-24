@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	gcms "github.com/googollee/go-gcm"
-	"github.com/virushuo/Go-Apns"
 	"gobus"
 	"logger"
 	"model"
@@ -22,7 +21,6 @@ import (
 	"thirdpart/photostream"
 	"thirdpart/twitter"
 	"thirdpart/wechat"
-	"time"
 )
 
 func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdpart.Poster, error) {
@@ -35,10 +33,6 @@ func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdp
 		return nil, fmt.Errorf("config.Thirdpart.MaxStateCache should be bigger than 0")
 	}
 
-	apns_, err := apns.New(config.Thirdpart.Apn.Cert, config.Thirdpart.Apn.Key, config.Thirdpart.Apn.Server, time.Duration(config.Thirdpart.Apn.TimeoutInMinutes)*time.Minute)
-	if err != nil {
-		return nil, fmt.Errorf("can't connect apn: %s", err)
-	}
 	gcms_ := gcms.New(config.Thirdpart.Gcm.Key)
 	helper := thirdpart.NewHelper(config)
 
@@ -54,7 +48,10 @@ func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdp
 	wechat := wechat.New(config)
 	poster.Add(wechat)
 
-	apn_ := apn.New(apns_)
+	apn_, err := apn.New(config)
+	if err != nil {
+		return nil, fmt.Errorf("can't connect apn: %s", err)
+	}
 	poster.Add(apn_)
 
 	gcm_ := gcm.New(gcms_)

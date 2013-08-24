@@ -108,11 +108,15 @@
       "screen_name": ""
     },
     "apn": {
-      "cert": "apns_dev_cert.pem",
-      "key": "apns_dev_key.pem",
-      "server": "gateway.sandbox.push.apple.com:2195",
-      "rootca": "root.ca",
-      "timeout_in_minutes": 20
+      "default": "cross",
+      "apps" : {
+        "cross": {
+          "cert": "apns_dev_cert.pem",
+          "key": "apns_dev_key.pem",
+          "server": "gateway.sandbox.push.apple.com:2195",
+          "rootca": "configure/root.ca"
+        }
+      }
     },
     "gcm": {
       "key": ""
