@@ -70,6 +70,19 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 		m.Error(http.StatusInternalServerError, err)
 		return nil
 	}
+	if ids, ok := m.Request().URL.Query()["id"]; ok {
+		idMap := make(map[string]bool)
+		for _, id := range ids {
+			idMap[id] = true
+		}
+		var filted []Geomark
+		for _, mark := range ret {
+			if _, ok := idMap[mark.Id]; ok {
+				filted = append(filted, mark)
+			}
+		}
+		ret = filted
+	}
 	return ret
 }
 
