@@ -131,6 +131,7 @@ func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]Geomark, error)
 			if !hasDestination {
 				xplace.Tags = append(xplace.Tags, "destination")
 			}
+			xplace.ToEarth(m.conversion)
 			data = append(data, xplace)
 		}
 	}
@@ -272,6 +273,7 @@ func (m RouteMap) syncCrossPlace(geomark *Geomark, cross model.Cross, by string)
 		place.ID = cross.Place.ID
 	}
 	if geomark != nil {
+		geomark.ToMars(m.conversion)
 		place.Title = geomark.Title
 		place.Description = geomark.Description
 		place.Lng = fmt.Sprintf("%.7f", geomark.Longitude)
