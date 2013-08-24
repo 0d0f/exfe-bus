@@ -189,7 +189,7 @@ func (m RouteMap) HandleSetGeomark(mark Geomark) {
 		}
 	}
 
-	if suffix != "location" || suffix != "route" {
+	if suffix != "location" && suffix != "route" {
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid suffix: %s", suffix))
 		return
 	}
