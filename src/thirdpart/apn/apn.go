@@ -48,6 +48,7 @@ func New(config *model.Config) (*Apn, error) {
 					ret.locker.RUnlock()
 				} else {
 					logger.ERROR("app %s push error: %s", name, err)
+					time.Sleep(time.Minute)
 				}
 			}
 		}(k)
