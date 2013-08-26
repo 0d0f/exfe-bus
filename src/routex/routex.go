@@ -280,7 +280,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
-			Id:   fmt.Sprintf("%d@exfe", userId),
+			Id:   fmt.Sprintf("%d.breadcrumbs", userId),
 			Type: "route",
 			Tags: []string{"breadcrumbs"},
 		}
@@ -292,7 +292,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 						return
 					case <-time.After(time.Second * 10):
 						route := Geomark{
-							Id:        fmt.Sprintf("%d@exfe", userId),
+							Id:        fmt.Sprintf("%d.breadcrumbs", userId),
 							Type:      "route",
 							Tags:      []string{"breadcrumbs"},
 							Positions: m.getTutorialData(time.Now().UTC(), userId, 1),
@@ -353,7 +353,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 				continue
 			}
 			if isTutorial && !hasCreated {
-				if mark.Id == fmt.Sprintf("%d@exfe", token.UserId) {
+				if mark.Id == fmt.Sprintf("%d.breadcrumbs", token.UserId) {
 					locale, by := "", ""
 					for _, i := range token.Cross.Exfee.Invitations {
 						if i.Identity.UserID == token.UserId {
