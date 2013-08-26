@@ -97,7 +97,9 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 		distance = Distance(lat, lng, lastLat, lastLng)
 	}
 	var crossIds []int64
+	action := ""
 	if distance > 30 {
+		action = "save"
 		logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7f", lat), fmt.Sprintf("%.7f", lng), acc)
 		if crossIds, err = m.breadcrumbCache.SaveCross(userId, breadcrumb); err != nil {
 			logger.ERROR("can't save cache %d: %s with %+v", userId, err, breadcrumb)
@@ -132,9 +134,10 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 
 	go func() {
 		route := Geomark{
-			Id:   fmt.Sprintf("%d@exfe", userId),
-			Type: "route",
-			Tags: []string{"breadcrumbs"},
+			Id:     fmt.Sprintf("%d.breadcrumbs", userId),
+			Action: action,
+			Type:   "route",
+			Tags:   []string{"breadcrumbs"},
 		}
 		for _, cross := range crossIds {
 			m.castLocker.RLock()
@@ -178,7 +181,7 @@ func (m RouteMap) getBreadcrumbs(cross model.Cross, toMars bool) []Geomark {
 	for _, invitation := range cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
-			Id:   fmt.Sprintf("%d@exfe", userId),
+			Id:   fmt.Sprintf("%d.breadcrumbs", userId),
 			Type: "route",
 		}
 
