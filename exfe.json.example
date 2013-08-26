@@ -23,9 +23,12 @@
   "redis": {
     "netaddr": "",
     "db": 0,
-    "password": "",
-    "max_connections": 5,
-    "heart_beat_in_second": 60
+    "password": ""
+  },
+  "redis_cache": {
+    "netaddr": "",
+    "db": 0,
+    "password": ""
   },
   "email": {
     "host": "smtp.gmail.com",

@@ -23,12 +23,15 @@ type Config struct {
 		HeartBeatInSecond uint   `json:"heart_beat_in_second"`
 	} `json:"db"`
 	Redis struct {
-		Netaddr           string `json:"netaddr"`
-		Db                int    `json:"db"`
-		Password          string `json:"password"`
-		MaxConnections    uint   `json:"max_connections"`
-		HeartBeatInSecond uint   `json:"heart_beat_in_second"`
+		Netaddr  string `json:"netaddr"`
+		Db       int    `json:"db"`
+		Password string `json:"password"`
 	} `json:"redis"`
+	RedisCache struct {
+		Netaddr  string `json:"netaddr"`
+		Db       int    `json:"db"`
+		Password string `json:"password"`
+	} `json:"redis_cache"`
 	Email struct {
 		Host             string `json:"host"`
 		Username         string `json:"username"`

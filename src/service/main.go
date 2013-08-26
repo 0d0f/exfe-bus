@@ -58,6 +58,22 @@ func main() {
 		},
 	}
 
+	cachePool := &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 30 * time.Minute,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", config.RedisCache.Netaddr)
+			if err != nil {
+				return nil, err
+			}
+			return c, nil
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
+	}
+
 	localTemplate, err := formatter.NewLocalTemplate(config.TemplatePath, config.DefaultLang)
 	if err != nil {
 		logger.ERROR("load local template failed: %s", err)
@@ -132,7 +148,7 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Notifier {
-		err := notifier.SetupResponse(&config, notifier.NewResponseSaver(redisPool))
+		err := notifier.SetupResponse(&config, notifier.NewResponseSaver(cachePool))
 		if err != nil {
 			logger.ERROR("can't setup response")
 			return
@@ -177,7 +193,7 @@ func main() {
 	if config.ExfeService.Services.Routex {
 		routexSaver := routex.NewRoutexSaver(database)
 		breadcrumbsSaver := routex.NewBreadcrumbsSaver(database)
-		breadcrumbsCache := routex.NewBreadcrumbCacheSaver(redisPool)
+		breadcrumbsCache := routex.NewBreadcrumbCacheSaver(cachePool)
 		geomarksSaver := &routex.GeomarksSaver{database}
 		c := routex.NewGeoConversion(database)
 		rx, err := routex.New(routexSaver, breadcrumbsCache, breadcrumbsSaver, geomarksSaver, c, platform, &config)
