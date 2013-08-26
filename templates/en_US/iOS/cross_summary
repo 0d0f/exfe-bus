@@ -30,4 +30,4 @@
 {{if .ToIn .NewPending | and .NeedShowBy}}\({{$by}}\) set you pending on \("{{$title}}"\). {{$link}}{{end}}
 {{end}}
 
-{"cid":{{.Cross.ID}},"t":"u"}
+{"path":"/!{{.Cross.ID}}"}
