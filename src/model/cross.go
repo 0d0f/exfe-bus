@@ -9,7 +9,8 @@ import (
 )
 
 type UpdateInfo struct {
-	UpdatedAt string `json:"updated_at"`
+	UpdatedAt string   `json:"updated_at"`
+	By        Identity `json:"by_identity"`
 }
 
 type Cross struct {
