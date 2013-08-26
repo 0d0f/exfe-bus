@@ -336,6 +336,15 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		logger.ERROR("can't get route of cross %d: %s", token.Cross.ID, err)
 	}
 
+	stream.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
+	err = stream.Write(Geomark{
+		Type:   "command",
+		Action: "init_end",
+	})
+	if err != nil {
+		return
+	}
+
 	for {
 		select {
 		case d := <-c:
