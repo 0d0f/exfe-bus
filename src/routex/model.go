@@ -9,6 +9,7 @@ import (
 	"logger"
 	"math"
 	"model"
+	"ringcache"
 	"time"
 )
 
@@ -194,8 +195,8 @@ type GeomarksRepo interface {
 }
 
 type GeoConversionRepo interface {
-	EarthToMars(lat, long float64) (float64, float64)
-	MarsToEarth(lat, long float64) (float64, float64)
+	EarthToMars(lat, lng float64) (float64, float64)
+	MarsToEarth(lat, lng float64) (float64, float64)
 }
 
 const (
@@ -584,7 +585,7 @@ func (s *GeomarksSaver) Delete(crossId int64, markType, markId string) error {
 }
 
 const (
-	GEOCONVERSION_GET = "SELECT `offset_lat`, `offset_long` FROM `gps_conversion` WHERE `lat`=? AND `long`=?"
+	GEOCONVERSION_GET = "SELECT `offset_lat`, `offset_lng` FROM `gps_conversion` WHERE `lat`=? AND `lng`=?"
 )
 
 type Offset struct {
@@ -594,25 +595,38 @@ type Offset struct {
 
 type GeoConversion struct {
 	db    *sql.DB
-	cache map[string]Offset
+	cache *ringcache.RingCache
 }
 
 func NewGeoConversion(db *sql.DB) *GeoConversion {
 	return &GeoConversion{
 		db:    db,
-		cache: make(map[string]Offset),
+		cache: ringcache.New(200),
 	}
 }
 
-func (c *GeoConversion) Offset(lat, long float64) (float64, float64) {
+func (c *GeoConversion) loadCache(key string) *Offset {
+	data := c.cache.Get(key)
+	if data == nil {
+		return nil
+	}
+	offset, ok := data.(Offset)
+	if !ok {
+		return nil
+	}
+	return &offset
+}
+
+func (c *GeoConversion) Offset(lat, lng float64) (float64, float64) {
 	latI := int(lat * 10)
-	longI := int(long * 10)
-	key := fmt.Sprintf("%d,%d", latI, longI)
-	var offsetLat, offsetLong int
-	if offset, ok := c.cache[key]; ok {
-		offsetLat, offsetLong = offset.latOffset, offset.lngOffset
+	lngI := int(lng * 10)
+	key := fmt.Sprintf("%d,%d", latI, lngI)
+
+	var offsetLat, offsetLng int
+	if offset := c.loadCache(key); offset != nil {
+		offsetLat, offsetLng = offset.latOffset, offset.lngOffset
 	} else {
-		row, err := c.db.Query(GEOCONVERSION_GET, latI, longI)
+		row, err := c.db.Query(GEOCONVERSION_GET, latI, lngI)
 		if err != nil {
 			return 0, 0
 		}
@@ -621,26 +635,26 @@ func (c *GeoConversion) Offset(lat, long float64) (float64, float64) {
 		if !row.Next() {
 			return 0, 0
 		}
-		err = row.Scan(&offsetLat, &offsetLong)
+		err = row.Scan(&offsetLat, &offsetLng)
 		if err != nil {
-			logger.ERROR("geo_conversion offset for lat=%s, long=%s is not int", lat, long)
+			logger.ERROR("geo_conversion offset for lat=%s, lng=%s is not int", lat, lng)
 			return 0, 0
 		}
-		c.cache[key] = Offset{offsetLat, offsetLong}
+		c.cache.Push(key, Offset{offsetLat, offsetLng})
 	}
-	return float64(offsetLat) * 0.0001, float64(offsetLong) * 0.0001
+	return float64(offsetLat) * 0.0001, float64(offsetLng) * 0.0001
 }
 
-func (c *GeoConversion) MarsToEarth(lat, long float64) (float64, float64) {
-	offsetLat, offsetLong := c.Offset(lat, long)
+func (c *GeoConversion) MarsToEarth(lat, lng float64) (float64, float64) {
+	offsetLat, offsetLong := c.Offset(lat, lng)
 	lat = lat - offsetLat
-	long = long - offsetLong
-	return lat, long
+	lng = lng - offsetLong
+	return lat, lng
 }
 
-func (c *GeoConversion) EarthToMars(lat, long float64) (float64, float64) {
-	offsetLat, offsetLong := c.Offset(lat, long)
+func (c *GeoConversion) EarthToMars(lat, lng float64) (float64, float64) {
+	offsetLat, offsetLong := c.Offset(lat, lng)
 	lat = lat + offsetLat
-	long = long + offsetLong
-	return lat, long
+	lng = lng + offsetLong
+	return lat, lng
 }
