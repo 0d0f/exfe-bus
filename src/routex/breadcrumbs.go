@@ -70,6 +70,7 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 	var ret BreadcrumbOffset
 
 	userIdStr, breadcrumb := m.Vars()["user_id"], breadcrumbs[0]
+	mars, earth := breadcrumb, breadcrumb
 	userId, err := strconv.ParseInt(userIdStr, 10, 64)
 	if err != nil {
 		m.Error(http.StatusBadRequest, err)
@@ -79,14 +80,16 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid breadcrumb: %+v", breadcrumb))
 		return ret
 	}
+	if m.Request().URL.Query().Get("coordinate") == "mars" {
+		breadcrumb.ToEarth(m.conversion)
+		earth = breadcrumb
+	} else {
+		mars.ToMars(m.conversion)
+	}
 	lat, lng, acc := breadcrumb.GPS[0], breadcrumb.GPS[1], breadcrumb.GPS[2]
 	if acc <= 0 || acc > 70 {
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid accuracy: %f", acc))
 		return ret
-	}
-
-	if m.Request().URL.Query().Get("coordinate") == "mars" {
-		breadcrumb.ToEarth(m.conversion)
 	}
 
 	breadcrumb.Timestamp = time.Now().Unix()
@@ -124,9 +127,6 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 		}
 	}
 
-	earth := breadcrumb
-	mars := breadcrumb
-	mars.ToMars(m.conversion)
 	ret = BreadcrumbOffset{
 		Latitude:  mars.GPS[0] - earth.GPS[0],
 		Longitude: mars.GPS[1] - earth.GPS[1],

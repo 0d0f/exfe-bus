@@ -48,10 +48,8 @@ func (l *SimpleLocation) ToMars(c GeoConversionRepo) {
 	for i, p := range l.GPS {
 		gps[i] = p
 	}
+	gps[0], gps[1] = c.EarthToMars(gps[0], gps[1])
 	l.GPS = gps
-	lat, lng := l.GPS[0], l.GPS[1]
-	lat, lng = c.EarthToMars(lat, lng)
-	l.GPS[0], l.GPS[1] = lat, lng
 }
 
 func (l *SimpleLocation) ToEarth(c GeoConversionRepo) {
@@ -62,9 +60,8 @@ func (l *SimpleLocation) ToEarth(c GeoConversionRepo) {
 	for i, p := range l.GPS {
 		gps[i] = p
 	}
-	lat, lng := l.GPS[0], l.GPS[1]
-	lat, lng = c.MarsToEarth(lat, lng)
-	l.GPS[0], l.GPS[1] = lat, lng
+	gps[0], gps[1] = c.MarsToEarth(gps[0], gps[1])
+	l.GPS = gps
 }
 
 func (l *SimpleLocation) MarshalJSON() ([]byte, error) {
