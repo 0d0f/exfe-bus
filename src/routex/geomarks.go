@@ -178,6 +178,7 @@ func (m RouteMap) HandleSetGeomark(mark Geomark) {
 	mark.Id = fmt.Sprintf("%s.%s", m.Vars()["mark_id"], m.Vars()["kind"])
 	kind := m.Vars()["kind"]
 	mark.UpdatedBy, mark.UpdatedAt, mark.Action = by, time.Now().Unix(), ""
+	logger.DEBUG("geomark %s set by %s", mark.Id, mark.UpdatedBy)
 	if m.Request().URL.Query().Get("coordinate") == "mars" {
 		mark.ToEarth(m.conversion)
 	}
@@ -269,6 +270,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 	var mark Geomark
 	mark.Type = m.Vars()["mark_type"]
 	mark.Id = fmt.Sprintf("%s.%s", m.Vars()["mark_id"], m.Vars()["kind"])
+	logger.DEBUG("geomark %s delete by user %d", mark.Id, token.UserId)
 	kind := m.Vars()["kind"]
 
 	marks, _ := m.getGeomarks(token.Cross, false)
