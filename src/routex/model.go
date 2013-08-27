@@ -113,6 +113,26 @@ type Geomark struct {
 	Positions   []SimpleLocation `json:"positions,omitempty"`
 }
 
+func (g *Geomark) HasTag(tag string) bool {
+	for _, t := range g.Tags {
+		if t == tag {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *Geomark) RemoveTag(tag string) bool {
+	ret := false
+	for i := len(g.Tags) - 1; i >= 0; i-- {
+		if g.Tags[i] == tag {
+			ret = true
+			g.Tags = append(g.Tags[:i], g.Tags[i+1:]...)
+		}
+	}
+	return ret
+}
+
 func (g *Geomark) ToMars(c GeoConversionRepo) {
 	g.convert(c.EarthToMars)
 }

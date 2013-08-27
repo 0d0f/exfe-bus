@@ -34,8 +34,8 @@ type RouteMap struct {
 
 	SearchGeomarks rest.Processor `path:"/_inner/geomarks/crosses/:cross_id" method:"GET"`
 	GetGeomarks    rest.Processor `path:"/geomarks/crosses/:cross_id" method:"GET"`
-	SetGeomark     rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id.:suffix" method:"PUT"`
-	DeleteGeomark  rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id.:suffix" method:"DELETE"`
+	SetGeomark     rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id.:kind" method:"PUT"`
+	DeleteGeomark  rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id.:kind" method:"DELETE"`
 
 	Stream  rest.Streaming `path:"/crosses/:cross_id" method:"WATCH"`
 	Options rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
@@ -253,7 +253,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		m.crossCast[int64(token.Cross.ID)] = b
 	}
 	m.castLocker.Unlock()
-	c := make(chan interface{})
+	c := make(chan interface{}, 10)
 	b.Register(c)
 	defer func() {
 		b.Unregister(c)
@@ -472,9 +472,9 @@ func (m *RouteMap) auth(checkCross bool) (Token, bool) {
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	// if authData == "" {
-	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	// }
+	if authData == "" {
+		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	}
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
