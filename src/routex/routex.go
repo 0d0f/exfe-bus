@@ -422,7 +422,19 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 				return
 			}
 		case <-time.After(time.Duration(endAt-time.Now().Unix()) * time.Second):
-			return
+			newEndAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
+			if err != nil || newEndAt == 0 || newEndAt <= time.Now().Unix() {
+				return
+			}
+			endAt = newEndAt
+			err = stream.Write(map[string]interface{}{
+				"type":   "command",
+				"action": "close_after",
+				"args":   []interface{}{endAt - time.Now().Unix()},
+			})
+			if err != nil {
+				return
+			}
 		}
 	}
 }
