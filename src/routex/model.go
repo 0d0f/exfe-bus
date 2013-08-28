@@ -111,6 +111,7 @@ type Geomark struct {
 	Latitude    float64          `json:"lat,omitempty"`
 	Longitude   float64          `json:"lng,omitempty"`
 	Positions   []SimpleLocation `json:"positions,omitempty"`
+	Args        []interface{}    `json:"args,omitempty"`
 }
 
 func (g *Geomark) HasTag(tag string) bool {
@@ -431,8 +432,8 @@ func NewBreadcrumbCacheSaver(r *redis.Pool) *BreadcrumbCacheSaver {
 		local crosses = redis.call("ZRANGEBYSCORE", matchkey, now, "+INF")
 		redis.call("EXPIRE", userkey, 600)
 		for i = 1, #crosses do
+			local c = crosses[i]
 			redis.call("SET", matchkey..":"..c, data, "EX", "7200")
-			table.insert(ret, c)
 		end
 		return crosses
 	`)
