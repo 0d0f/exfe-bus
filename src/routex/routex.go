@@ -358,6 +358,9 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			if isTutorial && !hasCreated {
 				hasCreated = true
 			}
+			if toMars {
+				d.ToMars(m.conversion)
+			}
 			err := stream.Write(d)
 			if err != nil {
 				return
