@@ -40,7 +40,7 @@ type RouteMap struct {
 	Stream  rest.Streaming `path:"/crosses/:cross_id" method:"WATCH"`
 	Options rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
 
-	SendNotification rest.Processor `path:"/notification/crosses/:cross_id/:identity_id" method:"POST"`
+	SendNotification rest.Processor `path:"/notification/crosses/:cross_id" method:"POST"`
 
 	rand            *rand.Rand
 	routexRepo      RoutexRepo
@@ -412,9 +412,10 @@ func (m RouteMap) HandleSendNotification() {
 		return
 	}
 
-	id := m.Vars()["identity_id"]
+	id := m.Request().URL.Query().Get("id")
 	identity, ok := model.FromIdentityId(id), false
 	for _, inv := range token.Cross.Exfee.Invitations {
+		fmt.Println(inv.Identity.Id())
 		if inv.Identity.Equal(identity) {
 			ok = true
 			break
@@ -472,9 +473,9 @@ func (m *RouteMap) auth(checkCross bool) (Token, bool) {
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	if authData == "" {
-		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	}
+	// if authData == "" {
+	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	// }
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
