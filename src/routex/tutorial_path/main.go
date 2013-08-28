@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"math"
 	"net/textproto"
@@ -32,6 +33,8 @@ type Location struct {
 
 const interval = 10
 
+var buf = bytes.NewBuffer(nil)
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Println(`tutorial [file]`)
@@ -45,6 +48,7 @@ func main() {
 	}
 	r := textproto.NewReader(bufio.NewReader(f))
 
+	buf.WriteString("[")
 	var start, end int
 	var offsetLat, offsetLng float64
 	var data []Location
@@ -54,6 +58,9 @@ func main() {
 			continue
 		}
 		if l[0] == '/' {
+			if data != nil {
+				parseGps(start, end, data)
+			}
 			offsetLat, offsetLng = 0, 0
 			var startStr, endStr, comment string
 			if _, err := fmt.Sscanf(l, "// %s %s %s GPS +offset %f,%f", &startStr, &endStr, &comment, &offsetLat, &offsetLng); err != nil {
@@ -78,7 +85,6 @@ func main() {
 					panic(fmt.Sprintf("%s not small than %s", startStr, endStr))
 				}
 			}
-			fmt.Println("time:", start, end)
 			data = nil
 			continue
 		}
@@ -88,10 +94,34 @@ func main() {
 		}
 		lat, lng = lat+offsetLat, lng+offsetLng
 		data = append(data, Location{0, lat, lng})
-		fmt.Println("gps:", lat, lng)
 	}
+	buf.Truncate(buf.Len() - 2)
+	buf.WriteString("]")
+	fmt.Println(buf.String())
 }
 
-func parseGps(start, end int, data []Location) []Location {
-	distances := make([]float64, len(data)-1)
+func parseGps(start, end int, data []Location) {
+	distances := make([]int, len(data)-1)
+	sum := 0
+	total := (end - start) / 10
+	for i, n := 0, len(data)-1; i < n; i++ {
+		distances[i] = int(Distance(data[i].Lat, data[i].Lng, data[i+1].Lat, data[i+1].Lng) * 100)
+		sum += distances[i]
+	}
+	var points []Location
+	offset := 0
+	for i, d := range distances {
+		length := total * d / sum
+		total -= length
+		sum -= d
+		intervalLat := (data[i+1].Lat - data[i].Lat) / float64(length)
+		intervalLng := (data[i+1].Lng - data[i].Lng) / float64(length)
+		for j := 0; j < length; j++ {
+			points = append(points, Location{start + offset, data[i].Lat + intervalLat*float64(j), data[i].Lng + intervalLng*float64(j)})
+			offset += 10
+		}
+	}
+	for _, p := range points {
+		buf.WriteString(fmt.Sprintf("{\"offset\":%d,\"acc\":10,\"lat\":%.7f,\"lng\":%.7f},\n", p.Offset, p.Lat, p.Lng))
+	}
 }
