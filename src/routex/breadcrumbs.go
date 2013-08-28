@@ -87,8 +87,16 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 		mars.ToMars(m.conversion)
 	}
 	lat, lng, acc := breadcrumb.GPS[0], breadcrumb.GPS[1], breadcrumb.GPS[2]
-	if acc <= 0 || acc > 70 {
+	if acc <= 0 {
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid accuracy: %f", acc))
+		return ret
+	}
+	if acc > 70 {
+		logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7f", lat), fmt.Sprintf("%.7f", lng), acc, "accuracy too large, ignore")
+		ret = BreadcrumbOffset{
+			Latitude:  mars.GPS[0] - earth.GPS[0],
+			Longitude: mars.GPS[1] - earth.GPS[1],
+		}
 		return ret
 	}
 
