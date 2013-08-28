@@ -246,6 +246,26 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		return
 	}
 
+	now := time.Now()
+	endAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
+	if err != nil || endAt <= now.Unix() {
+		forceOpen, ok := m.Request().URL.Query()["force_window_open"]
+		if !ok {
+			m.Error(http.StatusForbidden, fmt.Errorf("not in window"))
+			return
+		}
+		after := 15 * 60
+		if len(forceOpen) > 0 {
+			if i, err := strconv.ParseInt(forceOpen[0], 10, 64); err == nil {
+				after = int(i)
+			}
+		}
+		endAt = now.Unix() + int64(after)
+		if err := m.breadcrumbsRepo.EnableCross(token.UserId, int64(token.Cross.ID), after); err != nil {
+			logger.ERROR("can't set user %d cross %d: %s", token.UserId, token.Cross.ID, err)
+		}
+	}
+
 	m.castLocker.Lock()
 	b, ok := m.crossCast[int64(token.Cross.ID)]
 	if !ok {
@@ -266,6 +286,16 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		}
 	}()
 
+	willEnd := endAt - now.Unix()
+	err = stream.Write(map[string]interface{}{
+		"type":   "command",
+		"action": "close_after",
+		"args":   []interface{}{willEnd},
+	})
+	if err != nil {
+		return
+	}
+
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
 	isTutorial := false
 	if token.Cross.By.ID == m.config.Routex.TutorialCreator {
@@ -277,7 +307,6 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	quit := make(chan int)
 	defer func() { close(quit) }()
 
-	now := time.Now()
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
@@ -346,23 +375,8 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	if err != nil {
 		return
 	}
-	endAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
-	if err != nil || endAt <= now.Unix() {
-		if err := m.breadcrumbsRepo.EnableCross(token.UserId, int64(token.Cross.ID), 15*60); err != nil {
-			logger.ERROR("can't set user %d cross %d: %s", token.UserId, token.Cross.ID, err)
-		}
-		endAt = now.Unix() + 15*60
-	}
-	willEnd := endAt - now.Unix()
-	err = stream.Write(map[string]interface{}{
-		"type":   "command",
-		"action": "close_after",
-		"args":   []interface{}{willEnd},
-	})
-	if err != nil {
-		return
-	}
 
+	lastCheck := now.Unix()
 	for {
 		select {
 		case d := <-c:
@@ -406,10 +420,11 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			if err != nil {
 				return
 			}
+
+		case <-time.After(time.Duration(endAt-time.Now().Unix()) * time.Second):
 			newEndAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
-			if err != nil {
-				logger.ERROR("can't set user %d cross %d: %s", token.UserId, token.Cross.ID, err)
-				continue
+			if err != nil || newEndAt == 0 || newEndAt <= time.Now().Unix() {
+				return
 			}
 			endAt = newEndAt
 			err = stream.Write(map[string]interface{}{
@@ -420,10 +435,12 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			if err != nil {
 				return
 			}
-		case <-time.After(time.Duration(endAt-time.Now().Unix()) * time.Second):
+		}
+		if time.Now().Unix()-lastCheck > 60 {
 			newEndAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
-			if err != nil || newEndAt == 0 || newEndAt <= time.Now().Unix() {
-				return
+			if err != nil {
+				logger.ERROR("can't set user %d cross %d: %s", token.UserId, token.Cross.ID, err)
+				continue
 			}
 			endAt = newEndAt
 			err = stream.Write(map[string]interface{}{

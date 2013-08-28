@@ -1,67 +1,97 @@
 package main
 
 import (
-	"encoding/json"
+	"bufio"
 	"fmt"
+	"math"
+	"net/textproto"
 	"os"
 	"time"
 )
 
-type Location struct {
-	Lat float64
-	Lng float64
+func Distance(latA, lngA, latB, lngB float64) float64 {
+	x := math.Cos(latA*math.Pi/180) * math.Cos(latB*math.Pi/180) * math.Cos((lngA-lngB)*math.Pi/180)
+	y := math.Sin(latA*math.Pi/180) * math.Sin(latB*math.Pi/180)
+	s := x + y
+	if s > 1 {
+		s = 1
+	}
+	if s < -1 {
+		s = -1
+	}
+	alpha := math.Acos(s)
+	distance := alpha * 6371000
+	return distance
 }
 
-const allPoints = 8640
+type Location struct {
+	Offset int
+	Lat    float64
+	Lng    float64
+}
 
-// echo '[{"lat":x.xxx,"lng":y.yy},...]' | tutorial 15:10 19:00
+const interval = 10
+
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Println(`echo '[{"lat":x.xxx,"lng":y.yy},...]' | tutorial 15:10 19:00`)
+	if len(os.Args) != 2 {
+		fmt.Println(`tutorial [file]`)
 		return
 	}
 
-	startStr := os.Args[1]
-	startTime, err := time.Parse("15:04", startStr)
+	f, err := os.Open(os.Args[1])
 	if err != nil {
-		fmt.Println("invalid start time %s: %s", startStr, err)
+		fmt.Println("invalid file:", os.Args[1])
 		return
 	}
-	start := startTime.Hour()*60*60 + startTime.Minute()*60
+	r := textproto.NewReader(bufio.NewReader(f))
 
-	endStr := os.Args[2]
-	endTime, err := time.Parse("15:04", endStr)
-	if err != nil {
-		fmt.Println("invalid start time %s: %s", endStr, err)
-		return
+	var start, end int
+	var offsetLat, offsetLng float64
+	var data []Location
+	for l, err := r.ReadLine(); err == nil; l, err = r.ReadLine() {
+		l = textproto.TrimString(l)
+		if len(l) == 0 {
+			continue
+		}
+		if l[0] == '/' {
+			offsetLat, offsetLng = 0, 0
+			var startStr, endStr, comment string
+			if _, err := fmt.Sscanf(l, "// %s %s %s GPS +offset %f,%f", &startStr, &endStr, &comment, &offsetLat, &offsetLng); err != nil {
+				if _, err := fmt.Sscanf(l, "// %s %s", &startStr, &endStr); err != nil {
+					panic(err)
+				}
+			}
+			startTime, err := time.Parse("15:04", startStr)
+			if err != nil {
+				panic(err)
+			}
+			start = startTime.Hour()*60*60 + startTime.Minute()*60
+			endTime, err := time.Parse("15:04", endStr)
+			if err != nil {
+				panic(err)
+			}
+			end = endTime.Hour()*60*60 + endTime.Minute()*60
+			if end < start {
+				if end == 0 {
+					end = 24 * 60 * 60
+				} else {
+					panic(fmt.Sprintf("%s not small than %s", startStr, endStr))
+				}
+			}
+			fmt.Println("time:", start, end)
+			data = nil
+			continue
+		}
+		var lat, lng float64
+		if _, err := fmt.Sscanf(l, "%f,%f", &lat, &lng); err != nil {
+			panic(err)
+		}
+		lat, lng = lat+offsetLat, lng+offsetLng
+		data = append(data, Location{0, lat, lng})
+		fmt.Println("gps:", lat, lng)
 	}
+}
 
-	end := endTime.Hour()*60*60 + endTime.Minute()*60
-
-	var locations []Location
-	decoder := json.NewDecoder(os.Stdin)
-	err = decoder.Decode(&locations)
-	if err != nil {
-		panic(err)
-	}
-
-	totalInput := len(locations)
-	totalOutput := (end - start) / 10
-	var ret []Location
-	for o := 0; o < totalOutput; o++ {
-		r := float64(o) * float64(totalInput-1) / float64(totalOutput)
-		i := int(r)
-		r = r - float64(i)
-		ret = append(ret, Location{
-			Lat: (locations[i+1].Lat-locations[i].Lat)*r + locations[i].Lat,
-			Lng: (locations[i+1].Lng-locations[i].Lng)*r + locations[i].Lng,
-		})
-		i++
-	}
-
-	offset := start
-	for _, l := range ret {
-		fmt.Printf("{\"offset\":%d, \"lat\":%.7f, \"lng\":%.7f, \"acc\":10},\n", offset, l.Lat, l.Lng)
-		offset += 10
-	}
+func parseGps(start, end int, data []Location) []Location {
+	distances := make([]float64, len(data)-1)
 }
