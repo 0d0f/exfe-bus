@@ -407,21 +407,21 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			if err != nil {
 				return
 			}
-			endAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
+			newEndAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
 			if err != nil {
 				logger.ERROR("can't set user %d cross %d: %s", token.UserId, token.Cross.ID, err)
 				continue
 			}
-			willEnd = endAt - now.Unix()
+			endAt = newEndAt
 			err = stream.Write(map[string]interface{}{
 				"type":   "command",
 				"action": "close_after",
-				"args":   []interface{}{willEnd},
+				"args":   []interface{}{endAt - time.Now().Unix()},
 			})
 			if err != nil {
 				return
 			}
-		case <-time.After(time.Duration(willEnd) * time.Second):
+		case <-time.After(time.Duration(endAt-time.Now().Unix()) * time.Second):
 			return
 		}
 	}
