@@ -277,12 +277,14 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	quit := make(chan int)
 	defer func() { close(quit) }()
 
+	now := time.Now()
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
-			Id:   fmt.Sprintf("%d.breadcrumbs", userId),
-			Type: "route",
-			Tags: []string{"breadcrumbs"},
+			Id:        fmt.Sprintf("%d.breadcrumbs", userId),
+			Type:      "route",
+			UpdatedAt: now.Unix(),
+			Tags:      []string{"breadcrumbs"},
 		}
 		if route.Positions = m.getTutorialData(time.Now().UTC(), userId, 1); route.Positions != nil {
 			go func() {
@@ -295,7 +297,8 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 							Id:        fmt.Sprintf("%d.breadcrumbs", userId),
 							Type:      "route",
 							Tags:      []string{"breadcrumbs"},
-							Positions: m.getTutorialData(time.Now().UTC(), userId, 1),
+							UpdatedAt: now.Unix(),
+							Positions: m.getTutorialData(now, userId, 1),
 						}
 						c <- route
 					}
