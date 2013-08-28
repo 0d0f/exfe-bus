@@ -175,7 +175,7 @@ func (m RouteMap) HandleSetGeomark(mark Geomark) {
 	}
 
 	mark.Type = m.Vars()["mark_type"]
-	mark.Id = fmt.Sprintf("%s.%s", m.Vars()["mark_id"], m.Vars()["kind"])
+	mark.Id = fmt.Sprintf("%s.%s", m.Vars()["kind"], m.Vars()["mark_id"])
 	kind := m.Vars()["kind"]
 	mark.UpdatedBy, mark.UpdatedAt, mark.Action = by, time.Now().Unix(), ""
 	logger.DEBUG("geomark %s set by %s", mark.Id, mark.UpdatedBy)
@@ -269,7 +269,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 
 	var mark Geomark
 	mark.Type = m.Vars()["mark_type"]
-	mark.Id = fmt.Sprintf("%s.%s", m.Vars()["mark_id"], m.Vars()["kind"])
+	mark.Id = fmt.Sprintf("%s.%s", m.Vars()["kind"], m.Vars()["mark_id"])
 	logger.DEBUG("geomark %s delete by user %d", mark.Id, token.UserId)
 	kind := m.Vars()["kind"]
 
@@ -324,7 +324,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 }
 
 func (m RouteMap) xplaceId(crossId int64) string {
-	return fmt.Sprintf("%d."+XPlaceTag, crossId)
+	return fmt.Sprintf(XPlaceTag+".%d", crossId)
 }
 
 func (m RouteMap) syncCrossPlace(geomark *Geomark, cross model.Cross, by string) error {

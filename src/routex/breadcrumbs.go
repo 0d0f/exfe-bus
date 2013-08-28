@@ -142,7 +142,7 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 
 	go func() {
 		route := Geomark{
-			Id:        fmt.Sprintf("%d.breadcrumbs", userId),
+			Id:        m.breadcrumbsId(userId),
 			Action:    action,
 			Type:      "route",
 			UpdatedAt: breadcrumb.Timestamp,
@@ -182,7 +182,7 @@ func (m RouteMap) getBreadcrumbs(cross model.Cross, toMars bool) []Geomark {
 	for _, invitation := range cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
-			Id:   fmt.Sprintf("%d.breadcrumbs", userId),
+			Id:   m.breadcrumbsId(userId),
 			Type: "route",
 		}
 
@@ -248,7 +248,7 @@ func (m RouteMap) HandleGetUserBreadcrums() Geomark {
 			return ret
 		}
 	}
-	ret.Id, ret.Type = fmt.Sprintf("%d", userId), "route"
+	ret.Id, ret.Type = m.breadcrumbsId(userId), "route"
 	if toMars {
 		ret.ToMars(m.conversion)
 	}
@@ -274,10 +274,14 @@ func (m RouteMap) HandleGetUserBreadcrumsInner() Geomark {
 		}
 		return ret
 	}
-	ret.Id, ret.Type = fmt.Sprintf("%d", userId), "route"
+	ret.Id, ret.Type = m.breadcrumbsId(userId), "route"
 	ret.Positions = []SimpleLocation{l}
 	if toMars {
 		ret.ToMars(m.conversion)
 	}
 	return ret
+}
+
+func (m RouteMap) breadcrumbsId(userId int64) string {
+	return fmt.Sprintf("breadcrumbs.%d", userId)
 }

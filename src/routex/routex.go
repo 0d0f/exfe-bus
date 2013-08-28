@@ -34,8 +34,8 @@ type RouteMap struct {
 
 	SearchGeomarks rest.Processor `path:"/_inner/geomarks/crosses/:cross_id" method:"GET"`
 	GetGeomarks    rest.Processor `path:"/geomarks/crosses/:cross_id" method:"GET"`
-	SetGeomark     rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id.:kind" method:"PUT"`
-	DeleteGeomark  rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:mark_id.:kind" method:"DELETE"`
+	SetGeomark     rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:kind.:mark_id" method:"PUT"`
+	DeleteGeomark  rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:kind.:mark_id" method:"DELETE"`
 
 	Stream  rest.Streaming `path:"/crosses/:cross_id" method:"WATCH"`
 	Options rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
@@ -112,7 +112,7 @@ func (m RouteMap) setTutorial(lat, lng float64, userId, crossId int64, locale, b
 	}
 	now := time.Now().Unix()
 	ret = Geomark{
-		Id:          fmt.Sprintf("%04d@location", m.rand.Intn(1e4)),
+		Id:          fmt.Sprintf("location.%04d", m.rand.Intn(1e4)),
 		Type:        "location",
 		CreatedAt:   now,
 		CreatedBy:   by,
@@ -281,7 +281,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
-			Id:        fmt.Sprintf("%d.breadcrumbs", userId),
+			Id:        m.breadcrumbsId(userId),
 			Type:      "route",
 			UpdatedAt: now.Unix(),
 			Tags:      []string{"breadcrumbs"},
@@ -294,7 +294,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 						return
 					case <-time.After(time.Second * 10):
 						route := Geomark{
-							Id:        fmt.Sprintf("%d.breadcrumbs", userId),
+							Id:        m.breadcrumbsId(userId),
 							Type:      "route",
 							Tags:      []string{"breadcrumbs"},
 							UpdatedAt: now.Unix(),
@@ -369,7 +369,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		case d := <-c:
 			if mark, ok := d.(Geomark); ok {
 				if isTutorial && !hasCreated {
-					if mark.Id == fmt.Sprintf("%d.breadcrumbs", token.UserId) {
+					if mark.Id == m.breadcrumbsId(token.UserId) {
 						locale, by := "", ""
 						for _, i := range token.Cross.Exfee.Invitations {
 							if i.Identity.UserID == token.UserId {
