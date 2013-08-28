@@ -142,10 +142,12 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 
 	go func() {
 		route := Geomark{
-			Id:     fmt.Sprintf("%d.breadcrumbs", userId),
-			Action: action,
-			Type:   "route",
-			Tags:   []string{"breadcrumbs"},
+			Id:        fmt.Sprintf("%d.breadcrumbs", userId),
+			Action:    action,
+			Type:      "route",
+			UpdatedAt: breadcrumb.Timestamp,
+			Tags:      []string{"breadcrumbs"},
+			Positions: []SimpleLocation{breadcrumb},
 		}
 		for _, cross := range crossIds {
 			m.castLocker.RLock()
@@ -154,15 +156,6 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 			if !ok {
 				continue
 			}
-			l, exist, err := m.breadcrumbCache.LoadCross(userId, cross)
-			if err != nil {
-				logger.ERROR("get user %d last breadcrumb from cross %d failed: %s", userId, cross, err)
-				continue
-			}
-			if !exist {
-				continue
-			}
-			route.Positions = []SimpleLocation{l}
 			b.Send(route)
 		}
 	}()

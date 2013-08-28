@@ -200,6 +200,7 @@ type BreadcrumbCache interface {
 
 type BreadcrumbsRepo interface {
 	RoutexControl
+	GetWindowEnd(userId, crossId int64) (int64, error)
 	Save(userId int64, l SimpleLocation) error
 	Load(userId, crossId, afterTimestamp int64) ([]SimpleLocation, error)
 	Update(userId int64, l SimpleLocation) error
@@ -317,6 +318,7 @@ const (
 	BREADCRUMBS_UPDATE_START = "UPDATE `breadcrumbs_windows` SET `end_at`=UNIX_TIMESTAMP()+? WHERE `user_id`=? AND `cross_id`=? AND `end_at`>=UNIX_TIMESTAMP()"
 	BREADCRUMBS_INSERT_START = "INSERT INTO `breadcrumbs_windows` (`user_id`, `cross_id`, `start_at`, `end_at`) VALUES(?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+?)"
 	BREADCRUMBS_UPDATE_END   = "UPDATE `breadcrumbs_windows` SET `end_at`=UNIX_TIMESTAMP()-1 WHERE `user_id`=? AND `cross_id`=? AND `end_at`>=UNIX_TIMESTAMP()"
+	BREADCRUMBS_GET_END      = "SELECT `end_at` FROM `breadcrumbs_windows` WHERE `user_id`=? AND `cross_id`=? AND `end_at`>=UNIX_TIMESTAMP()"
 	BREADCRUMBS_SAVE         = "INSERT INTO `breadcrumbs` (`user_id`, `lat`, `lng`, `acc`, `timestamp`) VALUES(?, ?, ?, ?, UNIX_TIMESTAMP());"
 	BREADCRUMBS_GET          = "SELECT b.lat, b.lng, b.acc, b.timestamp FROM breadcrumbs AS b, breadcrumbs_windows AS w WHERE b.user_id=w.user_id AND b.timestamp BETWEEN w.start_at AND w.end_at AND w.user_id=? AND w.cross_id=? AND b.timestamp<=? ORDER BY b.timestamp DESC LIMIT 100"
 	BREADCRUMBS_UPDATE       = "UPDATE `breadcrumbs` SET lat=?, lng=?, acc=?, timestamp=UNIX_TIMESTAMP() WHERE user_id=? ORDER BY timestamp DESC LIMIT 1"
@@ -356,6 +358,20 @@ func (s *BreadcrumbsSaver) DisableCross(userId, crossId int64) error {
 		return err
 	}
 	return nil
+}
+
+func (s *BreadcrumbsSaver) GetWindowEnd(userId, crossId int64) (int64, error) {
+	row := s.db.QueryRow(BREADCRUMBS_GET_END, userId, crossId)
+	var ret int64
+	err := row.Scan(&ret)
+	switch err {
+	case sql.ErrNoRows:
+		ret = 0
+	case nil:
+	default:
+		return 0, err
+	}
+	return ret, nil
 }
 
 func (s *BreadcrumbsSaver) Save(userId int64, l SimpleLocation) error {
@@ -413,14 +429,12 @@ func NewBreadcrumbCacheSaver(r *redis.Pool) *BreadcrumbCacheSaver {
 		local userkey = "exfe:v3:routex:user_"..user_id
 		local matchkey = "exfe:v3:routex:user_"..user_id..":cross"
 		local crosses = redis.call("ZRANGEBYSCORE", matchkey, now, "+INF")
-		local ret = {}
 		redis.call("EXPIRE", userkey, 600)
 		for i = 1, #crosses do
-			local c = crosses[i]
 			redis.call("SET", matchkey..":"..c, data, "EX", "7200")
 			table.insert(ret, c)
 		end
-		return ret
+		return crosses
 	`)
 	return ret
 }

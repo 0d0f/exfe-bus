@@ -168,7 +168,7 @@ func (m RouteMap) HandleSetUserInner(setup UserCrossSetup) {
 	go func() {
 		if setup.SaveBreadcrumbs {
 			if setup.AfterInSeconds == 0 {
-				setup.AfterInSeconds = 7200
+				setup.AfterInSeconds = 3600
 			}
 			if err := m.routexRepo.EnableCross(userId, crossId, setup.AfterInSeconds); err != nil {
 				logger.ERROR("set user %d enable cross %d routex repo failed: %s", userId, crossId, err)
@@ -348,39 +348,38 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	for {
 		select {
 		case d := <-c:
-			mark, ok := d.(Geomark)
-			if !ok {
-				continue
-			}
-			if isTutorial && !hasCreated {
-				if mark.Id == fmt.Sprintf("%d.breadcrumbs", token.UserId) {
-					locale, by := "", ""
-					for _, i := range token.Cross.Exfee.Invitations {
-						if i.Identity.UserID == token.UserId {
-							locale, by = i.Identity.Locale, i.Identity.Id()
-							break
+			if mark, ok := d.(Geomark); ok {
+				if isTutorial && !hasCreated {
+					if mark.Id == fmt.Sprintf("%d.breadcrumbs", token.UserId) {
+						locale, by := "", ""
+						for _, i := range token.Cross.Exfee.Invitations {
+							if i.Identity.UserID == token.UserId {
+								locale, by = i.Identity.Locale, i.Identity.Id()
+								break
+							}
 						}
-					}
-					tutorialMark, err := m.setTutorial(mark.Latitude, mark.Longitude, token.UserId, int64(token.Cross.ID), locale, by)
-					if err != nil {
-						logger.ERROR("create tutorial geomark for user %d in cross %d failed: %s", token.UserId, token.Cross.ID, err)
-					} else {
-						hasCreated = true
-						if toMars {
-							tutorialMark.ToMars(m.conversion)
-						}
-						err := stream.Write(tutorialMark)
+						tutorialMark, err := m.setTutorial(mark.Latitude, mark.Longitude, token.UserId, int64(token.Cross.ID), locale, by)
 						if err != nil {
-							return
+							logger.ERROR("create tutorial geomark for user %d in cross %d failed: %s", token.UserId, token.Cross.ID, err)
+						} else {
+							hasCreated = true
+							if toMars {
+								tutorialMark.ToMars(m.conversion)
+							}
+							err := stream.Write(tutorialMark)
+							if err != nil {
+								return
+							}
 						}
 					}
 				}
-			}
-			if toMars {
-				mark.ToMars(m.conversion)
+				if toMars {
+					mark.ToMars(m.conversion)
+				}
+				d = mark
 			}
 			stream.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
-			err := stream.Write(mark)
+			err := stream.Write(d)
 			if err != nil {
 				return
 			}
