@@ -281,10 +281,9 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
 		route := Geomark{
-			Id:        m.breadcrumbsId(userId),
-			Type:      "route",
-			UpdatedAt: now.Unix(),
-			Tags:      []string{"breadcrumbs"},
+			Id:   m.breadcrumbsId(userId),
+			Type: "route",
+			Tags: []string{"breadcrumbs"},
 		}
 		if route.Positions = m.getTutorialData(time.Now().UTC(), userId, 1); route.Positions != nil {
 			go func() {

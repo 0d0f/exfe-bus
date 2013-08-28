@@ -145,7 +145,6 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 			Id:        m.breadcrumbsId(userId),
 			Action:    action,
 			Type:      "route",
-			UpdatedAt: breadcrumb.Timestamp,
 			Tags:      []string{"breadcrumbs"},
 			Positions: []SimpleLocation{breadcrumb},
 		}
