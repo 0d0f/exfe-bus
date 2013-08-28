@@ -340,9 +340,25 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	}
 
 	stream.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
-	err = stream.Write(Geomark{
-		Type:   "command",
-		Action: "init_end",
+	err = stream.Write(map[string]string{
+		"type":   "command",
+		"action": "init_end",
+	})
+	if err != nil {
+		return
+	}
+	endAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
+	if err != nil || endAt <= now.Unix() {
+		if err := m.breadcrumbsRepo.EnableCross(token.UserId, int64(token.Cross.ID), 15*60); err != nil {
+			logger.ERROR("can't set user %d cross %d: %s", token.UserId, token.Cross.ID, err)
+		}
+		endAt = now.Unix() + 15*60
+	}
+	willEnd := endAt - now.Unix()
+	err = stream.Write(map[string]interface{}{
+		"type":   "command",
+		"action": "close_after",
+		"args":   []interface{}{willEnd},
 	})
 	if err != nil {
 		return
@@ -391,6 +407,22 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			if err != nil {
 				return
 			}
+			endAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
+			if err != nil {
+				logger.ERROR("can't set user %d cross %d: %s", token.UserId, token.Cross.ID, err)
+				continue
+			}
+			willEnd = endAt - now.Unix()
+			err = stream.Write(map[string]interface{}{
+				"type":   "command",
+				"action": "close_after",
+				"args":   []interface{}{willEnd},
+			})
+			if err != nil {
+				return
+			}
+		case <-time.After(time.Duration(willEnd) * time.Second):
+			return
 		}
 	}
 }

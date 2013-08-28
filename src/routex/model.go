@@ -111,7 +111,6 @@ type Geomark struct {
 	Latitude    float64          `json:"lat,omitempty"`
 	Longitude   float64          `json:"lng,omitempty"`
 	Positions   []SimpleLocation `json:"positions,omitempty"`
-	Args        []interface{}    `json:"args,omitempty"`
 }
 
 func (g *Geomark) HasTag(tag string) bool {
