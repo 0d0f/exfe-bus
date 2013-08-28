@@ -95,6 +95,9 @@ func main() {
 		lat, lng = lat+offsetLat, lng+offsetLng
 		data = append(data, Location{0, lat, lng})
 	}
+	if data != nil {
+		parseGps(start, end, data)
+	}
 	buf.Truncate(buf.Len() - 2)
 	buf.WriteString("]")
 	fmt.Println(buf.String())
@@ -118,6 +121,12 @@ func parseGps(start, end int, data []Location) {
 		intervalLng := (data[i+1].Lng - data[i].Lng) / float64(length)
 		for j := 0; j < length; j++ {
 			points = append(points, Location{start + offset, data[i].Lat + intervalLat*float64(j), data[i].Lng + intervalLng*float64(j)})
+			offset += 10
+		}
+	}
+	if len(points) == 0 {
+		for i := 0; i < total; i++ {
+			points = append(points, Location{start + offset, data[0].Lat, data[0].Lng})
 			offset += 10
 		}
 	}
