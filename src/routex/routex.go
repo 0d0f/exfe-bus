@@ -246,6 +246,8 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
+	f := logger.FUNC("streaming connected by user %d, cross %d", token.UserId, token.Cross.ID)
+	defer f.Quit()
 
 	now := time.Now()
 	endAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
