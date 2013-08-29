@@ -194,7 +194,7 @@ func (m RouteMap) getBreadcrumbs(cross model.Cross, toMars bool) []Geomark {
 			Type: "route",
 		}
 
-		if route.Positions = m.getTutorialData(time.Now().UTC(), userId, 100); route.Positions == nil {
+		if route.Positions = m.getTutorialData(time.Now().UTC(), userId, 10000); route.Positions == nil {
 			var err error
 			if route.Positions, err = m.breadcrumbsRepo.Load(userId, int64(cross.ID), time.Now().Unix()); err != nil {
 				logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, cross.ID, err)
