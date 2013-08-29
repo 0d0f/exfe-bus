@@ -330,7 +330,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 							Id:        m.breadcrumbsId(userId),
 							Type:      "route",
 							Tags:      []string{"breadcrumbs"},
-							Positions: m.getTutorialData(now, userId, 1),
+							Positions: m.getTutorialData(time.Now(), userId, 1),
 						}
 						c <- route
 					}
