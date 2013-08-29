@@ -16,34 +16,32 @@ func (m *RouteMap) getTutorialData(currentTime time.Time, userId int64, number i
 	if !ok {
 		return nil
 	}
-	currentTime = currentTime.UTC()
+	zhCN := time.FixedZone("zh-CN", int(8*time.Hour/time.Second))
+	currentTime = currentTime.In(zhCN)
 	now := currentTime.Unix()
-	todayTime, _ := time.Parse("2006-01-02 15:04:05", currentTime.Format("2006-01-02 00:00:00"))
+	todayTime, _ := time.Parse("2006-01-02 15:04:05 -0700", currentTime.Format("2006-01-02 00:00:00 -0700"))
 	today := todayTime.Unix()
 	offset := (now - today) / 10 * 10
 
-	oneDaySeconds := int64(24 * time.Hour / time.Second)
-	totalPoint := len(data)
-	currentPoint := sort.Search(len(data), func(i int) bool {
+	current := sort.Search(len(data), func(i int) bool {
 		return data[i].Offset >= offset
 	})
-	if data[currentPoint].Offset != offset && number == 1 {
+	if data[current].Offset != offset && number == 1 {
 		return nil
 	}
 
 	var ret []SimpleLocation
 	for ; number > 0; number-- {
 		l := SimpleLocation{
-			Timestamp: today + data[currentPoint].Offset,
-			GPS:       []float64{data[currentPoint].Latitude, data[currentPoint].Longitude, data[currentPoint].Accuracy},
+			Timestamp: today + data[current].Offset,
+			GPS:       []float64{data[current].Latitude, data[current].Longitude, data[current].Accuracy},
 		}
 		l.ToEarth(m.conversion)
 		ret = append(ret, l)
-		if currentPoint > 0 {
-			currentPoint--
+		if current > 0 {
+			current--
 		} else {
-			currentPoint = totalPoint - 1
-			today -= oneDaySeconds
+			break
 		}
 	}
 	return ret
@@ -194,7 +192,7 @@ func (m RouteMap) getBreadcrumbs(cross model.Cross, toMars bool) []Geomark {
 			Type: "route",
 		}
 
-		if route.Positions = m.getTutorialData(time.Now().UTC(), userId, 10000); route.Positions == nil {
+		if route.Positions = m.getTutorialData(time.Now().UTC(), userId, 100); route.Positions == nil {
 			var err error
 			if route.Positions, err = m.breadcrumbsRepo.Load(userId, int64(cross.ID), time.Now().Unix()); err != nil {
 				logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, cross.ID, err)
@@ -244,7 +242,7 @@ func (m RouteMap) HandleGetUserBreadcrums() Geomark {
 		}
 		after = time.Unix(timestamp, 0)
 	}
-	if ret.Positions = m.getTutorialData(after, userId, 10000); ret.Positions == nil {
+	if ret.Positions = m.getTutorialData(after, userId, 100); ret.Positions == nil {
 		var err error
 		if ret.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID), after.Unix()); err != nil {
 			if err == redis.ErrNil {
