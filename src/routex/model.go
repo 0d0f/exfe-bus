@@ -320,7 +320,7 @@ const (
 	BREADCRUMBS_UPDATE_END   = "UPDATE `breadcrumbs_windows` SET `end_at`=UNIX_TIMESTAMP()-1 WHERE `user_id`=? AND `cross_id`=? AND `end_at`>=UNIX_TIMESTAMP()"
 	BREADCRUMBS_GET_END      = "SELECT `end_at` FROM `breadcrumbs_windows` WHERE `user_id`=? AND `cross_id`=? AND `end_at`>=UNIX_TIMESTAMP()"
 	BREADCRUMBS_SAVE         = "INSERT INTO `breadcrumbs` (`user_id`, `lat`, `lng`, `acc`, `timestamp`) VALUES(?, ?, ?, ?, UNIX_TIMESTAMP());"
-	BREADCRUMBS_GET          = "SELECT b.lat, b.lng, b.acc, b.timestamp FROM breadcrumbs AS b, breadcrumbs_windows AS w WHERE b.user_id=w.user_id AND b.timestamp BETWEEN w.start_at AND w.end_at AND w.user_id=? AND w.cross_id=? AND b.timestamp<=? ORDER BY b.timestamp DESC LIMIT 100"
+	BREADCRUMBS_GET          = "SELECT b.lat, b.lng, b.acc, b.timestamp FROM breadcrumbs AS b, breadcrumbs_windows AS w WHERE b.user_id=w.user_id AND b.timestamp BETWEEN w.start_at AND w.end_at AND w.user_id=? AND w.cross_id=? AND b.timestamp<=? AND b.timestamp>? ORDER BY b.timestamp DESC LIMIT 100"
 	BREADCRUMBS_UPDATE       = "UPDATE `breadcrumbs` SET lat=?, lng=?, acc=?, timestamp=UNIX_TIMESTAMP() WHERE user_id=? ORDER BY timestamp DESC LIMIT 1"
 )
 
@@ -395,7 +395,7 @@ func (s *BreadcrumbsSaver) Update(userId int64, l SimpleLocation) error {
 }
 
 func (s *BreadcrumbsSaver) Load(userId, crossId, afterTimestamp int64) ([]SimpleLocation, error) {
-	rows, err := s.db.Query(BREADCRUMBS_GET, userId, crossId, afterTimestamp)
+	rows, err := s.db.Query(BREADCRUMBS_GET, userId, crossId, afterTimestamp, afterTimestamp-12*60*60)
 	if err != nil {
 		return nil, err
 	}

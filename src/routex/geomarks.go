@@ -147,7 +147,9 @@ func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]Geomark, error)
 			if !hasDestination {
 				xplace.Tags = append(xplace.Tags, "destination")
 			}
-			xplace.ToEarth(m.conversion)
+			if !toMars {
+				xplace.ToEarth(m.conversion)
+			}
 			data = append(data, xplace)
 		}
 	}
