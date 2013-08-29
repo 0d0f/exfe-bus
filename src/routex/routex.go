@@ -166,6 +166,7 @@ func (m RouteMap) HandleSetUserInner(setup UserCrossSetup) {
 		return
 	}
 	go func() {
+		m.platform.BotCrossUpdate("cross", crossIdStr, nil, model.Identity{})
 		if setup.SaveBreadcrumbs {
 			if setup.AfterInSeconds == 0 {
 				setup.AfterInSeconds = 3600
@@ -188,7 +189,7 @@ func (m RouteMap) HandleSetUserInner(setup UserCrossSetup) {
 
 	if setup.SaveBreadcrumbs {
 		if setup.AfterInSeconds == 0 {
-			setup.AfterInSeconds = 7200
+			setup.AfterInSeconds = 3600
 		}
 		if err := m.breadcrumbCache.EnableCross(userId, crossId, setup.AfterInSeconds); err != nil {
 			logger.ERROR("set user %d enable cross %d breadcrumb cache failed: %s", userId, crossId, err)
@@ -255,6 +256,10 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			return
 		}
 		after := 15 * 60
+		if endAt == 0 {
+			after = 60 * 60
+			m.platform.BotCrossUpdate("cross", fmt.Sprintf("%d", token.Cross.ID), nil, model.Identity{})
+		}
 		if len(forceOpen) > 0 {
 			if i, err := strconv.ParseInt(forceOpen[0], 10, 64); err == nil {
 				after = int(i)

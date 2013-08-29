@@ -280,8 +280,10 @@ func (p *Platform) BotCrossGather(cross model.Cross) (model.Cross, error) {
 func (p *Platform) BotCrossUpdate(objectType, objectId string, cross interface{}, by model.Identity) error {
 	arg := make(map[string]interface{})
 	arg[objectType] = objectId
-	arg["cross"] = cross
-	arg["by_identity"] = by
+	if cross != nil {
+		arg["cross"] = cross
+		arg["by_identity"] = by
+	}
 
 	b, err := json.Marshal(arg)
 	if err != nil {

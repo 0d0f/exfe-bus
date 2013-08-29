@@ -318,7 +318,7 @@ const (
 	BREADCRUMBS_UPDATE_START = "UPDATE `breadcrumbs_windows` SET `end_at`=UNIX_TIMESTAMP()+? WHERE `user_id`=? AND `cross_id`=? AND `end_at`>=UNIX_TIMESTAMP()"
 	BREADCRUMBS_INSERT_START = "INSERT INTO `breadcrumbs_windows` (`user_id`, `cross_id`, `start_at`, `end_at`) VALUES(?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+?)"
 	BREADCRUMBS_UPDATE_END   = "UPDATE `breadcrumbs_windows` SET `end_at`=UNIX_TIMESTAMP()-1 WHERE `user_id`=? AND `cross_id`=? AND `end_at`>=UNIX_TIMESTAMP()"
-	BREADCRUMBS_GET_END      = "SELECT `end_at` FROM `breadcrumbs_windows` WHERE `user_id`=? AND `cross_id`=? AND `end_at`>=UNIX_TIMESTAMP()"
+	BREADCRUMBS_GET_END      = "SELECT `end_at` FROM `breadcrumbs_windows` WHERE `user_id`=? AND `cross_id`=? ORDER BY `end_at` DESC LIMIT 1"
 	BREADCRUMBS_SAVE         = "INSERT INTO `breadcrumbs` (`user_id`, `lat`, `lng`, `acc`, `timestamp`) VALUES(?, ?, ?, ?, UNIX_TIMESTAMP());"
 	BREADCRUMBS_GET          = "SELECT b.lat, b.lng, b.acc, b.timestamp FROM breadcrumbs AS b, breadcrumbs_windows AS w WHERE b.user_id=w.user_id AND b.timestamp BETWEEN w.start_at AND w.end_at AND w.user_id=? AND w.cross_id=? AND b.timestamp<=? AND b.timestamp>? ORDER BY b.timestamp DESC LIMIT 100"
 	BREADCRUMBS_UPDATE       = "UPDATE `breadcrumbs` SET lat=?, lng=?, acc=?, timestamp=UNIX_TIMESTAMP() WHERE user_id=? ORDER BY timestamp DESC LIMIT 1"
