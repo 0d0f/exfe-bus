@@ -337,7 +337,6 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 							Tags:      []string{"breadcrumbs"},
 							Positions: positions,
 						}
-						route.ToEarth(m.conversion)
 						c <- route
 					}
 				}

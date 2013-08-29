@@ -33,10 +33,12 @@ func (m *RouteMap) getTutorialData(currentTime time.Time, userId int64, number i
 
 	var ret []SimpleLocation
 	for ; number > 0; number-- {
-		ret = append(ret, SimpleLocation{
+		l := SimpleLocation{
 			Timestamp: today + data[currentPoint].Offset,
 			GPS:       []float64{data[currentPoint].Latitude, data[currentPoint].Longitude, data[currentPoint].Accuracy},
-		})
+		}
+		l.ToEarth(m.conversion)
+		ret = append(ret, l)
 		if currentPoint > 0 {
 			currentPoint--
 		} else {
@@ -253,8 +255,6 @@ func (m RouteMap) HandleGetUserBreadcrums() Geomark {
 			}
 			return ret
 		}
-	} else {
-		ret.ToEarth(m.conversion)
 	}
 	ret.Id, ret.Type = m.breadcrumbsId(userId), "route"
 	if toMars {
