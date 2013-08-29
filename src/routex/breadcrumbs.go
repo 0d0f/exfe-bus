@@ -253,6 +253,8 @@ func (m RouteMap) HandleGetUserBreadcrums() Geomark {
 			}
 			return ret
 		}
+	} else {
+		ret.ToEarth(m.conversion)
 	}
 	ret.Id, ret.Type = m.breadcrumbsId(userId), "route"
 	if toMars {
