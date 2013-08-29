@@ -244,7 +244,7 @@ func (m RouteMap) HandleGetUserBreadcrums() Geomark {
 		}
 		after = time.Unix(timestamp, 0)
 	}
-	if ret.Positions = m.getTutorialData(after, userId, 100); ret.Positions == nil {
+	if ret.Positions = m.getTutorialData(after, userId, 10000); ret.Positions == nil {
 		var err error
 		if ret.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID), after.Unix()); err != nil {
 			if err == redis.ErrNil {
