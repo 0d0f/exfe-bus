@@ -166,7 +166,7 @@ func (m RouteMap) HandleSetUserInner(setup UserCrossSetup) {
 		return
 	}
 	go func() {
-		m.platform.BotCrossUpdate("cross", crossIdStr, nil, model.Identity{})
+		m.platform.BotCrossUpdate("cross_id", crossIdStr, nil, model.Identity{})
 		if setup.SaveBreadcrumbs {
 			if setup.AfterInSeconds == 0 {
 				setup.AfterInSeconds = 3600
@@ -258,7 +258,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		after := 15 * 60
 		if endAt == 0 {
 			after = 60 * 60
-			m.platform.BotCrossUpdate("cross", fmt.Sprintf("%d", token.Cross.ID), nil, model.Identity{})
+			m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", token.Cross.ID), nil, model.Identity{})
 		}
 		if len(forceOpen) > 0 {
 			if i, err := strconv.ParseInt(forceOpen[0], 10, 64); err == nil {
