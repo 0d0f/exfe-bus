@@ -330,7 +330,6 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 							Id:        m.breadcrumbsId(userId),
 							Type:      "route",
 							Tags:      []string{"breadcrumbs"},
-							UpdatedAt: now.Unix(),
 							Positions: m.getTutorialData(now, userId, 1),
 						}
 						c <- route
@@ -442,6 +441,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			}
 		}
 		if time.Now().Unix()-lastCheck > 60 {
+			lastCheck = time.Now().Unix()
 			newEndAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
 			if err != nil {
 				logger.ERROR("can't set user %d cross %d: %s", token.UserId, token.Cross.ID, err)
