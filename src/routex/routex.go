@@ -328,6 +328,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 					case <-time.After(time.Second * 10):
 						route := Geomark{
 							Id:        m.breadcrumbsId(userId),
+							Action:    "save",
 							Type:      "route",
 							Tags:      []string{"breadcrumbs"},
 							Positions: m.getTutorialData(time.Now(), userId, 1),
