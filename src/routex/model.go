@@ -395,7 +395,7 @@ func (s *BreadcrumbsSaver) Update(userId int64, l SimpleLocation) error {
 }
 
 func (s *BreadcrumbsSaver) Load(userId, crossId, afterTimestamp int64) ([]SimpleLocation, error) {
-	rows, err := s.db.Query(BREADCRUMBS_GET, userId, crossId, afterTimestamp, afterTimestamp-12*60*60)
+	rows, err := s.db.Query(BREADCRUMBS_GET, userId, crossId, afterTimestamp, afterTimestamp-24*60*60)
 	if err != nil {
 		return nil, err
 	}
