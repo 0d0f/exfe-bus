@@ -6,6 +6,7 @@ import (
 	"logger"
 	"model"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -19,10 +20,16 @@ func (m *RouteMap) getTutorialData(currentTime time.Time, userId int64, number i
 	now := currentTime.Unix()
 	todayTime, _ := time.Parse("2006-01-02 15:04:05", currentTime.Format("2006-01-02 00:00:00"))
 	today := todayTime.Unix()
+	offset := (now - today) / 10 * 10
 
 	oneDaySeconds := int64(24 * time.Hour / time.Second)
 	totalPoint := len(data)
-	currentPoint := int((now - today) * int64(totalPoint) / oneDaySeconds)
+	currentPoint := sort.Search(len(data), func(i int) bool {
+		return data[i].Offset >= offset
+	})
+	if data[currentPoint].Offset != offset && number == 1 {
+		return nil
+	}
 
 	var ret []SimpleLocation
 	for ; number > 0; number-- {
