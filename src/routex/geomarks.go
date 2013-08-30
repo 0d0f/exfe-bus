@@ -244,6 +244,7 @@ func (m RouteMap) HandleSetGeomark(mark Geomark) {
 		return
 	}
 	m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
+	m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", token.Cross.ID), nil, model.Identity{})
 
 	go func() {
 		mark.Action = "update"
@@ -293,6 +294,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 		}
 	}
 	m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
+	m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", token.Cross.ID), nil, model.Identity{})
 
 	go func() {
 		if kind == XPlaceTag {
