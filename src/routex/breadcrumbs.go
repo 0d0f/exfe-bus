@@ -155,7 +155,6 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 			Tags:      []string{"breadcrumbs"},
 			Positions: []SimpleLocation{breadcrumb},
 		}
-		fmt.Println("crossIds", crossIds)
 		for _, cross := range crossIds {
 			m.castLocker.RLock()
 			b, ok := m.crossCast[cross]
