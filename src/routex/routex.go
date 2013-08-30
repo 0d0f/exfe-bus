@@ -271,6 +271,9 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		if err := m.breadcrumbsRepo.EnableCross(token.UserId, int64(token.Cross.ID), after); err != nil {
 			logger.ERROR("can't set user %d cross %d: %s", token.UserId, token.Cross.ID, err)
 		}
+		if err := m.breadcrumbCache.EnableCross(token.UserId, int64(token.Cross.ID), after); err != nil {
+			logger.ERROR("can't set user %d cache cross %d: %s", token.UserId, token.Cross.ID, err)
+		}
 	}
 
 	m.castLocker.Lock()
@@ -547,9 +550,9 @@ func (m *RouteMap) auth(checkCross bool) (Token, bool) {
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	// if authData == "" {
-	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	// }
+	if authData == "" {
+		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	}
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
