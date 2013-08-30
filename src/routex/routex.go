@@ -582,16 +582,7 @@ func (m *RouteMap) auth(checkCross bool) (Token, bool) {
 			return token, false
 		}
 	default:
-		t := m.Request().URL.Query().Get("token")
-		cross, err := m.platform.GetCrossByInvitationToken(t)
-		if err != nil {
-			return token, false
-		}
-		if cross.ID != crossId {
-			return token, false
-		}
-		token.Cross, token.Readonly = cross, true
-		return token, true
+		return token, false
 	}
 
 	token.Cross, err = m.platform.FindCross(int64(crossId), query)
