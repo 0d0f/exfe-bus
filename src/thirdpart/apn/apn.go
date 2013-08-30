@@ -79,7 +79,7 @@ func (a *Apn) Post(from, id, text string) (string, error) {
 		return "", fmt.Errorf("no payload")
 	}
 	dataStr := text[last+1:]
-	var data interface{}
+	var data map[string]interface{}
 	err := json.Unmarshal([]byte(dataStr), &data)
 	if err != nil {
 		return "", fmt.Errorf("last line of text(%s) can't unmarshal: %s", dataStr, err)
@@ -97,7 +97,9 @@ func (a *Apn) Post(from, id, text string) (string, error) {
 	payload.Aps.Badge = 1
 	payload.Aps.Sound = "default"
 	if data != nil {
-		payload.SetCustom("args", data)
+		for k, v := range data {
+			payload.SetCustom(k, v)
+		}
 	}
 	notification := apns.Notification{
 		DeviceToken: id,
