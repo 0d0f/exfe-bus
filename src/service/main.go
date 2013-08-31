@@ -14,6 +14,7 @@ import (
 	"notifier"
 	"os"
 	"routex"
+	"routex/model"
 	"splitter"
 	"time"
 	"token"
@@ -191,12 +192,13 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Routex {
-		routexSaver := routex.NewRoutexSaver(database)
-		breadcrumbsSaver := routex.NewBreadcrumbsSaver(database)
-		breadcrumbsCache := routex.NewBreadcrumbCacheSaver(cachePool)
-		geomarksSaver := &routex.GeomarksSaver{database}
-		c := routex.NewGeoConversion(database)
-		rx, err := routex.New(routexSaver, breadcrumbsCache, breadcrumbsSaver, geomarksSaver, c, platform, &config)
+		rs, bc, bs, gs, c, err := rmodel.NewRoutexModel(database, cachePool)
+		if err != nil {
+			logger.ERROR("create routex model failed: %s", err)
+			os.Exit(-1)
+			return
+		}
+		rx, err := routex.New(rs, bc, bs, gs, c, platform, &config)
 		register("routex", rx, err)
 	}
 

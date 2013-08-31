@@ -1,4 +1,30 @@
-package model
+package rmodel
+
+import (
+	"database/sql"
+	"github.com/garyburd/redigo/redis"
+)
+
+func NewRoutexModel(db *sql.DB, pool *redis.Pool) (RoutexRepo, BreadcrumbCache, BreadcrumbsRepo, GeomarksRepo, GeoConversionRepo, error) {
+	routexRepo, err := NewRoutexSaver(db)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+	breadcrumbsCache := NewBreadcrumbCacheSaver(pool)
+	breadcrumbsRepo, err := NewBreadcrumbsSaver(db)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+	geomarksRepo, err := NewGeomarkSaver(db)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+	conversion, err := NewGeoConversion(db)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+	return routexRepo, breadcrumbsCache, breadcrumbsRepo, geomarksRepo, conversion, nil
+}
 
 type GeoConversionRepo interface {
 	EarthToMars(lat, lng float64) (float64, float64)

@@ -6,12 +6,13 @@ import (
 	"logger"
 	"model"
 	"net/http"
+	"routex/model"
 	"sort"
 	"strconv"
 	"time"
 )
 
-func (m *RouteMap) getTutorialData(currentTime time.Time, userId int64, number int) []SimpleLocation {
+func (m *RouteMap) getTutorialData(currentTime time.Time, userId int64, number int) []rmodel.SimpleLocation {
 	data, ok := m.tutorialDatas[userId]
 	if !ok {
 		return nil
@@ -30,11 +31,11 @@ func (m *RouteMap) getTutorialData(currentTime time.Time, userId int64, number i
 		return nil
 	}
 
-	var ret []SimpleLocation
+	var ret []rmodel.SimpleLocation
 	for ; number > 0; number-- {
-		l := SimpleLocation{
+		l := rmodel.SimpleLocation{
 			Timestamp: today + data[current].Offset,
-			GPS:       []float64{data[current].Latitude, data[current].Longitude, data[current].Accuracy},
+			GPS:       [3]float64{data[current].Latitude, data[current].Longitude, data[current].Accuracy},
 		}
 		l.ToEarth(m.conversion)
 		ret = append(ret, l)
@@ -56,15 +57,15 @@ func (o BreadcrumbOffset) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`{"earth_to_mars_latitude":%.4f,"earth_to_mars_longitude":%.4f}`, o.Latitude, o.Longitude)), nil
 }
 
-func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) BreadcrumbOffset {
+func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []rmodel.SimpleLocation) BreadcrumbOffset {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
-	var token Token
+	var token rmodel.Token
 	var ret BreadcrumbOffset
 	token, ok := m.auth(false)
-	if !ok || token.Readonly {
+	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return ret
 	}
@@ -73,7 +74,7 @@ func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []SimpleLocation) Breadcrum
 	return m.HandleUpdateBreadcrumsInner(breadcrumbs)
 }
 
-func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) BreadcrumbOffset {
+func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []rmodel.SimpleLocation) BreadcrumbOffset {
 	var ret BreadcrumbOffset
 
 	userIdStr, breadcrumb := m.Vars()["user_id"], breadcrumbs[0]
@@ -148,12 +149,12 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 	}
 
 	go func() {
-		route := Geomark{
+		route := rmodel.Geomark{
 			Id:        m.breadcrumbsId(userId),
 			Action:    action,
 			Type:      "route",
 			Tags:      []string{"breadcrumbs"},
-			Positions: []SimpleLocation{breadcrumb},
+			Positions: []rmodel.SimpleLocation{breadcrumb},
 		}
 		for _, cross := range crossIds {
 			m.castLocker.RLock()
@@ -169,7 +170,7 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 	return ret
 }
 
-func (m RouteMap) HandleGetBreadcrums() []Geomark {
+func (m RouteMap) HandleGetBreadcrums() []rmodel.Geomark {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -183,11 +184,11 @@ func (m RouteMap) HandleGetBreadcrums() []Geomark {
 	return m.getBreadcrumbs(token.Cross, toMars)
 }
 
-func (m RouteMap) getBreadcrumbs(cross model.Cross, toMars bool) []Geomark {
-	ret := make([]Geomark, 0)
+func (m RouteMap) getBreadcrumbs(cross model.Cross, toMars bool) []rmodel.Geomark {
+	ret := make([]rmodel.Geomark, 0)
 	for _, invitation := range cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
-		route := Geomark{
+		route := rmodel.Geomark{
 			Id:   m.breadcrumbsId(userId),
 			Type: "route",
 		}
@@ -210,14 +211,14 @@ func (m RouteMap) getBreadcrumbs(cross model.Cross, toMars bool) []Geomark {
 	return ret
 }
 
-func (m RouteMap) HandleGetUserBreadcrums() Geomark {
+func (m RouteMap) HandleGetUserBreadcrums() rmodel.Geomark {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
 	toMars, userIdStr := m.Request().URL.Query().Get("coordinate") == "mars", m.Vars()["user_id"]
 	token, ok := m.auth(true)
-	var ret Geomark
+	var ret rmodel.Geomark
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return ret
@@ -261,9 +262,9 @@ func (m RouteMap) HandleGetUserBreadcrums() Geomark {
 	return ret
 }
 
-func (m RouteMap) HandleGetUserBreadcrumsInner() Geomark {
+func (m RouteMap) HandleGetUserBreadcrumsInner() rmodel.Geomark {
 	toMars, userIdStr := m.Request().URL.Query().Get("coordinate") == "mars", m.Vars()["user_id"]
-	var ret Geomark
+	var ret rmodel.Geomark
 	userId, err := strconv.ParseInt(userIdStr, 10, 64)
 	if err != nil {
 		m.Error(http.StatusBadRequest, err)
@@ -281,7 +282,7 @@ func (m RouteMap) HandleGetUserBreadcrumsInner() Geomark {
 		return ret
 	}
 	ret.Id, ret.Type = m.breadcrumbsId(userId), "route"
-	ret.Positions = []SimpleLocation{l}
+	ret.Positions = []rmodel.SimpleLocation{l}
 	if toMars {
 		ret.ToMars(m.conversion)
 	}

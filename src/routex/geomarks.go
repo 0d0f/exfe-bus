@@ -5,6 +5,7 @@ import (
 	"logger"
 	"model"
 	"net/http"
+	"routex/model"
 	"strconv"
 	"time"
 )
@@ -14,14 +15,14 @@ const (
 	DestinationTag = "destination"
 )
 
-func (m RouteMap) HandleSearchGeomarks() []Geomark {
+func (m RouteMap) HandleSearchGeomarks() []rmodel.Geomark {
 	crossIdStr := m.Vars()["cross_id"]
 	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
 	if err != nil {
 		m.Error(http.StatusBadRequest, err)
 		return nil
 	}
-	ret := make([]Geomark, 0)
+	ret := make([]rmodel.Geomark, 0)
 	tag := m.Request().URL.Query().Get("tags")
 	if tag == "" {
 		return ret
@@ -53,7 +54,7 @@ func (m RouteMap) HandleSearchGeomarks() []Geomark {
 	return ret
 }
 
-func (m RouteMap) HandleGetGeomarks() []Geomark {
+func (m RouteMap) HandleGetGeomarks() []rmodel.Geomark {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
@@ -78,7 +79,7 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 		for _, id := range ids {
 			idMap[id] = true
 		}
-		var filted []Geomark
+		var filted []rmodel.Geomark
 		for _, mark := range ret {
 			if _, ok := idMap[mark.Id]; ok {
 				filted = append(filted, mark)
@@ -89,7 +90,7 @@ func (m RouteMap) HandleGetGeomarks() []Geomark {
 	return ret
 }
 
-func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]Geomark, error) {
+func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]rmodel.Geomark, error) {
 	data, err := m.geomarksRepo.Get(int64(cross.ID))
 	if err != nil {
 		return nil, err
@@ -130,7 +131,7 @@ func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]Geomark, error)
 			if err != nil {
 				updatedAt = time.Now()
 			}
-			xplace := Geomark{
+			xplace := rmodel.Geomark{
 				Id:          m.xplaceId(int64(cross.ID)),
 				Type:        "location",
 				CreatedAt:   createdAt.Unix(),
@@ -157,13 +158,13 @@ func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]Geomark, error)
 	return data, nil
 }
 
-func (m RouteMap) HandleSetGeomark(mark Geomark) {
+func (m RouteMap) HandleSetGeomark(mark rmodel.Geomark) {
 	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
 	token, ok := m.auth(true)
-	if !ok || token.Readonly {
+	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
@@ -265,12 +266,12 @@ func (m RouteMap) HandleDeleteGeomark() {
 	m.Header().Set("Cache-Control", "no-cache")
 
 	token, ok := m.auth(true)
-	if !ok || token.Readonly {
+	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
 
-	var mark Geomark
+	var mark rmodel.Geomark
 	mark.Type = m.Vars()["mark_type"]
 	mark.Id = fmt.Sprintf("%s.%s", m.Vars()["kind"], m.Vars()["mark_id"])
 	logger.DEBUG("geomark %s delete by user %d", mark.Id, token.UserId)
@@ -278,7 +279,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 
 	marks, _ := m.getGeomarks(token.Cross, false)
 	updateXPlace := false
-	var xplace *Geomark
+	var xplace *rmodel.Geomark
 	for _, mk := range marks {
 		if mk.Id == mark.Id && mk.HasTag(DestinationTag) {
 			updateXPlace = true
@@ -331,7 +332,7 @@ func (m RouteMap) xplaceId(crossId int64) string {
 	return fmt.Sprintf(XPlaceTag+".%d", crossId)
 }
 
-func (m RouteMap) syncCrossPlace(geomark *Geomark, cross model.Cross, by string) error {
+func (m RouteMap) syncCrossPlace(geomark *rmodel.Geomark, cross model.Cross, by string) error {
 	updatedBy := model.FromIdentityId(by)
 	place := model.Place{}
 

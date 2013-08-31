@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"notifier"
 	"os"
+	"routex/model"
 	"strconv"
 	"sync"
 	"time"
@@ -43,27 +44,27 @@ type RouteMap struct {
 	SendNotification rest.Processor `path:"/notification/crosses/:cross_id" method:"POST"`
 
 	rand            *rand.Rand
-	routexRepo      RoutexRepo
-	breadcrumbCache BreadcrumbCache
-	breadcrumbsRepo BreadcrumbsRepo
-	geomarksRepo    GeomarksRepo
-	conversion      GeoConversionRepo
+	routexRepo      rmodel.RoutexRepo
+	breadcrumbCache rmodel.BreadcrumbCache
+	breadcrumbsRepo rmodel.BreadcrumbsRepo
+	geomarksRepo    rmodel.GeomarksRepo
+	conversion      rmodel.GeoConversionRepo
 	platform        *broker.Platform
 	config          *model.Config
-	tutorialDatas   map[int64][]TutorialData
+	tutorialDatas   map[int64][]rmodel.TutorialData
 	crossCast       map[int64]*broadcast.Broadcast
 	castLocker      sync.RWMutex
 }
 
-func New(routexRepo RoutexRepo, breadcrumbCache BreadcrumbCache, breadcrumbsRepo BreadcrumbsRepo, geomarksRepo GeomarksRepo, conversion GeoConversionRepo, platform *broker.Platform, config *model.Config) (*RouteMap, error) {
-	tutorialDatas := make(map[int64][]TutorialData)
+func New(routexRepo rmodel.RoutexRepo, breadcrumbCache rmodel.BreadcrumbCache, breadcrumbsRepo rmodel.BreadcrumbsRepo, geomarksRepo rmodel.GeomarksRepo, conversion rmodel.GeoConversionRepo, platform *broker.Platform, config *model.Config) (*RouteMap, error) {
+	tutorialDatas := make(map[int64][]rmodel.TutorialData)
 	for _, userId := range config.TutorialBotUserIds {
 		file := config.Routex.TutorialDataFile[fmt.Sprintf("%d", userId)]
 		f, err := os.Open(file)
 		if err != nil {
 			return nil, fmt.Errorf("can't find tutorial file %s for tutorial bot %d", file, userId)
 		}
-		var datas []TutorialData
+		var datas []rmodel.TutorialData
 		decoder := json.NewDecoder(f)
 		err = decoder.Decode(&datas)
 		if err != nil {
@@ -86,8 +87,8 @@ func New(routexRepo RoutexRepo, breadcrumbCache BreadcrumbCache, breadcrumbsRepo
 	return ret, nil
 }
 
-func (m RouteMap) setTutorial(lat, lng float64, userId, crossId int64, locale, by string) (Geomark, error) {
-	var ret Geomark
+func (m RouteMap) setTutorial(lat, lng float64, userId, crossId int64, locale, by string) (rmodel.Geomark, error) {
+	var ret rmodel.Geomark
 	query := make(url.Values)
 	query.Set("keyword", "attractions")
 	places, err := m.platform.GetPlace(lat, lng, locale, 10000, query)
@@ -111,7 +112,7 @@ func (m RouteMap) setTutorial(lat, lng float64, userId, crossId int64, locale, b
 		return ret, err
 	}
 	now := time.Now().Unix()
-	ret = Geomark{
+	ret = rmodel.Geomark{
 		Id:          fmt.Sprintf("location.%04d", m.rand.Intn(1e4)),
 		Type:        "location",
 		CreatedAt:   now,
@@ -141,9 +142,9 @@ func (m RouteMap) HandleSetUser(setup UserCrossSetup) {
 	m.Header().Set("Access-Control-Allow-Credentials", "true")
 	m.Header().Set("Cache-Control", "no-cache")
 
-	var token Token
+	var token rmodel.Token
 	token, ok := m.auth(true)
-	if !ok || token.Readonly {
+	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
@@ -201,7 +202,7 @@ func (m RouteMap) HandleSetUserInner(setup UserCrossSetup) {
 	}
 }
 
-func (m RouteMap) HandleSearchRoutex(crossIds []int64) []Routex {
+func (m RouteMap) HandleSearchRoutex(crossIds []int64) []rmodel.Routex {
 	ret, err := m.routexRepo.Search(crossIds)
 	if err != nil {
 		logger.ERROR("search for route failed: %s with %+v", err, crossIds)
@@ -319,7 +320,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
-		route := Geomark{
+		route := rmodel.Geomark{
 			Id:   m.breadcrumbsId(userId),
 			Type: "route",
 			Tags: []string{"breadcrumbs"},
@@ -335,7 +336,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 						if positions == nil {
 							continue
 						}
-						route := Geomark{
+						route := rmodel.Geomark{
 							Id:        m.breadcrumbsId(userId),
 							Action:    "save_to_history",
 							Type:      "route",
@@ -355,7 +356,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			if !exist {
 				continue
 			}
-			route.Positions = []SimpleLocation{l}
+			route.Positions = []rmodel.SimpleLocation{l}
 		}
 		if toMars {
 			route.ToMars(m.conversion)
@@ -394,7 +395,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	for {
 		select {
 		case d := <-c:
-			if mark, ok := d.(Geomark); ok {
+			if mark, ok := d.(rmodel.Geomark); ok {
 				if isTutorial && !hasCreated {
 					if mark.Id == m.breadcrumbsId(token.UserId) {
 						locale, by := "", ""
@@ -484,7 +485,7 @@ func (m RouteMap) HandleSendNotification() {
 	m.Header().Set("Cache-Control", "no-cache")
 
 	token, ok := m.auth(true)
-	if !ok || token.Readonly {
+	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
@@ -546,8 +547,8 @@ func (m RouteMap) HandleSendNotification() {
 	return
 }
 
-func (m *RouteMap) auth(checkCross bool) (Token, bool) {
-	var token Token
+func (m *RouteMap) auth(checkCross bool) (rmodel.Token, bool) {
+	var token rmodel.Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
 	// if authData == "" {
