@@ -87,63 +87,13 @@ func New(routexRepo rmodel.RoutexRepo, breadcrumbCache rmodel.BreadcrumbCache, b
 	return ret, nil
 }
 
-func (m RouteMap) setTutorial(lat, lng float64, userId, crossId int64, locale, by string) (rmodel.Geomark, error) {
-	var ret rmodel.Geomark
-	query := make(url.Values)
-	query.Set("keyword", "attractions")
-	places, err := m.platform.GetPlace(lat, lng, locale, 10000, query)
-	if err != nil {
-		return ret, err
-	}
-	if len(places) == 0 {
-		places, err = m.platform.GetPlace(lat, lng, locale, 50000, nil)
-		if err != nil {
-			return ret, err
-		}
-	}
-	if len(places) == 0 {
-		return ret, fmt.Errorf("can't find attraction place near %.7f,%.7f", lat, lng)
-	}
-	place := places[0]
-	if lng, err = strconv.ParseFloat(place.Lng, 64); err != nil {
-		return ret, err
-	}
-	if lat, err = strconv.ParseFloat(place.Lat, 64); err != nil {
-		return ret, err
-	}
-	now := time.Now().Unix()
-	ret = rmodel.Geomark{
-		Id:          fmt.Sprintf("location.%04d", m.rand.Intn(1e4)),
-		Type:        "location",
-		CreatedAt:   now,
-		CreatedBy:   by,
-		UpdatedAt:   now,
-		UpdatedBy:   by,
-		Tags:        []string{"destination"},
-		Icon:        "",
-		Title:       place.Title,
-		Description: place.Description,
-		Longitude:   lng,
-		Latitude:    lat,
-	}
-	if err := m.geomarksRepo.Set(crossId, ret); err != nil {
-		return ret, err
-	}
-	return ret, nil
-}
-
 type UserCrossSetup struct {
 	SaveBreadcrumbs bool `json:"save_breadcrumbs,omitempty"`
 	AfterInSeconds  int  `json:"after_in_seconds,omitempty"`
 }
 
 func (m RouteMap) HandleSetUser(setup UserCrossSetup) {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
-
-	var token rmodel.Token
-	token, ok := m.auth(true)
+	token, ok := m.auth()
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
@@ -166,40 +116,10 @@ func (m RouteMap) HandleSetUserInner(setup UserCrossSetup) {
 		m.Error(http.StatusBadRequest, err)
 		return
 	}
-	go func() {
-		m.platform.BotCrossUpdate("cross_id", crossIdStr, nil, model.Identity{})
-		if setup.SaveBreadcrumbs {
-			if setup.AfterInSeconds == 0 {
-				setup.AfterInSeconds = 3600
-			}
-			if err := m.routexRepo.EnableCross(userId, crossId, setup.AfterInSeconds); err != nil {
-				logger.ERROR("set user %d enable cross %d routex repo failed: %s", userId, crossId, err)
-			}
-			if err := m.breadcrumbsRepo.EnableCross(userId, crossId, setup.AfterInSeconds); err != nil {
-				logger.ERROR("set user %d enable cross %d breadcrumbs repo failed: %s", userId, crossId, err)
-			}
-		} else {
-			if err := m.routexRepo.DisableCross(userId, crossId); err != nil {
-				logger.ERROR("set user %d disable cross %d routex repo failed: %s", userId, crossId, err)
-			}
-			if err := m.breadcrumbsRepo.DisableCross(userId, crossId); err != nil {
-				logger.ERROR("set user %d disable cross %d breadcrumbs repo failed: %s", userId, crossId, err)
-			}
-		}
-	}()
-
-	if setup.SaveBreadcrumbs {
-		if setup.AfterInSeconds == 0 {
-			setup.AfterInSeconds = 3600
-		}
-		if err := m.breadcrumbCache.EnableCross(userId, crossId, setup.AfterInSeconds); err != nil {
-			logger.ERROR("set user %d enable cross %d breadcrumb cache failed: %s", userId, crossId, err)
-		}
-	} else {
-		if err := m.breadcrumbCache.DisableCross(userId, crossId); err != nil {
-			logger.ERROR("set user %d disable cross %d breadcrumb cache failed: %s", userId, crossId, err)
-		}
+	if setup.AfterInSeconds == 0 {
+		setup.AfterInSeconds = 60 * 60
 	}
+	m.switchWindow(userId, crossId, setup.SaveBreadcrumbs, setup.AfterInSeconds)
 }
 
 func (m RouteMap) HandleSearchRoutex(crossIds []int64) []rmodel.Routex {
@@ -237,13 +157,8 @@ func (m RouteMap) HandleGetRoutex() *bool {
 }
 
 func (m RouteMap) HandleStream(stream rest.Stream) {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
-
-	token, ok := m.auth(true)
+	token, ok := m.auth()
 	if !ok {
-		logger.DEBUG("invalid token")
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
@@ -262,19 +177,13 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		if endAt == 0 {
 			after = 60 * 60
 		}
-		m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", token.Cross.ID), nil, model.Identity{})
 		if len(forceOpen) > 0 {
 			if i, err := strconv.ParseInt(forceOpen[0], 10, 64); err == nil {
 				after = int(i)
 			}
 		}
 		endAt = now.Unix() + int64(after)
-		if err := m.breadcrumbsRepo.EnableCross(token.UserId, int64(token.Cross.ID), after); err != nil {
-			logger.ERROR("can't set user %d cross %d: %s", token.UserId, token.Cross.ID, err)
-		}
-		if err := m.breadcrumbCache.EnableCross(token.UserId, int64(token.Cross.ID), after); err != nil {
-			logger.ERROR("can't set user %d cache cross %d: %s", token.UserId, token.Cross.ID, err)
-		}
+		m.switchWindow(token.UserId, int64(token.Cross.ID), true, after)
 	}
 
 	m.castLocker.Lock()
@@ -480,11 +389,7 @@ func (m RouteMap) HandleOptions() {
 }
 
 func (m RouteMap) HandleSendNotification() {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
-
-	token, ok := m.auth(true)
+	token, ok := m.auth()
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
@@ -547,7 +452,43 @@ func (m RouteMap) HandleSendNotification() {
 	return
 }
 
-func (m *RouteMap) auth(checkCross bool) (rmodel.Token, bool) {
+func (m RouteMap) switchWindow(userId, crossId int64, save bool, afterInSeconds int) {
+	m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", crossId), nil, model.Identity{})
+	if save {
+		if err := m.routexRepo.EnableCross(userId, crossId, afterInSeconds); err != nil {
+			logger.ERROR("set user %d enable cross %d routex repo failed: %s", userId, crossId, err)
+		}
+		if err := m.breadcrumbsRepo.EnableCross(userId, crossId, afterInSeconds); err != nil {
+			logger.ERROR("set user %d enable cross %d breadcrumbs repo failed: %s", userId, crossId, err)
+		}
+		if err := m.breadcrumbCache.EnableCross(userId, crossId, afterInSeconds); err != nil {
+			logger.ERROR("set user %d enable cross %d breadcrumb cache failed: %s", userId, crossId, err)
+		}
+	} else {
+		if err := m.routexRepo.DisableCross(userId, crossId); err != nil {
+			logger.ERROR("set user %d disable cross %d routex repo failed: %s", userId, crossId, err)
+		}
+		if err := m.breadcrumbsRepo.DisableCross(userId, crossId); err != nil {
+			logger.ERROR("set user %d disable cross %d breadcrumbs repo failed: %s", userId, crossId, err)
+		}
+		if err := m.breadcrumbCache.DisableCross(userId, crossId); err != nil {
+			logger.ERROR("set user %d disable cross %d breadcrumb cache failed: %s", userId, crossId, err)
+		}
+	}
+}
+
+func (m RouteMap) update(userId, crossId int64) {
+	if err := m.routexRepo.Update(userId, crossId); err != nil {
+		logger.ERROR("update routex user %d cross %d error: %s", err)
+	}
+	m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", crossId), nil, model.Identity{})
+}
+
+func (m *RouteMap) auth() (rmodel.Token, bool) {
+	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
+	m.Header().Set("Access-Control-Allow-Credentials", "true")
+	m.Header().Set("Cache-Control", "no-cache")
+
 	var token rmodel.Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
@@ -561,14 +502,13 @@ func (m *RouteMap) auth(checkCross bool) (rmodel.Token, bool) {
 		}
 	}
 
-	if !checkCross {
+	crossIdStr, ok := m.Vars()["cross_id"]
+	if !ok {
 		if token.TokenType == "user_token" {
 			return token, true
 		}
 		return token, false
 	}
-
-	crossIdStr := m.Vars()["cross_id"]
 	crossId, err := strconv.ParseUint(crossIdStr, 10, 64)
 	if err != nil {
 		return token, false
@@ -586,8 +526,7 @@ func (m *RouteMap) auth(checkCross bool) (rmodel.Token, bool) {
 		return token, false
 	}
 
-	token.Cross, err = m.platform.FindCross(int64(crossId), query)
-	if err != nil {
+	if token.Cross, err = m.platform.FindCross(int64(crossId), query); err != nil {
 		return token, false
 	}
 

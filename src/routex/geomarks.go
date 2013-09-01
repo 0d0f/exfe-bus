@@ -5,6 +5,7 @@ import (
 	"logger"
 	"model"
 	"net/http"
+	"net/url"
 	"routex/model"
 	"strconv"
 	"time"
@@ -15,6 +16,51 @@ const (
 	DestinationTag = "destination"
 )
 
+func (m RouteMap) setTutorial(lat, lng float64, userId, crossId int64, locale, by string) (rmodel.Geomark, error) {
+	var ret rmodel.Geomark
+	query := make(url.Values)
+	query.Set("keyword", "attractions")
+	places, err := m.platform.GetPlace(lat, lng, locale, 10000, query)
+	if err != nil {
+		return ret, err
+	}
+	if len(places) == 0 {
+		places, err = m.platform.GetPlace(lat, lng, locale, 50000, nil)
+		if err != nil {
+			return ret, err
+		}
+	}
+	if len(places) == 0 {
+		return ret, fmt.Errorf("can't find attraction place near %.7f,%.7f", lat, lng)
+	}
+	place := places[0]
+	if lng, err = strconv.ParseFloat(place.Lng, 64); err != nil {
+		return ret, err
+	}
+	if lat, err = strconv.ParseFloat(place.Lat, 64); err != nil {
+		return ret, err
+	}
+	now := time.Now().Unix()
+	ret = rmodel.Geomark{
+		Id:          fmt.Sprintf("location.%04d", m.rand.Intn(1e4)),
+		Type:        "location",
+		CreatedAt:   now,
+		CreatedBy:   by,
+		UpdatedAt:   now,
+		UpdatedBy:   by,
+		Tags:        []string{"destination"},
+		Icon:        "",
+		Title:       place.Title,
+		Description: place.Description,
+		Longitude:   lng,
+		Latitude:    lat,
+	}
+	if err := m.geomarksRepo.Set(crossId, ret); err != nil {
+		return ret, err
+	}
+	return ret, nil
+}
+
 func (m RouteMap) HandleSearchGeomarks() []rmodel.Geomark {
 	crossIdStr := m.Vars()["cross_id"]
 	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
@@ -22,10 +68,9 @@ func (m RouteMap) HandleSearchGeomarks() []rmodel.Geomark {
 		m.Error(http.StatusBadRequest, err)
 		return nil
 	}
-	ret := make([]rmodel.Geomark, 0)
-	tag := m.Request().URL.Query().Get("tags")
-	if tag == "" {
-		return ret
+	toMars := false
+	if m.Request().URL.Query().Get("coordinate") == "mars" {
+		toMars = true
 	}
 	data, err := m.geomarksRepo.Get(crossId)
 	if err != nil {
@@ -34,20 +79,32 @@ func (m RouteMap) HandleSearchGeomarks() []rmodel.Geomark {
 		return nil
 	}
 	if data == nil {
-		return ret
+		return []rmodel.Geomark{}
 	}
+
+	tag := m.Request().URL.Query().Get("tags")
+
+	var idMap map[string]bool
+	if ids, ok := m.Request().URL.Query()["id"]; ok {
+		idMap = make(map[string]bool)
+		for _, id := range ids {
+			idMap[id] = true
+		}
+	}
+
+	ret := []rmodel.Geomark{}
 	for _, geomark := range data {
-		ok := false
-		for _, t := range geomark.Tags {
-			if t == tag {
-				ok = true
-			}
-			if t == XPlaceTag {
-				ok = false
-				break
-			}
+		ok := true
+		switch {
+		case tag != "" && !geomark.HasTag(tag):
+			ok = false
+		case idMap != nil && !idMap[geomark.Id]:
+			ok = false
 		}
 		if ok {
+			if toMars {
+				geomark.ToMars(m.conversion)
+			}
 			ret = append(ret, geomark)
 		}
 	}
@@ -55,39 +112,12 @@ func (m RouteMap) HandleSearchGeomarks() []rmodel.Geomark {
 }
 
 func (m RouteMap) HandleGetGeomarks() []rmodel.Geomark {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
-
-	token, ok := m.auth(true)
+	token, ok := m.auth()
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
-	toMars := false
-	if m.Request().URL.Query().Get("coordinate") == "mars" {
-		toMars = true
-	}
-	ret, err := m.getGeomarks(token.Cross, toMars)
-	if err != nil {
-		logger.ERROR("can't get route of cross %d: %s", token.Cross.ID, err)
-		m.Error(http.StatusInternalServerError, err)
-		return nil
-	}
-	if ids, ok := m.Request().URL.Query()["id"]; ok {
-		idMap := make(map[string]bool)
-		for _, id := range ids {
-			idMap[id] = true
-		}
-		var filted []rmodel.Geomark
-		for _, mark := range ret {
-			if _, ok := idMap[mark.Id]; ok {
-				filted = append(filted, mark)
-			}
-		}
-		ret = filted
-	}
-	return ret
+	return m.HandleSearchGeomarks()
 }
 
 func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]rmodel.Geomark, error) {
@@ -96,8 +126,7 @@ func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]rmodel.Geomark,
 		return nil, err
 	}
 
-	needCrossPlace := true
-	hasDestination := false
+	needCrossPlace, hasDestination := true, false
 	for i, d := range data {
 		for _, t := range d.Tags {
 			if t == XPlaceTag {
@@ -159,64 +188,53 @@ func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]rmodel.Geomark,
 }
 
 func (m RouteMap) HandleSetGeomark(mark rmodel.Geomark) {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
-
-	token, ok := m.auth(true)
+	token, ok := m.auth()
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
 
 	by := ""
-	for _, i := range token.Cross.Exfee.Invitations {
-		if i.Identity.UserID == token.UserId {
-			by = i.Identity.Id()
-			break
-		}
+	if i := token.Cross.Exfee.FindUser(token.UserId); i != nil {
+		by = i.Identity.Id()
 	}
 
 	mark.Type = m.Vars()["mark_type"]
 	mark.Id = fmt.Sprintf("%s.%s", m.Vars()["kind"], m.Vars()["mark_id"])
 	kind := m.Vars()["kind"]
 	mark.UpdatedBy, mark.UpdatedAt, mark.Action = by, time.Now().Unix(), ""
-	logger.DEBUG("geomark %s set by %s", mark.Id, mark.UpdatedBy)
 	if m.Request().URL.Query().Get("coordinate") == "mars" {
 		mark.ToEarth(m.conversion)
 	}
-	marks, _ := m.getGeomarks(token.Cross, false)
 
 	if mark.HasTag(XPlaceTag) {
-		go func() {
-			if err := m.syncCrossPlace(&mark, token.Cross, mark.UpdatedBy); err != nil {
-				logger.ERROR("can't set cross %d place: %s", token.Cross.ID, err)
-			}
-			m.castLocker.RLock()
-			broadcast := m.crossCast[int64(token.Cross.ID)]
-			m.castLocker.RUnlock()
+		if err := m.syncCrossPlace(&mark, token.Cross, mark.UpdatedBy); err != nil {
+			logger.ERROR("can't set cross %d place: %s", token.Cross.ID, err)
+		}
+		m.castLocker.RLock()
+		broadcast := m.crossCast[int64(token.Cross.ID)]
+		m.castLocker.RUnlock()
 
-			if kind != XPlaceTag {
-				if err := m.geomarksRepo.Delete(int64(token.Cross.ID), mark.Type, mark.Id); err != nil {
-					logger.ERROR("can't delete cross %d geomark %s %s: %s", token.Cross.ID, mark.Type, mark.Id, err)
-				}
-				m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
-				mark.Action = "delete"
-				if broadcast != nil {
-					broadcast.Send(mark)
-				}
-				time.Sleep(time.Second / 10)
+		if kind != XPlaceTag {
+			if err := m.geomarksRepo.Delete(int64(token.Cross.ID), mark.Type, mark.Id); err != nil {
+				logger.ERROR("can't delete cross %d geomark %s %s: %s", token.Cross.ID, mark.Type, mark.Id, err)
 			}
-
+			m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
+			mark.Action = "delete"
 			if broadcast != nil {
-				mark.Id, mark.Action = m.xplaceId(int64(token.Cross.ID)), ""
 				broadcast.Send(mark)
 			}
-			return
-		}()
+		}
+
+		if broadcast != nil {
+			mark.Id, mark.Action = m.xplaceId(int64(token.Cross.ID)), ""
+			broadcast.Send(mark)
+		}
 		return
 	}
+
 	if mark.HasTag(DestinationTag) {
+		marks, _ := m.getGeomarks(token.Cross, false)
 		for _, mk := range marks {
 			if mk.Id != mark.Id && mk.RemoveTag(DestinationTag) {
 				if !mk.HasTag(XPlaceTag) {
@@ -244,8 +262,7 @@ func (m RouteMap) HandleSetGeomark(mark rmodel.Geomark) {
 		m.Error(http.StatusInternalServerError, err)
 		return
 	}
-	m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
-	m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", token.Cross.ID), nil, model.Identity{})
+	m.update(token.UserId, int64(token.Cross.ID))
 
 	go func() {
 		mark.Action = "update"
@@ -261,11 +278,7 @@ func (m RouteMap) HandleSetGeomark(mark rmodel.Geomark) {
 }
 
 func (m RouteMap) HandleDeleteGeomark() {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
-
-	token, ok := m.auth(true)
+	token, ok := m.auth()
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
@@ -274,12 +287,11 @@ func (m RouteMap) HandleDeleteGeomark() {
 	var mark rmodel.Geomark
 	mark.Type = m.Vars()["mark_type"]
 	mark.Id = fmt.Sprintf("%s.%s", m.Vars()["kind"], m.Vars()["mark_id"])
-	logger.DEBUG("geomark %s delete by user %d", mark.Id, token.UserId)
 	kind := m.Vars()["kind"]
 
-	marks, _ := m.getGeomarks(token.Cross, false)
 	updateXPlace := false
 	var xplace *rmodel.Geomark
+	marks, _ := m.getGeomarks(token.Cross, false)
 	for _, mk := range marks {
 		if mk.Id == mark.Id && mk.HasTag(DestinationTag) {
 			updateXPlace = true
@@ -294,8 +306,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 			return
 		}
 	}
-	m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
-	m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", token.Cross.ID), nil, model.Identity{})
+	m.update(token.UserId, int64(token.Cross.ID))
 
 	go func() {
 		if kind == XPlaceTag {
@@ -326,6 +337,10 @@ func (m RouteMap) HandleDeleteGeomark() {
 	}()
 
 	return
+}
+
+func (m RouteMap) checkGeomarks(mark rmodel.Geomark) {
+
 }
 
 func (m RouteMap) xplaceId(crossId int64) string {
