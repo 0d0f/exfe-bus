@@ -223,16 +223,17 @@ func (m RouteMap) HandleGetRoutex() *bool {
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid user id %s", crossIdStr))
 		return nil
 	}
-	route, err := m.routexRepo.Get(userId, crossId)
+	endAt, err := m.breadcrumbsRepo.GetWindowEnd(userId, crossId)
 	if err != nil {
 		logger.ERROR("get user %d cross %d routex failed: %s", userId, crossId, err)
 		m.Error(http.StatusInternalServerError, err)
 		return nil
 	}
-	if route == nil {
+	if endAt == 0 {
 		return nil
 	}
-	return &route.Enable
+	ret := endAt >= time.Now().Unix()
+	return &ret
 }
 
 func (m RouteMap) HandleStream(stream rest.Stream) {
