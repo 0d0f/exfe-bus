@@ -18,6 +18,7 @@ type Cross struct {
 	Digest       rest.Processor `path:"/digest" method:"POST"`
 	Remind       rest.Processor `path:"/remind" method:"POST"`
 	Invitation   rest.Processor `path:"/invitation" method:"POST"`
+	Join         rest.Processor `path:"/join" method:"POST"`
 	Preview      rest.Processor `path:"/preview" method:"POST"`
 	Update       rest.Processor `path:"/update" method:"POST"`
 	Conversation rest.Processor `path:"/conversation" method:"POST"`
@@ -132,6 +133,37 @@ func (c Cross) HandleRemind(requests []model.CrossDigestRequest) {
 		"WeatherIcon": weatherIcon,
 	}
 	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_remind", c.domain+"/v3/notifier/cross/remind", &failArg)
+	c.WriteHeader(http.StatusAccepted)
+}
+
+type JoinArg struct {
+	To      model.Recipient `json:"to"`
+	Join    model.Identity  `json:"join"`
+	By      model.Identity  `json:"by"`
+	CrossId int64           `json:"cross_id"`
+
+	Cross  model.Cross   `json:"-"`
+	Config *model.Config `json:"-"`
+}
+
+func (a JoinArg) SendToSelf() bool {
+	return a.To.UserID == a.By.UserID
+}
+
+func (c Cross) HandleJoin(join JoinArg) {
+	join.Config = c.config
+	to := &join.To
+
+	query := make(url.Values)
+	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
+	cross, err := c.platform.FindCross(join.CrossId, query)
+	if err != nil {
+		c.Error(http.StatusBadRequest, err)
+		return
+	}
+	join.Cross = cross
+
+	go SendAndSave(c.localTemplate, c.platform, to, join, "cross_join", c.domain+"/v3/notifier/cross/join", &join)
 	c.WriteHeader(http.StatusAccepted)
 }
 

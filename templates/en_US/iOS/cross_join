@@ -1,0 +1,3 @@
+{{.Join.Name}} joined "{{.Cross.Title}}" through {{if .SendToSelf}}your{{else}}{{.By.Name}}'s{{end}} link.
+
+{"path":"/!{{.Cross.ID}}"}
