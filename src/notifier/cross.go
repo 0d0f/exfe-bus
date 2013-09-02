@@ -136,17 +136,6 @@ func (c Cross) HandleRemind(requests []model.CrossDigestRequest) {
 	c.WriteHeader(http.StatusAccepted)
 }
 
-func (c Cross) HandleJoin(arg InvitationArg) {
-	if err := arg.Parse(c.config, c.platform); err != nil {
-		c.Error(http.StatusBadRequest, err)
-		return
-	}
-	to := &arg.To
-
-	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_join", c.domain+"/v3/notifier/cross/arg", &arg)
-	c.WriteHeader(http.StatusAccepted)
-}
-
 type InvitationArg struct {
 	To      model.Recipient `json:"to"`
 	Invitee model.Identity  `json:"invitee"`
@@ -159,7 +148,7 @@ type InvitationArg struct {
 }
 
 func (a InvitationArg) String() string {
-	return fmt.Sprintf("{to:%s cross:%d}", a.To, a.Cross.ID)
+	return fmt.Sprintf("{to:%s invitee:%s by:%s cross:%d}", a.To, a.Invitee, a.By, a.Cross.ID)
 }
 
 func (a *InvitationArg) Parse(config *model.Config, platform *broker.Platform) (err error) {
@@ -239,6 +228,17 @@ func (a InvitationArg) ListInvitations() string {
 		ret += "..."
 	}
 	return ret
+}
+
+func (c Cross) HandleJoin(arg InvitationArg) {
+	if err := arg.Parse(c.config, c.platform); err != nil {
+		c.Error(http.StatusBadRequest, err)
+		return
+	}
+	to := &arg.To
+
+	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_join", c.domain+"/v3/notifier/cross/arg", &arg)
+	c.WriteHeader(http.StatusAccepted)
 }
 
 func (c Cross) HandleInvitation(invitation InvitationArg) {

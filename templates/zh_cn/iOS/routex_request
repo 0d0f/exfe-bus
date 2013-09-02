@@ -1,0 +1,3 @@
+{{sub . "_default/routex_request"}}
+
+{"path":"/!{{.Cross.ID}}/routex"}

@@ -1,0 +1,3 @@
+{{if .SendToInvitee}}{{sub . "_default/cross_invitation"}}
+
+Invitation: {{.Config.SiteUrl}}/#!{{.Cross.ID}}/{{substr 1 3 .To.Token}} (Please follow @EXFE to receive details PRIVATELY through Direct Message.){{end}}

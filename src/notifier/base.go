@@ -15,7 +15,7 @@ var noneedSend = errors.New("no need send")
 func GenerateContent(localTemplate *formatter.LocalTemplate, template string, poster, lang string, arg interface{}) (string, error) {
 	templateName := fmt.Sprintf("%s/%s", poster, template)
 	if !localTemplate.IsExist(lang, templateName) {
-		templateName = fmt.Sprintf("_default/%s", template)
+		return "", fmt.Errorf("template(%s) not found in %s/en_us", template, lang)
 	}
 
 	ret := bytes.NewBuffer(nil)

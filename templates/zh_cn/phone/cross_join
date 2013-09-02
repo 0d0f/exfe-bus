@@ -1,0 +1,1 @@
+{{.Invitee.Name}}通过{{if .SendToBy}}您{{else}}{{.By.Name}}{{end}}的链接加入“{{.Cross.Title}}”。 {{.Config.SiteUrl}}/#!{{.Cross.ID}}/{{substr 1 4 .To.Token}}/
