@@ -136,75 +136,128 @@ func (c Cross) HandleRemind(requests []model.CrossDigestRequest) {
 	c.WriteHeader(http.StatusAccepted)
 }
 
-type JoinArg struct {
-	To      model.Recipient `json:"to"`
-	Join    model.Identity  `json:"join"`
-	By      model.Identity  `json:"by"`
-	CrossId int64           `json:"cross_id"`
-
-	Cross  model.Cross   `json:"-"`
-	Config *model.Config `json:"-"`
-}
-
-func (a JoinArg) SendToSelf() bool {
-	return a.To.UserID == a.By.UserID
-}
-
-func (c Cross) HandleJoin(join JoinArg) {
-	join.Config = c.config
-	to := &join.To
-
-	query := make(url.Values)
-	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
-	cross, err := c.platform.FindCross(join.CrossId, query)
-	if err != nil {
+func (c Cross) HandleJoin(arg InvitationArg) {
+	if err := arg.Parse(c.config, c.platform); err != nil {
 		c.Error(http.StatusBadRequest, err)
 		return
 	}
-	join.Cross = cross
+	to := &arg.To
 
-	go SendAndSave(c.localTemplate, c.platform, to, join, "cross_join", c.domain+"/v3/notifier/cross/join", &join)
+	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_join", c.domain+"/v3/notifier/cross/arg", &arg)
 	c.WriteHeader(http.StatusAccepted)
 }
 
-func (c Cross) HandleInvitation(invitation model.CrossInvitation) {
-	invitation.Config = c.config
-	to := &invitation.To
+type InvitationArg struct {
+	To      model.Recipient `json:"to"`
+	Invitee model.Identity  `json:"invitee"`
+	By      model.Identity  `json:"by"`
+	CrossId int64           `json:"cross_id"`
+	Cross   model.Cross     `json:"cross"`
+
+	Config      *model.Config `json:"-"`
+	WeatherIcon string        `json:"-"`
+}
+
+func (a InvitationArg) String() string {
+	return fmt.Sprintf("{to:%s cross:%d}", a.To, a.Cross.ID)
+}
+
+func (a *InvitationArg) Parse(config *model.Config, platform *broker.Platform) (err error) {
+	a.Config = config
 
 	query := make(url.Values)
-	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
-	cross, err := c.platform.FindCross(invitation.CrossId, query)
+	query.Set("user_id", fmt.Sprintf("%d", a.To.UserID))
+	cross, err := platform.FindCross(a.CrossId, query)
 	if err != nil {
-		c.Error(http.StatusBadRequest, err)
-		return
+		return err
 	}
-	invitation.Cross = cross
+	a.Cross = cross
+
 	if t, err := cross.Time.BeginAt.UTCTime("2006-01-02 15:04:05"); err == nil && cross.Place != nil {
 		lat, err := strconv.ParseFloat(cross.Place.Lat, 64)
 		if err == nil {
 			lng, err := strconv.ParseFloat(cross.Place.Lng, 64)
 			if err == nil {
-				invitation.WeatherIcon = c.platform.GetWeatherIcon(lat, lng, t)
+				a.WeatherIcon = platform.GetWeatherIcon(lat, lng, t)
 			}
 		}
 	}
+
+	return nil
+}
+
+func (a InvitationArg) ToIn(invitations []model.Invitation) bool {
+	for _, i := range invitations {
+		if a.To.SameUser(&i.Identity) {
+			return true
+		}
+	}
+	return false
+}
+
+func (a InvitationArg) Link() string {
+	return fmt.Sprintf("%s/#!token=%s", a.Config.SiteUrl, a.To.Token)
+}
+
+func (a InvitationArg) PublicLink() string {
+	return fmt.Sprintf("%s/#!%d/%s", a.Config.SiteUrl, a.Cross.ID, a.To.Token[1:5])
+}
+
+func (a InvitationArg) Timezone() string {
+	if a.To.Timezone != "" {
+		return a.To.Timezone
+	}
+	return a.Cross.Time.BeginAt.Timezone
+}
+
+func (a InvitationArg) SendToBy() bool {
+	return a.To.SameUser(&a.By)
+}
+
+func (a InvitationArg) SendToInvitee() bool {
+	return a.To.SameUser(&a.Invitee)
+}
+
+func (a InvitationArg) LongDescription() bool {
+	if len(a.Cross.Description) > 200 {
+		return true
+	}
+	return false
+}
+
+func (a InvitationArg) ListInvitations() string {
+	l := len(a.Cross.Exfee.Invitations)
+	max := 3
+	ret := ""
+	for i := 0; i < 3 && i < l; i++ {
+		if i > 0 {
+			ret += ", "
+		}
+		ret += a.Cross.Exfee.Invitations[i].Identity.Name
+	}
+	if l > max {
+		ret += "..."
+	}
+	return ret
+}
+
+func (c Cross) HandleInvitation(invitation InvitationArg) {
+	if err := invitation.Parse(c.config, c.platform); err != nil {
+		c.Error(http.StatusBadRequest, err)
+		return
+	}
+	to := &invitation.To
 
 	go SendAndSave(c.localTemplate, c.platform, to, invitation, "cross_invitation", c.domain+"/v3/notifier/cross/invitation", &invitation)
 	c.WriteHeader(http.StatusAccepted)
 }
 
-func (c Cross) HandlePreview(invitation model.CrossInvitation) {
-	invitation.Config = c.config
-	to := &invitation.To
-
-	query := make(url.Values)
-	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
-	cross, err := c.platform.FindCross(invitation.CrossId, query)
-	if err != nil {
+func (c Cross) HandlePreview(invitation InvitationArg) {
+	if err := invitation.Parse(c.config, c.platform); err != nil {
 		c.Error(http.StatusBadRequest, err)
 		return
 	}
-	invitation.Cross = cross
+	to := &invitation.To
 
 	go SendAndSave(c.localTemplate, c.platform, to, invitation, "cross_preview", c.domain+"/v3/notifier/cross/preview", &invitation)
 	c.WriteHeader(http.StatusAccepted)

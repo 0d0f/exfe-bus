@@ -1,4 +1,4 @@
-Content-Type: multipart/mixed; boundary="mixsplitter"
+{{if .SendToInvitee}}Content-Type: multipart/mixed; boundary="mixsplitter"
 References: <{{.Config.Email.Prefix}}+{{.Cross.ID}}@exfe.com>
 To: =?utf-8?B?{{.To.Name | base64}}?= <{{.To.ExternalUsername}}>
 From: =?utf-8?B?{{.Config.Email.Name | base64}}?= <{{.Config.Email.Prefix}}+{{.Cross.ID}}@{{.Config.Email.Domain}}>
@@ -28,3 +28,4 @@ Content-Transfer-Encoding: base64
 
 {{$ics | column 80 "\r\n"}}{{end}}
 --mixsplitter--
+{{end}}

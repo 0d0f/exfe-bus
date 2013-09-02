@@ -1,4 +1,4 @@
-{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}{{$link := .Cross.Link .To .Config}}{{if .IsCreator}}You just gathered a ·X·.{{else}}{{.By.Name}} gathers you.{{end}}
+{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}{{$link := .Cross.Link .To .Config}}{{if .SendToBy}}You just gathered a ·X·.{{else}}{{.By.Name}} gathers you.{{end}}
 
 ## {{.Cross.Title}}
 {{if .Cross.Description}}{{.Cross.Description}}
