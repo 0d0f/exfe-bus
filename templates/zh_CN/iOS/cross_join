@@ -1,3 +1,3 @@
-{{.Join.Name}}通过{{if .SendToSelf}}您{{else}}{{.By.Name}}{{end}}的链接加入“{{.Cross.Title}}”。
+{{sub . "_default/cross_join"}}
 
 {"path":"/!{{.Cross.ID}}"}

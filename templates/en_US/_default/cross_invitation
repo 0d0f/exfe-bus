@@ -1,1 +1,1 @@
-{{.By.Name}} invited {{if .SendToInvitee}}you{{else}}{{.Invitee.Name}}{{end}} to "{{.Cross.Title}}". {{.Config.SiteUrl}}/#!token={{.To.Token}}{{end}}
+{{.By.Name}} invited {{if .SendToInvitee}}you{{else}}{{.Invitee.Name}}{{end}} to "{{.Cross.Title}}". {{.Config.SiteUrl}}/#!token={{.To.Token}}
