@@ -446,7 +446,7 @@ Bys:
 		}
 	}
 	for _, i := range ret.Cross.Exfee.Pending {
-		if !in(&i, ret.OldCross.Exfee.Pending) {
+		if in(&i, ret.OldCross.Exfee.Invitations) && !in(&i, ret.OldCross.Exfee.Pending) {
 			ret.NewPending = append(ret.NewPending, i.Identity)
 		}
 	}

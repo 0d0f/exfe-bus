@@ -122,6 +122,12 @@
 				<td>Unavailable: {{range for .NewDeclined}}<span style="font-weight:500;">{{.V.Name}}</span>{{if not .Last}}, {{end}}{{end}}</td>
 			</tr>
 			{{end}}
+			{{if .NewPending}}
+			<tr>
+				<td width="30px"><img src="{{.Config.SiteUrl}}/static/img/rsvp_dot_pending@2x.png" style="width: 12px; height: 12px; padding-left: 14px;"/></td>
+				<td>Pending: {{range for .NewPending}}<span style="font-weight:500;">{{.V.Name}}</span>{{if not .Last}}, {{end}}{{end}}</td>
+			</tr>
+			{{end}}
 			{{if .Removed}}
 			<tr>
 				<td width="30px"><span style="padding-left: 17px">-</span></td>
