@@ -1,1 +1,1 @@
-{{if not .IsCreator}}{{.By.Name}}邀您参加"{{.Cross.Title}}" {{.Config.SiteUrl}}/#!token={{.To.Token}}{{end}}
+{{sub . "_text/cross_invitation"}} {{.Config.SiteUrl}}/#!token={{.To.Token}}

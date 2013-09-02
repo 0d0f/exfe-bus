@@ -1,1 +1,1 @@
-{{.Invitee.Name}} joined "{{.Cross.Title}}" through {{if .SendToBy}}your{{else}}{{.By.Name}}'s{{end}} link. {{.Config.SiteUrl}}/#!token={{.To.Token}}
+{{sub . "_text/cross_join"}} {{.Config.SiteUrl}}/#!token={{.To.Token}}

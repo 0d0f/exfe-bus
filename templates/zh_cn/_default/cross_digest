@@ -1,1 +1,1 @@
-{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}“{{.Cross.Title}}”更新摘要：{{if or $time .Cross.Place.Title}}{{if $time}}{{$time}}{{end}}{{if .Cross.Place.Title}}{{if $time}}，{{end}}{{.Cross.Place.Title}}{{end}}{{else}}待定{{end}}. {{.Config.SiteUrl}}/#!token={{.To.Token}}
+{{sub . "_text/cross_digest"}} {{.Config.SiteUrl}}/#!token={{.To.Token}}

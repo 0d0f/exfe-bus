@@ -1,1 +1,1 @@
-Preview "{{.Cross.Title | limit 20}}", please check time and place. {{.Config.SiteUrl}}/#!{{.Cross.ID}}/{{substr 1 4 .To.Token}}/
+{{sub . "_text/cross_preview"}} {{.Config.SiteUrl}}/#!{{.Cross.ID}}/{{substr 1 4 .To.Token}}/

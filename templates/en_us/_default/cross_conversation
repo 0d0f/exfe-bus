@@ -1,2 +1,1 @@
-{{range .Posts}}{{.By.Name}}: {{.Content}}
-{{end}}{{.Config.SiteUrl}}/#!token={{.To.Token}}
+{{sub . "_text/cross_conversation"}} {{.Config.SiteUrl}}/#!token={{.To.Token}}

@@ -1,3 +1,3 @@
-{{sub . "_default/cross_join"}}
+{{sub . "_text/cross_join"}}
 
 {"path":"/!{{.Cross.ID}}"}
