@@ -311,7 +311,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 		m.castLocker.RLock()
 		broadcast := m.crossCast[int64(token.Cross.ID)]
 		m.castLocker.RUnlock()
-		if updateXPlace {
+		if updateXPlace && xplace != nil {
 			xplace.Tags = append(xplace.Tags, DestinationTag)
 			xplace.Action = "update"
 			if broadcast != nil {
