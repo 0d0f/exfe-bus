@@ -1,0 +1,10 @@
+{
+  "touser": "{{.To.ExternalID}}",
+  "template_id": "x_join",
+  "locale": "{{.To.Language}}",
+  "data":{
+ 	"identity": {"name": "{{.Invitee.Name}}"},
+ 	"by_identity": {"name": "{{.By.Name}}"},
+ 	"cross": {"title": "{{.Cross.Title}}"}
+  }
+}
