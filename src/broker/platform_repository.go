@@ -516,6 +516,29 @@ func (p *Platform) SetPassword(userId int64, password string) error {
 	return nil
 }
 
+func (p *Platform) CheckWechatFollowing(externalId string) (bool, error) {
+	query := make(url.Values)
+	query.Set("external_id", externalId)
+	u := fmt.Sprintf("%s/v3/bus/CheckWechatFollowing?%s", p.config.SiteApi, query.Encode())
+	var resp struct {
+		Data struct {
+			Following bool
+		}
+	}
+	reader, err := HttpResponse(Http("GET", u, "application/x-www-form-urlencoded", nil))
+	if err != nil {
+		logger.ERROR("get %s error: %s", u, err)
+		return false, err
+	}
+	defer reader.Close()
+	decoder := json.NewDecoder(reader)
+	if err := decoder.Decode(&resp); err != nil {
+		logger.ERROR("decode %s error: %s", u, err)
+		return false, err
+	}
+	return resp.Data.Following, nil
+}
+
 func (p *Platform) GetRouteXUrl(crossId uint64) (string, error) {
 	query := make(url.Values)
 	query.Set("cross_id", fmt.Sprintf("%d", crossId))

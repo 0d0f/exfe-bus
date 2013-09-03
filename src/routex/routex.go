@@ -493,7 +493,6 @@ func (m RouteMap) HandleSendNotification() {
 	id := m.Request().URL.Query().Get("id")
 	identity, ok := model.FromIdentityId(id), false
 	for _, inv := range token.Cross.Exfee.Invitations {
-		fmt.Println(inv.Identity.Id())
 		if inv.Identity.Equal(identity) {
 			ok = true
 			break
@@ -520,6 +519,10 @@ func (m RouteMap) HandleSendNotification() {
 	for _, recipient := range recipients {
 		switch recipient.Provider {
 		case "wechat":
+			ok, err := m.platform.CheckWechatFollowing(recipient.ExternalID)
+			if err != nil || !ok {
+				continue
+			}
 			fallthrough
 		case "iOS":
 			fallthrough
