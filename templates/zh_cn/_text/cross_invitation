@@ -1,1 +1,1 @@
-{{.By.Name}}邀{{if .SendToInvitee}}您{{else}}{{.Invitee.Name}}{{end}}参加"{{.Cross.Title}}"
+{{.By.Name}}邀请{{if .SendToInvitee}}您{{else}}{{.Invitee.Name}}{{end}}参加"{{.Cross.Title}}"
