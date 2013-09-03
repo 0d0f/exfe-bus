@@ -150,6 +150,7 @@
 					<tbody>
 						<tr><td height="30px"><span style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">Exfees&nbsp;&nbsp;{{.Cross.Exfee.AcceptedCount}}</span>/{{.Cross.Exfee.TotalCount}} accepted</td></tr>
 						{{if .Cross.Updated.exfee}}<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">Updated</td></tr>{{end}}
+						<!--
 						{{if .NewAccepted}}
 						<tr><td>Accepted: {{range for .NewAccepted}}<span style="font-weight:500; color:#3A6EA5;">{{.V.Name}}</span>{{if not .Last}}, {{end}}{{end}}{{if .OldAccepted}} and {{len .OldAccepted}} {{len .OldAccepted | plural "other" "others"}}{{end}}</td></tr>
 						{{end}}
@@ -165,6 +166,7 @@
 						{{if .Removed}}
 						<tr><td>Removed: {{range for .Removed}}<span style="font-weight:500;"><del>{{.V.Name}}</del></span>{{if not .Last}}, {{end}}{{end}}</td></tr>
 						{{end}}
+						-->
 					</tbody>
 				</table>
 			</td>
