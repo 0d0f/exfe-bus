@@ -516,17 +516,39 @@ func (m RouteMap) HandleSendNotification() {
 			fromIdentity = inv.Identity
 		}
 	}
+	pushed := false
 	for _, recipient := range recipients {
 		switch recipient.Provider {
-		case "wechat":
-			ok, err := m.platform.CheckWechatFollowing(recipient.ExternalID)
-			if err != nil || !ok {
-				continue
-			}
-			fallthrough
 		case "iOS":
 			fallthrough
 		case "Android":
+			body, err := json.Marshal(notifier.RequestArg{
+				To:      recipient,
+				CrossId: token.Cross.ID,
+				From:    fromIdentity,
+			})
+			if err != nil {
+				logger.ERROR("can't marshal: %s with %+v", err, recipient)
+				continue
+			}
+			url := fmt.Sprintf("http://%s:%d/v3/notifier/routex/request", m.config.ExfeService.Addr, m.config.ExfeService.Port)
+			resp, err := broker.HttpResponse(broker.Http("POST", url, "applicatioin/json", body))
+			if err != nil {
+				logger.ERROR("call %s error: %s with %#v", url, err, string(body))
+				continue
+			}
+			resp.Close()
+			pushed = true
+		}
+	}
+	if pushed {
+		return
+	}
+	for _, recipient := range recipients {
+		if recipient.Provider == "wechat" && fmt.Sprintf("%s@%s", recipient.ExternalUsername, recipient.Provider) == id {
+			if ok, err := m.platform.CheckWechatFollowing(recipient.ExternalID); err != nil || !ok {
+				continue
+			}
 			body, err := json.Marshal(notifier.RequestArg{
 				To:      recipient,
 				CrossId: token.Cross.ID,
