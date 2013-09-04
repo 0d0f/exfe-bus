@@ -53,6 +53,9 @@ type Config struct {
 	Google struct {
 		Key string `json:"key"`
 	} `json:"google"`
+	AutoNavi struct {
+		Key string `json:"key"`
+	} `json:"auto_navi"`
 
 	Dispatcher map[string]map[string]string `json:"dispatcher"`
 

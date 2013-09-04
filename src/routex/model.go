@@ -1,6 +1,7 @@
 package routex
 
 import (
+	"broker"
 	"bytes"
 	"database/sql"
 	"encoding/json"
@@ -9,6 +10,7 @@ import (
 	"logger"
 	"math"
 	"model"
+	"net/url"
 	"ringcache"
 	"time"
 )
@@ -616,7 +618,8 @@ func (s *GeomarksSaver) Delete(crossId int64, markType, markId string) error {
 }
 
 const (
-	GEOCONVERSION_GET = "SELECT `offset_lat`, `offset_lng` FROM `gps_conversion` WHERE `lat`=? AND `lng`=?"
+	GEOCONVERSION_GET      = "SELECT `offset_lat`, `offset_lng` FROM `gps_conversion` WHERE `lat`=FORMAT(?, ?) AND `lng`=FORMAT(?, ?) ORDER BY `accuracy` DESC"
+	GEOCONVERSION_INSERT_2 = "INSERT IGNORE INTO `gps_conversion` (`lat`, `lng`, `offset_lat`, `offset_lng`, accuracy) VALUES(FORMAT(?, 2), FORMAT(?, 2), ?, ?, 2)"
 )
 
 type Offset struct {
@@ -625,19 +628,25 @@ type Offset struct {
 }
 
 type GeoConversion struct {
-	db    *sql.DB
-	cache *ringcache.RingCache
+	config *model.Config
+	db     *sql.DB
+	cache  *ringcache.RingCache
 }
 
-func NewGeoConversion(db *sql.DB) *GeoConversion {
+func NewGeoConversion(config *model.Config, db *sql.DB) *GeoConversion {
 	return &GeoConversion{
-		db:    db,
-		cache: ringcache.New(200),
+		config: config,
+		db:     db,
+		cache:  ringcache.New(200),
 	}
 }
 
-func (c *GeoConversion) loadCache(key string) *Offset {
-	data := c.cache.Get(key)
+func (c *GeoConversion) cacheKey(lat, lng float64) string {
+	return fmt.Sprintf("%.2f,%.2f", lat, lng)
+}
+
+func (c *GeoConversion) loadCache(lat, lng float64) *Offset {
+	data := c.cache.Get(c.cacheKey(lat, lng))
 	if data == nil {
 		return nil
 	}
@@ -649,31 +658,28 @@ func (c *GeoConversion) loadCache(key string) *Offset {
 }
 
 func (c *GeoConversion) Offset(lat, lng float64) (float64, float64) {
-	latI := int(lat * 10)
-	lngI := int(lng * 10)
-	key := fmt.Sprintf("%d,%d", latI, lngI)
-
 	var offsetLat, offsetLng int
-	if offset := c.loadCache(key); offset != nil {
+	if offset := c.loadCache(lat, lng); offset != nil {
 		offsetLat, offsetLng = offset.latOffset, offset.lngOffset
 	} else {
-		row, err := c.db.Query(GEOCONVERSION_GET, latI, lngI)
-		if err != nil {
-			return 0, 0
+		row := c.db.QueryRow(GEOCONVERSION_GET, lat, 2, lng, 2)
+		if err := row.Scan(&offsetLat, &offsetLng); err != nil {
+			row := c.db.QueryRow(GEOCONVERSION_GET, lat, 1, lng, 1)
+			if err := row.Scan(&offsetLat, &offsetLng); err != nil {
+				if err != sql.ErrNoRows {
+					logger.ERROR("geo_conversion offset for lat=%s, lng=%s is not int", lat, lng)
+				}
+				logger.DEBUG("no offset for %.7f, %.7f", lat, lng)
+				return 0, 0
+			}
+			logger.DEBUG("low accuracy offset for %.7f, %.7f", lat, lng)
+			go c.queryNavi(lat, lng)
+		} else {
+			logger.DEBUG("high accuracy offset for %.7f, %.7f", lat, lng)
+			c.cache.Push(c.cacheKey(lat, lng), Offset{offsetLat, offsetLng})
 		}
-		defer row.Close()
-
-		if !row.Next() {
-			return 0, 0
-		}
-		err = row.Scan(&offsetLat, &offsetLng)
-		if err != nil {
-			logger.ERROR("geo_conversion offset for lat=%s, lng=%s is not int", lat, lng)
-			return 0, 0
-		}
-		c.cache.Push(key, Offset{offsetLat, offsetLng})
 	}
-	return float64(offsetLat) * 0.0001, float64(offsetLng) * 0.0001
+	return float64(offsetLat) * 0.000001, float64(offsetLng) * 0.000001
 }
 
 func (c *GeoConversion) MarsToEarth(lat, lng float64) (float64, float64) {
@@ -688,4 +694,47 @@ func (c *GeoConversion) EarthToMars(lat, lng float64) (float64, float64) {
 	lat = lat + offsetLat
 	lng = lng + offsetLong
 	return lat, lng
+}
+
+func (c *GeoConversion) queryNavi(lat, lng float64) {
+	logger.DEBUG("query high accuracy offset for %.7f, %.7f", lat, lng)
+	query := make(url.Values)
+	query.Set("locations", fmt.Sprintf("%.6f,%.6f", lng, lat))
+	query.Set("coordsys", "gps")
+	query.Set("output", "json")
+	query.Set("key", c.config.AutoNavi.Key)
+	u := fmt.Sprintf("http://restapi.amap.com/v3/assistant/coordinate/convert?%s", query.Encode())
+	resp, err := broker.HttpResponse(broker.Http("GET", u, "", nil))
+	if err != nil {
+		logger.ERROR("get %s failed: %s", u, err)
+		return
+	}
+	defer resp.Close()
+	var ret struct {
+		Info      string
+		Locations string
+	}
+	decoder := json.NewDecoder(resp)
+	if err := decoder.Decode(&ret); err != nil {
+		logger.ERROR("decode %s failed: %s", u, err)
+		return
+	}
+	if ret.Info != "ok" {
+		logger.ERROR("response %s failed: %+v", u, ret)
+		return
+	}
+	var naviLat, naviLng float64
+	if _, err := fmt.Sscanf(ret.Locations, "%f,%f", &naviLng, &naviLat); err != nil {
+		logger.ERROR("sscan %s failed: %s", ret.Locations, err)
+		return
+	}
+	offsetLat, offsetLng := int((naviLat-lat)*1e6), int((naviLng-lng)*1e6)
+	if offsetLat == 0 && offsetLng == 0 {
+		return
+	}
+	if _, err := c.db.Exec(GEOCONVERSION_INSERT_2, lat, lng, offsetLat, offsetLng); err != nil {
+		logger.ERROR("insert geo conv failed: %s", err)
+		return
+	}
+	logger.DEBUG("save high accuracy offset for %.7f, %.7f", lat, lng)
 }

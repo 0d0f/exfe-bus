@@ -195,7 +195,7 @@ func main() {
 		breadcrumbsSaver := routex.NewBreadcrumbsSaver(database)
 		breadcrumbsCache := routex.NewBreadcrumbCacheSaver(cachePool)
 		geomarksSaver := &routex.GeomarksSaver{database}
-		c := routex.NewGeoConversion(database)
+		c := routex.NewGeoConversion(&config, database)
 		rx, err := routex.New(routexSaver, breadcrumbsCache, breadcrumbsSaver, geomarksSaver, c, platform, &config)
 		register("routex", rx, err)
 	}
