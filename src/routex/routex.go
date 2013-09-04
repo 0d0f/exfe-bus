@@ -262,6 +262,8 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		if endAt == 0 {
 			after = 60 * 60
 		}
+		// for test
+		after = 10
 		m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", token.Cross.ID), nil, model.Identity{})
 		if len(forceOpen) > 0 {
 			if i, err := strconv.ParseInt(forceOpen[0], 10, 64); err == nil {
@@ -576,9 +578,9 @@ func (m *RouteMap) auth(checkCross bool) (Token, bool) {
 	var token Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	if authData == "" {
-		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	}
+	// if authData == "" {
+	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	// }
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
