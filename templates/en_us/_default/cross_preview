@@ -1,1 +1,1 @@
-{{sub . "_text/cross_preview"}} {{.Config.SiteUrl}}/#!token={{.To.Token}}
+{{$t := sub . "_text/cross_preview"}}{{if $t}}{{$t}} {{.Config.SiteUrl}}/#!token={{.To.Token}}{{end}}

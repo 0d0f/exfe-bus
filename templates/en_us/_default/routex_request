@@ -1,1 +1,1 @@
-{{sub . "_text/routex_request"}} {{.Config.SiteUrl}}/#!{{.Cross.ID}}/routex/{{.To.Token}}
+{{$t := sub . "_text/routex_request"}}{{if $t}}{{$t}} {{.Config.SiteUrl}}/#!{{.Cross.ID}}/routex/{{.To.Token}}{{end}}

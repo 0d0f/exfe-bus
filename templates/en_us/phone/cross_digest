@@ -1,1 +1,1 @@
-{{sub . "_text/cross_digest"}} {{.Config.SiteUrl}}/#!{{.Cross.ID}}/{{substr 1 4 .To.Token}}/
+{{$t := sub . "_text/cross_digest"}}{{if $t}}{{$t}} {{.Config.SiteUrl}}/#!{{.Cross.ID}}/{{substr 1 4 .To.Token}}/{{end}}

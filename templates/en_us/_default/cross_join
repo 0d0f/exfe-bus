@@ -1,1 +1,1 @@
-{{sub . "_text/cross_join"}} {{.Config.SiteUrl}}/#!token={{.To.Token}}
+{{$t := sub . "_text/cross_join"}}{{if $t}}{{$t}} {{.Config.SiteUrl}}/#!token={{.To.Token}}{{end}}

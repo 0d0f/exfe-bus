@@ -1,1 +1,1 @@
-{{.By.Name}} invited {{if .SendToInvitee}}you{{else}}{{.Invitee.Name}}{{end}} to "{{.Cross.Title}}".
+{{if not .SendToBy}}{{.By.Name}} invited {{if .SendToInvitee}}you{{else}}{{.Invitee.Name}}{{end}} to "{{.Cross.Title}}".{{end}}

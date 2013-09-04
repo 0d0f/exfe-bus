@@ -1,1 +1,1 @@
-{{sub . "_text/cross_invitation"}} {{.Config.SiteUrl}}/#!token={{.To.Token}}
+{{$t := sub . "_text/cross_invitation"}}{{if $t}}{{$t}} {{.Config.SiteUrl}}/#!token={{.To.Token}}{{end}}
