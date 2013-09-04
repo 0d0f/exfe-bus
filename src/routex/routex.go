@@ -262,8 +262,6 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		if endAt == 0 {
 			after = 60 * 60
 		}
-		// for test
-		after = 10
 		m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", token.Cross.ID), nil, model.Identity{})
 		if len(forceOpen) > 0 {
 			if i, err := strconv.ParseInt(forceOpen[0], 10, 64); err == nil {
