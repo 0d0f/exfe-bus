@@ -98,25 +98,17 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []SimpleLocation) Brea
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid accuracy: %f", acc))
 		return ret
 	}
-	if acc > 70 {
-		logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7f", lat), fmt.Sprintf("%.7f", lng), acc, "accuracy too large, ignore")
-		ret = BreadcrumbOffset{
-			Latitude:  mars.GPS[0] - earth.GPS[0],
-			Longitude: mars.GPS[1] - earth.GPS[1],
-		}
-		return ret
-	}
 
 	breadcrumb.Timestamp = time.Now().Unix()
 	last, err := m.breadcrumbCache.Load(userId)
 	distance := float64(100)
-	if err == nil && len(last.GPS) >= 3 {
+	if err == nil && len(last.GPS) >= 3 && acc <= 70 {
 		lastLat, lastLng := last.GPS[0], last.GPS[1]
 		distance = Distance(lat, lng, lastLat, lastLng)
 	}
 	var crossIds []int64
 	action := ""
-	if distance > 30 {
+	if distance > 30 && acc <= 70 {
 		action = "save_to_history"
 		logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7f", lat), fmt.Sprintf("%.7f", lng), acc)
 		if crossIds, err = m.breadcrumbCache.SaveCross(userId, breadcrumb); err != nil {
