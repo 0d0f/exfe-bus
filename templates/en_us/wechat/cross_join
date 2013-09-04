@@ -4,7 +4,7 @@
   "locale": "{{.To.Language}}",
   "data":{
  	"identity": {"name": "{{.Invitee.Name}}"},
- 	"by_identity": {"name": "{{.By.Name}}"},
+ 	"by_identity": {"name": "{{if .SendToBy}}您{{else}}{{.By.Name}}{{end}}"},
  	"cross": {"title": "{{.Cross.Title}}"}
   }
 }
