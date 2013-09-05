@@ -1,1 +1,1 @@
-{{.Invitee.Name}} joined "{{.Cross.Title}}" through {{if .SendToBy}}your{{else}}{{.By.Name}}'s{{end}} link.
+{{if not .SendToInvitee}}{{.Invitee.Name}} joined "{{.Cross.Title}}" through {{if .SendToBy}}your{{else}}{{.By.Name}}'s{{end}} link.{{end}}
