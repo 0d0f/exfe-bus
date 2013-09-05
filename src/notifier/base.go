@@ -25,7 +25,7 @@ func GenerateContent(localTemplate *formatter.LocalTemplate, template string, po
 	}
 
 	if ret.Len() == 0 {
-		return "", noneedSend
+		return "", fmt.Errorf("template(%s/%s) no need send", lang, templateName)
 	}
 
 	return ret.String(), nil

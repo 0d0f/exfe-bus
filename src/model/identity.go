@@ -79,6 +79,18 @@ func (i Identity) Id() string {
 	return fmt.Sprintf("%s@%s", i.ExternalUsername, i.Provider)
 }
 
+func (i Identity) ToRecipient() Recipient {
+	return Recipient{
+		IdentityID:       i.ID,
+		UserID:           i.UserID,
+		Timezone:         i.Timezone,
+		Language:         i.Locale,
+		Provider:         i.Provider,
+		ExternalID:       i.ExternalID,
+		ExternalUsername: i.ExternalUsername,
+	}
+}
+
 type RsvpType string
 
 const (
@@ -91,15 +103,16 @@ const (
 )
 
 type Invitation struct {
-	ID        uint64   `json:"id,omitempty"`
-	Host      bool     `json:"host,omitempty"`
-	Mates     uint64   `json:"mates,omitempty"`
-	Identity  Identity `json:"identity,omitempty"`
-	Response  RsvpType `json:"response,omitempty"`
-	By        Identity `json:"by_identity,omitempty"`
-	UpdatedBy Identity `json:"updated_by,omitempty"`
-	Via       string   `json:"via,omitempty"`
-	Token     string   `json:"token,omitempty"`
+	ID            uint64   `json:"id,omitempty"`
+	Host          bool     `json:"host,omitempty"`
+	Mates         uint64   `json:"mates,omitempty"`
+	Identity      Identity `json:"identity,omitempty"`
+	Response      RsvpType `json:"response,omitempty"`
+	By            Identity `json:"by_identity,omitempty"`
+	UpdatedBy     Identity `json:"updated_by,omitempty"`
+	Via           string   `json:"via,omitempty"`
+	Token         string   `json:"token,omitempty"`
+	Notifications []string `json:"notification_identities,omitempty"`
 }
 
 func (i *Invitation) String() string {
