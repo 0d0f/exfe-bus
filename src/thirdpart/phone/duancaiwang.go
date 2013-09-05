@@ -38,6 +38,7 @@ func (t *DuanCaiWang) Send(phone string, content string) (string, error) {
 	if content, err = filter("gb2312", content, ""); err != nil {
 		return "", err
 	}
+	logger.DEBUG("duancaiwang content: %s", content)
 	phone = phone[3:]
 	params := make(url.Values)
 	params.Add("mobile", phone)
