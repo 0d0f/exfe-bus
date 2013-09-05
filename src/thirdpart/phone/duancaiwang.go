@@ -4,9 +4,11 @@ import (
 	"broker"
 	"encoding/json"
 	"fmt"
+	"github.com/googollee/go-encoding"
 	"logger"
 	"model"
 	"net/url"
+	"unicode/utf8"
 )
 
 type DuanCaiWang struct {
@@ -32,6 +34,10 @@ type duancaiwangReply struct {
 }
 
 func (t *DuanCaiWang) Send(phone string, content string) (string, error) {
+	var err error
+	if content, err = filter("gb2312", content, ""); err != nil {
+		return "", err
+	}
 	phone = phone[3:]
 	params := make(url.Values)
 	params.Add("mobile", phone)
@@ -58,4 +64,26 @@ func (t *DuanCaiWang) Send(phone string, content string) (string, error) {
 		return fmt.Sprintf("%d-%d", *reply.Active, reply.ID), nil
 	}
 	return fmt.Sprintf("%d", reply.ID), nil
+}
+
+func filter(codec, s, c string) (string, error) {
+	iconv, err := encoding.NewIconv(codec, "utf-8")
+	if err != nil {
+		return "", err
+	}
+	from := []byte(s)
+	ret := make([]byte, 0, len(from))
+	b := make([]byte, len(from))
+	for len(from) > 0 {
+		inlen, _, err := iconv.Conv(from, b)
+		ret = append(ret, from[:inlen]...)
+		from = from[inlen:]
+		if err == nil {
+			continue
+		}
+		_, size := utf8.DecodeRune(from)
+		from = from[size:]
+		ret = append(ret, []byte(c)...)
+	}
+	return string(ret), nil
 }
