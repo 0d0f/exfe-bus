@@ -1,3 +1,0 @@
-@{{.From.Name}} wonders your current location in RouteX {{.Cross.Title}}.
-
-{"path":"/!{{.Cross.ID}}/routex"}

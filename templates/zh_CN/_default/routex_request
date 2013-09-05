@@ -1,1 +1,0 @@
-@{{.From.Name}} 在活点地图“{{.Cross.Title}}”中请求更新您的位置。 {{.Config.SiteUrl}}/#!{{.Cross.ID}}/routex/{{.To.Token}}

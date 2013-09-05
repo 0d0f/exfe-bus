@@ -1,0 +1,3 @@
+{{$t := sub . "_text/routex_request"}}{{if $t}}{{$t}}
+
+{"path":"/!{{.Cross.ID}}/routex"}{{end}}

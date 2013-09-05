@@ -1,3 +1,0 @@
-{{sub . "_default/cross_conversation"}}
-
-{"path":"/!{{.Cross.ID}}/conversation"}

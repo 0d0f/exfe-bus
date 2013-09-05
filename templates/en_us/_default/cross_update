@@ -1,0 +1,1 @@
+{{$t := sub . "_text/cross_update"}}{{if $t}}{{$t}} {{.Config.SiteUrl}}/#!token={{.To.Token}}{{end}}

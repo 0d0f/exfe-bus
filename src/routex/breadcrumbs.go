@@ -54,7 +54,7 @@ type BreadcrumbOffset struct {
 }
 
 func (o BreadcrumbOffset) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`{"earth_to_mars_latitude":%.4f,"earth_to_mars_longitude":%.4f}`, o.Latitude, o.Longitude)), nil
+	return []byte(fmt.Sprintf(`{"earth_to_mars_latitude":%.6f,"earth_to_mars_longitude":%.6f}`, o.Latitude, o.Longitude)), nil
 }
 
 func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []rmodel.SimpleLocation) BreadcrumbOffset {
@@ -99,25 +99,17 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []rmodel.SimpleLocatio
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid accuracy: %f", acc))
 		return ret
 	}
-	if acc > 70 {
-		logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7f", lat), fmt.Sprintf("%.7f", lng), acc, "accuracy too large, ignore")
-		ret = BreadcrumbOffset{
-			Latitude:  mars.GPS[0] - earth.GPS[0],
-			Longitude: mars.GPS[1] - earth.GPS[1],
-		}
-		return ret
-	}
 
 	breadcrumb.Timestamp = time.Now().Unix()
 	last, err := m.breadcrumbCache.Load(userId)
 	distance := float64(100)
-	if err == nil && len(last.GPS) >= 3 {
+	if err == nil && len(last.GPS) >= 3 && acc <= 70 {
 		lastLat, lastLng := last.GPS[0], last.GPS[1]
 		distance = Distance(lat, lng, lastLat, lastLng)
 	}
 	var crossIds []int64
 	action := ""
-	if distance > 30 {
+	if distance > 30 && acc <= 70 {
 		action = "save_to_history"
 		logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7f", lat), fmt.Sprintf("%.7f", lng), acc)
 		if crossIds, err = m.breadcrumbCache.SaveCross(userId, breadcrumb); err != nil {

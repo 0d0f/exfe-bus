@@ -323,7 +323,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 		m.castLocker.RLock()
 		broadcast := m.crossCast[int64(token.Cross.ID)]
 		m.castLocker.RUnlock()
-		if updateXPlace {
+		if updateXPlace && xplace != nil {
 			xplace.Tags = append(xplace.Tags, DestinationTag)
 			xplace.Action = "update"
 			if broadcast != nil {
@@ -355,11 +355,12 @@ func (m RouteMap) syncCrossPlace(geomark *rmodel.Geomark, cross model.Cross, by 
 		place.ID = cross.Place.ID
 	}
 	if geomark != nil {
-		geomark.ToMars(m.conversion)
-		place.Title = geomark.Title
-		place.Description = geomark.Description
-		place.Lng = fmt.Sprintf("%.7f", geomark.Longitude)
-		place.Lat = fmt.Sprintf("%.7f", geomark.Latitude)
+		p := *geomark
+		p.ToMars(m.conversion)
+		place.Title = p.Title
+		place.Description = p.Description
+		place.Lng = fmt.Sprintf("%.7f", p.Longitude)
+		place.Lat = fmt.Sprintf("%.7f", p.Latitude)
 		place.Provider = "routex"
 		place.ExternalID = fmt.Sprintf("%d", cross.ID)
 	}

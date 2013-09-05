@@ -1,3 +1,0 @@
-@{{.From.Name}} 在活点地图“{{.Cross.Title}}”中请求更新您的位置。 
-
-{"cid":{{.Cross.ID}},"t":"routex"}

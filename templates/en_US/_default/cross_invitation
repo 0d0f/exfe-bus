@@ -1,1 +1,0 @@
-{{if not .IsCreator}}{{$time := .Cross.Time.StringInZone .Timezone}}{{.By.Name}} invites you to "{{.Cross.Title}}"{{if $time}}, {{$time}}{{end}}{{if .Cross.Place.Title}} at {{.Cross.Place.Title}}{{end}}. {{.Config.SiteUrl}}/#!token={{.To.Token}}{{end}}

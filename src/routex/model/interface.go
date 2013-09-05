@@ -3,9 +3,10 @@ package rmodel
 import (
 	"database/sql"
 	"github.com/garyburd/redigo/redis"
+	"model"
 )
 
-func NewRoutexModel(db *sql.DB, pool *redis.Pool) (RoutexRepo, BreadcrumbCache, BreadcrumbsRepo, GeomarksRepo, GeoConversionRepo, error) {
+func NewRoutexModel(config *model.Config, db *sql.DB, pool *redis.Pool) (RoutexRepo, BreadcrumbCache, BreadcrumbsRepo, GeomarksRepo, GeoConversionRepo, error) {
 	routexRepo, err := NewRoutexSaver(db)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
@@ -19,7 +20,7 @@ func NewRoutexModel(db *sql.DB, pool *redis.Pool) (RoutexRepo, BreadcrumbCache, 
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
-	conversion, err := NewGeoConversion(db)
+	conversion, err := NewGeoConversion(config, db)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}

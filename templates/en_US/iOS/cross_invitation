@@ -1,3 +1,0 @@
-{{sub . "_default/cross_invitation"}}
-
-{"path":"/!{{.Cross.ID}}"}

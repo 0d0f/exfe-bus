@@ -192,7 +192,7 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Routex {
-		rs, bc, bs, gs, c, err := rmodel.NewRoutexModel(database, cachePool)
+		rs, bc, bs, gs, c, err := rmodel.NewRoutexModel(&config, database, cachePool)
 		if err != nil {
 			logger.ERROR("create routex model failed: %s", err)
 			os.Exit(-1)

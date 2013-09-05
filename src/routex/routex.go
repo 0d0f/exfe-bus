@@ -144,16 +144,17 @@ func (m RouteMap) HandleGetRoutex() *bool {
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid user id %s", crossIdStr))
 		return nil
 	}
-	route, err := m.routexRepo.Get(userId, crossId)
+	endAt, err := m.breadcrumbsRepo.GetWindowEnd(userId, crossId)
 	if err != nil {
 		logger.ERROR("get user %d cross %d routex failed: %s", userId, crossId, err)
 		m.Error(http.StatusInternalServerError, err)
 		return nil
 	}
-	if route == nil {
+	if endAt == 0 {
 		return nil
 	}
-	return &route.Enable
+	ret := endAt >= time.Now().Unix()
+	return &ret
 }
 
 func (m RouteMap) HandleStream(stream rest.Stream) {
@@ -396,18 +397,22 @@ func (m RouteMap) HandleSendNotification() {
 	}
 
 	id := m.Request().URL.Query().Get("id")
-	identity, ok := model.FromIdentityId(id), false
+	identity := model.FromIdentityId(id)
+	var fromIdentity *model.Identity
+	var invitation *model.Invitation
 	for _, inv := range token.Cross.Exfee.Invitations {
-		fmt.Println(inv.Identity.Id())
-		if inv.Identity.Equal(identity) {
-			ok = true
-			break
+		if invitation == nil && inv.Identity.Equal(identity) {
+			invitation = &inv
+		}
+		if fromIdentity == nil && inv.Identity.UserID == token.UserId {
+			fromIdentity = &inv.Identity
 		}
 	}
-	if !ok {
-		m.Error(http.StatusForbidden, fmt.Errorf("%s is not attend cross %d", id, token.Cross.ID))
+	if invitation == nil || fromIdentity == nil {
+		m.Error(http.StatusForbidden, fmt.Errorf("%s or user %d is not attend cross %d", id, token.UserId, token.Cross.ID))
 		return
 	}
+	identity = invitation.Identity
 
 	recipients, err := m.platform.GetRecipientsById(id)
 	if err != nil {
@@ -416,40 +421,52 @@ func (m RouteMap) HandleSendNotification() {
 	}
 
 	m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
-	var fromIdentity model.Identity
-	for _, inv := range token.Cross.Exfee.Invitations {
-		if inv.Identity.UserID == token.UserId {
-			fromIdentity = inv.Identity
-		}
+
+	arg := notifier.RequestArg{
+		CrossId: token.Cross.ID,
+		From:    *fromIdentity,
 	}
+	pushed := false
 	for _, recipient := range recipients {
 		switch recipient.Provider {
-		case "wechat":
-			fallthrough
 		case "iOS":
 			fallthrough
 		case "Android":
-			body, err := json.Marshal(notifier.RequestArg{
-				To:      recipient,
-				CrossId: token.Cross.ID,
-				From:    fromIdentity,
-			})
-			if err != nil {
-				logger.ERROR("can't marshal: %s with %+v", err, recipient)
-				continue
-			}
-			url := fmt.Sprintf("http://%s:%d/v3/notifier/routex/request", m.config.ExfeService.Addr, m.config.ExfeService.Port)
-			resp, err := broker.HttpResponse(broker.Http("POST", url, "applicatioin/json", body))
-			if err != nil {
-				logger.ERROR("call %s error: %s with %#v", url, err, string(body))
-				continue
-			}
-			resp.Close()
-			return
+			arg.To = recipient
+			m.sendRequest(arg)
+			pushed = true
 		}
 	}
-	m.Error(http.StatusNotAcceptable, fmt.Errorf("can't find provider avaliable"))
-	return
+	if identity.Provider == "wechat" {
+		if ok, err := m.platform.CheckWechatFollowing(identity.ExternalUsername); (err != nil || !ok) && !pushed {
+			m.Error(http.StatusNotAcceptable, fmt.Errorf("can't find provider avaliable"))
+		}
+	}
+
+	go func() {
+		arg.To = identity.ToRecipient()
+		m.sendRequest(arg)
+		for _, id := range invitation.Notifications {
+			identity := model.FromIdentityId(id)
+			arg.To.ExternalUsername, arg.To.Provider = identity.ExternalUsername, identity.Provider
+			m.sendRequest(arg)
+		}
+	}()
+}
+
+func (m *RouteMap) sendRequest(arg notifier.RequestArg) {
+	body, err := json.Marshal(arg)
+	if err != nil {
+		logger.ERROR("can't marshal: %s with %+v", err, arg)
+		return
+	}
+	url := fmt.Sprintf("http://%s:%d/v3/notifier/routex/request", m.config.ExfeService.Addr, m.config.ExfeService.Port)
+	resp, err := broker.HttpResponse(broker.Http("POST", url, "applicatioin/json", body))
+	if err != nil {
+		logger.ERROR("post %s error: %s with %#v", url, err, string(body))
+		return
+	}
+	resp.Close()
 }
 
 func (m RouteMap) switchWindow(userId, crossId int64, save bool, afterInSeconds int) {

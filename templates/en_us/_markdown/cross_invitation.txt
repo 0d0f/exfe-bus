@@ -1,0 +1,20 @@
+{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}{{$link := .Cross.Link .To .Config}}{{if .SendToBy}}You just gathered a ·X·.{{else}}{{.By.Name}} gathers you.{{end}}
+
+## {{.Cross.Title}}
+{{if .Cross.Description}}{{.Cross.Description}}
+{{end}}{{$link}}
+
+{{if $time}}## {{$time}}{{else}}## Time
+  To be decied.{{end}}
+
+{{if .Cross.Place.Title}}## {{.Cross.Place.Title}}
+ {{.Cross.Place.Description}}{{else}}## Place
+  To be decided.{{end}}
+
+## Exfee {{.Cross.Exfee.AcceptedCount}}/{{.Cross.Exfee.TotalCount}} accepted
+{{range .Cross.Exfee.Invitations}}{{if .IsAccepted}} + {{.Identity.Name}}  {{.Identity.ScreenId}}
+{{end}}{{end}}{{range .Cross.Exfee.Invitations}}{{if .IsPending}} . {{.Identity.Name}}  {{.Identity.ScreenId}}
+{{end}}{{end}}{{range .Cross.Exfee.Invitations}}{{if .IsDeclined}} - {{.Identity.Name}}  {{.Identity.ScreenId}}
+{{end}}{{end}}
+
+# Reply this email directly as conversation. #

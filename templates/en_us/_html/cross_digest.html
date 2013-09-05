@@ -1,0 +1,267 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+	<title></title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body><div align="center" style="max-width:640px; margin:0 auto; font-family:Helvetica Neue,Helvetica,Arial,sans-serif; background-color:white; padding:0; -webkit-text-size-adjust:none;">
+	<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse; border:1px solid #E6E6E6; background:#FAFAFA;">
+		<tbody>
+			<tr><td colspan="3">
+
+{{$link := .Cross.Link .To .Config}}
+<a href="{{$link}}" style="text-decoration:none; color:#333333; font-size:14px; line-height:20px; font-weight:400;">
+	<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
+		<tr><td colspan="3">
+			<table cellpadding="0" cellspacing="0" style="display:inline-block; width:100%; border-spacing:0; vertical-align:top; background:url({{.Config.SiteApi}}/v3/mails/titleimage?background={{.Cross.Background .Config | base64url}}&lat={{.Cross.Place.Lat}}&lng={{.Cross.Place.Lng}}&ribbon=false); border-bottom:1px solid #E6E6E6; background-color:#545454;">
+				<tbody>
+					<tr>
+						<td style="width:50px; height:100%; vertical-align:top; text-align:right;">
+							<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+								<tbody>
+									<tr><td style="color:white; padding-bottom:12px; max-height:20px; overflow:hidden; display:inline-block; text-overflow:ellipsis; line-height:25px; text-align:left;">
+										<img src="{{.Config.SiteApi}}/v2/crosses/{{.Cross.ID}}/touch?user_id={{.To.UserID}}" />
+									</td></tr>
+									<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;"></td></tr>
+									<tr><td style="padding:0 9px 0 0;">
+									{{if .WeatherIcon}}<img src="{{.WeatherIcon}}" width="32px" height="32px" />{{end}}
+									</td></tr>
+								</tbody>
+							</table>
+						</td>
+						<td style="width:2px; height:100%; vertical-align:top;"></td>
+						<td style="padding:5px 10px 5px 10px; max-width:498px;">
+							<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+								<tbody>
+									<tr><td style="color:white; padding-bottom:12px; max-height:20px; overflow:hidden; display:inline-block; text-overflow:ellipsis; line-height:25px; text-align:left;">·X· digest today.</td></tr>
+									<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">{{if .Cross.Updated.title}}Title updated{{if .Cross.Updated.title.By.Name}} by <span style="font-weight:600;">{{.Cross.Updated.title.By.Name}}</span>{{end}}.{{end}}</td></tr>
+									<tr><td style="max-height:48px; overflow:hidden; display:inline-block; text-overflow:ellipsis; color:white; font-size:22px; line-height:24px; font-weight:500; text-align:left;">{{.Cross.Title | html | replace "\n" "<br />"}}</td></tr>
+								</tbody>
+							</table>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</td></tr>
+		{{if or .Cross.Updated.description .Cross.Description}}
+		<tr>
+			<td style="width:50px; height:100%; vertical-align:top; text-align:right;"></td>
+			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+			<td style="padding:5px 10px 20px 10px;">
+				<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+					<tbody>
+						{{if .Cross.Updated.description}}<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">Updated{{if .Cross.Updated.description.By.Name}} by <span style="font-weight:600;">{{.Cross.Updated.description.By.Name}}</span>{{end}}</td></tr>{{end}}
+						{{if .Cross.Description}}
+						<tr><td>{{.Cross.Description | limit 233 | html | replace "\n" "<br />"}}</td></tr>
+						{{else}}
+						<tr><td style="color:#7F7F7F;">No description.</td></tr>
+						{{end}}
+					</tbody>
+				</table>
+			</td>
+		</tr>
+		{{end}}
+		{{if .Cross.Updated.time}}
+		<tr>
+			<td style="width:40px; height:100%;"></td>
+			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+			<td style="height:12px; padding:2px 10px 0 10px; color:#FF7E98; font-size:10px; line-height:10px;">Updated{{if .Cross.Updated.time.By.Name}} by <span style="font-weight:600;">{{.Cross.Updated.time.By.Name}}</span>{{end}}</td>
+		</tr>
+		{{end}}
+		<tr>
+			<td style="width:40px; height:100%; padding:5px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/time_30blue@2x.png" width="30px" height="30px" /></td>
+			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+			<td style="padding:5px 10px 20px 10px;">
+				<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+					<tbody>{{$tz := .Cross.Timezone .To}}{{$timeTitle := .Cross.Time.Title $tz}}
+						{{if $timeTitle}}
+						<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">{{$timeTitle | html}}</td></tr>
+						<tr><td>{{.Cross.Time.Description $tz | html}}</td></tr>
+						{{else}}
+						<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">Time</td></tr>
+						<tr><td>To be decided</td></tr>
+						{{end}}
+					</tbody>
+				</table>
+			</td>
+		</tr>
+		{{if .Cross.Updated.place}}
+		<tr>
+			<td style="width:40px; height:100%;"></td>
+			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+			<td style="height:12px; padding:2px 10px 0 10px; color:#FF7E98; font-size:10px; line-height:10px;">Updated{{if .Cross.Updated.place.By.Name}} by <span style="font-weight:600;">{{.Cross.Updated.place.By.Name}}</span>{{end}}</td>
+		</tr>
+		{{end}}
+		<tr>
+			<td style="width:40px; height:100%; padding:5px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/place_30blue@2x.png" width="30px" height="30px" /></td>
+			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+			<td style="padding:5px 10px 20px 10px;">
+				<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+					<tbody>
+						{{if .Cross.Place.Title}}
+						<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">{{.Cross.Place.Title | html | replace "\n" "<br />"}}</td></tr>
+						<tr><td>{{.Cross.Place.Description | html | replace "\n" "<br />"}}</td></tr>
+						{{else}}
+						<tr><td style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">Place</td></tr>
+						<tr><td>To be decided</td></tr>
+						{{end}}
+					</tbody>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			{{$me := .Cross.Exfee.FindUser .To.UserID}}
+			{{$updatedByMe := $me.IsUpdatedBy $me.Identity.UserID}}
+			<td style="width:40px; height:100%; padding:25px 10px 0 0; vertical-align:top; text-align:right;">
+				{{if $me.IsAccepted}}
+				<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_accepted_26blue@2x.png" width="30px" height="30px" />
+				{{end}}
+				{{if $me.IsDeclined}}
+				<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_unavailable_26g5@2x.png" width="30px" height="30px" />
+				{{end}}
+				{{if $me.IsPending}}
+				<img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/rsvp_pending_26g5@2x.png" width="30px" height="30px" />
+				{{end}}
+			</td>
+			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+			<td style="padding:5px 10px 20px 10px;">
+				<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+					<tbody>
+						<tr><td>Your participation status is:</td></tr>
+						{{if $me.IsAccepted}}
+						<tr><td height="35px"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:7px 20px; vertical-align:top; margin-right:8px;">Accepted</span>{{if not $updatedByMe}}<span style="font-size:12px"> set by {{$me.By.Name | html}}</span>{{end}}</td></tr>
+						{{end}}
+						{{if $me.IsDeclined}}
+						<tr><td height="35px"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:7px 20px; vertical-align:top; margin-right:8px;">Declined</span>{{if not $updatedByMe}}<span style="font-size:12px"> set by {{$me.By.Name | html}}</span>{{end}}</td></tr>
+						{{end}}
+						{{if $me.IsPending}}
+						<tr><td height="35px"><span style="color:#3A6EA5; font-weight:500; background-color:#E6E6E6; border-radius:4px; padding:7px 20px; vertical-align:top; margin-right:8px;">Pending</span>{{if not $updatedByMe}}<span style="font-size:12px"> set by {{$me.By.Name | html}}</span>{{end}}</td></tr>
+						{{end}}
+						<tr><td style="font-size:12px; color:#7F7F7F;"><span style="text-decoration:underline;">Check and change</span> details on web.</td></tr>
+					</tbody>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td style="width:40px; height:100%; padding:5px 10px 0 0; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{.Config.SiteUrl}}/static/img/exfee_30blue@2x.png" width="30px" height="30px" /></td>
+			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+			<td style="padding:5px 10px 5px 10px;">
+				<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+					<tbody>
+						<tr><td height="30px"><span style="height:24px; color:#3A6EA5; font-size:18px; line-height:24px; font-weight:500;">Exfees&nbsp;&nbsp;{{.Cross.Exfee.AcceptedCount}}</span>/{{.Cross.Exfee.TotalCount}} accepted</td></tr>
+						{{if .Cross.Updated.exfee}}<tr><td style="height:12px; color:#FF7E98; font-size:10px; line-height:12px;">Updated</td></tr>{{end}}
+						<!--
+						{{if .NewAccepted}}
+						<tr><td>Accepted: {{range for .NewAccepted}}<span style="font-weight:500; color:#3A6EA5;">{{.V.Name}}</span>{{if not .Last}}, {{end}}{{end}}{{if .OldAccepted}} and {{len .OldAccepted}} {{len .OldAccepted | plural "other" "others"}}{{end}}</td></tr>
+						{{end}}
+						{{if .NewInvited}}
+						<tr><td>Newly invited: {{range for .NewInvited}}<span style="font-weight:500;">{{.V.Name}} </span>{{if not .Last}}, {{end}}{{end}}</td></tr>
+						{{end}}
+						{{if .NewDeclined}}
+						<tr><td>Unavailable: {{range for .NewDeclined}}<span style="font-weight:500;">{{.V.Name}}</span>{{if not .Last}}, {{end}}{{end}}</td></tr>
+						{{end}}
+						{{if .NewPending}}
+						<tr><td>Pending: {{range for .NewPending}}<span style="font-weight:500;">{{.V.Name}}</span>{{if not .Last}}, {{end}}{{end}}</td></tr>
+						{{end}}
+						{{if .Removed}}
+						<tr><td>Removed: {{range for .Removed}}<span style="font-weight:500;"><del>{{.V.Name}}</del></span>{{if not .Last}}, {{end}}{{end}}</td></tr>
+						{{end}}
+						-->
+					</tbody>
+				</table>
+			</td>
+		</tr>
+		{{$site := .Config.SiteUrl}}
+		{{range .Cross.Exfee.Invitations}}
+		{{if .IsAccepted}}
+		<tr style="vertical-align:top;">
+			<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{$site}}/v2/avatar/render?url={{.Identity.Avatar | base64url}}&width=24&height=19&resolution=2x" width="24px" height="19px" style="vertical-align:top;" /></td>
+			<td style="width:2px; height:100%; background-color:#3784D5; vertical-align:top;"></td>
+			<td style="padding:0 10px;">
+				<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
+					<tr><td height="20px" style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+						{{.Identity.Name | limit 15 | html}}&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7F7F7F; font-size:12px; font-style:italic;">{{.Identity.ScreenId | html}}</span>
+					</td></tr>
+				</tbody></table>
+			</td>
+		</tr>
+		{{end}}
+		{{end}}
+		{{range .Cross.Exfee.Invitations}}
+		{{if .IsPending}}
+		<tr style="vertical-align:top;">
+			<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{$site}}/v2/avatar/render?url={{.Identity.Avatar | base64url}}&width=24&height=19&resolution=2x" width="24px" height="19px" style="vertical-align:top;" /></td>
+			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+			<td style="padding:0 10px;">
+				<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
+					<tr><td height="20px" style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+						{{.Identity.Name | limit 15 | html}}&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7F7F7F; font-size:12px; font-style:italic;">{{.Identity.ScreenId | html}}</span>
+					</td></tr>
+				</tbody></table>
+			</td>
+		</tr>
+		{{end}}
+		{{end}}
+		{{range .Cross.Exfee.Invitations}}
+		{{if .IsDeclined}}
+		<tr style="vertical-align:top;">
+			<td style="width:37px; height:100%; padding-right:13px; vertical-align:top; text-align:right;"><img style="outline:none; text-decoration:none; vertical-align:top;" src="{{$site}}/v2/avatar/render?url={{.Identity.Avatar | base64url}}&width=24&height=19&resolution=2x" width="24px" height="19px" style="vertical-align:top;" /></td>
+			<td style="width:2px; height:100%; background-color:#7F7F7F; vertical-align:top;"></td>
+			<td style="padding:0 10px;">
+				<table cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%; border-spacing:0; border-collapse:collapse;"><tbody>
+					<tr><td height="20px" style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+						{{.Identity.Name | limit 15 | html}}&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7F7F7F; font-size:12px; font-style:italic;">{{.Identity.ScreenId | html}}</span>
+					</td></tr>
+				</tbody></table>
+			</td>
+		</tr>
+		{{end}}
+		{{end}}
+		<tr style="vertical-align:top">
+			<td></td>
+			<td style="width:2px; height:100%; background-color:#E6E6E6; vertical-align:top;"></td>
+			<td height="30px">&nbsp;</td>
+		</tr>
+		<tr style="vertical-align:top; background-color:#E6E6E6">
+			<td></td>
+			<td style="width:2px;"></td>
+			<td height="2px"></td>
+		</tr>
+	</tbody></table>
+	<table cellpadding="0" cellspacing="0" style="width:100%; border-spacing:0; border-collapse:collapse;">
+		<tbody>
+			{{$timezone := .Cross.Timezone .To}}{{$url := .Cross.Link .To .Config}}
+			{{$site := .Config.SiteUrl}}
+			{{if .FoldedConversation}}
+			<tr>
+				<td width="50px"></td>
+				<td width="550px" style="color:#B2B2B2; padding-top:10px;"> …… ({{.FoldedConversation}} new {{plural "post" "posts" .FoldedConversation}} in conversation)</td>
+			</tr>
+			{{end}}
+			{{range .Conversations}}
+			<tr>
+				<td width="50px" style="padding-top:10px; vertical-align:top;"><img src="{{$site}}/v2/avatar/render?url={{.By.Avatar | base64url}}&width=30&height=30&resolution=2x" width="30px" height="30px" style="margin-left:10px;" /></td>
+				<td width="550px" style="color:#333333; padding-top:10px;">
+					{{.By.Name | html}}: {{.Content | html | replace "\n" "<br />"}}<br />
+					<span style="color:#B2B2B2; font-size:11px; line-height:15px;">{{.CreatedAtInZone $timezone | html}}</span>
+				</td>
+			</tr>
+			{{end}}
+			<tr style="vertical-align:top">
+				<td width="50px"></td>
+				<td height="30px">&nbsp;</td>
+			</tr>
+		</tbody>
+	</table>
+</a>
+
+			</td></tr>
+			<tr color="#7F7F7F" bgcolor="#EEEEEE">
+				<td style="width:40px; height:100%; padding-right:6px; vertical-align:top; text-align:right;"></td>
+				<td></td>
+				<td style="color:#7F7F7F; font-size:11px; line-height:13px; padding:8px 10px 8px 10px;">Reply this email as group conversation, ‘cc’ people to invite. This email is generated by EXFE automatically. <a href="{{.Config.SiteUrl}}/mute/cross?token={{.To.Token}}" style="color:#7F7F7F;">Unsubscribe</a> its further updates<!--  or <a href="/preference" style="color:#7F7F7F;">change notification preference</a>-->. Get <a href="{{.Config.AppUrl}}" style="color:#3A6EA5; text-decoration:none;">EXFE</a> app <span style="font-style: italic">free</span> to engage easier.</td>
+			</tr>
+		</tbody>
+	</table>
+</div></body>
+</html>

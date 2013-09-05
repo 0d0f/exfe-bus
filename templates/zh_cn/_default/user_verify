@@ -1,0 +1,1 @@
+EXFE身份验证。请打开此链接确认： {{.Config.SiteUrl}}/?token={{.To.Token}} *如果您未请求验证，请勿点击链接*

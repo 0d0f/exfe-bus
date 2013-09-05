@@ -1,3 +1,0 @@
-{{sub . "_default/cross_remind"}}
-
-{"path":"/!{{.Cross.ID}}"}
