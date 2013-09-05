@@ -29,7 +29,7 @@ type duancaiwangReply struct {
 	Result  bool    `json:"result"`
 	Msg     *string `json:"msg"`
 	Active  *int    `json:"active"`
-	ErrCode string  `json:"errcode"`
+	ErrCode int     `json:"errcode"`
 	ID      int     `json:"msg_id"`
 }
 
