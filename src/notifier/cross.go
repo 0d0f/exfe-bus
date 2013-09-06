@@ -152,9 +152,6 @@ func (a InvitationArg) String() string {
 }
 
 func (a *InvitationArg) Parse(config *model.Config, platform *broker.Platform) (err error) {
-	if a.SendToBy() {
-		return fmt.Errorf("not send to self")
-	}
 	a.Config = config
 
 	query := make(url.Values)
@@ -241,6 +238,10 @@ func (c Cross) HandleJoin(arg InvitationArg) {
 }
 
 func (c Cross) HandleInvitation(invitation InvitationArg) {
+	if invitation.SendToBy() {
+		c.Error(http.StatusBadRequest, fmt.Errorf("not send to self"))
+		return
+	}
 	if err := invitation.Parse(c.config, c.platform); err != nil {
 		c.Error(http.StatusBadRequest, err)
 		return
