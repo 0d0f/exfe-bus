@@ -43,7 +43,7 @@ func NewTemplate(name string) *template.Template {
 				return "", fmt.Errorf("can't find both %v templates.", templates)
 			}
 			err := t.Execute(buf, data)
-			return buf.String(), err
+			return strings.Trim(buf.String(), " \r\t\n"), err
 		},
 		"append": func(str ...string) string {
 			return strings.Join(str, "")
@@ -109,6 +109,9 @@ func NewTemplate(name string) *template.Template {
 				return single
 			}
 			return multi
+		},
+		"trim": func(content string) string {
+			return strings.Trim(content, " \t\n\r")
 		},
 	}
 	ret.Funcs(funcs)

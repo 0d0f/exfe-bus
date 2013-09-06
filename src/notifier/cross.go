@@ -306,6 +306,7 @@ func (c Cross) HandleConversation(updates []model.ConversationUpdate) {
 	for _, update := range updates {
 		if !to.SameUser(&update.Post.By) {
 			needSend = true
+			break
 		}
 	}
 	if !needSend {
@@ -396,6 +397,10 @@ func (a ConversationArg) Bys() []*model.Identity {
 		}
 	}
 	return ret
+}
+
+func (a ConversationArg) HasMany() bool {
+	return len(a.Posts) > 1
 }
 
 func in(id *model.Invitation, ids []model.Invitation) bool {
@@ -551,6 +556,7 @@ func (a *UpdateArg) IsExfeeChanged() bool {
 	peopleChanged := len(a.NewAccepted)
 	peopleChanged += len(a.NewDeclined)
 	peopleChanged += len(a.NewInvited)
+	peopleChanged += len(a.NewPending)
 	peopleChanged += len(a.Removed)
 	if peopleChanged > 0 {
 		return true
@@ -616,8 +622,11 @@ func (a *UpdateArg) IsDescriptionChanged() bool {
 	return a.DescriptionChangedBy != nil
 }
 
-func (a *UpdateArg) IsComboChanged() bool {
+func (a *UpdateArg) IsCrossComboChanged() bool {
 	changedNumber := 0
+	if a.IsTimeChanged() {
+		changedNumber++
+	}
 	if a.IsTimeChanged() {
 		changedNumber++
 	}
@@ -631,6 +640,26 @@ func (a *UpdateArg) IsComboChanged() bool {
 		changedNumber++
 	}
 
+	return changedNumber > 1
+}
+
+func (a *UpdateArg) IsComboChanged() bool {
+	changedNumber := 0
+	if a.IsTitleChanged() {
+		changedNumber++
+	}
+	if a.IsTimeChanged() {
+		changedNumber++
+	}
+	if a.IsPlaceChanged() {
+		changedNumber++
+	}
+	if a.IsDescriptionChanged() {
+		changedNumber++
+	}
+	if a.IsExfeeChanged() {
+		changedNumber++
+	}
 	return changedNumber > 1
 }
 

@@ -1,2 +1,5 @@
-{{range .Posts}}{{.By.Name}}: {{.Content}}
+{{if .HasMany}}
+  "{{.Cross.Title}}" updated: has {{len .Posts}} new conversations.
+{{else}}
+  {{range .Posts}}{{.By.Name}}: {{.Content}}{{end}}
 {{end}}
