@@ -1,0 +1,1 @@
+"{{.Cross.Title}}" updated. {{.By.Name}} invited {{range for .Invitees}}{{.V.Name}}{{if not .Last}}, {{end}}{{end}}{{if .HasMany}}…{{else}}.{{end}}

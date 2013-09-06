@@ -1,1 +1,3 @@
-{{if not .SendToBy}}{{.By.Name}} invited {{if .SendToInvitee}}you{{else}}{{.Invitee.Name}}{{end}} to "{{.Cross.Title}}".{{end}}
+{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}}}
+{{$place := .Cross.Place.Title}}
+Invited: {{.By.Name}} invited you to "{{.Cross.Title}}"{{if $time}}, {{$time}}{{end}}{{if $place}} at {{$place}}{{end}}.

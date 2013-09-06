@@ -15,13 +15,14 @@ import (
 type Cross struct {
 	rest.Service `prefix:"/v3/notifier/cross"`
 
-	Digest       rest.Processor `path:"/digest" method:"POST"`
-	Remind       rest.Processor `path:"/remind" method:"POST"`
-	Invitation   rest.Processor `path:"/invitation" method:"POST"`
-	Join         rest.Processor `path:"/join" method:"POST"`
-	Preview      rest.Processor `path:"/preview" method:"POST"`
-	Update       rest.Processor `path:"/update" method:"POST"`
-	Conversation rest.Processor `path:"/conversation" method:"POST"`
+	Digest           rest.Processor `path:"/digest" method:"POST"`
+	Remind           rest.Processor `path:"/remind" method:"POST"`
+	Invitation       rest.Processor `path:"/invitation" method:"POST"`
+	Join             rest.Processor `path:"/join" method:"POST"`
+	Preview          rest.Processor `path:"/preview" method:"POST"`
+	Update           rest.Processor `path:"/update" method:"POST"`
+	UpdateInvitation rest.Processor `path:"/update_invitation" method:"POST"`
+	Conversation     rest.Processor `path:"/conversation" method:"POST"`
 
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
@@ -138,7 +139,6 @@ func (c Cross) HandleRemind(requests []model.CrossDigestRequest) {
 
 type InvitationArg struct {
 	To      model.Recipient `json:"to"`
-	Invitee model.Identity  `json:"invitee"`
 	By      model.Identity  `json:"by"`
 	CrossId int64           `json:"cross_id"`
 	Cross   model.Cross     `json:"cross"`
@@ -148,10 +148,13 @@ type InvitationArg struct {
 }
 
 func (a InvitationArg) String() string {
-	return fmt.Sprintf("{to:%s invitee:%s by:%s cross:%d}", a.To, a.Invitee, a.By, a.Cross.ID)
+	return fmt.Sprintf("{to:%s by:%s cross:%d}", a.To, a.By, a.Cross.ID)
 }
 
 func (a *InvitationArg) Parse(config *model.Config, platform *broker.Platform) (err error) {
+	if a.SendToBy() {
+		return fmt.Errorf("not send to self")
+	}
 	a.Config = config
 
 	query := make(url.Values)
@@ -201,10 +204,6 @@ func (a InvitationArg) Timezone() string {
 
 func (a InvitationArg) SendToBy() bool {
 	return a.To.SameUser(&a.By)
-}
-
-func (a InvitationArg) SendToInvitee() bool {
-	return a.To.SameUser(&a.Invitee)
 }
 
 func (a InvitationArg) LongDescription() bool {
@@ -291,6 +290,56 @@ func (c Cross) HandleUpdate(updates []model.CrossUpdate) {
 	to = &failArg[0].To
 
 	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_update", c.domain+"/v3/notifier/cross/update", &failArg)
+	c.WriteHeader(http.StatusAccepted)
+}
+
+type UpdateInvitationArg struct {
+	To       model.Recipient  `json:"to"`
+	Invitees []model.Identity `json:"invitees"`
+	By       model.Identity   `json:"by"`
+	CrossId  int64            `json:"cross_id"`
+
+	Cross  model.Cross   `json:"-"`
+	Config *model.Config `json:"-"`
+}
+
+func (a UpdateInvitationArg) HasMany() bool {
+	return len(a.Invitees) > 1
+}
+
+func (a UpdateInvitationArg) SendToInvitee() bool {
+	for _, invitee := range a.Invitees {
+		if a.To.SameUser(&invitee) {
+			return true
+		}
+	}
+	return false
+}
+
+func (c Cross) HandleUpdateInvitation(arg UpdateInvitationArg) {
+	if len(arg.Invitees) == 0 {
+		c.Error(http.StatusBadRequest, fmt.Errorf("len(invitees) == 0"))
+		return
+	}
+	if arg.SendToInvitee() {
+		c.Error(http.StatusNoContent, fmt.Errorf("not send to invitee"))
+		return
+	}
+
+	arg.Config = c.config
+
+	query := make(url.Values)
+	query.Set("user_id", fmt.Sprintf("%d", arg.To.UserID))
+	cross, err := c.platform.FindCross(arg.CrossId, query)
+	if err != nil {
+		c.Error(http.StatusBadRequest, err)
+		return
+	}
+	arg.Cross = cross
+
+	to := &arg.To
+
+	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_update_invitation", c.domain+"/v3/notifier/cross/update_invitation", &arg)
 	c.WriteHeader(http.StatusAccepted)
 }
 

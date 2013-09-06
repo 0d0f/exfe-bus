@@ -1,0 +1,1 @@
+“{{.Cross.Title}}”更新：{{.By.Name}}邀请了{{range for .Invitees}}{{.V.Name}}{{if not .Last}}、{{end}}{{end}}{{if .HasMany}}…{{else}}。{{end}}

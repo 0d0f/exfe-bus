@@ -1,5 +1,5 @@
 {{if .HasMany}}
-  "{{.Cross.Title}}" updated: has {{len .Posts}} new conversations.
+   {{len .Posts}} new posts in "{{.Cross.Title}}".
 {{else}}
   {{range .Posts}}{{.By.Name}}: {{.Content}}{{end}}
 {{end}}
