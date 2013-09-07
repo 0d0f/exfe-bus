@@ -395,21 +395,21 @@ func (m RouteMap) HandleSendNotification() {
 		return
 	}
 
-	identity := model.FromIdentityId(m.Request().URL.Query().Get("id"))
-	var invitation *model.Invitation
+	to := model.FromIdentityId(m.Request().URL.Query().Get("id"))
+	var toInvitation *model.Invitation
 	for _, inv := range token.Cross.Exfee.Invitations {
-		if inv.Identity.Equal(identity) {
-			invitation = &inv
+		if inv.Identity.Equal(to) {
+			toInvitation = &inv
 			break
 		}
 	}
-	if invitation == nil {
-		m.Error(http.StatusForbidden, fmt.Errorf("%s is not attend cross %d", identity.Id(), token.Cross.ID))
+	if toInvitation == nil {
+		m.Error(http.StatusForbidden, fmt.Errorf("%s is not attend cross %d", to.Id(), token.Cross.ID))
 		return
 	}
-	identity = invitation.Identity
+	to = toInvitation.Identity
 
-	recipients, err := m.platform.GetRecipientsById(identity.Id())
+	recipients, err := m.platform.GetRecipientsById(to.Id())
 	if err != nil {
 		m.Error(http.StatusInternalServerError, err)
 		return
@@ -432,18 +432,18 @@ func (m RouteMap) HandleSendNotification() {
 			pushed = true
 		}
 	}
-	if identity.Provider == "wechat" {
-		if ok, err := m.platform.CheckWechatFollowing(identity.ExternalUsername); (err != nil || !ok) && !pushed {
+	if to.Provider == "wechat" {
+		if ok, err := m.platform.CheckWechatFollowing(to.ExternalUsername); (err != nil || !ok) && !pushed {
 			m.Error(http.StatusNotAcceptable, fmt.Errorf("can't find provider avaliable"))
 		}
 	}
 
 	go func() {
-		arg.To = identity.ToRecipient()
+		arg.To = to.ToRecipient()
 		m.sendRequest(arg)
-		for _, id := range invitation.Notifications {
-			identity := model.FromIdentityId(id)
-			arg.To.ExternalUsername, arg.To.Provider = identity.ExternalUsername, identity.Provider
+		for _, id := range toInvitation.Notifications {
+			to := model.FromIdentityId(id)
+			arg.To.ExternalUsername, arg.To.Provider = to.ExternalUsername, to.Provider
 			m.sendRequest(arg)
 		}
 	}()
