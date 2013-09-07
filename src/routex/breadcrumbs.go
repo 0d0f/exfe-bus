@@ -96,11 +96,13 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []rmodel.SimpleLocatio
 	breadcrumb.Timestamp = time.Now().Unix()
 	distance := float64(-1)
 	if acc <= 70 {
+		distance = 100
 		if last, err := m.breadcrumbCache.Load(userId); err == nil {
 			lastLat, lastLng := last.GPS[0], last.GPS[1]
 			distance = Distance(lat, lng, lastLat, lastLng)
 		}
 	}
+	fmt.Println("distance:", distance)
 	var crossIds []int64
 	action := ""
 	if distance > 30 {
