@@ -102,7 +102,6 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []rmodel.SimpleLocatio
 			distance = Distance(lat, lng, lastLat, lastLng)
 		}
 	}
-	fmt.Println("distance:", distance)
 	var crossIds []int64
 	action := ""
 	if distance > 30 {
