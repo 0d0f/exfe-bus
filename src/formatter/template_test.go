@@ -7,6 +7,19 @@ import (
 	"testing"
 )
 
+func TestTemplateTrim(t *testing.T) {
+	templ, err := NewTemplate("test").Parse(`{{"  0123456789  " | trim}}`)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	buf := bytes.NewBuffer(nil)
+	err = templ.Execute(buf, nil)
+	if err != nil {
+		t.Fatalf("unexpect error: %s", err)
+	}
+	assert.Equal(t, buf.String(), "0123456789", "should equal")
+}
+
 func TestTemplateSubstr(t *testing.T) {
 	templ, err := NewTemplate("test").Parse(`{{"0123456789" | substr 2 4}}`)
 	if err != nil {
@@ -138,11 +151,11 @@ func TestTemplateSub(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpect error: %s", err)
 	}
-	_, err = templ.New("a").Parse(`aaa`)
+	_, err = templ.New("a").Parse(` aaa `)
 	if err != nil {
 		t.Fatalf("unexpect error: %s", err)
 	}
-	_, err = templ.New("b").Parse(`bbb`)
+	_, err = templ.New("b").Parse("\nbbb\n")
 	if err != nil {
 		t.Fatalf("unexpect error: %s", err)
 	}

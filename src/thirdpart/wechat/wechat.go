@@ -3,6 +3,7 @@ package wechat
 import (
 	"broker"
 	"fmt"
+	"logger"
 	"model"
 	"thirdpart"
 	"time"
@@ -30,6 +31,7 @@ func (w *Wechat) SetPosterCallback(callback thirdpart.Callback) (time.Duration, 
 func (w *Wechat) Post(from, to, content string) (string, error) {
 	resp, err := broker.HttpResponse(broker.Http("POST", w.url, "application/javascript", []byte(content)))
 	if err != nil {
+		logger.ERROR("post to %s error: %s with %s", w.url, err, content)
 		return "", err
 	}
 	defer resp.Close()

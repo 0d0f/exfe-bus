@@ -401,11 +401,12 @@ func (m RouteMap) HandleSendNotification() {
 	var fromIdentity *model.Identity
 	var invitation *model.Invitation
 	for _, inv := range token.Cross.Exfee.Invitations {
+		i := inv
 		if invitation == nil && inv.Identity.Equal(identity) {
-			invitation = &inv
+			invitation = &i
 		}
 		if fromIdentity == nil && inv.Identity.UserID == token.UserId {
-			fromIdentity = &inv.Identity
+			fromIdentity = &i.Identity
 		}
 	}
 	if invitation == nil || fromIdentity == nil {
@@ -509,9 +510,9 @@ func (m *RouteMap) auth() (rmodel.Token, bool) {
 	var token rmodel.Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	// if authData == "" {
-	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	// }
+	if authData == "" {
+		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	}
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {

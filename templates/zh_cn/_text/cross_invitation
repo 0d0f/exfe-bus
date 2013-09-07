@@ -1,1 +1,3 @@
-{{if not .SendToBy}}{{.By.Name}}邀请{{if .SendToInvitee}}您{{else}}{{.Invitee.Name}}{{end}}参加"{{.Cross.Title}}"{{end}}
+{{$tz := .Cross.Timezone .To}}{{$time := .Cross.Time.StringInZone $tz}}
+{{$place := .Cross.Place.Title}}
+{{.By.Name}}邀您加入“{{.Cross.Title}}”{{if $time}}，{{$time}}{{end}}{{if $place}}，{{$place}}{{end}}。

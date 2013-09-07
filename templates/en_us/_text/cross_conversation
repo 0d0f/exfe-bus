@@ -1,2 +1,5 @@
-{{range .Posts}}{{.By.Name}}: {{.Content}}
+{{if .HasMany}}
+   {{len .Posts}} new posts in "{{.Cross.Title}}".
+{{else}}
+  {{range .Posts}}{{.By.Name}}: {{.Content}}{{end}}
 {{end}}
