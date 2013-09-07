@@ -18,7 +18,8 @@ type Token struct {
 	CrossId    uint64 `json:"cross_id"`
 	IdentityId int64  `json:"identity_id"`
 
-	Cross model.Cross `json:"-"`
+	Cross    model.Cross    `json:"-"`
+	Identity model.Identity `json:"-"`
 }
 
 type SimpleLocation struct {

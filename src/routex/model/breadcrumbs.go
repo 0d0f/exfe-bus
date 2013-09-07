@@ -87,7 +87,7 @@ func (s *BreadcrumbsSaver) Save(userId int64, l SimpleLocation) error {
 	return nil
 }
 
-func (s *BreadcrumbsSaver) Update(userId int64, l SimpleLocation) error {
+func (s *BreadcrumbsSaver) UpdateLast(userId int64, l SimpleLocation) error {
 	if _, err := s.update.Exec(l.GPS[0], l.GPS[1], l.GPS[2], userId); err != nil {
 		return err
 	}

@@ -104,16 +104,15 @@ func (m RouteMap) HandleSetUser(setup UserCrossSetup) {
 }
 
 func (m RouteMap) HandleSetUserInner(setup UserCrossSetup) {
-	userIdStr := m.Vars()["user_id"]
+	userIdStr, crossIdStr := m.Vars()["user_id"], m.Vars()["cross_id"]
 	userId, err := strconv.ParseInt(userIdStr, 10, 64)
 	if err != nil {
-		m.Error(http.StatusBadRequest, err)
+		m.Error(http.StatusBadRequest, fmt.Errorf("invalid user id %s", userIdStr))
 		return
 	}
-	crossIdStr := m.Vars()["cross_id"]
 	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
 	if err != nil {
-		m.Error(http.StatusBadRequest, err)
+		m.Error(http.StatusBadRequest, fmt.Errorf("invalid cross id %s", crossIdStr))
 		return
 	}
 	if setup.AfterInSeconds == 0 {
@@ -141,7 +140,7 @@ func (m RouteMap) HandleGetRoutex() *bool {
 	}
 	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
 	if err != nil {
-		m.Error(http.StatusBadRequest, fmt.Errorf("invalid user id %s", crossIdStr))
+		m.Error(http.StatusBadRequest, fmt.Errorf("invalid cross id %s", crossIdStr))
 		return nil
 	}
 	endAt, err := m.breadcrumbsRepo.GetWindowEnd(userId, crossId)
@@ -396,36 +395,31 @@ func (m RouteMap) HandleSendNotification() {
 		return
 	}
 
-	id := m.Request().URL.Query().Get("id")
-	identity := model.FromIdentityId(id)
-	var fromIdentity *model.Identity
+	identity := model.FromIdentityId(m.Request().URL.Query().Get("id"))
 	var invitation *model.Invitation
 	for _, inv := range token.Cross.Exfee.Invitations {
-		i := inv
-		if invitation == nil && inv.Identity.Equal(identity) {
-			invitation = &i
-		}
-		if fromIdentity == nil && inv.Identity.UserID == token.UserId {
-			fromIdentity = &i.Identity
+		if inv.Identity.Equal(identity) {
+			invitation = &inv
+			break
 		}
 	}
-	if invitation == nil || fromIdentity == nil {
-		m.Error(http.StatusForbidden, fmt.Errorf("%s or user %d is not attend cross %d", id, token.UserId, token.Cross.ID))
+	if invitation == nil {
+		m.Error(http.StatusForbidden, fmt.Errorf("%s is not attend cross %d", identity.Id(), token.Cross.ID))
 		return
 	}
 	identity = invitation.Identity
 
-	recipients, err := m.platform.GetRecipientsById(id)
+	recipients, err := m.platform.GetRecipientsById(identity.Id())
 	if err != nil {
 		m.Error(http.StatusInternalServerError, err)
 		return
 	}
 
-	m.routexRepo.Update(token.UserId, int64(token.Cross.ID))
+	m.update(token.UserId, int64(token.Cross.ID))
 
 	arg := notifier.RequestArg{
 		CrossId: token.Cross.ID,
-		From:    *fromIdentity,
+		From:    token.Identity,
 	}
 	pushed := false
 	for _, recipient := range recipients {
@@ -473,9 +467,6 @@ func (m *RouteMap) sendRequest(arg notifier.RequestArg) {
 func (m RouteMap) switchWindow(userId, crossId int64, save bool, afterInSeconds int) {
 	m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", crossId), nil, model.Identity{})
 	if save {
-		if err := m.routexRepo.EnableCross(userId, crossId, afterInSeconds); err != nil {
-			logger.ERROR("set user %d enable cross %d routex repo failed: %s", userId, crossId, err)
-		}
 		if err := m.breadcrumbsRepo.EnableCross(userId, crossId, afterInSeconds); err != nil {
 			logger.ERROR("set user %d enable cross %d breadcrumbs repo failed: %s", userId, crossId, err)
 		}
@@ -483,9 +474,6 @@ func (m RouteMap) switchWindow(userId, crossId int64, save bool, afterInSeconds 
 			logger.ERROR("set user %d enable cross %d breadcrumb cache failed: %s", userId, crossId, err)
 		}
 	} else {
-		if err := m.routexRepo.DisableCross(userId, crossId); err != nil {
-			logger.ERROR("set user %d disable cross %d routex repo failed: %s", userId, crossId, err)
-		}
 		if err := m.breadcrumbsRepo.DisableCross(userId, crossId); err != nil {
 			logger.ERROR("set user %d disable cross %d breadcrumbs repo failed: %s", userId, crossId, err)
 		}
@@ -496,7 +484,7 @@ func (m RouteMap) switchWindow(userId, crossId int64, save bool, afterInSeconds 
 }
 
 func (m RouteMap) update(userId, crossId int64) {
-	if err := m.routexRepo.Update(userId, crossId); err != nil {
+	if err := m.routexRepo.Update(crossId); err != nil {
 		logger.ERROR("update routex user %d cross %d error: %s", err)
 	}
 	m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", crossId), nil, model.Identity{})
@@ -510,9 +498,9 @@ func (m *RouteMap) auth() (rmodel.Token, bool) {
 	var token rmodel.Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	if authData == "" {
-		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	}
+	// if authData == "" {
+	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	// }
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
@@ -548,14 +536,16 @@ func (m *RouteMap) auth() (rmodel.Token, bool) {
 		return token, false
 	}
 
-	if token.TokenType == "user_token" {
-		return token, true
-	}
-
 	for _, inv := range token.Cross.Exfee.Invitations {
 		if inv.Identity.ID == token.IdentityId {
-			token.UserId = inv.Identity.UserID
-			return token, true
+			switch token.TokenType {
+			case "cross_access_token":
+				token.UserId = inv.Identity.UserID
+				fallthrough
+			case "user_token":
+				token.Identity = inv.Identity
+				return token, true
+			}
 		}
 	}
 	return token, false

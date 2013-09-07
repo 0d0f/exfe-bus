@@ -58,13 +58,9 @@ func (o BreadcrumbOffset) MarshalJSON() ([]byte, error) {
 }
 
 func (m RouteMap) HandleUpdateBreadcrums(breadcrumbs []rmodel.SimpleLocation) BreadcrumbOffset {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
-
 	var token rmodel.Token
 	var ret BreadcrumbOffset
-	token, ok := m.auth(false)
+	token, ok := m.auth()
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return ret
@@ -84,10 +80,7 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []rmodel.SimpleLocatio
 		m.Error(http.StatusBadRequest, err)
 		return ret
 	}
-	if len(breadcrumb.GPS) < 3 {
-		m.Error(http.StatusBadRequest, fmt.Errorf("invalid breadcrumb: %+v", breadcrumb))
-		return ret
-	}
+
 	if m.Request().URL.Query().Get("coordinate") == "mars" {
 		breadcrumb.ToEarth(m.conversion)
 		earth = breadcrumb
@@ -101,17 +94,18 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []rmodel.SimpleLocatio
 	}
 
 	breadcrumb.Timestamp = time.Now().Unix()
-	last, err := m.breadcrumbCache.Load(userId)
-	distance := float64(100)
-	if err == nil && len(last.GPS) >= 3 && acc <= 70 {
-		lastLat, lastLng := last.GPS[0], last.GPS[1]
-		distance = Distance(lat, lng, lastLat, lastLng)
+	distance := float64(-1)
+	if acc <= 70 {
+		if last, err := m.breadcrumbCache.Load(userId); err == nil {
+			lastLat, lastLng := last.GPS[0], last.GPS[1]
+			distance = Distance(lat, lng, lastLat, lastLng)
+		}
 	}
 	var crossIds []int64
 	action := ""
-	if distance > 30 && acc <= 70 {
+	if distance > 30 {
 		action = "save_to_history"
-		logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7f", lat), fmt.Sprintf("%.7f", lng), acc)
+		logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7f", lat), fmt.Sprintf("%.7f", lng), acc, "distance", fmt.Sprintf("%.2f", distance), "save")
 		if crossIds, err = m.breadcrumbCache.SaveCross(userId, breadcrumb); err != nil {
 			logger.ERROR("can't save cache %d: %s with %+v", userId, err, breadcrumb)
 			m.Error(http.StatusInternalServerError, err)
@@ -130,8 +124,10 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []rmodel.SimpleLocatio
 			m.Error(http.StatusInternalServerError, err)
 			return ret
 		}
-		if err := m.breadcrumbsRepo.Update(userId, breadcrumb); err != nil {
-			logger.ERROR("can't update user %d breadcrumb: %s with %+v", userId, err, breadcrumb)
+		if acc <= 70 {
+			if err := m.breadcrumbsRepo.UpdateLast(userId, breadcrumb); err != nil {
+				logger.ERROR("can't update user %d breadcrumb: %s with %+v", userId, err, breadcrumb)
+			}
 		}
 	}
 
@@ -140,39 +136,33 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []rmodel.SimpleLocatio
 		Longitude: mars.GPS[1] - earth.GPS[1],
 	}
 
-	go func() {
-		route := rmodel.Geomark{
-			Id:        m.breadcrumbsId(userId),
-			Action:    action,
-			Type:      "route",
-			Tags:      []string{"breadcrumbs"},
-			Positions: []rmodel.SimpleLocation{breadcrumb},
+	route := rmodel.Geomark{
+		Id:        m.breadcrumbsId(userId),
+		Action:    action,
+		Type:      "route",
+		Tags:      []string{"breadcrumbs"},
+		Positions: []rmodel.SimpleLocation{breadcrumb},
+	}
+	for _, cross := range crossIds {
+		m.castLocker.RLock()
+		b, ok := m.crossCast[cross]
+		m.castLocker.RUnlock()
+		if !ok {
+			continue
 		}
-		for _, cross := range crossIds {
-			m.castLocker.RLock()
-			b, ok := m.crossCast[cross]
-			m.castLocker.RUnlock()
-			if !ok {
-				continue
-			}
-			b.Send(route)
-		}
-	}()
+		b.Send(route)
+	}
 
 	return ret
 }
 
 func (m RouteMap) HandleGetBreadcrums() []rmodel.Geomark {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
-
-	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
-	token, ok := m.auth(true)
+	token, ok := m.auth()
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return nil
 	}
+	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
 	return m.getBreadcrumbs(token.Cross, toMars)
 }
 
@@ -204,17 +194,14 @@ func (m RouteMap) getBreadcrumbs(cross model.Cross, toMars bool) []rmodel.Geomar
 }
 
 func (m RouteMap) HandleGetUserBreadcrums() rmodel.Geomark {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
-
-	toMars, userIdStr := m.Request().URL.Query().Get("coordinate") == "mars", m.Vars()["user_id"]
-	token, ok := m.auth(true)
 	var ret rmodel.Geomark
+	token, ok := m.auth()
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return ret
 	}
+
+	toMars, userIdStr := m.Request().URL.Query().Get("coordinate") == "mars", m.Vars()["user_id"]
 	var userId int64
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		if fmt.Sprintf("%d", invitation.Identity.UserID) == userIdStr {
@@ -223,9 +210,10 @@ func (m RouteMap) HandleGetUserBreadcrums() rmodel.Geomark {
 		}
 	}
 	if userId == 0 {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		m.Error(http.StatusUnauthorized, m.DetailError(-1, "user %s not in cross %d", userIdStr, token.Cross.ID))
 		return ret
 	}
+
 	after := time.Now().UTC()
 	if afterTimstamp := m.Request().URL.Query().Get("after_timestamp"); afterTimstamp != "" {
 		timestamp, err := strconv.ParseInt(afterTimstamp, 10, 64)
@@ -238,13 +226,11 @@ func (m RouteMap) HandleGetUserBreadcrums() rmodel.Geomark {
 	if ret.Positions = m.getTutorialData(after, userId, 360); ret.Positions == nil {
 		var err error
 		if ret.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID), after.Unix()); err != nil {
-			if err == redis.ErrNil {
-				m.Error(http.StatusNotFound, err)
-			} else {
+			if err != redis.ErrNil {
 				logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
 				m.Error(http.StatusInternalServerError, err)
+				return ret
 			}
-			return ret
 		}
 	}
 	ret.Id, ret.Type = m.breadcrumbsId(userId), "route"

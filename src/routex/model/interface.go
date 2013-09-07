@@ -38,10 +38,8 @@ type RoutexControl interface {
 }
 
 type RoutexRepo interface {
-	RoutexControl
 	Search(crossIds []int64) ([]Routex, error)
-	Get(userId, crossId int64) (*Routex, error)
-	Update(userId, crossId int64) error
+	Update(crossId int64) error
 }
 
 type BreadcrumbCache interface {
@@ -57,7 +55,7 @@ type BreadcrumbsRepo interface {
 	GetWindowEnd(userId, crossId int64) (int64, error)
 	Save(userId int64, l SimpleLocation) error
 	Load(userId, crossId, afterTimestamp int64) ([]SimpleLocation, error)
-	Update(userId int64, l SimpleLocation) error
+	UpdateLast(userId int64, l SimpleLocation) error
 }
 
 type GeomarksRepo interface {
