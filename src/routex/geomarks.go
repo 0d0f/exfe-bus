@@ -210,13 +210,8 @@ func (m RouteMap) HandleSetGeomark(mark rmodel.Geomark) {
 		}
 	}
 
-	m.castLocker.RLock()
-	broadcast := m.crossCast[int64(token.Cross.ID)]
-	m.castLocker.RUnlock()
 	mark.Action = "update"
-	if broadcast != nil {
-		broadcast.Send(mark)
-	}
+	m.pubsub.Publish(m.publicName(int64(token.Cross.ID)), mark)
 	m.checkGeomarks(token.Cross, mark)
 	m.update(token.UserId, int64(token.Cross.ID))
 
@@ -250,13 +245,8 @@ func (m RouteMap) HandleDeleteGeomark() {
 		}
 	}
 
-	m.castLocker.RLock()
-	broadcast := m.crossCast[int64(token.Cross.ID)]
-	m.castLocker.RUnlock()
 	mark.Action = "delete"
-	if broadcast != nil {
-		broadcast.Send(mark)
-	}
+	m.pubsub.Publish(m.publicName(int64(token.Cross.ID)), mark)
 	m.checkGeomarks(token.Cross, mark)
 	m.update(token.UserId, int64(token.Cross.ID))
 
@@ -264,10 +254,6 @@ func (m RouteMap) HandleDeleteGeomark() {
 }
 
 func (m RouteMap) checkGeomarks(cross model.Cross, mark rmodel.Geomark) {
-	m.castLocker.RLock()
-	broadcast := m.crossCast[int64(cross.ID)]
-	m.castLocker.RUnlock()
-
 	marks, _ := m.getGeomarks(cross, false)
 
 	if mark.HasTag(DestinationTag) {
@@ -276,9 +262,7 @@ func (m RouteMap) checkGeomarks(cross model.Cross, mark rmodel.Geomark) {
 				if mk.Id != mark.Id && mk.RemoveTag(DestinationTag) {
 					m.geomarksRepo.Set(int64(cross.ID), mk)
 					mk.Action = "update"
-					if broadcast != nil {
-						broadcast.Send(mk)
-					}
+					m.pubsub.Publish(m.publicName(int64(cross.ID)), mk)
 				}
 			}
 		}
@@ -287,9 +271,7 @@ func (m RouteMap) checkGeomarks(cross model.Cross, mark rmodel.Geomark) {
 				if mk.HasTag(XPlaceTag) {
 					mk.Tags = append(mk.Tags, DestinationTag)
 					mk.Action = "update"
-					if broadcast != nil {
-						broadcast.Send(mk)
-					}
+					m.pubsub.Publish(m.publicName(int64(cross.ID)), mk)
 				}
 			}
 		}
@@ -297,9 +279,7 @@ func (m RouteMap) checkGeomarks(cross model.Cross, mark rmodel.Geomark) {
 	if mark.HasTag(XPlaceTag) && !strings.HasPrefix(mark.Id, XPlaceTag) {
 		m.geomarksRepo.Delete(int64(cross.ID), mark.Type, mark.Id)
 		mark.Action = "delete"
-		if broadcast != nil {
-			broadcast.Send(mark)
-		}
+		m.pubsub.Publish(m.publicName(int64(cross.ID)), mark)
 	}
 }
 

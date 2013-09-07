@@ -4,7 +4,7 @@ import (
 	"broker"
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-broadcast"
+	"github.com/googollee/go-pubsub"
 	"github.com/googollee/go-rest"
 	"logger"
 	"math/rand"
@@ -52,7 +52,7 @@ type RouteMap struct {
 	platform        *broker.Platform
 	config          *model.Config
 	tutorialDatas   map[int64][]rmodel.TutorialData
-	crossCast       map[int64]*broadcast.Broadcast
+	pubsub          *pubsub.Pubsub
 	castLocker      sync.RWMutex
 }
 
@@ -82,7 +82,7 @@ func New(routexRepo rmodel.RoutexRepo, breadcrumbCache rmodel.BreadcrumbCache, b
 		platform:        platform,
 		tutorialDatas:   tutorialDatas,
 		config:          config,
-		crossCast:       make(map[int64]*broadcast.Broadcast),
+		pubsub:          pubsub.New(20),
 	}
 	return ret, nil
 }
@@ -162,8 +162,6 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
 		return
 	}
-	f := logger.FUNC("streaming connected by user %d, cross %d", token.UserId, token.Cross.ID)
-	defer f.Quit()
 
 	now := time.Now()
 	endAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
@@ -186,24 +184,13 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		m.switchWindow(token.UserId, int64(token.Cross.ID), true, after)
 	}
 
-	m.castLocker.Lock()
-	b, ok := m.crossCast[int64(token.Cross.ID)]
-	if !ok {
-		b = broadcast.NewBroadcast(-1)
-		m.crossCast[int64(token.Cross.ID)] = b
-	}
-	m.castLocker.Unlock()
 	c := make(chan interface{}, 10)
-	b.Register(c)
+	m.pubsub.Subscribe(m.publicName(int64(token.Cross.ID)), c)
+	logger.DEBUG("streaming connected by user %d, cross %d", token.UserId, token.Cross.ID)
 	defer func() {
-		b.Unregister(c)
+		logger.DEBUG("streaming disconnect by user %d, cross %d", token.UserId, token.Cross.ID)
+		m.pubsub.Unsubscribe(m.publicName(int64(token.Cross.ID)), c)
 		close(c)
-
-		if b.Len() == 0 {
-			m.castLocker.Lock()
-			delete(m.crossCast, int64(token.Cross.ID))
-			m.castLocker.Unlock()
-		}
 	}()
 
 	willEnd := endAt - now.Unix()
@@ -552,4 +539,8 @@ func (m *RouteMap) auth() (rmodel.Token, bool) {
 		}
 	}
 	return token, false
+}
+
+func (m RouteMap) publicName(crossId int64) string {
+	return fmt.Sprintf("routex:cross_%d", crossId)
 }

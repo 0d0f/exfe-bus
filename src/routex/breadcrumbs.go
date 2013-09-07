@@ -146,13 +146,7 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []rmodel.SimpleLocatio
 		Positions: []rmodel.SimpleLocation{breadcrumb},
 	}
 	for _, cross := range crossIds {
-		m.castLocker.RLock()
-		b, ok := m.crossCast[cross]
-		m.castLocker.RUnlock()
-		if !ok {
-			continue
-		}
-		b.Send(route)
+		m.pubsub.Publish(m.publicName(cross), route)
 	}
 
 	return ret
