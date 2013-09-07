@@ -1,1 +1,1 @@
-{{if not .SendToInvitee}}{{.Invitee.Name}}通过{{if .SendToBy}}您{{else}}{{.By.Name}}{{end}}的链接加入“{{.Cross.Title}}”。{{end}}
+{{.Invitee.Name}}通过{{if .SendToBy}}您{{else}}{{.By.Name}}{{end}}的链接加入“{{.Cross.Title}}”。

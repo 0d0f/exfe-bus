@@ -226,17 +226,6 @@ func (a InvitationArg) ListInvitations() string {
 	return ret
 }
 
-func (c Cross) HandleJoin(arg InvitationArg) {
-	if err := arg.Parse(c.config, c.platform); err != nil {
-		c.Error(http.StatusBadRequest, err)
-		return
-	}
-	to := &arg.To
-
-	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_join", c.domain+"/v3/notifier/cross/arg", &arg)
-	c.WriteHeader(http.StatusAccepted)
-}
-
 func (c Cross) HandleInvitation(invitation InvitationArg) {
 	if invitation.SendToBy() {
 		c.Error(http.StatusBadRequest, fmt.Errorf("not send to self"))
@@ -249,6 +238,52 @@ func (c Cross) HandleInvitation(invitation InvitationArg) {
 	to := &invitation.To
 
 	go SendAndSave(c.localTemplate, c.platform, to, invitation, "cross_invitation", c.domain+"/v3/notifier/cross/invitation", &invitation)
+	c.WriteHeader(http.StatusAccepted)
+}
+
+type JoinArg struct {
+	To      model.Recipient `json:"to"`
+	Invitee model.Identity  `json:"invitee"`
+	By      model.Identity  `json:"by"`
+	CrossId int64           `json:"cross_id"`
+
+	Cross  model.Cross   `json:"-"`
+	Config *model.Config `json:"-"`
+}
+
+func (a *JoinArg) Parse(config *model.Config, platform *broker.Platform) (err error) {
+	if a.SendToInvitee() {
+		return fmt.Errorf("not send to invitee")
+	}
+	a.Config = config
+
+	query := make(url.Values)
+	query.Set("user_id", fmt.Sprintf("%d", a.To.UserID))
+	cross, err := platform.FindCross(a.CrossId, query)
+	if err != nil {
+		return err
+	}
+	a.Cross = cross
+
+	return nil
+}
+
+func (a JoinArg) SendToInvitee() bool {
+	return a.To.SameUser(&a.Invitee)
+}
+
+func (a JoinArg) SendToBy() bool {
+	return a.To.SameUser(&a.By)
+}
+
+func (c Cross) HandleJoin(arg JoinArg) {
+	if err := arg.Parse(c.config, c.platform); err != nil {
+		c.Error(http.StatusBadRequest, err)
+		return
+	}
+	to := &arg.To
+
+	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_join", c.domain+"/v3/notifier/cross/arg", &arg)
 	c.WriteHeader(http.StatusAccepted)
 }
 
