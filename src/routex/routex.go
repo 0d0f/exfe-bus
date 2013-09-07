@@ -498,9 +498,9 @@ func (m *RouteMap) auth() (rmodel.Token, bool) {
 	var token rmodel.Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	if authData == "" {
-		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	}
+	// if authData == "" {
+	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	// }
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
@@ -537,12 +537,15 @@ func (m *RouteMap) auth() (rmodel.Token, bool) {
 	}
 
 	for _, inv := range token.Cross.Exfee.Invitations {
-		if inv.Identity.ID == token.IdentityId {
-			switch token.TokenType {
-			case "cross_access_token":
+		switch token.TokenType {
+		case "cross_access_token":
+			if inv.Identity.ID == token.IdentityId {
 				token.UserId = inv.Identity.UserID
-				fallthrough
-			case "user_token":
+				token.Identity = inv.Identity
+				return token, true
+			}
+		case "user_token":
+			if inv.Identity.UserID == token.UserId {
 				token.Identity = inv.Identity
 				return token, true
 			}
