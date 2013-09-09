@@ -26,7 +26,7 @@ func NewBreadcrumbCacheSaver(r *redis.Pool) *BreadcrumbCacheSaver {
 		redis.call("EXPIRE", userkey, 600)
 		for i = 1, #crosses do
 			local c = crosses[i]
-			redis.call("SET", matchkey..":"..c, data, "EX", "7200")
+			redis.call("SET", matchkey..":"..c, data)
 		end
 		return crosses
 	`)
@@ -62,8 +62,7 @@ func (s *BreadcrumbCacheSaver) DisableCross(userId, crossId int64) error {
 	key, conn := s.ukey(userId)+":cross", s.r.Get()
 	defer conn.Close()
 
-	till := time.Now().Unix()
-	if _, err := conn.Do("ZADD", key, till, crossId); err != nil {
+	if _, err := conn.Do("ZREM", key, crossId); err != nil {
 		return err
 	}
 	return nil
