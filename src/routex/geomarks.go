@@ -238,7 +238,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 		}
 	}
 	if kind == "location" || kind == "route" {
-		if err := m.geomarksRepo.Delete(int64(token.Cross.ID), mark.Type, mark.Id); err != nil {
+		if err := m.geomarksRepo.Delete(int64(token.Cross.ID), mark.Type, mark.Id, token.Identity.Id()); err != nil {
 			logger.ERROR("delete geromark %s %s error: %s", mark.Type, mark.Id, err)
 			m.Error(http.StatusInternalServerError, err)
 			return
@@ -277,7 +277,7 @@ func (m RouteMap) checkGeomarks(cross model.Cross, mark rmodel.Geomark) {
 		}
 	}
 	if mark.HasTag(XPlaceTag) && !strings.HasPrefix(mark.Id, XPlaceTag) {
-		m.geomarksRepo.Delete(int64(cross.ID), mark.Type, mark.Id)
+		m.geomarksRepo.Delete(int64(cross.ID), mark.Type, mark.Id, mark.UpdatedBy)
 		mark.Action = "delete"
 		m.pubsub.Publish(m.publicName(int64(cross.ID)), mark)
 	}

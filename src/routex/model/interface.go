@@ -61,5 +61,5 @@ type BreadcrumbsRepo interface {
 type GeomarksRepo interface {
 	Set(crossId int64, mark Geomark) error
 	Get(crossId int64) ([]Geomark, error)
-	Delete(crossId int64, type_, id string) error
+	Delete(crossId int64, type_, id, by string) error
 }

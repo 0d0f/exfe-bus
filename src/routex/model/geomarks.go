@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	GEOMARKS_CREATE = "INSERT IGNORE INTO `geomarks` (`id`, `type`, `cross_id`, `mark`, `touched_at`, `deleted`) VALUES (?, ?, ?, ?, UNIX_TIMESTAMP(), FALSE)"
-	GEOMARKS_UPDATE = "UPDATE `geomarks` SET `mark`=?, `touched_at`=UNIX_TIMESTAMP(), `deleted`=FALSE WHERE `id`=? AND `type`=? AND `cross_id`=?"
+	GEOMARKS_CREATE = "INSERT IGNORE INTO `geomarks` (`id`, `type`, `cross_id`, `mark`, `touched_at`, `touched_by`, `deleted`) VALUES (?, ?, ?, ?, UNIX_TIMESTAMP(), ?, FALSE)"
+	GEOMARKS_UPDATE = "UPDATE `geomarks` SET `mark`=?, `touched_by`=?, `touched_at`=UNIX_TIMESTAMP(), `deleted`=FALSE WHERE `id`=? AND `type`=? AND `cross_id`=?"
 	GEOMARKS_GET    = "SELECT `mark` FROM `geomarks` WHERE `cross_id`=? AND `deleted`=FALSE"
-	GEOMARKS_DELETE = "UPDATE `geomarks` SET `deleted`=TRUE, `touched_at`=UNIX_TIMESTAMP() WHERE `id`=? AND `type`=? AND `cross_id`=? AND `deleted`=FALSE"
+	GEOMARKS_DELETE = "UPDATE `geomarks` SET `touched_by`=?, `deleted`=TRUE, `touched_at`=UNIX_TIMESTAMP() WHERE `id`=? AND `type`=? AND `cross_id`=? AND `deleted`=FALSE"
 )
 
 type GeomarksSaver struct {
@@ -40,7 +40,7 @@ func (s *GeomarksSaver) Set(crossId int64, mark Geomark) error {
 	if err != nil {
 		return err
 	}
-	n, err := s.create.Exec(mark.Id, mark.Type, crossId, string(b))
+	n, err := s.create.Exec(mark.Id, mark.Type, crossId, string(b), mark.UpdatedBy)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (s *GeomarksSaver) Set(crossId int64, mark Geomark) error {
 		if err != nil {
 			return err
 		}
-		_, err := s.update.Exec(string(b), mark.Id, mark.Type, crossId)
+		_, err := s.update.Exec(string(b), mark.UpdatedBy, mark.Id, mark.Type, crossId)
 		if err != nil {
 			return err
 		}
@@ -84,8 +84,8 @@ func (s *GeomarksSaver) Get(crossId int64) ([]Geomark, error) {
 	return ret, nil
 }
 
-func (s *GeomarksSaver) Delete(crossId int64, markType, markId string) error {
-	if _, err := s.del.Exec(markId, markType, crossId); err != nil {
+func (s *GeomarksSaver) Delete(crossId int64, markType, markId, updatedBy string) error {
+	if _, err := s.del.Exec(updatedBy, markId, markType, crossId); err != nil {
 		return err
 	}
 	return nil
