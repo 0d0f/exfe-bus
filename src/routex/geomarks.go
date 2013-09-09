@@ -213,7 +213,6 @@ func (m RouteMap) HandleSetGeomark(mark rmodel.Geomark) {
 	mark.Action = "update"
 	m.pubsub.Publish(m.publicName(int64(token.Cross.ID)), mark)
 	m.checkGeomarks(token.Cross, mark)
-	m.update(token.UserId, int64(token.Cross.ID))
 
 	return
 }
@@ -248,7 +247,6 @@ func (m RouteMap) HandleDeleteGeomark() {
 	mark.Action = "delete"
 	m.pubsub.Publish(m.publicName(int64(token.Cross.ID)), mark)
 	m.checkGeomarks(token.Cross, mark)
-	m.update(token.UserId, int64(token.Cross.ID))
 
 	return
 }
@@ -260,13 +258,19 @@ func (m RouteMap) checkGeomarks(cross model.Cross, mark rmodel.Geomark) {
 		if mark.Action == "update" {
 			for _, mk := range marks {
 				if mk.Id != mark.Id && mk.RemoveTag(DestinationTag) {
-					m.geomarksRepo.Set(int64(cross.ID), mk)
+					if !mk.HasTag(XPlaceTag) {
+						m.geomarksRepo.Set(int64(cross.ID), mk)
+					}
 					mk.Action = "update"
 					m.pubsub.Publish(m.publicName(int64(cross.ID)), mk)
 				}
 			}
+			if !mark.HasTag(XPlaceTag) {
+				m.pubsub.Publish(m.publicName(int64(cross.ID)), mark)
+			}
 		}
 		if mark.Action == "delete" {
+			m.pubsub.Publish(m.publicName(int64(cross.ID)), mark)
 			for _, mk := range marks {
 				if mk.HasTag(XPlaceTag) {
 					mk.Tags = append(mk.Tags, DestinationTag)
@@ -280,6 +284,13 @@ func (m RouteMap) checkGeomarks(cross model.Cross, mark rmodel.Geomark) {
 		m.geomarksRepo.Delete(int64(cross.ID), mark.Type, mark.Id, mark.UpdatedBy)
 		mark.Action = "delete"
 		m.pubsub.Publish(m.publicName(int64(cross.ID)), mark)
+		for _, mk := range marks {
+			if mk.HasTag(XPlaceTag) {
+				mk.Tags = append(mk.Tags, DestinationTag)
+				mk.Action = "update"
+				m.pubsub.Publish(m.publicName(int64(cross.ID)), mk)
+			}
+		}
 	}
 }
 
