@@ -205,7 +205,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 
 	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
 	isTutorial := false
-	if token.Cross.By.ID == m.config.Routex.TutorialCreator {
+	if token.Cross.By.UserID == m.config.Routex.TutorialCreator {
 		isTutorial = true
 	}
 	hasCreated := false
@@ -286,6 +286,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	if err != nil {
 		return
 	}
+	fmt.Println("is tutorial:", isTutorial, "has created:", hasCreated)
 
 	lastCheck := now.Unix()
 	for {
@@ -301,7 +302,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 								break
 							}
 						}
-						tutorialMark, err := m.setTutorial(mark.Latitude, mark.Longitude, token.UserId, int64(token.Cross.ID), locale, by)
+						tutorialMark, err := m.setTutorial(mark.Positions[0].GPS[0], mark.Positions[0].GPS[1], token.UserId, int64(token.Cross.ID), locale, by)
 						if err != nil {
 							logger.ERROR("create tutorial geomark for user %d in cross %d failed: %s", token.UserId, token.Cross.ID, err)
 						} else {
