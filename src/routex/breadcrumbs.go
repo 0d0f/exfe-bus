@@ -137,13 +137,8 @@ func (m RouteMap) HandleUpdateBreadcrumsInner(breadcrumbs []rmodel.SimpleLocatio
 		Longitude: mars.GPS[1] - earth.GPS[1],
 	}
 
-	route := rmodel.Geomark{
-		Id:        m.breadcrumbsId(userId),
-		Action:    action,
-		Type:      "route",
-		Tags:      []string{"breadcrumbs"},
-		Positions: []rmodel.SimpleLocation{breadcrumb},
-	}
+	route := m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{breadcrumb})
+	route.Action = action
 	for _, cross := range crossIds {
 		m.pubsub.Publish(m.publicName(cross), route)
 	}
@@ -162,38 +157,41 @@ func (m RouteMap) HandleGetBreadcrums() []rmodel.Geomark {
 }
 
 func (m RouteMap) getBreadcrumbs(cross model.Cross, toMars bool) []rmodel.Geomark {
-	ret := make([]rmodel.Geomark, 0)
+	var ret []rmodel.Geomark
 	for _, invitation := range cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
-		route := rmodel.Geomark{
-			Id:   m.breadcrumbsId(userId),
-			Type: "route",
+		marks := m.getUserBreadcrumbs(cross, userId, time.Now(), toMars)
+		if len(marks) > 0 {
+			ret = append(ret, marks...)
 		}
-
-		if route.Positions = m.getTutorialData(time.Now().UTC(), userId, 360); route.Positions == nil {
-			var err error
-			if route.Positions, err = m.breadcrumbsRepo.Load(userId, int64(cross.ID), time.Now().Unix()); err != nil {
-				logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, cross.ID, err)
-				continue
-			}
-		}
-		if len(route.Positions) == 0 {
-			continue
-		}
-		if toMars {
-			route.ToMars(m.conversion)
-		}
-		ret = append(ret, route)
 	}
 	return ret
 }
 
-func (m RouteMap) HandleGetUserBreadcrums() rmodel.Geomark {
-	var ret rmodel.Geomark
+func (m RouteMap) getUserBreadcrumbs(cross model.Cross, userId int64, after time.Time, toMars bool) []rmodel.Geomark {
+	var locations []rmodel.SimpleLocation
+	if locations = m.getTutorialData(after, userId, 360); locations == nil {
+		var err error
+		if locations, err = m.breadcrumbsRepo.Load(userId, int64(cross.ID), after.Unix()); err != nil {
+			logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, cross.ID, err)
+			return nil
+		}
+	}
+	if len(locations) == 0 {
+		return nil
+	}
+	mark := m.breadcrumbsToGeomark(userId, 1, locations)
+	if toMars {
+		mark.ToMars(m.conversion)
+	}
+	return []rmodel.Geomark{mark}
+}
+
+func (m RouteMap) HandleGetUserBreadcrums() []rmodel.Geomark {
 	token, ok := m.auth()
 	if !ok {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
-		return ret
+		return nil
 	}
 
 	toMars, userIdStr := m.Request().URL.Query().Get("coordinate") == "mars", m.Vars()["user_id"]
@@ -206,7 +204,7 @@ func (m RouteMap) HandleGetUserBreadcrums() rmodel.Geomark {
 	}
 	if userId == 0 {
 		m.Error(http.StatusUnauthorized, m.DetailError(-1, "user %s not in cross %d", userIdStr, token.Cross.ID))
-		return ret
+		return nil
 	}
 
 	after := time.Now().UTC()
@@ -214,25 +212,11 @@ func (m RouteMap) HandleGetUserBreadcrums() rmodel.Geomark {
 		timestamp, err := strconv.ParseInt(afterTimstamp, 10, 64)
 		if err != nil {
 			m.Error(http.StatusBadRequest, err)
-			return ret
+			return nil
 		}
 		after = time.Unix(timestamp, 0)
 	}
-	if ret.Positions = m.getTutorialData(after, userId, 360); ret.Positions == nil {
-		var err error
-		if ret.Positions, err = m.breadcrumbsRepo.Load(userId, int64(token.Cross.ID), after.Unix()); err != nil {
-			if err != redis.ErrNil {
-				logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
-				m.Error(http.StatusInternalServerError, err)
-				return ret
-			}
-		}
-	}
-	ret.Id, ret.Type = m.breadcrumbsId(userId), "route"
-	if toMars {
-		ret.ToMars(m.conversion)
-	}
-	return ret
+	return m.getUserBreadcrumbs(token.Cross, userId, after, toMars)
 }
 
 func (m RouteMap) HandleGetUserBreadcrumsInner() rmodel.Geomark {
@@ -254,8 +238,7 @@ func (m RouteMap) HandleGetUserBreadcrumsInner() rmodel.Geomark {
 		}
 		return ret
 	}
-	ret.Id, ret.Type = m.breadcrumbsId(userId), "route"
-	ret.Positions = []rmodel.SimpleLocation{l}
+	ret = m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{l})
 	if toMars {
 		ret.ToMars(m.conversion)
 	}
@@ -264,4 +247,19 @@ func (m RouteMap) HandleGetUserBreadcrumsInner() rmodel.Geomark {
 
 func (m RouteMap) breadcrumbsId(userId int64) string {
 	return fmt.Sprintf("breadcrumbs.%d", userId)
+}
+
+func (m RouteMap) breadcrumbsToGeomark(userId int64, windowId int, positions []rmodel.SimpleLocation) rmodel.Geomark {
+	oldest := positions[len(positions)-1]
+	r := rmodel.Geomark{
+		Id:        fmt.Sprintf("breadcrumbs.%d", userId),
+		Type:      "route",
+		CreatedBy: fmt.Sprintf("%d@exfe", userId),
+		CreatedAt: oldest.Timestamp,
+		UpdatedBy: fmt.Sprintf("%d@exfe", userId),
+		UpdatedAt: positions[0].Timestamp,
+		Tags:      []string{"breadcrumbs"},
+		Positions: positions,
+	}
+	return r
 }

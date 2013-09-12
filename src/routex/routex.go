@@ -54,6 +54,7 @@ type RouteMap struct {
 	tutorialDatas   map[int64][]rmodel.TutorialData
 	pubsub          *pubsub.Pubsub
 	castLocker      sync.RWMutex
+	quit            chan int
 }
 
 func New(routexRepo rmodel.RoutexRepo, breadcrumbCache rmodel.BreadcrumbCache, breadcrumbsRepo rmodel.BreadcrumbsRepo, geomarksRepo rmodel.GeomarksRepo, conversion rmodel.GeoConversionRepo, platform *broker.Platform, config *model.Config) (*RouteMap, error) {
@@ -77,13 +78,14 @@ func New(routexRepo rmodel.RoutexRepo, breadcrumbCache rmodel.BreadcrumbCache, b
 		routexRepo:      routexRepo,
 		breadcrumbCache: breadcrumbCache,
 		breadcrumbsRepo: breadcrumbsRepo,
-		geomarksRepo:    geomarksRepo,
-		conversion:      conversion,
-		platform:        platform,
-		tutorialDatas:   tutorialDatas,
-		config:          config,
-		pubsub:          pubsub.New(20),
+		geomarksRepo:    geomarksRepo, conversion: conversion,
+		platform:      platform,
+		tutorialDatas: tutorialDatas,
+		config:        config,
+		pubsub:        pubsub.New(20),
+		quit:          make(chan int),
 	}
+	go ret.tutorialGenerator()
 	return ret, nil
 }
 
@@ -186,9 +188,13 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 
 	c := make(chan interface{}, 10)
 	m.pubsub.Subscribe(m.publicName(int64(token.Cross.ID)), c)
+	if token.Cross.By.UserID == m.config.Routex.TutorialCreator {
+		m.pubsub.Subscribe(m.tutorialName(), c)
+	}
 	logger.DEBUG("streaming connected by user %d, cross %d", token.UserId, token.Cross.ID)
 	defer func() {
 		logger.DEBUG("streaming disconnect by user %d, cross %d", token.UserId, token.Cross.ID)
+		m.pubsub.Unsubscribe(m.tutorialName(), c)
 		m.pubsub.Unsubscribe(m.publicName(int64(token.Cross.ID)), c)
 		close(c)
 	}()
@@ -216,48 +222,19 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 
 	for _, invitation := range token.Cross.Exfee.Invitations {
 		userId := invitation.Identity.UserID
-		route := rmodel.Geomark{
-			Id:   m.breadcrumbsId(userId),
-			Type: "route",
-			Tags: []string{"breadcrumbs"},
+		l, exist, err := m.breadcrumbCache.LoadCross(userId, int64(token.Cross.ID))
+		if err != nil {
+			logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
+			continue
 		}
-		if route.Positions = m.getTutorialData(time.Now().UTC(), userId, 1); route.Positions != nil {
-			go func() {
-				for {
-					select {
-					case <-quit:
-						return
-					case <-time.After(time.Second * 10):
-						positions := m.getTutorialData(time.Now(), userId, 1)
-						if positions == nil {
-							continue
-						}
-						route := rmodel.Geomark{
-							Id:        m.breadcrumbsId(userId),
-							Action:    "save_to_history",
-							Type:      "route",
-							Tags:      []string{"breadcrumbs"},
-							Positions: positions,
-						}
-						c <- route
-					}
-				}
-			}()
-		} else {
-			l, exist, err := m.breadcrumbCache.LoadCross(userId, int64(token.Cross.ID))
-			if err != nil {
-				logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
-				continue
-			}
-			if !exist {
-				continue
-			}
-			route.Positions = []rmodel.SimpleLocation{l}
+		if !exist {
+			continue
 		}
+		mark := m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{l})
 		if toMars {
-			route.ToMars(m.conversion)
+			mark.ToMars(m.conversion)
 		}
-		err := stream.Write(route)
+		err = stream.Write(mark)
 		if err != nil {
 			return
 		}
@@ -544,4 +521,27 @@ func (m *RouteMap) auth() (rmodel.Token, bool) {
 
 func (m RouteMap) publicName(crossId int64) string {
 	return fmt.Sprintf("routex:cross_%d", crossId)
+}
+
+func (m RouteMap) tutorialName() string {
+	return "routex:tutorial:data"
+}
+
+func (m RouteMap) tutorialGenerator() {
+	for {
+		select {
+		case <-m.quit:
+			return
+		case <-time.After(time.Second * 10):
+			now := time.Now()
+			for userId := range m.tutorialDatas {
+				positions := m.getTutorialData(now, userId, 1)
+				if len(positions) == 0 {
+					continue
+				}
+				mark := m.breadcrumbsToGeomark(userId, 1, positions)
+				m.pubsub.Publish(m.tutorialName(), mark)
+			}
+		}
+	}
 }
