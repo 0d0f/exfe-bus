@@ -22,10 +22,12 @@ import (
 type RouteMap struct {
 	rest.Service `prefix:"/v3/routex" mime:"application/json"`
 
-	SearchRoutex rest.Processor `path:"/_inner/search/crosses" method:"POST"`
-	GetRoutex    rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"GET"`
-	SetUserInner rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"POST"`
-	SetUser      rest.Processor `path:"/users/crosses/:cross_id" method:"POST"`
+	UpdateIdentity rest.Processor `path:"/_inner/update_identity" method:"POST"`
+	UpdateExfee    rest.Processor `path:"/_inner/update_exfee" method:"POST"`
+	SearchRoutex   rest.Processor `path:"/_inner/search/crosses" method:"POST"`
+	GetRoutex      rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"GET"`
+	SetUserInner   rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"POST"`
+	SetUser        rest.Processor `path:"/users/crosses/:cross_id" method:"POST"`
 
 	UpdateBreadcrums       rest.Processor `path:"/breadcrumbs" method:"POST"`
 	UpdateBreadcrumsInner  rest.Processor `path:"/_inner/breadcrumbs/users/:user_id" method:"POST"`
@@ -87,6 +89,35 @@ func New(routexRepo rmodel.RoutexRepo, breadcrumbCache rmodel.BreadcrumbCache, b
 	}
 	go ret.tutorialGenerator()
 	return ret, nil
+}
+
+func (m RouteMap) HandleUpdateIdentity(identity model.Identity) {
+	id := rmodel.Identity{
+		Identity: identity,
+		Type:     "identity",
+		Action:   "update",
+	}
+	m.pubsub.Publish(m.identityName(identity), id)
+}
+
+func (m RouteMap) HandleUpdateExfee(identity model.Identity) {
+	crossIdStr := m.Request().URL.Query().Get("cross_id")
+	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
+	if err != nil {
+		m.Error(http.StatusBadRequest, err)
+		return
+	}
+	action := m.Request().URL.Query().Get("action")
+	if action != "join" && action != "remove" {
+		m.Error(http.StatusBadRequest, fmt.Errorf("invalid action: %s", action))
+		return
+	}
+	id := rmodel.Identity{
+		Identity: identity,
+		Type:     "identity",
+		Action:   action,
+	}
+	m.pubsub.Publish(m.publicName(crossId), id)
 }
 
 type UserCrossSetup struct {
@@ -191,9 +222,15 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	if token.Cross.By.UserID == m.config.Routex.TutorialCreator {
 		m.pubsub.Subscribe(m.tutorialName(), c)
 	}
+	for _, inv := range token.Cross.Exfee.Invitations {
+		m.pubsub.Subscribe(m.identityName(inv.Identity), c)
+	}
 	logger.DEBUG("streaming connected by user %d, cross %d", token.UserId, token.Cross.ID)
 	defer func() {
 		logger.DEBUG("streaming disconnect by user %d, cross %d", token.UserId, token.Cross.ID)
+		for _, inv := range token.Cross.Exfee.Invitations {
+			m.pubsub.Unsubscribe(m.identityName(inv.Identity), c)
+		}
 		m.pubsub.Unsubscribe(m.tutorialName(), c)
 		m.pubsub.Unsubscribe(m.publicName(int64(token.Cross.ID)), c)
 		close(c)
@@ -263,15 +300,15 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	if err != nil {
 		return
 	}
-	fmt.Println("is tutorial:", isTutorial, "has created:", hasCreated)
 
 	lastCheck := now.Unix()
 	for {
 		select {
 		case d := <-c:
-			if mark, ok := d.(rmodel.Geomark); ok {
+			switch data := d.(type) {
+			case rmodel.Geomark:
 				if isTutorial && !hasCreated {
-					if mark.Id == m.breadcrumbsId(token.UserId) {
+					if data.Id == m.breadcrumbsId(token.UserId) {
 						locale, by := "", ""
 						for _, i := range token.Cross.Exfee.Invitations {
 							if i.Identity.UserID == token.UserId {
@@ -279,7 +316,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 								break
 							}
 						}
-						tutorialMark, err := m.setTutorial(mark.Positions[0].GPS[0], mark.Positions[0].GPS[1], token.UserId, int64(token.Cross.ID), locale, by)
+						tutorialMark, err := m.setTutorial(data.Positions[0].GPS[0], data.Positions[0].GPS[1], token.UserId, int64(token.Cross.ID), locale, by)
 						if err != nil {
 							logger.ERROR("create tutorial geomark for user %d in cross %d failed: %s", token.UserId, token.Cross.ID, err)
 						} else {
@@ -295,9 +332,20 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 					}
 				}
 				if toMars {
-					mark.ToMars(m.conversion)
+					data.ToMars(m.conversion)
 				}
-				d = mark
+				d = data
+			case rmodel.Identity:
+				switch data.Action {
+				case "join":
+					if token.Cross.Exfee.Join(data.Identity) {
+						m.pubsub.Subscribe(m.identityName(data.Identity), c)
+					}
+				case "remove":
+					if token.Cross.Exfee.Remove(data.Identity) {
+						m.pubsub.Unsubscribe(m.identityName(data.Identity), c)
+					}
+				}
 			}
 			stream.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
 			err := stream.Write(d)
@@ -463,9 +511,9 @@ func (m *RouteMap) auth() (rmodel.Token, bool) {
 	var token rmodel.Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	// if authData == "" {
-	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	// }
+	if authData == "" {
+		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	}
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
@@ -525,6 +573,10 @@ func (m RouteMap) publicName(crossId int64) string {
 
 func (m RouteMap) tutorialName() string {
 	return "routex:tutorial:data"
+}
+
+func (m RouteMap) identityName(identity model.Identity) string {
+	return fmt.Sprintf("routex:identity:%s", identity.Id())
 }
 
 func (m RouteMap) tutorialGenerator() {

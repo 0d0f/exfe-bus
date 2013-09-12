@@ -68,3 +68,31 @@ func (e Exfee) FindInvitedUser(identity Identity) (Invitation, error) {
 	}
 	return Invitation{}, fmt.Errorf("can't find %s", identity)
 }
+
+func (e *Exfee) Join(identity Identity) bool {
+	for _, inv := range e.Invitations {
+		if inv.Identity.SameUser(identity) {
+			return false
+		}
+	}
+	e.Invitations = append(e.Invitations, Invitation{
+		Identity: identity,
+	})
+	return true
+}
+
+func (e *Exfee) Remove(identity Identity) bool {
+	index := -1
+	for i, inv := range e.Invitations {
+		if inv.Identity.SameUser(identity) {
+			index = i
+			break
+		}
+	}
+	fmt.Println("remove", index)
+	if index < 0 {
+		return false
+	}
+	e.Invitations = append(e.Invitations[:index], e.Invitations[index+1:]...)
+	return true
+}

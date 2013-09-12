@@ -22,6 +22,12 @@ type Token struct {
 	Identity model.Identity `json:"-"`
 }
 
+type Identity struct {
+	model.Identity
+	Type   string `json:"type,omitempty"`
+	Action string `json:"action,omitempty"`
+}
+
 type SimpleLocation struct {
 	Timestamp int64      `json:"t,omitempty"`
 	GPS       [3]float64 `json:"gps,omitempty"` // latitude, longitude, accuracy
