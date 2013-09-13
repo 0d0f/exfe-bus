@@ -29,9 +29,10 @@ type Identity struct {
 }
 
 type Invitation struct {
-	model.Invitation
-	Type   string `json:"type,omitempty"`
-	Action string `json:"action,omitempty"`
+	Identity      model.Identity `json:"identity,omitempty"`
+	Notifications []string       `json:"notification_identities,omitempty"`
+	Type          string         `json:"type,omitempty"`
+	Action        string         `json:"action,omitempty"`
 }
 
 type SimpleLocation struct {

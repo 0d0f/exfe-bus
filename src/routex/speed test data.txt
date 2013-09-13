@@ -1,0 +1,37 @@
+// 2g
+
+06:20:52 start
+06:21:03 get routex dom
+06:21:22 oauth
+06:21:57 oauth end
+06:22:00 get routex dom again
+06:22:04 post join
+06:22:05 load resources
+06:22:13 loading streaming & breadcrumbs
+06:23:09 last resources load
+06:23:09 upload breadcrumbs
+
+07:02:51 start
+07:02:59 get routex dom
+07:03:05 post join
+07:03:16 loading streaming & breadcrumbs
+07:03:35 upload breadcrumbs
+
+// 3g
+
+08:40:31 start
+08:40:36 get routex dom
+08:40:40 oauth
+08:40:48 oauth end
+08:40:48 get routex dom again
+08:40:50 post join
+08:40:50 load resources
+08:40:59 loading streaming & breadcrumbs
+08:40:59 upload breadcrumbs
+08:41:03 last resources load
+
+08:46:02 start
+08:46:03 get routex dom
+08:46:05 post join
+08:46:06 loading streaming & breadcrumbs
+08:46:09 upload breadcrumbs

@@ -113,9 +113,10 @@ func (m RouteMap) HandleUpdateExfee(invitations model.Invitation) {
 		return
 	}
 	id := rmodel.Invitation{
-		Invitation: invitations,
-		Type:       "invitation",
-		Action:     action,
+		Identity:      invitations.Identity,
+		Notifications: invitations.Notifications,
+		Type:          "invitation",
+		Action:        action,
 	}
 	m.pubsub.Publish(m.publicName(crossId), id)
 }
