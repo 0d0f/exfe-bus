@@ -100,7 +100,7 @@ func (m RouteMap) HandleUpdateIdentity(identity model.Identity) {
 	m.pubsub.Publish(m.identityName(identity), id)
 }
 
-func (m RouteMap) HandleUpdateExfee(identity model.Identity) {
+func (m RouteMap) HandleUpdateExfee(invitations model.Invitation) {
 	crossIdStr := m.Request().URL.Query().Get("cross_id")
 	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
 	if err != nil {
@@ -112,10 +112,10 @@ func (m RouteMap) HandleUpdateExfee(identity model.Identity) {
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid action: %s", action))
 		return
 	}
-	id := rmodel.Identity{
-		Identity: identity,
-		Type:     "identity",
-		Action:   action,
+	id := rmodel.Invitation{
+		Invitation: invitations,
+		Type:       "invitation",
+		Action:     action,
 	}
 	m.pubsub.Publish(m.publicName(crossId), id)
 }
