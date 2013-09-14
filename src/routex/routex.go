@@ -165,29 +165,46 @@ func (m RouteMap) HandleSearchRoutex(crossIds []int64) []rmodel.Routex {
 	return ret
 }
 
-func (m RouteMap) HandleGetRoutex() *bool {
+type RoutexInfo struct {
+	InWindow          *bool            `json:"in_window`
+	CurrentBreadcrumb []rmodel.Geomark `json:"current_breadcrumb"`
+}
+
+func (m RouteMap) HandleGetRoutex() RoutexInfo {
+	ret := RoutexInfo{}
 	userIdStr, crossIdStr := m.Vars()["user_id"], m.Vars()["cross_id"]
 	userId, err := strconv.ParseInt(userIdStr, 10, 64)
 	if err != nil {
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid user id %s", userIdStr))
-		return nil
+		return ret
 	}
 	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
 	if err != nil {
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid cross id %s", crossIdStr))
-		return nil
+		return ret
 	}
 	endAt, err := m.breadcrumbsRepo.GetWindowEnd(userId, crossId)
 	if err != nil {
 		logger.ERROR("get user %d cross %d routex failed: %s", userId, crossId, err)
 		m.Error(http.StatusInternalServerError, err)
-		return nil
+		return ret
 	}
-	if endAt == 0 {
-		return nil
+	if endAt != 0 {
+		ret.InWindow = new(bool)
+		*ret.InWindow = endAt >= time.Now().Unix()
 	}
-	ret := endAt >= time.Now().Unix()
-	return &ret
+	breadcrumb, err := m.breadcrumbCache.LoadAllCross(crossId)
+	if err != nil {
+		logger.ERROR("get breadcrumb cache for cross %d failed: %s", crossId, err)
+	} else {
+		for userId, l := range breadcrumb {
+			mark := m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{l})
+			mark.ToMars(m.conversion)
+			ret.CurrentBreadcrumb = append(ret.CurrentBreadcrumb, mark)
+		}
+	}
+
+	return ret
 }
 
 func (m RouteMap) HandleStream(stream rest.Stream) {

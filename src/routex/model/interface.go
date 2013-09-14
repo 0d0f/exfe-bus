@@ -48,6 +48,7 @@ type BreadcrumbCache interface {
 	Load(userId int64) (SimpleLocation, error)
 	SaveCross(userId int64, l SimpleLocation) (cross_ids []int64, err error)
 	LoadCross(userId, crossId int64) (SimpleLocation, bool, error)
+	LoadAllCross(crossId int64) (map[int64]SimpleLocation, error)
 }
 
 type BreadcrumbsRepo interface {

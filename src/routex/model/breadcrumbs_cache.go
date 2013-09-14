@@ -10,6 +10,7 @@ import (
 type BreadcrumbCacheSaver struct {
 	r          *redis.Pool
 	saveScript *redis.Script
+	loadScript *redis.Script
 }
 
 func NewBreadcrumbCacheSaver(r *redis.Pool) *BreadcrumbCacheSaver {
@@ -29,6 +30,20 @@ func NewBreadcrumbCacheSaver(r *redis.Pool) *BreadcrumbCacheSaver {
 			redis.call("SET", matchkey..":"..c, data)
 		end
 		return crosses
+	`)
+	ret.loadScript = redis.NewScript(0, `
+		local cross_id = ARGV[1]
+		local key_pattern = "exfe:v3:routex:*:cross:"..cross_id
+		local keys = redis.call("KEYS", key_pattern)
+		local ret = {}
+		for i = 1, #keys do
+			local key = keys[i]
+			local user_id
+			string.gsub(key, "exfe:v3:routex:user_(.-):cross:.*", function(p) user_id=p end)
+			table.insert(ret, tonumber(user_id))
+			table.insert(ret, redis.call("GET", key))
+		end
+		return ret
 	`)
 	return ret
 }
@@ -66,6 +81,30 @@ func (s *BreadcrumbCacheSaver) DisableCross(userId, crossId int64) error {
 		return err
 	}
 	return nil
+}
+
+func (s *BreadcrumbCacheSaver) LoadAllCross(crossId int64) (map[int64]SimpleLocation, error) {
+	conn := s.r.Get()
+	defer conn.Close()
+
+	values, err := redis.Values(s.loadScript.Do(conn, crossId))
+	if err != nil {
+		return nil, err
+	}
+	ret := make(map[int64]SimpleLocation)
+	for len(values) > 0 {
+		var userId int64
+		var value []byte
+		if values, err = redis.Scan(values, &userId, &value); err != nil {
+			continue
+		}
+		var l SimpleLocation
+		if err := json.Unmarshal(value, &l); err != nil {
+			continue
+		}
+		ret[userId] = l
+	}
+	return ret, nil
 }
 
 func (s *BreadcrumbCacheSaver) SaveCross(userId int64, l SimpleLocation) ([]int64, error) {
