@@ -166,7 +166,7 @@ func (m RouteMap) HandleSearchRoutex(crossIds []int64) []rmodel.Routex {
 }
 
 type RoutexInfo struct {
-	InWindow          *bool            `json:"in_window`
+	InWindow          *bool            `json:"in_window"`
 	CurrentBreadcrumb []rmodel.Geomark `json:"current_breadcrumb"`
 }
 
