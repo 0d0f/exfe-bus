@@ -246,11 +246,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	logger.DEBUG("streaming connected by user %d, cross %d", token.UserId, token.Cross.ID)
 	defer func() {
 		logger.DEBUG("streaming disconnect by user %d, cross %d", token.UserId, token.Cross.ID)
-		for _, inv := range token.Cross.Exfee.Invitations {
-			m.pubsub.Unsubscribe(m.identityName(inv.Identity), c)
-		}
-		m.pubsub.Unsubscribe(m.tutorialName(), c)
-		m.pubsub.Unsubscribe(m.publicName(int64(token.Cross.ID)), c)
+		m.pubsub.UnsubscribeAll(c)
 		close(c)
 	}()
 
@@ -275,24 +271,19 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	quit := make(chan int)
 	defer func() { close(quit) }()
 
-	for _, invitation := range token.Cross.Exfee.Invitations {
-		userId := invitation.Identity.UserID
-		l, exist, err := m.breadcrumbCache.LoadCross(userId, int64(token.Cross.ID))
-		if err != nil {
-			logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, token.Cross.ID, err)
-			continue
+	breadcrumbs, err := m.breadcrumbCache.LoadAllCross(int64(token.Cross.ID))
+	if err == nil {
+		for userId, l := range breadcrumbs {
+			mark := m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{l})
+			if toMars {
+				mark.ToMars(m.conversion)
+			}
+			if err := stream.Write(mark); err != nil {
+				return
+			}
 		}
-		if !exist {
-			continue
-		}
-		mark := m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{l})
-		if toMars {
-			mark.ToMars(m.conversion)
-		}
-		err = stream.Write(mark)
-		if err != nil {
-			return
-		}
+	} else {
+		logger.ERROR("can't get current breadcrumb of cross %d: %s", token.Cross.ID, err)
 	}
 
 	marks, err := m.getGeomarks(token.Cross, toMars)
@@ -301,8 +292,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			if isTutorial && !hasCreated {
 				hasCreated = true
 			}
-			err := stream.Write(d)
-			if err != nil {
+			if err := stream.Write(d); err != nil {
 				return
 			}
 		}
@@ -311,16 +301,12 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	}
 
 	stream.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
-	err = stream.Write(map[string]string{
-		"type":   "command",
-		"action": "init_end",
-	})
-	if err != nil {
+	if err := stream.Write(map[string]string{"type": "command", "action": "init_end"}); err != nil {
 		return
 	}
 
 	lastCheck := now.Unix()
-	for {
+	for stream.Ping == nil {
 		select {
 		case d := <-c:
 			switch data := d.(type) {
@@ -371,11 +357,6 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 				return
 			}
 		case <-time.After(broker.NetworkTimeout):
-			err := stream.Ping()
-			if err != nil {
-				return
-			}
-
 		case <-time.After(time.Duration(endAt-time.Now().Unix()) * time.Second):
 			newEndAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
 			if err != nil || newEndAt == 0 || newEndAt <= time.Now().Unix() {
