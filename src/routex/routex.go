@@ -153,6 +153,7 @@ func (m RouteMap) HandleSetUserInner(setup UserCrossSetup) {
 		setup.AfterInSeconds = 60 * 60
 	}
 	m.switchWindow(userId, crossId, setup.SaveBreadcrumbs, setup.AfterInSeconds)
+	m.update(userId, crossId)
 }
 
 func (m RouteMap) HandleSearchRoutex(crossIds []int64) []rmodel.Routex {
