@@ -60,19 +60,10 @@ func (s *Server) RegisterRestful(service interface{}) error {
 	return nil
 }
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var match mux.RouteMatch
-	ok := s.router.Match(r, &match)
-	if ok {
-		match.Handler.ServeHTTP(w, r)
-		return
-	}
-}
-
 func (s *Server) ListenAndServe() error {
 	h := &http.Server{
 		Addr:    s.addr,
-		Handler: s,
+		Handler: s.router,
 	}
 	return h.ListenAndServe()
 }
