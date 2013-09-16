@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-rest"
+	"github.com/googollee/go-rest/old_style"
 	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"

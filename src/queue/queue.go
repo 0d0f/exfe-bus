@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
-	"github.com/googollee/go-rest"
+	"github.com/googollee/go-rest/old_style"
 	"logger"
 	"model"
 	"net/http"

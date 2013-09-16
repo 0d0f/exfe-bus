@@ -4,7 +4,7 @@ import (
 	"broker"
 	"fmt"
 	"formatter"
-	"github.com/googollee/go-rest"
+	"github.com/googollee/go-rest/old_style"
 	"model"
 	"net/http"
 )

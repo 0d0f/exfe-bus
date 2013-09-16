@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-pubsub"
-	"github.com/googollee/go-rest"
+	"github.com/googollee/go-rest/old_style"
 	"logger"
 	"math/rand"
 	"model"

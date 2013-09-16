@@ -2,7 +2,7 @@ package token
 
 import (
 	"fmt"
-	"github.com/googollee/go-rest"
+	"github.com/googollee/go-rest/old_style"
 	"net/http"
 	"time"
 )

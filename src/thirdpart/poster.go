@@ -3,7 +3,7 @@ package thirdpart
 import (
 	"fmt"
 	"github.com/googollee/go-broadcast"
-	"github.com/googollee/go-rest"
+	"github.com/googollee/go-rest/old_style"
 	"io"
 	"io/ioutil"
 	"logger"
