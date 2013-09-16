@@ -477,7 +477,6 @@ func (m *RouteMap) sendRequest(arg notifier.RequestArg) {
 }
 
 func (m RouteMap) switchWindow(userId, crossId int64, save bool, afterInSeconds int) {
-	m.update(userId, crossId)
 	if save {
 		if err := m.breadcrumbsRepo.EnableCross(userId, crossId, afterInSeconds); err != nil {
 			logger.ERROR("set user %d enable cross %d breadcrumbs repo failed: %s", userId, crossId, err)
