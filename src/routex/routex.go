@@ -193,15 +193,15 @@ func (m RouteMap) HandleGetRoutex() RoutexInfo {
 		ret.InWindow = new(bool)
 		*ret.InWindow = endAt >= time.Now().Unix()
 	}
-	breadcrumb, err := m.breadcrumbCache.LoadAllCross(crossId)
-	if err != nil {
-		logger.ERROR("get breadcrumb cache for cross %d failed: %s", crossId, err)
+	query := make(url.Values)
+	query.Set("user_id", userIdStr)
+	cross, err := m.platform.FindCross(int64(crossId), query)
+	if err == nil {
+		ret.Objects = m.getObjects(cross, true)
 	} else {
-		for userId, l := range breadcrumb {
-			mark := m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{l})
-			mark.ToMars(m.conversion)
-			ret.Objects = append(ret.Objects, mark)
-		}
+		logger.ERROR("get user %d cross %d failed: %s", userId, crossId, err)
+		m.Error(http.StatusInternalServerError, err)
+		return ret
 	}
 
 	return ret
@@ -514,9 +514,9 @@ func (m *RouteMap) auth() (rmodel.Token, bool) {
 	var token rmodel.Token
 
 	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	if authData == "" {
-		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	}
+	// if authData == "" {
+	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	// }
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
