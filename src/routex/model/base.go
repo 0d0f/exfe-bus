@@ -3,6 +3,7 @@ package rmodel
 import (
 	"fmt"
 	"model"
+	"strings"
 )
 
 type TutorialData struct {
@@ -76,6 +77,10 @@ type Geomark struct {
 	Latitude    float64          `json:"lat,omitempty"`
 	Longitude   float64          `json:"lng,omitempty"`
 	Positions   []SimpleLocation `json:"positions,omitempty"`
+}
+
+func (g *Geomark) IsBreadcrumbs() bool {
+	return strings.HasPrefix(g.Id, "breadcrumbs.")
 }
 
 func (g *Geomark) HasTag(tag string) bool {

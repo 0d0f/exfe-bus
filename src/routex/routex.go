@@ -166,8 +166,8 @@ func (m RouteMap) HandleSearchRoutex(crossIds []int64) []rmodel.Routex {
 }
 
 type RoutexInfo struct {
-	InWindow          *bool            `json:"in_window"`
-	CurrentBreadcrumb []rmodel.Geomark `json:"current_breadcrumb"`
+	InWindow *bool            `json:"in_window"`
+	Objects  []rmodel.Geomark `json:"objects"`
 }
 
 func (m RouteMap) HandleGetRoutex() RoutexInfo {
@@ -200,7 +200,7 @@ func (m RouteMap) HandleGetRoutex() RoutexInfo {
 		for userId, l := range breadcrumb {
 			mark := m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{l})
 			mark.ToMars(m.conversion)
-			ret.CurrentBreadcrumb = append(ret.CurrentBreadcrumb, mark)
+			ret.Objects = append(ret.Objects, mark)
 		}
 	}
 
@@ -271,33 +271,13 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	quit := make(chan int)
 	defer func() { close(quit) }()
 
-	breadcrumbs, err := m.breadcrumbCache.LoadAllCross(int64(token.Cross.ID))
-	if err == nil {
-		for userId, l := range breadcrumbs {
-			mark := m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{l})
-			if toMars {
-				mark.ToMars(m.conversion)
-			}
-			if err := stream.Write(mark); err != nil {
-				return
-			}
+	for _, mark := range m.getObjects(token.Cross, toMars) {
+		if isTutorial && !hasCreated && !mark.IsBreadcrumbs() {
+			hasCreated = true
 		}
-	} else {
-		logger.ERROR("can't get current breadcrumb of cross %d: %s", token.Cross.ID, err)
-	}
-
-	marks, err := m.getGeomarks(token.Cross, toMars)
-	if err == nil {
-		for _, d := range marks {
-			if isTutorial && !hasCreated {
-				hasCreated = true
-			}
-			if err := stream.Write(d); err != nil {
-				return
-			}
+		if err := stream.Write(mark); err != nil {
+			return
 		}
-	} else {
-		logger.ERROR("can't get route of cross %d: %s", token.Cross.ID, err)
 	}
 
 	stream.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
@@ -459,6 +439,31 @@ func (m RouteMap) HandleSendNotification() {
 			m.sendRequest(arg)
 		}
 	}()
+}
+
+func (m *RouteMap) getObjects(cross model.Cross, toMars bool) []rmodel.Geomark {
+	var ret []rmodel.Geomark
+	breadcrumbs, err := m.breadcrumbCache.LoadAllCross(int64(cross.ID))
+	if err == nil {
+		for userId, l := range breadcrumbs {
+			mark := m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{l})
+			if toMars {
+				mark.ToMars(m.conversion)
+			}
+			ret = append(ret, mark)
+		}
+	} else {
+		logger.ERROR("can't get current breadcrumb of cross %d: %s", cross.ID, err)
+	}
+
+	marks, err := m.getGeomarks(cross, toMars)
+	if err == nil {
+		ret = append(ret, marks...)
+	} else {
+		logger.ERROR("can't get route of cross %d: %s", cross.ID, err)
+	}
+
+	return ret
 }
 
 func (m *RouteMap) sendRequest(arg notifier.RequestArg) {
