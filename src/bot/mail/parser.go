@@ -306,7 +306,6 @@ func (h *Parser) GetCross() (cross model.Cross) {
 		ExternalID:       h.from.Address,
 		ExternalUsername: h.from.Address,
 	}
-	cross.Attribute.State = "draft"
 	for _, addr := range h.addrList {
 		if pre := len(h.config.Email.Prefix) + 1; len(addr.Address) > pre &&
 			(addr.Address[:pre] == h.config.Email.Prefix+"@" || addr.Address[:pre] == h.config.Email.Prefix+"+") &&
@@ -335,14 +334,6 @@ func (h *Parser) GetCross() (cross model.Cross) {
 		}
 		cross.Exfee.Invitations = append(cross.Exfee.Invitations, invitation)
 	}
-
-	cross.Widgets = []map[string]interface{}{
-		map[string]interface{}{
-			"type":  "Background",
-			"image": "mail.jpg",
-		},
-	}
-	cross.Attribute.State = "draft"
 
 	return
 }

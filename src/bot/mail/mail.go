@@ -137,6 +137,14 @@ func (w *Worker) process() {
 		}
 		cross := parser.GetCross()
 		if to == "" {
+			cross.Widgets = []map[string]interface{}{
+				map[string]interface{}{
+					"type":  "Background",
+					"image": "mail.jpg",
+				},
+			}
+			cross.Attribute.State = "draft"
+
 			cross, err := w.platform.BotCrossGather(cross)
 			if err != nil {
 				if warning, ok := err.(broker.Warning); ok {
