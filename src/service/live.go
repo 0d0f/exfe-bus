@@ -113,7 +113,7 @@ func (h LiveService) Card(ctx rest.Context, data here.Data) {
 	ctx.Render([]string{token, data.Card.Id})
 }
 
-func (h LiveService) HandleStreaming(ctx rest.StreamContext) {
+func (h LiveService) Streaming(ctx rest.StreamContext) {
 	ctx.Response().Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
 	ctx.Response().Header().Set("Access-Control-Allow-Credentials", "true")
 	ctx.Response().Header().Set("Cache-Control", "no-cache")

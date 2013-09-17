@@ -148,7 +148,11 @@ func main() {
 			return
 		}
 		token := token.New(repo)
-		register("token", token, nil)
+		if err := r.Add(token); err != nil {
+			logger.ERROR("register %s failed: %s", "token", err)
+			os.Exit(-1)
+			return
+		}
 	}
 
 	if config.ExfeService.Services.Splitter {

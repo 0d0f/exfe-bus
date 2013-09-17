@@ -1,8 +1,7 @@
 package token
 
 import (
-	"fmt"
-	"github.com/googollee/go-rest/old_style"
+	"github.com/googollee/go-rest"
 	"net/http"
 	"time"
 )
@@ -19,14 +18,14 @@ type Repo interface {
 type Manager struct {
 	rest.Service `prefix:"/v3/tokens"`
 
-	Create          rest.Processor `method:"POST" path:""`
-	KeyGet          rest.Processor `method:"GET" path:"/key/:key"`
-	ResourceGet     rest.Processor `method:"GET" path:"/resources"`
-	ResourceGet_    rest.Processor `method:"POST" path:"/resources" func:"HandleResourceGet"`
-	KeyUpdate       rest.Processor `method:"PUT" path:"/key/:key"`
-	KeyUpdate_      rest.Processor `method:"POST" path:"/key/:key" func:"HandleKeyUpdate"`
-	ResourceUpdate  rest.Processor `method:"PUT" path:"/resource"`
-	ResourceUpdate_ rest.Processor `method:"POST" path:"/resource" func:"HandleResourceUpdate"`
+	create          rest.SimpleNode `route:"" method:"POST"`
+	resourceGet     rest.SimpleNode `route:"/resources" method:"GET"`
+	resourceGet_    rest.SimpleNode `route:"/resources" method:"POST"`
+	resourceUpdate  rest.SimpleNode `route:"/resource" method:"PUT"`
+	resourceUpdate_ rest.SimpleNode `route:"/resource" method:"POST"`
+	keyGet          rest.SimpleNode `route:"/key/:key" method:"GET"`
+	keyUpdate       rest.SimpleNode `route:"/key/:key" method:"PUT"`
+	keyUpdate_      rest.SimpleNode `route:"/key/:key" method:"POST"`
 
 	repo       Repo
 	generators map[string]func(*Token)
@@ -58,41 +57,46 @@ type CreateArg struct {
 // 返回：
 //
 //     {"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}
-func (t Manager) HandleCreate(arg CreateArg) Token {
+func (t Manager) Create(ctx rest.Context, arg CreateArg) {
 	token := arg.Token
 	token.Hash = hashResource(arg.Resource)
 	token.TouchedAt = time.Now().Unix()
 	token.ExpiresAt = time.Now().Add(time.Duration(arg.ExpireAfterSeconds) * time.Second).Unix()
-	gentype := t.Request().URL.Query().Get("type")
+	var gentype string
+	ctx.Bind("type", &gentype)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, "%s", err)
+		return
+	}
 
 	generator, ok := t.generators[gentype]
 	if !ok {
-		t.Error(http.StatusBadRequest, fmt.Errorf("invalid type %s", gentype))
-		return token
+		ctx.Return(http.StatusBadRequest, "invalid type %s", gentype)
+		return
 	}
 	for i := 0; i < 3; i++ {
 		generator(&token)
 		tokens, err := t.repo.FindByKey(token.Key)
 		if err != nil {
-			t.Error(http.StatusInternalServerError, err)
-			return token
+			ctx.Return(http.StatusInternalServerError, "%s", err)
+			return
 		}
 		if len(tokens) == 0 {
 			goto NEXIST
 		}
 	}
-	t.Error(http.StatusConflict, fmt.Errorf("key collided"))
-	return token
+	ctx.Return(http.StatusConflict, "key collided")
+	return
 
 NEXIST:
 
 	err := t.repo.Store(token)
 	if err != nil {
-		t.Error(http.StatusInternalServerError, err)
-		return token
+		ctx.Return(http.StatusInternalServerError, "%s", err)
+		return
 	}
 	token.compatible()
-	return token
+	ctx.Render(token)
 }
 
 // 根据key获得一个token，如果token不存在，返回错误
@@ -104,26 +108,31 @@ NEXIST:
 // 返回：
 //
 //     [{"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}]
-func (t Manager) HandleKeyGet() []Token {
-	key := t.Vars()["key"]
+func (t Manager) KeyGet(ctx rest.Context) {
+	var key string
+	ctx.Bind("key", &key)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, "%s", err)
+		return
+	}
 	tokens, err := t.repo.FindByKey(key)
 	if err != nil {
-		t.Error(http.StatusInternalServerError, err)
-		return nil
+		ctx.Return(http.StatusInternalServerError, "%s", err)
+		return
 	}
 	if len(tokens) == 0 {
-		t.Error(http.StatusNotFound, fmt.Errorf("can't find token with key %s", key))
-		return nil
+		ctx.Return(http.StatusNotFound, "can't find token with key %s", key)
+		return
 	}
 	err = t.repo.Touch(&key, nil)
 	if err != nil {
-		t.Error(http.StatusInternalServerError, err)
-		return nil
+		ctx.Return(http.StatusInternalServerError, "%s", err)
+		return
 	}
 	for i := range tokens {
 		tokens[i].compatible()
 	}
-	return tokens
+	ctx.Render(tokens)
 }
 
 // 根据resource获得一个token，如果token不存在，返回错误
@@ -135,26 +144,30 @@ func (t Manager) HandleKeyGet() []Token {
 // 返回：
 //
 //     [{"key":"0303","data":"abc","touched_at":21341234,"expire_at":66354}]
-func (t Manager) HandleResourceGet(resource string) []Token {
+func (t Manager) ResourceGet(ctx rest.Context, resource string) {
 	hash := hashResource(resource)
 	tokens, err := t.repo.FindByHash(hash)
 	if err != nil {
-		t.Error(http.StatusInternalServerError, err)
-		return nil
+		ctx.Return(http.StatusInternalServerError, "%s", err)
+		return
 	}
 	if len(tokens) == 0 {
-		t.Error(http.StatusNotFound, fmt.Errorf("can't find token with resource %s", resource))
-		return nil
+		ctx.Return(http.StatusNotFound, "can't find token with resource %s", resource)
+		return
 	}
 	err = t.repo.Touch(nil, &hash)
 	if err != nil {
-		t.Error(http.StatusInternalServerError, err)
-		return nil
+		ctx.Return(http.StatusInternalServerError, "%s", err)
+		return
 	}
 	for i := range tokens {
 		tokens[i].compatible()
 	}
-	return tokens
+	ctx.Render(tokens)
+}
+
+func (t Manager) ResourceGet_(ctx rest.Context, resource string) {
+	t.ResourceGet(ctx, resource)
 }
 
 type UpdateArg struct {
@@ -176,17 +189,26 @@ func (a *UpdateArg) convert() {
 // 例子：
 //
 //     > curl "http://127.0.0.1:23333/v3/tokens/key/0303" -d '{"data":"xyz","expire_after_seconds":13}'
-func (t Manager) HandleKeyUpdate(arg UpdateArg) {
+func (t Manager) KeyUpdate(ctx rest.Context, arg UpdateArg) {
+	var key string
+	ctx.Bind("key", &key)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, "%s", err)
+		return
+	}
 	arg.convert()
-	key := t.Vars()["key"]
 	n, err := t.repo.UpdateByKey(key, arg.Data, arg.ExpiresAt)
 	if err != nil {
-		t.Error(http.StatusInternalServerError, err)
+		ctx.Return(http.StatusInternalServerError, "%s", err)
 		return
 	}
 	if n == 0 {
-		t.Error(http.StatusNotFound, fmt.Errorf("can't find token with key %s", key))
+		ctx.Return(http.StatusNotFound, "can't find token with key %s", key)
 	}
+}
+
+func (t Manager) KeyUpdate_(ctx rest.Context, arg UpdateArg) {
+	t.KeyUpdate(ctx, arg)
 }
 
 // 更新resource对应的token的expire after seconds
@@ -194,15 +216,19 @@ func (t Manager) HandleKeyUpdate(arg UpdateArg) {
 // 例子：
 //
 //     > curl "http://127.0.0.1:23333/v3/tokens/resource" -d '{"resource":"abc", "expire_after_seconds":13}'
-func (t Manager) HandleResourceUpdate(arg UpdateArg) {
+func (t Manager) ResourceUpdate(ctx rest.Context, arg UpdateArg) {
 	arg.convert()
 	hash := hashResource(arg.Resource)
 	n, err := t.repo.UpdateByHash(hash, arg.Data, arg.ExpiresAt)
 	if err != nil {
-		t.Error(http.StatusInternalServerError, err)
+		ctx.Return(http.StatusInternalServerError, "%s", err)
 		return
 	}
 	if n == 0 {
-		t.Error(http.StatusNotFound, fmt.Errorf("can't find token with resource %s", arg.Resource))
+		ctx.Return(http.StatusNotFound, "can't find token with resource %s", arg.Resource)
 	}
+}
+
+func (t Manager) ResourceUpdate_(ctx rest.Context, arg UpdateArg) {
+	t.ResourceUpdate(ctx, arg)
 }
