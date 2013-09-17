@@ -10,6 +10,7 @@ type Config struct {
 	AccessDomain       string  `json:"access_domain"`
 	Proxy              string  `json:"proxy"`
 	TutorialBotUserIds []int64 `json:"tutorial_bot_user_ids"`
+	ServerCode         string  `json:"server_code"`
 
 	Debug bool `json:"debug"`
 

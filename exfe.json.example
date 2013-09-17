@@ -8,6 +8,7 @@
   "access_domain": "api.exfe.com",
   "proxy": "",
   "tutorial_bot_user_ids": [],
+  "server_code": "zz",
 
   "debug": false,
 
