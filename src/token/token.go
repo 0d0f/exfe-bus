@@ -10,7 +10,7 @@ type Token struct {
 	Key       string `json:"key"`
 	Hash      string `json:"hash"`
 	UserId    string `json:"user_id"`
-	Scopes    string `json:"scopes"`
+	Scope     string `json:"scope"`
 	Client    string `json:"client"`
 	CreatedAt int64  `json:"-"`
 	ExpiresAt int64  `json:"expires_at"`
