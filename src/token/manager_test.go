@@ -2,7 +2,7 @@ package token
 
 import (
 	"fmt"
-	"github.com/googollee/go-rest/old_style"
+	"github.com/googollee/go-rest"
 	"github.com/stretchrcom/testify/assert"
 	"net/http"
 	"testing"
@@ -111,74 +111,78 @@ func TestShortToken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := rest.SetTest(mgr, nil, req)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctx := rest.NewRecordContext(nil, req)
 	arg := CreateArg{}
 	arg.Resource = resource
 	arg.Data = "data"
 	arg.ExpireAfterSeconds = 1
-	token := mgr.HandleCreate(arg)
-	assert.Equal(t, resp.Code, http.StatusOK)
+	assert.Equal(t, ctx.Recorder.Code, http.StatusOK)
+	fmt.Println(ctx.Renders)
+	mgr.Create(ctx, arg)
+	token := ctx.Renders[0].(Token)
 	tk = token.Key
 
 	{
-		resp, _ := rest.SetTest(mgr, map[string]string{"key": tk}, nil)
-		tokens := mgr.HandleKeyGet()
-		assert.Equal(t, resp.Code, http.StatusOK)
+		ctx := rest.NewRecordContext(map[string]string{"key": tk}, req)
+		mgr.KeyGet(ctx)
+		tokens := ctx.Renders[0].([]Token)
+		assert.Equal(t, ctx.Recorder.Code, http.StatusOK)
 		assert.Equal(t, len(tokens), 1)
 		assert.Equal(t, tokens[0].Key, tk)
 		assert.Equal(t, string(tokens[0].Data), "data")
 	}
 
 	{
-		resp, _ := rest.SetTest(mgr, nil, nil)
-		tokens := mgr.HandleResourceGet(resource)
-		assert.Equal(t, resp.Code, http.StatusOK)
+		ctx := rest.NewRecordContext(nil, nil)
+		mgr.ResourceGet(ctx, resource)
+		tokens := ctx.Renders[0].([]Token)
+		assert.Equal(t, ctx.Recorder.Code, http.StatusOK)
 		assert.Equal(t, len(tokens), 1)
 		assert.Equal(t, tokens[0].Key, tk)
 		assert.Equal(t, string(tokens[0].Data), "data")
 	}
 
 	{
-		resp, _ := rest.SetTest(mgr, map[string]string{"key": tk}, nil)
+		ctx := rest.NewRecordContext(map[string]string{"key": tk}, nil)
 		data := "abc"
-		mgr.HandleKeyUpdate(UpdateArg{
+		mgr.KeyUpdate(ctx, UpdateArg{
 			Data: &data,
 		})
-		assert.Equal(t, resp.Code, http.StatusOK)
+		assert.Equal(t, ctx.Recorder.Code, http.StatusOK)
 	}
 
 	{
-		resp, _ := rest.SetTest(mgr, map[string]string{"key": tk}, nil)
-		tokens := mgr.HandleKeyGet()
-		assert.Equal(t, resp.Code, http.StatusOK)
+		ctx := rest.NewRecordContext(map[string]string{"key": tk}, nil)
+		mgr.KeyGet(ctx)
+		tokens := ctx.Renders[0].([]Token)
+		assert.Equal(t, ctx.Recorder.Code, http.StatusOK)
 		assert.Equal(t, len(tokens), 1)
 		assert.Equal(t, tokens[0].Key, tk)
 		assert.Equal(t, string(tokens[0].Data), "abc")
 	}
 
 	{
-		resp, _ := rest.SetTest(mgr, map[string]string{"key": tk}, nil)
+		ctx := rest.NewRecordContext(map[string]string{"key": tk}, nil)
 		after := 3
-		mgr.HandleKeyUpdate(UpdateArg{
+		mgr.KeyUpdate(ctx, UpdateArg{
 			ExpireAfterSeconds: &after,
 		})
-		assert.Equal(t, resp.Code, http.StatusOK)
+		assert.Equal(t, ctx.Recorder.Code, http.StatusOK)
 
 		fmt.Println("touch")
-		mgr.HandleKeyGet()
+		mgr.KeyGet(ctx)
 
 		time.Sleep(2 * time.Second)
 
-		token := mgr.HandleKeyGet()
-		assert.Equal(t, resp.Code, http.StatusOK)
+		mgr.KeyGet(ctx)
+		token := ctx.Renders[1].([]Token)
+		assert.Equal(t, ctx.Recorder.Code, http.StatusOK)
 		assert.Equal(t, len(token), 1)
 		touch1 := token[0].TouchedAt
 
-		token = mgr.HandleKeyGet()
-		assert.Equal(t, resp.Code, http.StatusOK)
+		mgr.KeyGet(ctx)
+		token = ctx.Renders[2].([]Token)
+		assert.Equal(t, ctx.Recorder.Code, http.StatusOK)
 		assert.Equal(t, len(token), 1)
 		touch2 := token[0].TouchedAt
 
@@ -190,50 +194,50 @@ func TestShortToken(t *testing.T) {
 	time.Sleep(time.Second * 2)
 
 	{
-		resp, _ := rest.SetTest(mgr, map[string]string{"key": tk}, nil)
-		_ = mgr.HandleKeyGet()
-		assert.NotEqual(t, resp.Code, http.StatusOK)
+		ctx := rest.NewRecordContext(map[string]string{"key": tk}, nil)
+		mgr.KeyGet(ctx)
+		assert.NotEqual(t, ctx.Recorder.Code, http.StatusOK)
 	}
 
 	req, err = http.NewRequest("GET", "http://test/?type=long", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err = rest.SetTest(mgr, nil, req)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctx = rest.NewRecordContext(nil, req)
 	arg = CreateArg{}
 	arg.Resource = resource
 	arg.Data = "data"
 	arg.ExpireAfterSeconds = 1
-	token = mgr.HandleCreate(arg)
-	assert.Equal(t, resp.Code, http.StatusOK)
+	mgr.Create(ctx, arg)
+	token = ctx.Renders[0].(Token)
+	assert.Equal(t, ctx.Recorder.Code, http.StatusOK)
 	tk = token.Key
 
 	after := 1
-	resp, _ = rest.SetTest(mgr, map[string]string{"key": tk}, nil)
-	mgr.HandleKeyUpdate(UpdateArg{
+	ctx = rest.NewRecordContext(map[string]string{"key": tk}, nil)
+	mgr.KeyUpdate(ctx, UpdateArg{
 		ExpireAfterSeconds: &after,
 	})
-	assert.Equal(t, resp.Code, http.StatusOK)
+	assert.Equal(t, ctx.Recorder.Code, http.StatusOK)
 
 	{
-		tokens := mgr.HandleKeyGet()
-		assert.Equal(t, resp.Code, http.StatusOK)
+		ctx := rest.NewRecordContext(map[string]string{"key": tk}, nil)
+		mgr.KeyGet(ctx)
+		tokens := ctx.Renders[0].([]Token)
+		assert.Equal(t, ctx.Recorder.Code, http.StatusOK)
 		assert.Equal(t, len(tokens), 1)
 		assert.Equal(t, tokens[0].Key, tk)
 		assert.Equal(t, string(tokens[0].Data), "data")
 	}
 
 	after = 0
-	mgr.HandleKeyUpdate(UpdateArg{
+	mgr.KeyUpdate(ctx, UpdateArg{
 		ExpireAfterSeconds: &after,
 	})
-	assert.Equal(t, resp.Code, http.StatusOK)
+	assert.Equal(t, ctx.Recorder.Code, http.StatusOK)
 
 	{
-		mgr.HandleKeyGet()
-		assert.Equal(t, resp.Code, http.StatusNotFound)
+		mgr.KeyGet(ctx)
+		assert.Equal(t, ctx.Recorder.Code, http.StatusNotFound)
 	}
 }
