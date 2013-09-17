@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	gcms "github.com/googollee/go-gcm"
-	"gobus"
+	"github.com/googollee/go-rest"
 	"logger"
 	"model"
+	"net/http"
 	"strings"
 	"thirdpart"
 	"thirdpart/_performance"
@@ -78,6 +79,16 @@ func registerThirdpart(config *model.Config, platform *broker.Platform) (*thirdp
 }
 
 type Thirdpart struct {
+	rest.Service `prefix:"/thirdpart"`
+
+	identity      rest.SimpleNode `route:"/identity" method:"POST"`
+	friends       rest.SimpleNode `route:"/friends" method:"POST"`
+	photographers rest.SimpleNode `route:"/photographers" method:"POST"`
+	photos        rest.SimpleNode `route:"/photographers/photos" method:"POST"`
+
+	updateIdentity rest.SimpleNode `path:"/Thirdpart/UpdateIdentity" method:"POST"`
+	updateFriends  rest.SimpleNode `path:"/Thirdpart/UpdateFriends" method:"POST"`
+
 	thirdpart *thirdpart.Thirdpart
 	config    *model.Config
 	platform  *broker.Platform
@@ -122,30 +133,17 @@ func NewThirdpart(config *model.Config, platform *broker.Platform) (*Thirdpart, 
 	}, nil
 }
 
-func (t *Thirdpart) SetRoute(route gobus.RouteCreater) error {
-	json := new(gobus.JSON)
-	route().Methods("POST").Path("/thirdpart/identity").HandlerMethod(json, t, "UpdateIdentity")
-	route().Methods("POST").Path("/thirdpart/friends").HandlerMethod(json, t, "UpdateFriends")
-	route().Methods("POST").Path("/thirdpart/photographers").HandlerMethod(json, t, "GrabPhotos")
-	route().Methods("POST").Path("/thirdpart/photographers/photos").HandlerMethod(json, t, "GetPhotos")
-
-	// old
-	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateIdentity").HandlerMethod(json, t, "UpdateIdentity")
-	route().Methods("POST").Path("/Thirdpart/UpdateIdentity").HandlerMethod(json, t, "UpdateIdentity")
-	route().Methods("POST").Path("/Thirdpart").Queries("method", "UpdateFriends").HandlerMethod(json, t, "UpdateFriends")
-	route().Methods("POST").Path("/Thirdpart/UpdateFriends").HandlerMethod(json, t, "UpdateFriends")
-
-	return nil
-}
-
 // 同步更新to在第三方网站的个人信息（头像，bio之类）
 //
 // 例子：
 //
 //   > curl http://127.0.0.1:23333/thirdpart/identity -d '{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1}'
 //
-func (t *Thirdpart) UpdateIdentity(params map[string]string, to model.ThirdpartTo) (int, error) {
-	return 0, t.thirdpart.UpdateIdentity(&to.To)
+func (t *Thirdpart) Identity(ctx rest.Context, to model.ThirdpartTo) {
+	if err := t.thirdpart.UpdateIdentity(&to.To); err != nil {
+		ctx.Return(http.StatusBadRequest, "%s", err)
+		return
+	}
 }
 
 // 同步更新to在第三方网站的好友信息
@@ -154,8 +152,11 @@ func (t *Thirdpart) UpdateIdentity(params map[string]string, to model.ThirdpartT
 //
 //   > curl http://127.0.0.1:23333/thirdpart/friends -d '{"external_id":"123","external_username":"name","auth_data":"","provider":"twitter","identity_id":789,"user_id":1}'
 //
-func (t *Thirdpart) UpdateFriends(params map[string]string, to model.ThirdpartTo) (int, error) {
-	return 0, t.thirdpart.UpdateFriends(&to.To)
+func (t *Thirdpart) Friends(ctx rest.Context, to model.ThirdpartTo) {
+	if err := t.thirdpart.UpdateFriends(&to.To); err != nil {
+		ctx.Return(http.StatusBadRequest, "%s", err)
+		return
+	}
 }
 
 // 抓取渠道to上图片库albumID里的图片，并加入crossID里。bus地质：bus://exfe_service/thirdpart/photographers
@@ -164,21 +165,23 @@ func (t *Thirdpart) UpdateFriends(params map[string]string, to model.ThirdpartTo
 //
 //   > curl "http://127.0.0.1:23333/thirdpart/photographers?album_id=/Photos/underwater&cross_id=100354" -d '{"external_id":"123","external_username":"name","auth_data":"{\"oauth_token\":\"key\",\"oauth_token_secret\":\"secret\"}","provider":"dropbox","identity_id":789,"user_id":1}'
 //
-func (t *Thirdpart) GrabPhotos(params map[string]string, to model.Recipient) (int, error) {
-	albumID := params["album_id"]
-	photoxID := params["photox_id"]
-	if albumID == "" || photoxID == "" {
-		return 0, fmt.Errorf("must give album_id and photox_id")
+func (t *Thirdpart) Photographers(ctx rest.Context, to model.Recipient) {
+	var albumID, photoxID string
+	ctx.Bind("album_id", &albumID)
+	ctx.Bind("photox_id", &photoxID)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, "%s", err)
+		return
 	}
 	photos, err := t.thirdpart.GrabPhotos(to, albumID)
 	if err != nil {
-		return 0, err
+		ctx.Return(http.StatusInternalServerError, "%s", err)
+		return
 	}
-	err = t.platform.UploadPhoto(photoxID, photos)
-	if err != nil {
-		return 0, err
+	if err := t.platform.UploadPhoto(photoxID, photos); err != nil {
+		ctx.Return(http.StatusInternalServerError, "%s", err)
+		return
 	}
-	return len(photos), nil
 }
 
 // 抓取渠道to上图片pictureIDs的图片。bus地质：bus://exfe_service/thirdpart/photographers
@@ -187,16 +190,32 @@ func (t *Thirdpart) GrabPhotos(params map[string]string, to model.Recipient) (in
 //
 //   > curl "http://127.0.0.1:23333/thirdpart/photographers/photos?picture_id=/Photos/underwater/001.jpg,/Photos/underwater/002.jpg" -d '{"external_id":"123","external_username":"name","auth_data":"{\"oauth_token\":\"key\",\"oauth_token_secret\":\"secret\"}","provider":"dropbox","identity_id":789,"user_id":1}'
 //
-func (t *Thirdpart) GetPhotos(params map[string]string, to model.Recipient) ([]string, error) {
-	pictureIDs := strings.Split(params["picture_id"], ",")
+func (t *Thirdpart) Photos(ctx rest.Context, to model.Recipient) {
+	var ids string
+	ctx.Bind("picture_id", &ids)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, "%s", err)
+		return
+	}
+	pictureIDs := strings.Split(ids, ",")
 	if len(pictureIDs) == 0 {
-		return nil, fmt.Errorf("must give picture_id")
+		ctx.Return(http.StatusBadRequest, "must give picture_id")
+		return
 	}
 	datas, err := t.thirdpart.GetPhotos(to, pictureIDs)
 	if err != nil {
-		return nil, err
+		ctx.Return(http.StatusInternalServerError, "%s", err)
+		return
 	}
-	return datas, nil
+	ctx.Render(datas)
+}
+
+func (t *Thirdpart) UpdateIdentity(ctx rest.Context, to model.ThirdpartTo) {
+	t.Identity(ctx, to)
+}
+
+func (t *Thirdpart) UpdateFriends(ctx rest.Context, to model.ThirdpartTo) {
+	t.Friends(ctx, to)
 }
 
 func (t *Thirdpart) sendCallback(recipient model.Recipient, err error) {

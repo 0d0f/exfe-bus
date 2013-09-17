@@ -8,7 +8,9 @@ import (
 	"formatter"
 	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/googollee/go-rest"
 	"gobus"
+	"iom"
 	"logger"
 	"model"
 	"notifier"
@@ -97,10 +99,11 @@ func main() {
 		os.Exit(-1)
 		return
 	}
+	r := rest.New()
+	bus.RegisterFallback(r)
 
 	status := NewStatus()
-	err = bus.Register(status)
-	if err != nil {
+	if err = r.Add(status); err != nil {
 		logger.ERROR("status register failed: %s", err)
 		os.Exit(-1)
 		return
@@ -163,10 +166,8 @@ func main() {
 	}
 
 	if config.ExfeService.Services.Iom {
-		iom := NewIom(&config, redisPool)
-
-		err = bus.Register(iom)
-		if err != nil {
+		s := iom.NewIom(redisPool, "exfe:iom")
+		if err := r.Add(s); err != nil {
 			logger.ERROR("gobus launch failed: %s", err)
 			os.Exit(-1)
 			return
@@ -182,8 +183,7 @@ func main() {
 			return
 		}
 
-		err = bus.Register(thirdpart)
-		if err != nil {
+		if err := r.Add(thirdpart); err != nil {
 			logger.ERROR("gobus launch failed: %s", err)
 			os.Exit(-1)
 			return

@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"github.com/googollee/go-rest"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -28,25 +30,67 @@ func HashFromCount(count int64) (string, error) {
 }
 
 type Iom struct {
-	redis *redis.Pool
+	rest.Service `prefix:"/iom"`
+
+	get    rest.SimpleNode `route:"/:user_id/:hash" method:"GET"`
+	create rest.SimpleNode `route:"/user/:user_id" method:"POST"`
+
+	redis  *redis.Pool
+	prefix string
 }
 
-func NewIom(redis *redis.Pool) *Iom {
+func NewIom(redis *redis.Pool, prefix string) *Iom {
 	return &Iom{
-		redis: redis,
+		redis:  redis,
+		prefix: prefix,
 	}
 }
 
-func (h *Iom) Get(userid string, hash string) (string, error) {
+func (h *Iom) Get(ctx rest.Context) {
+	var userID string
+	var hash string
+	ctx.Bind("user_id", &userID)
+	ctx.Bind("hash", &hash)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, "%s", err)
+		return
+	}
+	ret, err := h.grab(userID, hash)
+	if err != nil {
+		ctx.Return(http.StatusInternalServerError, "%s", err)
+		return
+	}
+	ctx.Render(ret)
+}
+
+func (h *Iom) Create(ctx rest.Context, data string) {
+	var userID string
+	ctx.Bind("user_id", &userID)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, "%s", err)
+		return
+	}
+	ret, err := h.findByData(userID, data)
+	if err != nil {
+		ret, err = h.make(userID, data)
+	}
+	if err != nil {
+		ctx.Return(http.StatusInternalServerError, "%s", err)
+		return
+	}
+	ctx.Render(ret)
+}
+
+func (h *Iom) grab(userID string, hash string) (string, error) {
 	hash = strings.ToUpper(hash)
 	conn := h.redis.Get()
 	defer conn.Close()
 
-	url64, err := redis.Bytes(conn.Do("GET", hashKey(userid, hash)))
+	url64, err := redis.Bytes(conn.Do("GET", h.hashKey(userID, hash)))
 	if err != nil {
 		return "", err
 	}
-	err = h.Update(userid, hash)
+	err = h.update(userID, hash)
 	if err != nil {
 		return "", err
 	}
@@ -54,28 +98,28 @@ func (h *Iom) Get(userid string, hash string) (string, error) {
 	return string(url), err
 }
 
-func (h *Iom) FindByData(userid string, data string) (string, error) {
+func (h *Iom) findByData(userID string, data string) (string, error) {
 	conn := h.redis.Get()
 	defer conn.Close()
 
-	hash, err := redis.Bytes(conn.Do("GET", dataKey(userid, data)))
+	hash, err := redis.Bytes(conn.Do("GET", h.dataKey(userID, data)))
 	if err == nil {
-		err = h.Update(userid, string(hash))
+		err = h.update(userID, string(hash))
 	}
 	return string(hash), err
 }
 
-func (h *Iom) Update(userid string, hash string) error {
+func (h *Iom) update(userID string, hash string) error {
 	conn := h.redis.Get()
 	defer conn.Close()
-	_, err := conn.Do("ZADD", timeKey(userid), time.Now().UnixNano(), hash)
+	_, err := conn.Do("ZADD", h.timeKey(userID), time.Now().UnixNano(), hash)
 	return err
 }
 
-func (h *Iom) FindLatestHash(userid string) (string, error) {
+func (h *Iom) findLatestHash(userID string) (string, error) {
 	conn := h.redis.Get()
 	defer conn.Close()
-	reply, err := redis.Values(conn.Do("ZRANGEBYSCORE", timeKey(userid), "-inf", "+inf", "LIMIT", "0", "1"))
+	reply, err := redis.Values(conn.Do("ZRANGEBYSCORE", h.timeKey(userID), "-inf", "+inf", "LIMIT", "0", "1"))
 	if err != nil {
 		return "", err
 	}
@@ -86,51 +130,51 @@ func (h *Iom) FindLatestHash(userid string) (string, error) {
 	return ret, nil
 }
 
-func (h *Iom) Create(userid string, data string) (string, error) {
+func (h *Iom) make(userID string, data string) (string, error) {
 	conn := h.redis.Get()
 	defer conn.Close()
 	data64 := base64.URLEncoding.EncodeToString([]byte(data))
-	count, err := redis.Int64(conn.Do("ZCOUNT", timeKey(userid), -Inf, +Inf))
+	count, err := redis.Int64(conn.Do("ZCOUNT", h.timeKey(userID), -Inf, +Inf))
 	if err != nil {
 		return "", err
 	}
 
 	var hash string
 	if count > int64(MaxSize) {
-		hash, err = h.FindLatestHash(userid)
+		hash, err = h.findLatestHash(userID)
 		if err != nil {
 			return "", err
 		}
-		data, err = h.Get(userid, hash)
+		data, err = h.grab(userID, hash)
 		if err != nil {
 			return "", err
 		}
-		conn.Do("DEL", dataKey(userid, data))
+		conn.Do("DEL", h.dataKey(userID, data))
 	} else {
 		hash, err = HashFromCount(count)
 		if err != nil {
 			return "", nil
 		}
 	}
-	if _, err = conn.Do("SET", hashKey(userid, hash), data64); err != nil {
+	if _, err = conn.Do("SET", h.hashKey(userID, hash), data64); err != nil {
 		return "", err
 	}
-	if _, err = conn.Do("SET", dataKey(userid, data), hash); err != nil {
+	if _, err = conn.Do("SET", h.dataKey(userID, data), hash); err != nil {
 		return "", err
 	}
-	err = h.Update(userid, hash)
+	err = h.update(userID, hash)
 	return hash, err
 }
 
-func hashKey(userid, hash string) string {
-	return fmt.Sprintf("hash:%s:%s", userid, hash)
+func (h *Iom) hashKey(userID, hash string) string {
+	return fmt.Sprintf("%s:hash:%s:%s", h.prefix, userID, hash)
 }
 
-func dataKey(userid, data string) string {
+func (h *Iom) dataKey(userID, data string) string {
 	url64 := base64.URLEncoding.EncodeToString([]byte(data))
-	return fmt.Sprintf("hash_url:%s:%s", userid, url64)
+	return fmt.Sprintf("%s:hash_url:%s:%s", h.prefix, userID, url64)
 }
 
-func timeKey(userid string) string {
-	return fmt.Sprintf("hash_time:%s", userid)
+func (h *Iom) timeKey(userID string) string {
+	return fmt.Sprintf("%s:hash_time:%s", h.prefix, userID)
 }

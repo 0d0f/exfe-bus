@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-rest/old_style"
+	"github.com/googollee/go-rest"
+	old "github.com/googollee/go-rest/old_style"
 	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
@@ -27,8 +28,9 @@ type Service interface {
 }
 
 type Server struct {
-	router *mux.Router
-	addr   string
+	router   *mux.Router
+	addr     string
+	fallback *rest.Rest
 }
 
 func NewServer(addr string) (*Server, error) {
@@ -40,24 +42,22 @@ func NewServer(addr string) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) Register(service Service) error {
-	return service.SetRoute(func() *Route {
-		return &Route{s.router.NewRoute(), s}
-	})
-}
-
 func (s *Server) RegisterPrefix(prefix string, handler http.Handler) error {
 	s.router.PathPrefix(prefix).Handler(handler)
 	return nil
 }
 
 func (s *Server) RegisterRestful(service interface{}) error {
-	handler, err := rest.New(service)
+	handler, err := old.New(service)
 	if err != nil {
 		return err
 	}
 	s.router.PathPrefix(handler.Prefix()).Handler(handler)
 	return nil
+}
+
+func (s *Server) RegisterFallback(fallback *rest.Rest) {
+	s.fallback = fallback
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -66,6 +66,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		s.router.ServeHTTP(w, r)
 		return
+	}
+	if s.fallback != nil {
+		s.fallback.ServeHTTP(w, r)
 	}
 }
 

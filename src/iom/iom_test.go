@@ -3,6 +3,7 @@ package iom
 import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"math/rand"
 	"strings"
 	"testing"
 	"time"
@@ -50,24 +51,25 @@ func TestHashCreate(t *testing.T) {
 			return err
 		},
 	}
-	handler := NewIom(redis)
-	h, _ := handler.Create("123", "http://123/a")
-	url, _ := handler.Get("123", h)
+	prefix := fmt.Sprintf("test%08d", rand.Intn(1e8))
+	handler := NewIom(redis, prefix)
+	h, _ := handler.make("123", "http://123/a")
+	url, _ := handler.grab("123", h)
 	if url != "http://123/a" {
 		t.Errorf("User id %s's hash %s expect url %s, but got %s", "123", h, "http://123/a", url)
 	}
-	h1, _ := handler.FindByData("123", url)
+	h1, _ := handler.findByData("123", url)
 	if h1 != h {
 		t.Errorf("user id %s's url %s expect hash %s, but got %s", "123", url, h, h1)
 	}
 
 	uph := strings.ToUpper(h)
-	upurl, _ := handler.Get("123", uph)
+	upurl, _ := handler.grab("123", uph)
 	if upurl != url {
 		t.Errorf("hash handler should not care about case")
 	}
 	lowerh := strings.ToLower(h)
-	lowerurl, _ := handler.Get("123", lowerh)
+	lowerurl, _ := handler.grab("123", lowerh)
 	if lowerurl != url {
 		t.Errorf("hash handler should not care about case")
 	}
@@ -89,30 +91,31 @@ func TestHashUpdate(t *testing.T) {
 			return err
 		},
 	}
-	handler := NewIom(redis)
+	prefix := fmt.Sprintf("test%08d", rand.Intn(1e8))
+	handler := NewIom(redis, prefix)
 	for _, userid := range []string{"234", "345"} {
 		for _, crossid := range []string{"a", "b", "c", "d"} {
-			_, _ = handler.Create(userid, fmt.Sprintf("http://%s/%s", userid, crossid))
+			_, _ = handler.make(userid, fmt.Sprintf("http://%s/%s", userid, crossid))
 		}
 	}
 
-	hash, _ := handler.FindLatestHash("234")
-	url, _ := handler.Get("234", hash)
+	hash, _ := handler.findLatestHash("234")
+	url, _ := handler.grab("234", hash)
 	if url != "http://234/a" {
 		t.Errorf("User id %s last hash should get url %s, but got url %s", "234", "http://234/a", url)
 	}
-	hash, _ = handler.FindLatestHash("234")
-	url, _ = handler.Get("234", hash)
+	hash, _ = handler.findLatestHash("234")
+	url, _ = handler.grab("234", hash)
 	if url != "http://234/b" {
 		t.Errorf("User id %s last hash should get url %s, but got url %s", "234", "http://234/b", url)
 	}
-	hash, _ = handler.FindLatestHash("234")
-	url, _ = handler.Get("234", hash)
+	hash, _ = handler.findLatestHash("234")
+	url, _ = handler.grab("234", hash)
 	if url != "http://234/c" {
 		t.Errorf("User id %s last hash should get url %s, but got url %s", "234", "http://234/c", url)
 	}
-	hash, _ = handler.FindLatestHash("234")
-	url, _ = handler.Get("234", hash)
+	hash, _ = handler.findLatestHash("234")
+	url, _ = handler.grab("234", hash)
 	if url != "http://234/d" {
 		t.Errorf("User id %s last hash should get url %s, but got url %s", "234", "http://234/d", url)
 	}

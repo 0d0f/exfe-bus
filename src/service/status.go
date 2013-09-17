@@ -1,11 +1,16 @@
 package main
 
 import (
-	"fmt"
-	"gobus"
+	"github.com/googollee/go-rest"
+	"net/http"
 )
 
 type Status struct {
+	rest.Service `prefix:"/_status"`
+
+	live rest.SimpleNode `method:"POST" route:"/live"`
+	show rest.SimpleNode `method:"GET" route:"/:key"`
+
 	data map[string]int
 }
 
@@ -23,22 +28,21 @@ func (s *Status) Get(key string) int {
 	return s.data[key]
 }
 
-func (s *Status) SetRoute(r gobus.RouteCreater) (err error) {
-	json := new(gobus.JSON)
-	err = r().Methods("GET", "POST").Path("/_status/live").HandlerMethod(json, s, "Live")
-	err = r().Methods("GET").Path("/_status/{key}").HandlerMethod(json, s, "Show")
-	return
+func (s *Status) Live(ctx rest.Context) {
+	ctx.Render("OK")
 }
 
-func (s *Status) Live(params map[string]string) (string, error) {
-	return "OK", nil
-}
-
-func (s *Status) Show(params map[string]string) (int, error) {
-	key := params["key"]
+func (s *Status) Show(ctx rest.Context) {
+	var key string
+	ctx.Bind("key", &key)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, "%s", err)
+		return
+	}
 	ret, ok := s.data[key]
 	if !ok {
-		return 0, fmt.Errorf("can't find key(%s)", key)
+		ctx.Return(http.StatusBadRequest, "can't find key(%s)", key)
+		return
 	}
-	return ret, nil
+	ctx.Render(ret)
 }
