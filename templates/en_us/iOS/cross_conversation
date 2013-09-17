@@ -1,3 +1,3 @@
 {{$t := sub . "_text/cross_conversation"}}{{if $t}}{{$t}}
 
-{"url":"exfe://{{.Config.ServerCode}}/!{{.CrossID}}","path":"/!{{.Cross.ID}}/conversation"}{{end}}
+{"url":"exfe://{{.Config.ServerCode}}/!{{.Cross.ID}}","path":"/!{{.Cross.ID}}/conversation"}{{end}}
