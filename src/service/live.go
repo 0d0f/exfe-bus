@@ -4,7 +4,7 @@ import (
 	"broker"
 	"fmt"
 	"github.com/googollee/go-broadcast"
-	"github.com/googollee/go-rest/old_style"
+	"github.com/googollee/go-rest"
 	"here"
 	"logger"
 	"math/rand"
@@ -17,8 +17,8 @@ import (
 type LiveService struct {
 	rest.Service `prefix:"/v3/live"`
 
-	Card      rest.Processor `path:"/cards" method:"POST"`
-	Streaming rest.Streaming `path:"/streaming" method:"POST" end:""`
+	card      rest.SimpleNode `route:"/cards" method:"POST"`
+	streaming rest.Streaming  `route:"/streaming" method:"POST" end:""`
 
 	platform  *broker.Platform
 	config    *model.Config
@@ -60,25 +60,30 @@ func NewLive(config *model.Config, platform *broker.Platform) (*LiveService, err
 	return service, nil
 }
 
-func (h LiveService) HandleCard(data here.Data) []string {
-	h.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
-	h.Header().Set("Access-Control-Allow-Credentials", "true")
-	h.Header().Set("Cache-Control", "no-cache")
+func (h LiveService) Card(ctx rest.Context, data here.Data) {
+	ctx.Response().Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
+	ctx.Response().Header().Set("Access-Control-Allow-Credentials", "true")
+	ctx.Response().Header().Set("Cache-Control", "no-cache")
 
-	token := h.Request().URL.Query().Get("token")
+	var token string
+	ctx.Bind("token", &token)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, "%s", err)
+		return
+	}
 	if token == "" {
 		token = fmt.Sprintf("%04d", rand.Int31n(10000))
 		if h.here.Exist(token) != nil {
-			h.Error(http.StatusNotFound, fmt.Errorf("please wait and try again."))
-			return nil
+			ctx.Return(http.StatusNotFound, "please wait and try again.")
+			return
 		}
 		data.Card.Id = fmt.Sprintf("%032d", rand.Int31())
 	} else if h.here.Exist(token) == nil {
-		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
-		return nil
+		ctx.Return(http.StatusForbidden, "invalid token")
+		return
 	}
 	data.Token = token
-	remote := h.Request().RemoteAddr
+	remote := ctx.Request().RemoteAddr
 	remotes := strings.Split(remote, ":")
 	data.Traits = append(data.Traits, remotes[0])
 
@@ -101,24 +106,30 @@ func (h LiveService) HandleCard(data here.Data) []string {
 	logger.INFO("live", "add", "token", data.Token, "card", data.Card.Id, "name", data.Card.Name, "long", data.Longitude, "lat", data.Latitude, "acc", data.Accuracy, "traits", data.Traits)
 
 	if err != nil {
-		h.Error(http.StatusBadRequest, err)
-		return nil
-	}
-
-	return []string{token, data.Card.Id}
-}
-
-func (h LiveService) HandleStreaming(s rest.Stream) {
-	h.Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
-	h.Header().Set("Access-Control-Allow-Credentials", "true")
-	h.Header().Set("Cache-Control", "no-cache")
-	token := h.Request().URL.Query().Get("token")
-	group := h.here.Exist(token)
-	if group == nil {
-		h.Error(http.StatusForbidden, fmt.Errorf("invalid token"))
+		ctx.Return(http.StatusBadRequest, "%s", err)
 		return
 	}
-	c := make(chan interface{})
+
+	ctx.Render([]string{token, data.Card.Id})
+}
+
+func (h LiveService) HandleStreaming(ctx rest.StreamContext) {
+	ctx.Response().Header().Set("Access-Control-Allow-Origin", h.config.AccessDomain)
+	ctx.Response().Header().Set("Access-Control-Allow-Credentials", "true")
+	ctx.Response().Header().Set("Cache-Control", "no-cache")
+
+	var token string
+	ctx.Bind("token", &token)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, "%s", err)
+		return
+	}
+	group := h.here.Exist(token)
+	if group == nil {
+		ctx.Return(http.StatusForbidden, "invalid token")
+		return
+	}
+	c := make(chan interface{}, 10)
 	b, ok := h.broadcast[token]
 	if !ok {
 		b = broadcast.NewBroadcast(5)
@@ -134,7 +145,7 @@ func (h LiveService) HandleStreaming(s rest.Stream) {
 	for _, d := range group.Data {
 		cards = append(cards, d.Card)
 	}
-	s.Write(cards)
+	ctx.Render(cards)
 	for {
 		select {
 		case d := <-c:
@@ -142,13 +153,13 @@ func (h LiveService) HandleStreaming(s rest.Stream) {
 			if !ok {
 				continue
 			}
-			err := s.Write(cards)
+			err := ctx.Render(cards)
 			if err != nil || len(cards) == 0 {
 				logger.INFO("live", "clear", "token", token)
 				return
 			}
 		case <-time.After(broker.NetworkTimeout):
-			err := s.Ping()
+			err := ctx.Ping()
 			if err != nil {
 				return
 			}

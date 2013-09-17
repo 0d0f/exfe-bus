@@ -118,7 +118,7 @@ func main() {
 		}
 		err = bus.RegisterRestful(service)
 		if err != nil {
-			logger.ERROR("regiest %s failed: %s", name, err)
+			logger.ERROR("register %s failed: %s", name, err)
 			os.Exit(-1)
 			return
 		}
@@ -127,7 +127,17 @@ func main() {
 
 	if config.ExfeService.Services.Live {
 		live, err := NewLive(&config, platform)
-		register("live", live, err)
+		if err != nil {
+			logger.ERROR("create %s failed: %s", "live", err)
+			os.Exit(-1)
+			return
+		}
+
+		if err := r.Add(live); err != nil {
+			logger.ERROR("register %s failed: %s", "live", err)
+			os.Exit(-1)
+			return
+		}
 	}
 
 	if config.ExfeService.Services.Token {
