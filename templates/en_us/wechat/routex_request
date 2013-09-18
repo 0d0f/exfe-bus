@@ -1,5 +1,5 @@
 {
-  "touser": "{{.To.ExternalID}}",
+  "touser": "{{.To.ExternalUsername}}",
   "template_id": "user_location_request",
   "locale": "{{.To.Language}}",
   "data":{
