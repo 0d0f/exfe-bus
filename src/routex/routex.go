@@ -457,7 +457,6 @@ func (m *RouteMap) getObjects(cross model.Cross, toMars bool) []rmodel.Geomark {
 			if len(l) > 0 {
 				breadcrumbs[id] = l[0]
 			}
-			fmt.Println("tutorial", id, "locations", l)
 		}
 	}
 
