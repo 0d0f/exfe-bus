@@ -4,7 +4,7 @@ import (
 	"broker"
 	"fmt"
 	"formatter"
-	"github.com/googollee/go-rest/old_style"
+	"github.com/googollee/go-rest"
 	"model"
 	"net/http"
 )
@@ -12,9 +12,9 @@ import (
 type User struct {
 	rest.Service `prefix:"/v3/notifier/user"`
 
-	Welcome rest.Processor `path:"/welcome" method:"POST"`
-	Verify  rest.Processor `path:"/verify" method:"POST"`
-	Reset   rest.Processor `path:"/reset" method:"POST"`
+	welcome rest.SimpleNode `route:"/welcome" method:"POST"`
+	verify  rest.SimpleNode `route:"/verify" method:"POST"`
+	reset   rest.SimpleNode `route:"/reset" method:"POST"`
 
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
@@ -31,35 +31,35 @@ func NewUser(localTemplate *formatter.LocalTemplate, config *model.Config, platf
 	}
 }
 
-func (u User) HandleWelcome(arg model.UserWelcome) {
+func (u User) Welcome(ctx rest.Context, arg model.UserWelcome) {
 	err := arg.Parse(u.config)
 	if err != nil {
-		u.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 
 	go SendAndSave(u.localTemplate, u.platform, &arg.To, arg, "user_welcome", u.domain+"/v3/notifier/user/welcome", &arg)
-	u.WriteHeader(http.StatusAccepted)
+	ctx.Return(http.StatusAccepted)
 }
 
-func (u User) HandleVerify(arg model.UserVerify) {
+func (u User) Verify(ctx rest.Context, arg model.UserVerify) {
 	err := arg.Parse(u.config)
 	if err != nil {
-		u.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 
 	go SendAndSave(u.localTemplate, u.platform, &arg.To, arg, "user_verify", u.domain+"/v3/notifier/user/verify", &arg)
-	u.WriteHeader(http.StatusAccepted)
+	ctx.Return(http.StatusAccepted)
 }
 
-func (u User) HandleReset(arg model.UserVerify) {
+func (u User) Reset(ctx rest.Context, arg model.UserVerify) {
 	err := arg.Parse(u.config)
 	if err != nil {
-		u.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 
 	go SendAndSave(u.localTemplate, u.platform, &arg.To, arg, "user_resetpass", u.domain+"/v3/notifier/user/reset", &arg)
-	u.WriteHeader(http.StatusAccepted)
+	ctx.Return(http.StatusAccepted)
 }

@@ -102,14 +102,6 @@ func main() {
 	r := rest.New()
 	bus.RegisterFallback(r)
 
-	status := NewStatus()
-	if err = r.Add(status); err != nil {
-		logger.ERROR("status register failed: %s", err)
-		os.Exit(-1)
-		return
-	}
-	logger.NOTICE("register Status")
-
 	register := func(name string, service interface{}, err error) {
 		if err != nil {
 			logger.ERROR("create %s failed: %s", name, err)
@@ -125,19 +117,26 @@ func main() {
 		logger.NOTICE("register %s", name)
 	}
 
+	reg := func(name string, service interface{}, err error) {
+		if err != nil {
+			logger.ERROR("create %s failed: %s", name, err)
+			os.Exit(-1)
+			return
+		}
+		if err := r.Add(service); err != nil {
+			logger.ERROR("register %s failed: %s", name, err)
+			os.Exit(-1)
+			return
+		}
+		logger.NOTICE("register %s", name)
+	}
+
+	status := NewStatus()
+	reg("status", status, nil)
+
 	if config.ExfeService.Services.Live {
 		live, err := NewLive(&config, platform)
-		if err != nil {
-			logger.ERROR("create %s failed: %s", "live", err)
-			os.Exit(-1)
-			return
-		}
-
-		if err := r.Add(live); err != nil {
-			logger.ERROR("register %s failed: %s", "live", err)
-			os.Exit(-1)
-			return
-		}
+		reg("live", live, err)
 	}
 
 	if config.ExfeService.Services.Token {
@@ -148,25 +147,17 @@ func main() {
 			return
 		}
 		token := token.New(repo)
-		if err := r.Add(token); err != nil {
-			logger.ERROR("register %s failed: %s", "token", err)
-			os.Exit(-1)
-			return
-		}
+		reg("token", token, nil)
 	}
 
 	if config.ExfeService.Services.Splitter {
 		splitter := splitter.NewSplitter(&config)
-		if err := r.Add(splitter); err != nil {
-			logger.ERROR("register %s failed: %s", "splitter", err)
-			os.Exit(-1)
-			return
-		}
+		reg("splitter", splitter, nil)
 	}
 
 	if config.ExfeService.Services.Thirdpart {
 		poster, err := registerThirdpart(&config, platform)
-		register("poster", poster, err)
+		reg("poster", poster, err)
 	}
 
 	if config.ExfeService.Services.Notifier {
@@ -176,7 +167,7 @@ func main() {
 			return
 		}
 		user := notifier.NewUser(localTemplate, &config, platform)
-		register("notifier/user", user, nil)
+		reg("notifier/user", user, nil)
 		cross := notifier.NewCross(localTemplate, &config, platform)
 		register("notifier/cross", cross, nil)
 		routex := notifier.NewRoutex(localTemplate, &config, platform)
@@ -185,28 +176,12 @@ func main() {
 
 	if config.ExfeService.Services.Iom {
 		s := iom.NewIom(redisPool, "exfe:iom")
-		if err := r.Add(s); err != nil {
-			logger.ERROR("gobus launch failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		logger.NOTICE("register IOM")
+		reg("iom", s, nil)
 	}
 
 	if config.ExfeService.Services.Thirdpart {
 		thirdpart, err := NewThirdpart(&config, platform)
-		if err != nil {
-			logger.ERROR("create thirdpart failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-
-		if err := r.Add(thirdpart); err != nil {
-			logger.ERROR("gobus launch failed: %s", err)
-			os.Exit(-1)
-			return
-		}
-		logger.NOTICE("register Thirdpart")
+		reg("thirdpart", thirdpart, err)
 	}
 
 	if config.ExfeService.Services.Routex {

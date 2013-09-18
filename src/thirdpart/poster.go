@@ -3,7 +3,7 @@ package thirdpart
 import (
 	"fmt"
 	"github.com/googollee/go-broadcast"
-	"github.com/googollee/go-rest/old_style"
+	"github.com/googollee/go-rest"
 	"io"
 	"io/ioutil"
 	"logger"
@@ -40,9 +40,9 @@ type PostResponse struct {
 type Poster struct {
 	rest.Service `prefix:"/v3/poster" mime:"plain/text"`
 
-	Post     rest.Processor `path:"/message/:provider/*id" method:"POST"`
-	Response rest.Processor `path:"/response/:provider/*id" method:"POST"`
-	Watch    rest.Streaming `path:"" method:"WATCH"`
+	post     rest.SimpleNode `route:"/message/:provider/*id" method:"POST"`
+	response rest.SimpleNode `route:"/response/:provider/*id" method:"POST"`
+	watch    rest.Streaming  `route:"" method:"WATCH"`
 
 	config    *model.Config
 	posters   map[string]posterHandler
@@ -77,64 +77,74 @@ func (m *Poster) Add(poster IPoster) {
 	}
 }
 
-func (m Poster) HandlePost(text string) string {
+func (m Poster) Post(ctx rest.Context, text string) {
 	if text == "" {
-		return ""
+		ctx.Return(http.StatusBadRequest, "invalid text")
+		return
 	}
-	provider := m.Vars()["provider"]
-	id := m.Vars()["id"]
+	var provider, id string
+	ctx.Bind("provider", &provider)
+	ctx.Bind("id", &id)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
+		return
+	}
 	handler, ok := m.posters[provider]
 	if !ok {
-		m.Error(http.StatusBadRequest, m.DetailError(1, "invalid provider: %s", provider))
-		return ""
+		ctx.Return(http.StatusBadRequest, "invalid provider: %s", provider)
+		return
 	}
 
-	ret, err := handler.poster.Post(m.Request().URL.Query().Get("from"), id, text)
+	ret, err := handler.poster.Post(ctx.Request().URL.Query().Get("from"), id, text)
 	if err != nil {
 		logger.INFO("poster", provider, "fail", id, err.Error())
-		m.Error(http.StatusInternalServerError, m.DetailError(2, "%s", err))
-		return ""
+		ctx.Return(http.StatusInternalServerError, err)
+		return
 	}
 	ontime := time.Now().Add(handler.waiting).Unix()
 	if handler.waiting > 0 {
 		logger.INFO("poster", provider, "waiting", ret, id, "ontime", ontime, fmt.Sprintf("default %v", handler.defaultOK))
-		m.Header().Set("Ontime", fmt.Sprintf("%d", ontime))
-		m.Header().Set("Default", fmt.Sprintf("%v", handler.defaultOK))
-		m.WriteHeader(http.StatusAccepted)
+		ctx.Response().Header().Set("Ontime", fmt.Sprintf("%d", ontime))
+		ctx.Response().Header().Set("Default", fmt.Sprintf("%v", handler.defaultOK))
+		ctx.Return(http.StatusAccepted)
 	} else {
 		logger.INFO("poster", provider, "ok", ret, id)
-		m.WriteHeader(http.StatusOK)
+		ctx.Return(http.StatusOK)
 	}
-	return fmt.Sprintf("%s-%s", provider, ret)
+	ctx.Render(fmt.Sprintf("%s-%s", provider, ret))
 }
 
-func (m Poster) HandleResponse(resp PostResponse) {
-	provider, id := m.Vars()["provider"], m.Vars()["id"]
+func (m Poster) Response(ctx rest.Context, resp PostResponse) {
+	var provider, id string
+	ctx.Bind("provider", &provider)
+	ctx.Bind("id", &id)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
+		return
+	}
 	logger.INFO("poster", provider, "response", id, resp.Ok, resp.Error)
 	resp.Id = fmt.Sprintf("%s-%s", provider, id)
 	m.watchChan.Send(resp)
 }
 
-func (m Poster) HandleWatch(stream rest.Stream) {
+func (m Poster) Watch(ctx rest.StreamContext) {
 	c := make(chan interface{})
 	err := m.watchChan.Register(c)
 	if err != nil {
-		m.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 	defer m.watchChan.Unregister(c)
-	m.WriteHeader(http.StatusOK)
+	ctx.Return(http.StatusOK)
 
-	for {
+	for ctx.Ping() == nil {
 		select {
 		case i := <-c:
-			stream.SetWriteDeadline(time.Now().Add(time.Second))
-			err = stream.Write(i)
+			ctx.SetWriteDeadline(time.Now().Add(time.Second))
+			if err := ctx.Render(i); err != nil {
+				return
+			}
 		case <-time.After(time.Second):
-			err = stream.Ping()
-		}
-		if err != nil {
-			return
 		}
 	}
 }
