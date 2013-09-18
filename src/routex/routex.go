@@ -445,8 +445,18 @@ func (m RouteMap) HandleSendNotification() {
 func (m *RouteMap) getObjects(cross model.Cross, toMars bool) []rmodel.Geomark {
 	var ret []rmodel.Geomark
 	breadcrumbs, err := m.breadcrumbCache.LoadAllCross(int64(cross.ID))
+	users := make(map[int64]bool)
+	for _, inv := range cross.Exfee.Invitations {
+		users[inv.Identity.UserID] = true
+	}
 	if err == nil {
 		for userId, l := range breadcrumbs {
+			if !users[userId] {
+				if err := m.breadcrumbCache.RemoveCross(userId, int64(cross.ID)); err != nil {
+					logger.ERROR("remove user %d cross %d breadcrumb error: %s", userId, cross.ID, err)
+				}
+				continue
+			}
 			mark := m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{l})
 			if toMars {
 				mark.ToMars(m.conversion)

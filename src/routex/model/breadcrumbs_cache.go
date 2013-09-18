@@ -149,6 +149,16 @@ func (s *BreadcrumbCacheSaver) LoadCross(userId, crossId int64) (SimpleLocation,
 	return ret, true, nil
 }
 
+func (s *BreadcrumbCacheSaver) RemoveCross(userId, crossId int64) error {
+	key, conn := s.ckey(crossId, userId), s.r.Get()
+	defer conn.Close()
+
+	if _, err := conn.Do("DEL", key); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *BreadcrumbCacheSaver) Save(userId int64, l SimpleLocation) error {
 	key, conn := s.ukey(userId), s.r.Get()
 	defer conn.Close()
