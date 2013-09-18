@@ -157,7 +157,11 @@ func main() {
 
 	if config.ExfeService.Services.Splitter {
 		splitter := splitter.NewSplitter(&config)
-		register("splitter", splitter, nil)
+		if err := r.Add(splitter); err != nil {
+			logger.ERROR("register %s failed: %s", "splitter", err)
+			os.Exit(-1)
+			return
+		}
 	}
 
 	if config.ExfeService.Services.Thirdpart {

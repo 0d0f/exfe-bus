@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/googollee/go-rest/old_style"
+	"github.com/googollee/go-rest"
 	"logger"
 	"model"
 	"net/http"
@@ -17,8 +17,8 @@ import (
 type Splitter struct {
 	rest.Service `prefix:"/v3/splitter"`
 
-	Split  rest.Processor `path:"" method:"POST"`
-	Delete rest.Processor `path:"" method:"DELETE"`
+	split  rest.SimpleNode `path:"" method:"POST"`
+	delete rest.SimpleNode `path:"" method:"DELETE"`
 
 	queueSite      string
 	config         *model.Config
@@ -44,10 +44,10 @@ func NewSplitter(config *model.Config) *Splitter {
 	}
 }
 
-func (s Splitter) HandleSplit(pack BigPack) {
+func (s Splitter) Split(ctx rest.Context, pack BigPack) {
 	b, err := base64.URLEncoding.DecodeString(pack.Service)
 	if err != nil {
-		s.Error(http.StatusBadRequest, s.DetailError(4, "service(%s) invalid: %s", pack.Service, err))
+		ctx.Return(http.StatusBadRequest, "service(%s) invalid: %s", pack.Service, err)
 		return
 	}
 
@@ -64,7 +64,7 @@ func (s Splitter) HandleSplit(pack BigPack) {
 		url := fmt.Sprintf("http://%s:%d/v3/queue/%s/%s/%s?ontime=%d&update=%s", s.queueSite, s.config.ExfeQueue.Port, mergeKey, pack.Method, pack.Service, pack.Ontime, pack.Update)
 		b, err := json.Marshal(pack.Data)
 		if err != nil {
-			s.Error(http.StatusBadRequest, err)
+			ctx.Return(http.StatusBadRequest, err)
 			return
 		}
 		logger.INFO("splitter", to, "POST", url)
@@ -80,10 +80,10 @@ func (s Splitter) HandleSplit(pack BigPack) {
 	}
 }
 
-func (s Splitter) HandleDelete(pack BigPack) {
+func (s Splitter) Delete(ctx rest.Context, pack BigPack) {
 	b, err := base64.URLEncoding.DecodeString(pack.Service)
 	if err != nil {
-		s.Error(http.StatusBadRequest, s.DetailError(4, "service(%s) invalid: %s", pack.Service, err))
+		ctx.Return(http.StatusBadRequest, "service(%s) invalid: %s", pack.Service, err)
 		return
 	}
 
