@@ -443,8 +443,24 @@ func (m RouteMap) HandleSendNotification() {
 }
 
 func (m *RouteMap) getObjects(cross model.Cross, toMars bool) []rmodel.Geomark {
+	isTutorial := false
+	if cross.By.UserID == m.config.Routex.TutorialCreator {
+		isTutorial = true
+	}
+
 	var ret []rmodel.Geomark
 	breadcrumbs, err := m.breadcrumbCache.LoadAllCross(int64(cross.ID))
+	now := time.Now()
+	if isTutorial {
+		for _, id := range m.config.TutorialBotUserIds {
+			l := m.getTutorialData(now, id, 1)
+			if len(l) > 0 {
+				breadcrumbs[id] = l[0]
+			}
+			fmt.Println("tutorial", id, "locations", l)
+		}
+	}
+
 	users := make(map[int64]bool)
 	for _, inv := range cross.Exfee.Invitations {
 		users[inv.Identity.UserID] = true

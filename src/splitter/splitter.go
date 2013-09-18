@@ -17,8 +17,8 @@ import (
 type Splitter struct {
 	rest.Service `prefix:"/v3/splitter"`
 
-	split  rest.SimpleNode `path:"" method:"POST"`
-	delete rest.SimpleNode `path:"" method:"DELETE"`
+	split  rest.SimpleNode `route:"" method:"POST"`
+	delete rest.SimpleNode `route:"" method:"DELETE"`
 
 	queueSite      string
 	config         *model.Config
