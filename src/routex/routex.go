@@ -153,7 +153,7 @@ func (m RouteMap) HandleSetUserInner(setup UserCrossSetup) {
 		setup.AfterInSeconds = 60 * 60
 	}
 	m.switchWindow(userId, crossId, setup.SaveBreadcrumbs, setup.AfterInSeconds)
-	m.update(userId, crossId)
+	m.update(crossId)
 }
 
 func (m RouteMap) HandleSearchRoutex(crossIds []int64) []rmodel.Routex {
@@ -408,7 +408,7 @@ func (m RouteMap) HandleSendNotification() {
 		return
 	}
 
-	m.update(token.UserId, int64(token.Cross.ID))
+	m.update(int64(token.Cross.ID))
 
 	arg := notifier.RequestArg{
 		CrossId: token.Cross.ID,
@@ -508,6 +508,7 @@ func (m *RouteMap) sendRequest(arg notifier.RequestArg) {
 }
 
 func (m RouteMap) switchWindow(userId, crossId int64, save bool, afterInSeconds int) {
+	m.update(crossId)
 	if save {
 		if err := m.breadcrumbsRepo.EnableCross(userId, crossId, afterInSeconds); err != nil {
 			logger.ERROR("set user %d enable cross %d breadcrumbs repo failed: %s", userId, crossId, err)
@@ -525,7 +526,7 @@ func (m RouteMap) switchWindow(userId, crossId int64, save bool, afterInSeconds 
 	}
 }
 
-func (m RouteMap) update(userId, crossId int64) {
+func (m RouteMap) update(crossId int64) {
 	if err := m.routexRepo.Update(crossId); err != nil {
 		logger.ERROR("update routex user %d cross %d error: %s", err)
 	}
