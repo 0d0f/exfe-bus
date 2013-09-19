@@ -25,11 +25,13 @@ type MessageIDSaver interface {
 type Worker struct {
 	Tomb tomb.Tomb
 
-	config   *model.Config
-	templ    *formatter.LocalTemplate
-	platform *broker.Platform
-	saver    MessageIDSaver
-	bucket   *s3.Bucket
+	config       *model.Config
+	templ        *formatter.LocalTemplate
+	platform     *broker.Platform
+	saver        MessageIDSaver
+	bucket       *s3.Bucket
+	postedFolder string
+	errorFolder  string
 }
 
 func New(config *model.Config, templ *formatter.LocalTemplate, platform *broker.Platform, saver MessageIDSaver) (*Worker, error) {
@@ -41,11 +43,13 @@ func New(config *model.Config, templ *formatter.LocalTemplate, platform *broker.
 		return nil, err
 	}
 	return &Worker{
-		config:   config,
-		templ:    templ,
-		platform: platform,
-		saver:    saver,
-		bucket:   bucket,
+		config:       config,
+		templ:        templ,
+		platform:     platform,
+		saver:        saver,
+		bucket:       bucket,
+		postedFolder: "posted",
+		errorFolder:  "error",
 	}, nil
 }
 
@@ -79,7 +83,29 @@ func (w *Worker) process() {
 		return
 	}
 
-	cmd, err := imap.Wait(imapConn.Search("UNSEEN"))
+	cmd, err := imap.Wait(imapConn.List("", "*"))
+	if err != nil {
+		logger.ERROR("can't list: %s", err)
+		return
+	}
+	for _, resp := range cmd.Data {
+		if len(resp.Fields) < 4 {
+			continue
+		}
+		folder, ok := resp.Fields[3].(string)
+		if !ok {
+			continue
+		}
+		folder = strings.Trim(folder, "\"")
+		if strings.HasSuffix(folder, "posted") {
+			w.postedFolder = folder
+		}
+		if strings.HasSuffix(folder, "error") {
+			w.errorFolder = folder
+		}
+	}
+
+	cmd, err = imap.Wait(imapConn.Send("SEARCH", "UNSEEN"))
 	if err != nil {
 		logger.ERROR("can't seach UNSEEN: %s", err)
 		return
@@ -188,10 +214,10 @@ func (w *Worker) process() {
 		}
 		okIds = append(okIds, id)
 	}
-	if err := w.copy(imapConn, okIds, "posted"); err != nil {
+	if err := w.copy(imapConn, okIds, w.postedFolder); err != nil {
 		logger.ERROR("can't copy %v to posted: %s", errorIds, err)
 	}
-	if err := w.copy(imapConn, errorIds, "error"); err != nil {
+	if err := w.copy(imapConn, errorIds, w.errorFolder); err != nil {
 		logger.ERROR("can't copy %v to error: %s", errorIds, err)
 	}
 	if err := w.delete(imapConn, ids); err != nil {
@@ -205,7 +231,7 @@ func (w *Worker) copy(conn *imap.Client, ids []uint32, folder string) error {
 	}
 	set := new(imap.SeqSet)
 	set.AddNum(ids...)
-	_, err := imap.Wait(conn.Copy(set, folder))
+	_, err := imap.Wait(conn.Send("COPY", set, folder))
 	return err
 }
 
