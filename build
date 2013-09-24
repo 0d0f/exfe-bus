@@ -5,6 +5,7 @@ go get $1 github.com/googollee/go-socket.io
 go get $1 github.com/googollee/go-encoding
 go get $1 github.com/googollee/go-rest
 go get $1 github.com/googollee/go-pubsub
+go get $1 github.com/googollee/eviltransform/go
 go get $1 github.com/stathat/consistent
 go get $1 github.com/googollee/go-gcm
 go get $1 github.com/googollee/go-aws/smtp
