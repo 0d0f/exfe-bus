@@ -26,7 +26,6 @@ type RouteMap struct {
 	UpdateExfee    rest.Processor `path:"/_inner/update_exfee" method:"POST"`
 	SearchRoutex   rest.Processor `path:"/_inner/search/crosses" method:"POST"`
 	GetRoutex      rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"GET"`
-	SetUserInner   rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"POST"`
 	SetUser        rest.Processor `path:"/users/crosses/:cross_id" method:"POST"`
 
 	UpdateBreadcrums       rest.Processor `path:"/breadcrumbs" method:"POST"`
@@ -133,17 +132,7 @@ func (m RouteMap) HandleSetUser(setup UserCrossSetup) {
 		return
 	}
 
-	m.Vars()["user_id"] = fmt.Sprintf("%d", token.UserId)
-	m.HandleSetUserInner(setup)
-}
-
-func (m RouteMap) HandleSetUserInner(setup UserCrossSetup) {
-	userIdStr, crossIdStr := m.Vars()["user_id"], m.Vars()["cross_id"]
-	userId, err := strconv.ParseInt(userIdStr, 10, 64)
-	if err != nil {
-		m.Error(http.StatusBadRequest, fmt.Errorf("invalid user id %s", userIdStr))
-		return
-	}
+	crossIdStr := m.Vars()["cross_id"]
 	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
 	if err != nil {
 		m.Error(http.StatusBadRequest, fmt.Errorf("invalid cross id %s", crossIdStr))
@@ -152,8 +141,7 @@ func (m RouteMap) HandleSetUserInner(setup UserCrossSetup) {
 	if setup.AfterInSeconds == 0 {
 		setup.AfterInSeconds = 60 * 60
 	}
-	m.switchWindow(userId, crossId, setup.SaveBreadcrumbs, setup.AfterInSeconds)
-	m.update(crossId)
+	m.switchWindow(crossId, token.Identity, setup.SaveBreadcrumbs, setup.AfterInSeconds)
 }
 
 func (m RouteMap) HandleSearchRoutex(crossIds []int64) []rmodel.Routex {
@@ -233,7 +221,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 			}
 		}
 		endAt = now.Unix() + int64(after)
-		m.switchWindow(token.UserId, int64(token.Cross.ID), true, after)
+		m.switchWindow(int64(token.Cross.ID), token.Identity, true, after)
 	}
 
 	c := make(chan interface{}, 10)
@@ -408,7 +396,7 @@ func (m RouteMap) HandleSendNotification() {
 		return
 	}
 
-	m.update(int64(token.Cross.ID))
+	m.update(int64(token.Cross.ID), token.Identity)
 
 	arg := notifier.RequestArg{
 		CrossId: token.Cross.ID,
@@ -507,30 +495,34 @@ func (m *RouteMap) sendRequest(arg notifier.RequestArg) {
 	resp.Close()
 }
 
-func (m RouteMap) switchWindow(userId, crossId int64, save bool, afterInSeconds int) {
-	m.update(crossId)
+func (m RouteMap) switchWindow(crossId int64, identity model.Identity, save bool, afterInSeconds int) {
+	m.update(crossId, identity)
 	if save {
-		if err := m.breadcrumbsRepo.EnableCross(userId, crossId, afterInSeconds); err != nil {
-			logger.ERROR("set user %d enable cross %d breadcrumbs repo failed: %s", userId, crossId, err)
+		if err := m.breadcrumbsRepo.EnableCross(identity.UserID, crossId, afterInSeconds); err != nil {
+			logger.ERROR("set user %d enable cross %d breadcrumbs repo failed: %s", identity.UserID, crossId, err)
 		}
-		if err := m.breadcrumbCache.EnableCross(userId, crossId, afterInSeconds); err != nil {
-			logger.ERROR("set user %d enable cross %d breadcrumb cache failed: %s", userId, crossId, err)
+		if err := m.breadcrumbCache.EnableCross(identity.UserID, crossId, afterInSeconds); err != nil {
+			logger.ERROR("set user %d enable cross %d breadcrumb cache failed: %s", identity.UserID, crossId, err)
 		}
 	} else {
-		if err := m.breadcrumbsRepo.DisableCross(userId, crossId); err != nil {
-			logger.ERROR("set user %d disable cross %d breadcrumbs repo failed: %s", userId, crossId, err)
+		if err := m.breadcrumbsRepo.DisableCross(identity.UserID, crossId); err != nil {
+			logger.ERROR("set user %d disable cross %d breadcrumbs repo failed: %s", identity.UserID, crossId, err)
 		}
-		if err := m.breadcrumbCache.DisableCross(userId, crossId); err != nil {
-			logger.ERROR("set user %d disable cross %d breadcrumb cache failed: %s", userId, crossId, err)
+		if err := m.breadcrumbCache.DisableCross(identity.UserID, crossId); err != nil {
+			logger.ERROR("set user %d disable cross %d breadcrumb cache failed: %s", identity.UserID, crossId, err)
 		}
 	}
 }
 
-func (m RouteMap) update(crossId int64) {
+func (m RouteMap) update(crossId int64, by model.Identity) {
 	if err := m.routexRepo.Update(crossId); err != nil {
 		logger.ERROR("update routex user %d cross %d error: %s", err)
 	}
-	m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", crossId), nil, model.Identity{})
+	cross := make(map[string]interface{})
+	cross["widget"] = []map[string]string{
+		map[string]string{"type": "routex"},
+	}
+	m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", crossId), cross, by)
 }
 
 func (m *RouteMap) auth() (rmodel.Token, bool) {

@@ -213,7 +213,7 @@ func (m RouteMap) HandleSetGeomark(mark rmodel.Geomark) {
 	mark.Action = "update"
 	m.pubsub.Publish(m.publicName(int64(token.Cross.ID)), mark)
 	m.checkGeomarks(token.Cross, mark)
-	m.update(int64(token.Cross.ID))
+	m.update(int64(token.Cross.ID), token.Identity)
 
 	return
 }
@@ -248,7 +248,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 	mark.Action = "delete"
 	m.pubsub.Publish(m.publicName(int64(token.Cross.ID)), mark)
 	m.checkGeomarks(token.Cross, mark)
-	m.update(int64(token.Cross.ID))
+	m.update(int64(token.Cross.ID), token.Identity)
 
 	return
 }
