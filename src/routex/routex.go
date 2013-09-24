@@ -519,7 +519,7 @@ func (m RouteMap) update(crossId int64, by model.Identity) {
 		logger.ERROR("update routex user %d cross %d error: %s", err)
 	}
 	cross := make(map[string]interface{})
-	cross["widget"] = []map[string]string{
+	cross["widgets"] = []map[string]string{
 		map[string]string{"type": "routex"},
 	}
 	m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", crossId), cross, by)
