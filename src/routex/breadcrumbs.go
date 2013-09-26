@@ -74,10 +74,8 @@ func (m RouteMap) UpdateBreadcrumsInner(ctx rest.Context, breadcrumbs []rmodel.S
 	var userId int64
 	var coordinate string
 
-	fmt.Println("url:", ctx.Request().URL.String())
 	ctx.Bind("user_id", &userId)
 	ctx.Bind("coordinate", &coordinate)
-	fmt.Println(ctx.BindError())
 	if err := ctx.BindError(); err != nil {
 		ctx.Return(http.StatusBadRequest, err)
 		return
@@ -180,7 +178,6 @@ func (m RouteMap) getBreadcrumbs(cross model.Cross, toMars bool) []rmodel.Geomar
 }
 
 func (m RouteMap) getUserBreadcrumbs(cross model.Cross, userId int64, after time.Time, toMars bool) []rmodel.Geomark {
-	fmt.Println("cross", cross.ID, "user", userId, "after", after.Unix(), "tomars", toMars)
 	var locations []rmodel.SimpleLocation
 	if locations = m.getTutorialData(after, userId, 720); locations == nil {
 		var err error
@@ -189,7 +186,6 @@ func (m RouteMap) getUserBreadcrumbs(cross model.Cross, userId int64, after time
 			return nil
 		}
 	}
-	fmt.Println(len(locations))
 	if len(locations) == 0 {
 		return nil
 	}
