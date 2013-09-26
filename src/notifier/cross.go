@@ -4,7 +4,7 @@ import (
 	"broker"
 	"fmt"
 	"formatter"
-	"github.com/googollee/go-rest/old_style"
+	"github.com/googollee/go-rest"
 	"logger"
 	"model"
 	"net/http"
@@ -15,14 +15,14 @@ import (
 type Cross struct {
 	rest.Service `prefix:"/v3/notifier/cross"`
 
-	Digest           rest.Processor `path:"/digest" method:"POST"`
-	Remind           rest.Processor `path:"/remind" method:"POST"`
-	Invitation       rest.Processor `path:"/invitation" method:"POST"`
-	Join             rest.Processor `path:"/join" method:"POST"`
-	Preview          rest.Processor `path:"/preview" method:"POST"`
-	Update           rest.Processor `path:"/update" method:"POST"`
-	UpdateInvitation rest.Processor `path:"/update_invitation" method:"POST"`
-	Conversation     rest.Processor `path:"/conversation" method:"POST"`
+	digest           rest.SimpleNode `route:"/digest" method:"POST"`
+	remind           rest.SimpleNode `route:"/remind" method:"POST"`
+	invitation       rest.SimpleNode `route:"/invitation" method:"POST"`
+	join             rest.SimpleNode `route:"/join" method:"POST"`
+	preview          rest.SimpleNode `route:"/preview" method:"POST"`
+	update           rest.SimpleNode `route:"/update" method:"POST"`
+	updateInvitation rest.SimpleNode `route:"/update_invitation" method:"POST"`
+	conversation     rest.SimpleNode `route:"/conversation" method:"POST"`
 
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
@@ -39,9 +39,9 @@ func NewCross(localTemplate *formatter.LocalTemplate, config *model.Config, plat
 	}
 }
 
-func (c Cross) HandleDigest(requests []model.CrossDigestRequest) {
+func (c Cross) Digest(ctx rest.Context, requests []model.CrossDigestRequest) {
 	if len(requests) == 0 {
-		c.Error(http.StatusBadRequest, fmt.Errorf("len(requests) == 0"))
+		ctx.Return(http.StatusBadRequest, "len(requests) == 0")
 		return
 	}
 	crossId := requests[0].CrossId
@@ -58,13 +58,13 @@ func (c Cross) HandleDigest(requests []model.CrossDigestRequest) {
 	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
 	cross, err := c.platform.FindCross(crossId, query)
 	if err != nil {
-		c.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 
 	conversations, err := c.platform.GetConversation(cross.Exfee.ID, updatedAt, false, "newer", -1)
 	if err != nil {
-		c.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 	foldedConversation := 0
@@ -94,12 +94,12 @@ func (c Cross) HandleDigest(requests []model.CrossDigestRequest) {
 	}
 
 	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_digest", c.domain+"/v3/notifier/cross/digest", &failArg)
-	c.WriteHeader(http.StatusAccepted)
+	ctx.Return(http.StatusAccepted)
 }
 
-func (c Cross) HandleRemind(requests []model.CrossDigestRequest) {
+func (c Cross) Remind(ctx rest.Context, requests []model.CrossDigestRequest) {
 	if len(requests) == 0 {
-		c.Error(http.StatusBadRequest, fmt.Errorf("len(requests) == 0"))
+		ctx.Return(http.StatusBadRequest, "len(requests) == 0")
 		return
 	}
 	crossId := requests[0].CrossId
@@ -111,7 +111,7 @@ func (c Cross) HandleRemind(requests []model.CrossDigestRequest) {
 	query.Set("user_id", fmt.Sprintf("%d", to.UserID))
 	cross, err := c.platform.FindCross(crossId, query)
 	if err != nil {
-		c.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 	cross.Updated = nil
@@ -134,7 +134,7 @@ func (c Cross) HandleRemind(requests []model.CrossDigestRequest) {
 		"WeatherIcon": weatherIcon,
 	}
 	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_remind", c.domain+"/v3/notifier/cross/remind", &failArg)
-	c.WriteHeader(http.StatusAccepted)
+	ctx.Return(http.StatusAccepted)
 }
 
 type InvitationArg struct {
@@ -226,19 +226,19 @@ func (a InvitationArg) ListInvitations() string {
 	return ret
 }
 
-func (c Cross) HandleInvitation(invitation InvitationArg) {
+func (c Cross) Invitation(ctx rest.Context, invitation InvitationArg) {
 	if invitation.SendToBy() {
-		c.Error(http.StatusBadRequest, fmt.Errorf("not send to self"))
+		ctx.Return(http.StatusBadRequest, "not send to self")
 		return
 	}
 	if err := invitation.Parse(c.config, c.platform); err != nil {
-		c.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 	to := &invitation.To
 
 	go SendAndSave(c.localTemplate, c.platform, to, invitation, "cross_invitation", c.domain+"/v3/notifier/cross/invitation", &invitation)
-	c.WriteHeader(http.StatusAccepted)
+	ctx.Return(http.StatusAccepted)
 }
 
 type JoinArg struct {
@@ -276,31 +276,31 @@ func (a JoinArg) SendToBy() bool {
 	return a.To.SameUser(&a.By)
 }
 
-func (c Cross) HandleJoin(arg JoinArg) {
+func (c Cross) Join(ctx rest.Context, arg JoinArg) {
 	if err := arg.Parse(c.config, c.platform); err != nil {
-		c.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 	to := &arg.To
 
 	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_join", c.domain+"/v3/notifier/cross/arg", &arg)
-	c.WriteHeader(http.StatusAccepted)
+	ctx.Return(http.StatusAccepted)
 }
 
-func (c Cross) HandlePreview(invitation InvitationArg) {
+func (c Cross) Preview(ctx rest.Context, invitation InvitationArg) {
 	if err := invitation.Parse(c.config, c.platform); err != nil {
-		c.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 	to := &invitation.To
 
 	go SendAndSave(c.localTemplate, c.platform, to, invitation, "cross_preview", c.domain+"/v3/notifier/cross/preview", &invitation)
-	c.WriteHeader(http.StatusAccepted)
+	ctx.Return(http.StatusAccepted)
 }
 
-func (c Cross) HandleUpdate(updates []model.CrossUpdate) {
+func (c Cross) Update(ctx rest.Context, updates []model.CrossUpdate) {
 	if len(updates) == 0 {
-		c.Error(http.StatusBadRequest, fmt.Errorf("len(updates) == 0"))
+		ctx.Return(http.StatusBadRequest, "len(updates) == 0")
 		return
 	}
 
@@ -312,12 +312,12 @@ func (c Cross) HandleUpdate(updates []model.CrossUpdate) {
 
 	arg, err := updateFromUpdates(updates, c.config)
 	if err != nil {
-		c.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 
 	if !arg.IsChanged() {
-		c.Error(http.StatusBadRequest, fmt.Errorf("not changed"))
+		ctx.Return(http.StatusBadRequest, "not changed")
 		return
 	}
 
@@ -326,7 +326,7 @@ func (c Cross) HandleUpdate(updates []model.CrossUpdate) {
 	to = &failArg[0].To
 
 	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_update", c.domain+"/v3/notifier/cross/update", &failArg)
-	c.WriteHeader(http.StatusAccepted)
+	ctx.Return(http.StatusAccepted)
 }
 
 type UpdateInvitationArg struct {
@@ -352,13 +352,13 @@ func (a UpdateInvitationArg) SendToInvitee() bool {
 	return false
 }
 
-func (c Cross) HandleUpdateInvitation(arg UpdateInvitationArg) {
+func (c Cross) UpdateInvitation(ctx rest.Context, arg UpdateInvitationArg) {
 	if len(arg.Invitees) == 0 {
-		c.Error(http.StatusBadRequest, fmt.Errorf("len(invitees) == 0"))
+		ctx.Return(http.StatusBadRequest, "len(invitees) == 0")
 		return
 	}
 	if arg.SendToInvitee() {
-		c.Error(http.StatusNoContent, fmt.Errorf("not send to invitee"))
+		ctx.Return(http.StatusNoContent, "not send to invitee")
 		return
 	}
 
@@ -368,7 +368,7 @@ func (c Cross) HandleUpdateInvitation(arg UpdateInvitationArg) {
 	query.Set("user_id", fmt.Sprintf("%d", arg.To.UserID))
 	cross, err := c.platform.FindCross(arg.CrossId, query)
 	if err != nil {
-		c.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 	arg.Cross = cross
@@ -376,14 +376,14 @@ func (c Cross) HandleUpdateInvitation(arg UpdateInvitationArg) {
 	to := &arg.To
 
 	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_update_invitation", c.domain+"/v3/notifier/cross/update_invitation", &arg)
-	c.WriteHeader(http.StatusAccepted)
+	ctx.Return(http.StatusAccepted)
 }
 
-func (c Cross) HandleConversation(updates []model.ConversationUpdate) {
+func (c Cross) Conversation(ctx rest.Context, updates []model.ConversationUpdate) {
 	failArg := updates
 	arg, err := ArgFromConversations(updates, c.config, c.platform)
 	if err != nil {
-		c.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 	needSend := false
@@ -409,7 +409,7 @@ func (c Cross) HandleConversation(updates []model.ConversationUpdate) {
 	}
 
 	go SendAndSave(c.localTemplate, c.platform, to, arg, "cross_conversation", c.domain+"/v3/notifier/cross/conversation", &failArg)
-	c.WriteHeader(http.StatusAccepted)
+	ctx.Return(http.StatusAccepted)
 }
 
 type ConversationArg struct {

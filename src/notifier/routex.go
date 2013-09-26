@@ -4,7 +4,7 @@ import (
 	"broker"
 	"fmt"
 	"formatter"
-	"github.com/googollee/go-rest/old_style"
+	"github.com/googollee/go-rest"
 	"model"
 	"net/http"
 )
@@ -12,7 +12,7 @@ import (
 type Routex struct {
 	rest.Service `prefix:"/v3/notifier/routex"`
 
-	Request rest.Processor `path:"/request" method:"POST"`
+	request rest.SimpleNode `route:"/request" method:"POST"`
 
 	localTemplate *formatter.LocalTemplate
 	config        *model.Config
@@ -38,14 +38,14 @@ type RequestArg struct {
 	Config *model.Config `json:"-"`
 }
 
-func (w Routex) HandleRequest(arg RequestArg) {
+func (w Routex) Request(ctx rest.Context, arg RequestArg) {
 	arg.Config = w.config
 	var err error
 	if arg.Cross, err = w.platform.FindCross(int64(arg.CrossId), nil); err != nil {
-		w.Error(http.StatusBadRequest, err)
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 
 	go SendAndSave(w.localTemplate, w.platform, &arg.To, arg, "routex_request", w.domain+"/v3/notifier/routex/request", &arg)
-	w.WriteHeader(http.StatusAccepted)
+	ctx.Return(http.StatusAccepted)
 }
