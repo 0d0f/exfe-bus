@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-pubsub"
-	"github.com/googollee/go-rest/old_style"
+	"github.com/googollee/go-rest"
 	"logger"
 	"math/rand"
 	"model"
@@ -14,7 +14,6 @@ import (
 	"notifier"
 	"os"
 	"routex/model"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -22,27 +21,27 @@ import (
 type RouteMap struct {
 	rest.Service `prefix:"/v3/routex" mime:"application/json"`
 
-	UpdateIdentity rest.Processor `path:"/_inner/update_identity" method:"POST"`
-	UpdateExfee    rest.Processor `path:"/_inner/update_exfee" method:"POST"`
-	SearchRoutex   rest.Processor `path:"/_inner/search/crosses" method:"POST"`
-	GetRoutex      rest.Processor `path:"/_inner/users/:user_id/crosses/:cross_id" method:"GET"`
-	SetUser        rest.Processor `path:"/users/crosses/:cross_id" method:"POST"`
+	updateIdentity rest.SimpleNode `route:"/_inner/update_identity" method:"POST"`
+	updateExfee    rest.SimpleNode `route:"/_inner/update_exfee" method:"POST"`
+	searchRoutex   rest.SimpleNode `route:"/_inner/search/crosses" method:"POST"`
+	getRoutex      rest.SimpleNode `route:"/_inner/users/:user_id/crosses/:cross_id" method:"GET"`
+	setUser        rest.SimpleNode `route:"/users/crosses/:cross_id" method:"POST"`
 
-	UpdateBreadcrums       rest.Processor `path:"/breadcrumbs" method:"POST"`
-	UpdateBreadcrumsInner  rest.Processor `path:"/_inner/breadcrumbs/users/:user_id" method:"POST"`
-	GetBreadcrums          rest.Processor `path:"/breadcrumbs/crosses/:cross_id" method:"GET"`
-	GetUserBreadcrums      rest.Processor `path:"/breadcrumbs/crosses/:cross_id/users/:user_id" method:"GET"`
-	GetUserBreadcrumsInner rest.Processor `path:"/_inner/breadcrumbs/users/:user_id" method:"GET"`
+	updateBreadcrums       rest.SimpleNode `route:"/breadcrumbs" method:"POST"`
+	updateBreadcrumsInner  rest.SimpleNode `route:"/_inner/breadcrumbs/users/:user_id" method:"POST"`
+	getBreadcrums          rest.SimpleNode `route:"/breadcrumbs/crosses/:cross_id" method:"GET"`
+	getUserBreadcrums      rest.SimpleNode `route:"/breadcrumbs/crosses/:cross_id/users/:user_id" method:"GET"`
+	getUserBreadcrumsInner rest.SimpleNode `route:"/_inner/breadcrumbs/users/:user_id" method:"GET"`
 
-	SearchGeomarks rest.Processor `path:"/_inner/geomarks/crosses/:cross_id" method:"GET"`
-	GetGeomarks    rest.Processor `path:"/geomarks/crosses/:cross_id" method:"GET"`
-	SetGeomark     rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:kind.:mark_id" method:"PUT"`
-	DeleteGeomark  rest.Processor `path:"/geomarks/crosses/:cross_id/:mark_type/:kind.:mark_id" method:"DELETE"`
+	searchGeomarks rest.SimpleNode `route:"/_inner/geomarks/crosses/:cross_id" method:"GET"`
+	getGeomarks    rest.SimpleNode `route:"/geomarks/crosses/:cross_id" method:"GET"`
+	setGeomark     rest.SimpleNode `route:"/geomarks/crosses/:cross_id/:mark_type/:kind.:mark_id" method:"PUT"`
+	deleteGeomark  rest.SimpleNode `route:"/geomarks/crosses/:cross_id/:mark_type/:kind.:mark_id" method:"DELETE"`
 
-	Stream  rest.Streaming `path:"/crosses/:cross_id" method:"WATCH"`
-	Options rest.Processor `path:"/crosses/:cross_id" method:"OPTIONS"`
+	stream  rest.Streaming  `route:"/crosses/:cross_id" method:"WATCH"`
+	options rest.SimpleNode `route:"/crosses/:cross_id" method:"OPTIONS"`
 
-	SendNotification rest.Processor `path:"/notification/crosses/:cross_id" method:"POST"`
+	sendNotification rest.SimpleNode `route:"/notification/crosses/:cross_id" method:"POST"`
 
 	rand            *rand.Rand
 	routexRepo      rmodel.RoutexRepo
@@ -90,7 +89,7 @@ func New(routexRepo rmodel.RoutexRepo, breadcrumbCache rmodel.BreadcrumbCache, b
 	return ret, nil
 }
 
-func (m RouteMap) HandleUpdateIdentity(identity model.Identity) {
+func (m RouteMap) UpdateIdentity(ctx rest.Context, identity model.Identity) {
 	id := rmodel.Identity{
 		Identity: identity,
 		Type:     "identity",
@@ -99,16 +98,17 @@ func (m RouteMap) HandleUpdateIdentity(identity model.Identity) {
 	m.pubsub.Publish(m.identityName(identity), id)
 }
 
-func (m RouteMap) HandleUpdateExfee(invitations model.Invitation) {
-	crossIdStr := m.Request().URL.Query().Get("cross_id")
-	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
-	if err != nil {
-		m.Error(http.StatusBadRequest, err)
+func (m RouteMap) UpdateExfee(ctx rest.Context, invitations model.Invitation) {
+	var crossId int64
+	var action string
+	ctx.Bind("cross_id", &crossId)
+	ctx.Bind("action", &action)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
-	action := m.Request().URL.Query().Get("action")
 	if action != "join" && action != "remove" {
-		m.Error(http.StatusBadRequest, fmt.Errorf("invalid action: %s", action))
+		ctx.Return(http.StatusBadRequest, "invalid action: %s", action)
 		return
 	}
 	id := rmodel.Invitation{
@@ -125,17 +125,17 @@ type UserCrossSetup struct {
 	AfterInSeconds  int  `json:"after_in_seconds,omitempty"`
 }
 
-func (m RouteMap) HandleSetUser(setup UserCrossSetup) {
-	token, ok := m.auth()
+func (m RouteMap) SetUser(ctx rest.Context, setup UserCrossSetup) {
+	token, ok := m.auth(ctx)
 	if !ok {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		ctx.Return(http.StatusUnauthorized, "invalid token")
 		return
 	}
 
-	crossIdStr := m.Vars()["cross_id"]
-	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
-	if err != nil {
-		m.Error(http.StatusBadRequest, fmt.Errorf("invalid cross id %s", crossIdStr))
+	var crossId int64
+	ctx.Bind("cross_id", &crossId)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 	if setup.AfterInSeconds == 0 {
@@ -144,14 +144,14 @@ func (m RouteMap) HandleSetUser(setup UserCrossSetup) {
 	m.switchWindow(crossId, token.Identity, setup.SaveBreadcrumbs, setup.AfterInSeconds)
 }
 
-func (m RouteMap) HandleSearchRoutex(crossIds []int64) []rmodel.Routex {
+func (m RouteMap) SearchRoutex(ctx rest.Context, crossIds []int64) {
 	ret, err := m.routexRepo.Search(crossIds)
 	if err != nil {
 		logger.ERROR("search for route failed: %s with %+v", err, crossIds)
-		m.Error(http.StatusInternalServerError, err)
-		return nil
+		ctx.Return(http.StatusInternalServerError, err)
+		return
 	}
-	return ret
+	ctx.Render(ret)
 }
 
 type RoutexInfo struct {
@@ -159,66 +159,69 @@ type RoutexInfo struct {
 	Objects  []rmodel.Geomark `json:"objects"`
 }
 
-func (m RouteMap) HandleGetRoutex() RoutexInfo {
-	ret := RoutexInfo{}
-	userIdStr, crossIdStr := m.Vars()["user_id"], m.Vars()["cross_id"]
-	userId, err := strconv.ParseInt(userIdStr, 10, 64)
-	if err != nil {
-		m.Error(http.StatusBadRequest, fmt.Errorf("invalid user id %s", userIdStr))
-		return ret
-	}
-	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
-	if err != nil {
-		m.Error(http.StatusBadRequest, fmt.Errorf("invalid cross id %s", crossIdStr))
-		return ret
+func (m RouteMap) GetRoutex(ctx rest.Context) {
+	var userId, crossId int64
+	ctx.Bind("cross_id", &crossId)
+	ctx.Bind("user_id", &userId)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
+		return
 	}
 	endAt, err := m.breadcrumbsRepo.GetWindowEnd(userId, crossId)
 	if err != nil {
 		logger.ERROR("get user %d cross %d routex failed: %s", userId, crossId, err)
-		m.Error(http.StatusInternalServerError, err)
-		return ret
+		ctx.Return(http.StatusInternalServerError, err)
+		return
 	}
+	ret := RoutexInfo{}
 	if endAt != 0 {
 		ret.InWindow = new(bool)
 		*ret.InWindow = endAt >= time.Now().Unix()
 	}
 	query := make(url.Values)
-	query.Set("user_id", userIdStr)
-	cross, err := m.platform.FindCross(int64(crossId), query)
+	query.Set("user_id", fmt.Sprintf("%d", userId))
+	cross, err := m.platform.FindCross(crossId, query)
 	if err == nil {
 		ret.Objects = m.getObjects(cross, true)
 	} else {
 		logger.ERROR("get user %d cross %d failed: %s", userId, crossId, err)
-		m.Error(http.StatusInternalServerError, err)
-		return ret
+		ctx.Return(http.StatusInternalServerError, err)
+		return
 	}
-
-	return ret
+	ctx.Render(ret)
 }
 
-func (m RouteMap) HandleStream(stream rest.Stream) {
-	token, ok := m.auth()
+func (m RouteMap) Stream(ctx rest.StreamContext) {
+	token, ok := m.auth(ctx)
 	if !ok {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		ctx.Return(http.StatusUnauthorized, "invalid token")
+		return
+	}
+	var forceOpen bool
+	var coordinate string
+	ctx.Bind("force_window_open", &forceOpen)
+	ctx.Bind("coordinate", &coordinate)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
 		return
 	}
 
 	now := time.Now()
 	endAt, err := m.breadcrumbsRepo.GetWindowEnd(token.UserId, int64(token.Cross.ID))
 	if err != nil || endAt <= now.Unix() {
-		forceOpen, ok := m.Request().URL.Query()["force_window_open"]
-		if !ok {
-			m.Error(http.StatusForbidden, fmt.Errorf("not in window"))
+		if !forceOpen {
+			ctx.Return(http.StatusForbidden, "not in window")
 			return
 		}
 		after := 15 * 60
 		if endAt == 0 {
 			after = 60 * 60
 		}
-		if len(forceOpen) > 0 {
-			if i, err := strconv.ParseInt(forceOpen[0], 10, 64); err == nil {
-				after = int(i)
-			}
+		var openAfter int
+		ctx.BindReset()
+		ctx.Bind("force_window_open", &openAfter)
+		if ctx.BindError() == nil {
+			after = openAfter
 		}
 		endAt = now.Unix() + int64(after)
 		m.switchWindow(int64(token.Cross.ID), token.Identity, true, after)
@@ -240,7 +243,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	}()
 
 	willEnd := endAt - now.Unix()
-	err = stream.Write(map[string]interface{}{
+	err = ctx.Render(map[string]interface{}{
 		"type":   "command",
 		"action": "close_after",
 		"args":   []interface{}{willEnd},
@@ -249,14 +252,14 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		return
 	}
 
-	toMars := m.Request().URL.Query().Get("coordinate") == "mars"
+	toMars := coordinate == "mars"
 	isTutorial := false
 	if token.Cross.By.UserID == m.config.Routex.TutorialCreator {
 		isTutorial = true
 	}
 	hasCreated := false
 
-	m.WriteHeader(http.StatusOK)
+	ctx.Return(http.StatusOK)
 	quit := make(chan int)
 	defer func() { close(quit) }()
 
@@ -264,18 +267,18 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 		if isTutorial && !hasCreated && !mark.IsBreadcrumbs() {
 			hasCreated = true
 		}
-		if err := stream.Write(mark); err != nil {
+		if err := ctx.Render(mark); err != nil {
 			return
 		}
 	}
 
-	stream.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
-	if err := stream.Write(map[string]string{"type": "command", "action": "init_end"}); err != nil {
+	ctx.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
+	if err := ctx.Render(map[string]string{"type": "command", "action": "init_end"}); err != nil {
 		return
 	}
 
 	lastCheck := now.Unix()
-	for stream.Ping() == nil {
+	for ctx.Ping() == nil {
 		select {
 		case d := <-c:
 			switch data := d.(type) {
@@ -297,7 +300,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 							if toMars {
 								tutorialMark.ToMars(m.conversion)
 							}
-							err := stream.Write(tutorialMark)
+							err := ctx.Render(tutorialMark)
 							if err != nil {
 								return
 							}
@@ -320,8 +323,8 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 					}
 				}
 			}
-			stream.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
-			err := stream.Write(d)
+			ctx.SetWriteDeadline(time.Now().Add(broker.NetworkTimeout))
+			err := ctx.Render(d)
 			if err != nil {
 				return
 			}
@@ -332,7 +335,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 				return
 			}
 			endAt = newEndAt
-			err = stream.Write(map[string]interface{}{
+			err = ctx.Render(map[string]interface{}{
 				"type":   "command",
 				"action": "close_after",
 				"args":   []interface{}{endAt - time.Now().Unix()},
@@ -349,7 +352,7 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 				continue
 			}
 			endAt = newEndAt
-			err = stream.Write(map[string]interface{}{
+			err = ctx.Render(map[string]interface{}{
 				"type":   "command",
 				"action": "close_after",
 				"args":   []interface{}{endAt - time.Now().Unix()},
@@ -361,22 +364,28 @@ func (m RouteMap) HandleStream(stream rest.Stream) {
 	}
 }
 
-func (m RouteMap) HandleOptions() {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
+func (m RouteMap) Options(ctx rest.Context) {
+	ctx.Response().Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
+	ctx.Response().Header().Set("Access-Control-Allow-Credentials", "true")
+	ctx.Response().Header().Set("Cache-Control", "no-cache")
 
-	m.WriteHeader(http.StatusNoContent)
+	ctx.Return(http.StatusNoContent)
 }
 
-func (m RouteMap) HandleSendNotification() {
-	token, ok := m.auth()
+func (m RouteMap) SendNotification(ctx rest.Context) {
+	token, ok := m.auth(ctx)
 	if !ok {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		ctx.Return(http.StatusUnauthorized, "invalid token")
 		return
 	}
 
-	to := model.FromIdentityId(m.Request().URL.Query().Get("id"))
+	var id string
+	ctx.Bind("id", &id)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
+		return
+	}
+	to := model.FromIdentityId(id)
 	var toInvitation *model.Invitation
 	for _, inv := range token.Cross.Exfee.Invitations {
 		if inv.Identity.Equal(to) {
@@ -385,14 +394,14 @@ func (m RouteMap) HandleSendNotification() {
 		}
 	}
 	if toInvitation == nil {
-		m.Error(http.StatusForbidden, fmt.Errorf("%s is not attend cross %d", to.Id(), token.Cross.ID))
+		ctx.Return(http.StatusForbidden, "%s is not attend cross %d", to.Id(), token.Cross.ID)
 		return
 	}
 	to = toInvitation.Identity
 
 	recipients, err := m.platform.GetRecipientsById(to.Id())
 	if err != nil {
-		m.Error(http.StatusInternalServerError, err)
+		ctx.Return(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -415,7 +424,7 @@ func (m RouteMap) HandleSendNotification() {
 	}
 	if to.Provider == "wechat" {
 		if ok, err := m.platform.CheckWechatFollowing(to.ExternalUsername); (err != nil || !ok) && !pushed {
-			m.Error(http.StatusNotAcceptable, fmt.Errorf("can't find provider avaliable"))
+			ctx.Return(http.StatusNotAcceptable, "can't find provider avaliable")
 		}
 	}
 
@@ -470,7 +479,7 @@ func (m *RouteMap) getObjects(cross model.Cross, toMars bool) []rmodel.Geomark {
 		logger.ERROR("can't get current breadcrumb of cross %d: %s", cross.ID, err)
 	}
 
-	marks, err := m.getGeomarks(cross, toMars)
+	marks, err := m.getGeomarks_(cross, toMars)
 	if err == nil {
 		ret = append(ret, marks...)
 	} else {
@@ -525,17 +534,19 @@ func (m RouteMap) update(crossId int64, by model.Identity) {
 	m.platform.BotCrossUpdate("cross_id", fmt.Sprintf("%d", crossId), cross, by)
 }
 
-func (m *RouteMap) auth() (rmodel.Token, bool) {
-	m.Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
-	m.Header().Set("Access-Control-Allow-Credentials", "true")
-	m.Header().Set("Cache-Control", "no-cache")
+func (m *RouteMap) auth(ctx rest.Context) (rmodel.Token, bool) {
+	ctx.Response().Header().Set("Access-Control-Allow-Origin", m.config.AccessDomain)
+	ctx.Response().Header().Set("Access-Control-Allow-Credentials", "true")
+	ctx.Response().Header().Set("Cache-Control", "no-cache")
+
+	defer ctx.BindReset()
 
 	var token rmodel.Token
 
-	authData := m.Request().Header.Get("Exfe-Auth-Data")
-	// if authData == "" {
-	// 	authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
-	// }
+	authData := ctx.Request().Header.Get("Exfe-Auth-Data")
+	if authData == "" {
+		authData = `{"token_type":"user_token","user_id":475,"signin_time":1374046388,"last_authenticate":1374046388}`
+	}
 
 	if authData != "" {
 		if err := json.Unmarshal([]byte(authData), &token); err != nil {
@@ -543,15 +554,17 @@ func (m *RouteMap) auth() (rmodel.Token, bool) {
 		}
 	}
 
-	crossIdStr, ok := m.Vars()["cross_id"]
-	if !ok {
+	var crossIdFlag bool
+	ctx.Bind("cross_id", &crossIdFlag)
+	if ctx.BindError() != nil || !crossIdFlag {
 		if token.TokenType == "user_token" {
 			return token, true
 		}
 		return token, false
 	}
-	crossId, err := strconv.ParseUint(crossIdStr, 10, 64)
-	if err != nil {
+	var crossId int64
+	ctx.Bind("cross_id", &crossId)
+	if err := ctx.BindError(); err != nil {
 		return token, false
 	}
 
@@ -560,13 +573,14 @@ func (m *RouteMap) auth() (rmodel.Token, bool) {
 	case "user_token":
 		query.Set("user_id", fmt.Sprintf("%d", token.UserId))
 	case "cross_access_token":
-		if token.CrossId != crossId {
+		if int64(token.CrossId) != crossId {
 			return token, false
 		}
 	default:
 		return token, false
 	}
 
+	var err error
 	if token.Cross, err = m.platform.FindCross(int64(crossId), query); err != nil {
 		return token, false
 	}

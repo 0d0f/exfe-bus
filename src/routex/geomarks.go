@@ -2,6 +2,7 @@ package routex
 
 import (
 	"fmt"
+	"github.com/googollee/go-rest"
 	"logger"
 	"model"
 	"net/http"
@@ -62,31 +63,33 @@ func (m RouteMap) setTutorial(lat, lng float64, userId, crossId int64, locale, b
 	return ret, nil
 }
 
-func (m RouteMap) HandleSearchGeomarks() []rmodel.Geomark {
-	crossIdStr := m.Vars()["cross_id"]
-	crossId, err := strconv.ParseInt(crossIdStr, 10, 64)
-	if err != nil {
-		m.Error(http.StatusBadRequest, err)
-		return nil
+func (m RouteMap) SearchGeomarks(ctx rest.Context) {
+	var crossId int64
+	var coordinate, tag string
+	var ids []string
+	ctx.Bind("cross_id", &crossId)
+	ctx.Bind("coordinate", &coordinate)
+	ctx.Bind("tags", &tag)
+	ctx.Bind("id", &ids)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
+		return
 	}
-	toMars := false
-	if m.Request().URL.Query().Get("coordinate") == "mars" {
-		toMars = true
-	}
+
+	toMars := coordinate == "mars"
 	data, err := m.geomarksRepo.Get(crossId)
 	if err != nil {
 		logger.ERROR("can't get route of cross %d: %s", crossId, err)
-		m.Error(http.StatusInternalServerError, err)
-		return nil
+		ctx.Return(http.StatusInternalServerError, err)
+		return
 	}
 	if data == nil {
-		return []rmodel.Geomark{}
+		ctx.Render([]rmodel.Geomark{})
+		return
 	}
 
-	tag := m.Request().URL.Query().Get("tags")
-
 	var idMap map[string]bool
-	if ids, ok := m.Request().URL.Query()["id"]; ok {
+	if len(ids) > 0 {
 		idMap = make(map[string]bool)
 		for _, id := range ids {
 			idMap[id] = true
@@ -109,19 +112,31 @@ func (m RouteMap) HandleSearchGeomarks() []rmodel.Geomark {
 			ret = append(ret, geomark)
 		}
 	}
-	return ret
+	ctx.Render(ret)
 }
 
-func (m RouteMap) HandleGetGeomarks() []rmodel.Geomark {
-	_, ok := m.auth()
+func (m RouteMap) GetGeomarks(ctx rest.Context) {
+	token, ok := m.auth(ctx)
 	if !ok {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
-		return nil
+		ctx.Return(http.StatusUnauthorized, "invalid token")
+		return
 	}
-	return m.HandleSearchGeomarks()
+	var coordinate string
+	ctx.Bind("coordinate", &coordinate)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
+		return
+	}
+	toMars := coordinate == "mars"
+	marks, err := m.getGeomarks_(token.Cross, toMars)
+	if err != nil {
+		ctx.Return(http.StatusInternalServerError, err)
+		return
+	}
+	ctx.Render(marks)
 }
 
-func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]rmodel.Geomark, error) {
+func (m RouteMap) getGeomarks_(cross model.Cross, toMars bool) ([]rmodel.Geomark, error) {
 	data, err := m.geomarksRepo.Get(int64(cross.ID))
 	if err != nil {
 		return nil, err
@@ -181,31 +196,38 @@ func (m RouteMap) getGeomarks(cross model.Cross, toMars bool) ([]rmodel.Geomark,
 	return data, nil
 }
 
-func (m RouteMap) HandleSetGeomark(mark rmodel.Geomark) {
-	token, ok := m.auth()
+func (m RouteMap) SetGeomark(ctx rest.Context, mark rmodel.Geomark) {
+	token, ok := m.auth(ctx)
 	if !ok {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		ctx.Return(http.StatusUnauthorized, "invalid token")
 		return
 	}
 
-	mark.Type = m.Vars()["mark_type"]
-	kind := m.Vars()["kind"]
-	mark.Id = fmt.Sprintf("%s.%s", kind, m.Vars()["mark_id"])
+	var kind, markId, coordinate string
+	ctx.Bind("mark_type", &mark.Type)
+	ctx.Bind("kind", &kind)
+	ctx.Bind("mark_id", &markId)
+	ctx.Bind("coordinate", &coordinate)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
+		return
+	}
+	mark.Id = fmt.Sprintf("%s.%s", kind, markId)
 	mark.UpdatedBy, mark.UpdatedAt, mark.Action = token.Identity.Id(), time.Now().Unix(), ""
-	if m.Request().URL.Query().Get("coordinate") == "mars" {
+	if coordinate == "mars" {
 		mark.ToEarth(m.conversion)
 	}
 
 	if mark.HasTag(XPlaceTag) {
 		if err := m.syncCrossPlace(&mark, token.Cross, mark.UpdatedBy); err != nil {
 			logger.ERROR("can't set cross %d place: %s", token.Cross.ID, err)
-			m.Error(http.StatusInternalServerError, err)
+			ctx.Return(http.StatusInternalServerError, err)
 			return
 		}
 	} else if kind == "location" || kind == "route" {
 		if err := m.geomarksRepo.Set(int64(token.Cross.ID), mark); err != nil {
 			logger.ERROR("save geomark %s %s error: %s", mark.Type, mark.Id, err)
-			m.Error(http.StatusInternalServerError, err)
+			ctx.Return(http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -218,29 +240,35 @@ func (m RouteMap) HandleSetGeomark(mark rmodel.Geomark) {
 	return
 }
 
-func (m RouteMap) HandleDeleteGeomark() {
-	token, ok := m.auth()
+func (m RouteMap) DeleteGeomark(ctx rest.Context) {
+	token, ok := m.auth(ctx)
 	if !ok {
-		m.Error(http.StatusUnauthorized, m.DetailError(-1, "invalid token"))
+		ctx.Return(http.StatusUnauthorized, "invalid token")
 		return
 	}
 
 	var mark rmodel.Geomark
-	mark.Type = m.Vars()["mark_type"]
-	kind := m.Vars()["kind"]
-	mark.Id = fmt.Sprintf("%s.%s", kind, m.Vars()["mark_id"])
+	var kind, markId string
+	ctx.Bind("mark_type", &mark.Type)
+	ctx.Bind("kind", &kind)
+	ctx.Bind("mark_id", &markId)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
+		return
+	}
+	mark.Id = fmt.Sprintf("%s.%s", kind, markId)
 
 	if mark.HasTag(XPlaceTag) {
 		if err := m.syncCrossPlace(nil, token.Cross, token.Identity.Id()); err != nil {
 			logger.ERROR("remove cross %d place error: %s", token.Cross.ID, err)
-			m.Error(http.StatusInternalServerError, err)
+			ctx.Return(http.StatusInternalServerError, err)
 			return
 		}
 	}
 	if kind == "location" || kind == "route" {
 		if err := m.geomarksRepo.Delete(int64(token.Cross.ID), mark.Type, mark.Id, token.Identity.Id()); err != nil {
 			logger.ERROR("delete geromark %s %s error: %s", mark.Type, mark.Id, err)
-			m.Error(http.StatusInternalServerError, err)
+			ctx.Return(http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -254,7 +282,7 @@ func (m RouteMap) HandleDeleteGeomark() {
 }
 
 func (m RouteMap) checkGeomarks(cross model.Cross, mark rmodel.Geomark) {
-	marks, _ := m.getGeomarks(cross, false)
+	marks, _ := m.getGeomarks_(cross, false)
 
 	if mark.HasTag(DestinationTag) {
 		if mark.Action == "update" {

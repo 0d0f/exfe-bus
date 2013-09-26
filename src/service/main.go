@@ -102,21 +102,6 @@ func main() {
 	r := rest.New()
 	bus.RegisterFallback(r)
 
-	register := func(name string, service interface{}, err error) {
-		if err != nil {
-			logger.ERROR("create %s failed: %s", name, err)
-			os.Exit(-1)
-			return
-		}
-		err = bus.RegisterRestful(service)
-		if err != nil {
-			logger.ERROR("register %s failed: %s", name, err)
-			os.Exit(-1)
-			return
-		}
-		logger.NOTICE("register %s", name)
-	}
-
 	reg := func(name string, service interface{}, err error) {
 		if err != nil {
 			logger.ERROR("create %s failed: %s", name, err)
@@ -169,9 +154,9 @@ func main() {
 		user := notifier.NewUser(localTemplate, &config, platform)
 		reg("notifier/user", user, nil)
 		cross := notifier.NewCross(localTemplate, &config, platform)
-		register("notifier/cross", cross, nil)
+		reg("notifier/cross", cross, nil)
 		routex := notifier.NewRoutex(localTemplate, &config, platform)
-		register("notifier/routex", routex, nil)
+		reg("notifier/routex", routex, nil)
 	}
 
 	if config.ExfeService.Services.Iom {
@@ -192,7 +177,7 @@ func main() {
 			return
 		}
 		rx, err := routex.New(rs, bc, bs, gs, c, platform, &config)
-		register("routex", rx, err)
+		reg("routex", rx, err)
 	}
 
 	go func() {
