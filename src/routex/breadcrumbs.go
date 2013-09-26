@@ -182,7 +182,7 @@ func (m RouteMap) getBreadcrumbs(cross model.Cross, toMars bool) []rmodel.Geomar
 func (m RouteMap) getUserBreadcrumbs(cross model.Cross, userId int64, after time.Time, toMars bool) []rmodel.Geomark {
 	fmt.Println("cross", cross.ID, "user", userId, "after", after.Unix(), "tomars", toMars)
 	var locations []rmodel.SimpleLocation
-	if locations = m.getTutorialData(after, userId, 360); locations == nil {
+	if locations = m.getTutorialData(after, userId, 720); locations == nil {
 		var err error
 		if locations, err = m.breadcrumbsRepo.Load(userId, int64(cross.ID), after.Unix()); err != nil {
 			logger.ERROR("can't get user %d breadcrumbs of cross %d: %s", userId, cross.ID, err)
