@@ -84,7 +84,7 @@ func TestGeomarksCheck(t *testing.T) {
 	}
 	c := make(chan interface{}, 100)
 	routex.pubsub.Subscribe(routex.publicName(int64(cross.ID)), c)
-	marks, err := routex.getGeomarks(cross, false)
+	marks, err := routex.getGeomarks_(cross, false)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(marks), 4)
 	var xplace rmodel.Geomark
