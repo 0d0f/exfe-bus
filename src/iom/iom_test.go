@@ -35,6 +35,21 @@ func TestHashFromCount(t *testing.T) {
 	}
 }
 
+func deleteAllKey(pool *redis.Pool, prefix string) {
+	conn := pool.Get()
+	defer conn.Close()
+
+	keys, err := redis.Values(conn.Do("KEYS", prefix+"*"))
+	if err != nil {
+		return
+	}
+	for len(keys) > 0 {
+		var key string
+		keys, err = redis.Scan(keys, &key)
+		conn.Do("DEL", key)
+	}
+}
+
 func TestHashCreate(t *testing.T) {
 	redis := &redis.Pool{
 		MaxIdle:     3,
@@ -52,6 +67,8 @@ func TestHashCreate(t *testing.T) {
 		},
 	}
 	prefix := fmt.Sprintf("test%08d", rand.Intn(1e8))
+	defer deleteAllKey(redis, prefix)
+
 	handler := NewIom(redis, prefix)
 	h, _ := handler.make("123", "http://123/a")
 	url, _ := handler.grab("123", h)
@@ -92,6 +109,8 @@ func TestHashUpdate(t *testing.T) {
 		},
 	}
 	prefix := fmt.Sprintf("test%08d", rand.Intn(1e8))
+	defer deleteAllKey(redis, prefix)
+
 	handler := NewIom(redis, prefix)
 	for _, userid := range []string{"234", "345"} {
 		for _, crossid := range []string{"a", "b", "c", "d"} {

@@ -6,11 +6,10 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
-	"github.com/googollee/go-rest/old_style"
+	"github.com/googollee/go-rest"
 	"logger"
 	"model"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -25,8 +24,8 @@ type Queue struct {
 	config  *model.Config
 	timeout time.Duration
 
-	Push   rest.Processor `path:"/:merge_key/:method/*service" method:"POST"`
-	Delete rest.Processor `path:"/:merge_key/:method/*service" method:"DELETE"`
+	push   rest.SimpleNode `route:"/:merge_key/:method/*service" method:"POST"`
+	delete rest.SimpleNode `route:"/:merge_key/:method/*service" method:"DELETE"`
 	timer  *delayrepo.Timer
 }
 
@@ -105,18 +104,28 @@ func (q *Queue) Quit() {
 // > curl -v "http://127.0.0.1:23334/v3/queue/123/POST/exfe_service/message?update=always&ontime=1366615888" -d '{"abc":123}'
 //
 // if no merge(send one by one), set merge_key to "-"
-func (q Queue) HandlePush(data string) {
-	method, service, mergeKey := q.Vars()["method"], q.Vars()["service"], q.Vars()["merge_key"]
+func (q Queue) Push(ctx rest.Context, data string) {
+	var method, service, mergeKey, updateType string
+	var ontime int64
+	ctx.Bind("method", &method)
+	ctx.Bind("service", &service)
+	ctx.Bind("merge_key", &mergeKey)
+	ctx.Bind("update", &updateType)
+	ctx.Bind("ontime", &ontime)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
+		return
+	}
 	if method == "" {
-		q.Error(http.StatusBadRequest, q.DetailError(1, "need method"))
+		ctx.Return(http.StatusBadRequest, "need method")
 		return
 	}
 	if service == "" {
-		q.Error(http.StatusBadRequest, q.DetailError(2, "need service"))
+		ctx.Return(http.StatusBadRequest, "need service")
 		return
 	}
 	if mergeKey == "" {
-		q.Error(http.StatusBadRequest, q.DetailError(3, "invalid mergeKey: (empty)"))
+		ctx.Return(http.StatusBadRequest, "invalid mergeKey: (empty)")
 		return
 	}
 	b, err := base64.URLEncoding.DecodeString(mergeKey)
@@ -125,29 +134,16 @@ func (q Queue) HandlePush(data string) {
 	}
 	b, err = base64.URLEncoding.DecodeString(service)
 	if err != nil {
-		q.Error(http.StatusBadRequest, q.DetailError(4, "service(%s) invalid: %s", service, err))
+		ctx.Return(http.StatusBadRequest, "service(%s) invalid: %s", service, err)
 		return
 	}
 	service = string(b)
-
-	query := q.Request().URL.Query()
-	updateType, ontimeStr := query.Get("update"), query.Get("ontime")
 	if updateType == "" {
 		updateType = "once"
 	}
-	if ontimeStr == "" {
-		ontimeStr = "0"
-	}
-	ontime, err := strconv.ParseInt(ontimeStr, 10, 64)
-	if err != nil {
-		q.Error(http.StatusBadRequest, q.DetailError(5, "invalid ontime: %s", ontimeStr))
-		return
-	}
+
 	if ontime == 0 {
 		ontime = time.Now().Unix()
-	}
-	if updateType == "" {
-		updateType = "once"
 	}
 
 	fl := logger.FUNC(method, service, mergeKey, updateType, ontime)
@@ -155,24 +151,31 @@ func (q Queue) HandlePush(data string) {
 
 	err = q.timer.Push(delayrepo.UpdateType(updateType), ontime, fmt.Sprintf("%s,%s,%s", method, service, mergeKey), []byte(data))
 	if err != nil {
-		q.Error(http.StatusInternalServerError, q.DetailError(7, err.Error()))
+		ctx.Return(http.StatusInternalServerError, err)
 		return
 	}
 	logger.INFO("queue", "push", method, service, mergeKey, ontime)
 }
 
-func (q Queue) HandleDelete() {
-	method, service, mergeKey := q.Vars()["method"], q.Vars()["service"], q.Vars()["merge_key"]
+func (q Queue) Delete(ctx rest.Context) {
+	var method, service, mergeKey string
+	ctx.Bind("method", &method)
+	ctx.Bind("service", &service)
+	ctx.Bind("merge_key", &mergeKey)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
+		return
+	}
 	if method == "" {
-		q.Error(http.StatusBadRequest, q.DetailError(1, "need method"))
+		ctx.Return(http.StatusBadRequest, "need method")
 		return
 	}
 	if service == "" {
-		q.Error(http.StatusBadRequest, q.DetailError(2, "need service"))
+		ctx.Return(http.StatusBadRequest, "need service")
 		return
 	}
 	if mergeKey == "" {
-		q.Error(http.StatusBadRequest, q.DetailError(3, "invalid mergeKey: (empty)"))
+		ctx.Return(http.StatusBadRequest, "invalid mergeKey: (empty)")
 		return
 	}
 	b, err := base64.URLEncoding.DecodeString(mergeKey)
@@ -181,7 +184,7 @@ func (q Queue) HandleDelete() {
 	}
 	b, err = base64.URLEncoding.DecodeString(service)
 	if err != nil {
-		q.Error(http.StatusBadRequest, q.DetailError(4, "service(%s) invalid: %s", service, err))
+		ctx.Return(http.StatusBadRequest, "service(%s) invalid: %s", service, err)
 		return
 	}
 	service = string(b)
@@ -190,7 +193,7 @@ func (q Queue) HandleDelete() {
 
 	err = q.timer.Delete(fmt.Sprintf("%s,%s,%s", method, service, mergeKey))
 	if err != nil {
-		q.Error(http.StatusInternalServerError, q.DetailError(7, err.Error()))
+		ctx.Return(http.StatusInternalServerError, err)
 		return
 	}
 	logger.INFO("queue", "delete", method, service, mergeKey)
