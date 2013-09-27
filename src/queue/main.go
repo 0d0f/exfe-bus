@@ -4,10 +4,11 @@ import (
 	"daemon"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
-	"gobus"
+	"github.com/googollee/go-rest"
 	"launchpad.net/tomb"
 	"logger"
 	"model"
+	"net/http"
 	"os"
 	"time"
 )
@@ -21,12 +22,7 @@ func main() {
 	addr := fmt.Sprintf("%s:%d", config.ExfeQueue.Addr, config.ExfeQueue.Port)
 	logger.NOTICE("start at %s", addr)
 
-	bus, err := gobus.NewServer(addr)
-	if err != nil {
-		logger.ERROR("gobus launch failed: %s", err)
-		os.Exit(-1)
-		return
-	}
+	service := rest.New()
 
 	redisPool := &redis.Pool{
 		MaxIdle:     3,
@@ -51,7 +47,8 @@ func main() {
 		return
 	}
 	defer q.Quit()
-	err = bus.RegisterRestful(q)
+
+	err = service.Add(q)
 	if err != nil {
 		logger.ERROR("register queue failed: %s", err)
 		os.Exit(-1)
@@ -70,7 +67,7 @@ func main() {
 		return
 	}()
 
-	err = bus.ListenAndServe()
+	err = http.ListenAndServe(addr, service)
 	if err != nil {
 		logger.ERROR("gobus launch failed: %s", err)
 		os.Exit(-1)
