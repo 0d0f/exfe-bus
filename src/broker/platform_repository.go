@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gobus"
 	"io/ioutil"
 	"logger"
 	"model"
@@ -80,21 +79,14 @@ func dial(net_, addr string) (net.Conn, error) {
 }
 
 type Platform struct {
-	dispatcher *gobus.Dispatcher
-	config     *model.Config
-	replacer   *strings.Replacer
+	config   *model.Config
+	replacer *strings.Replacer
 }
 
 func NewPlatform(config *model.Config) (*Platform, error) {
-	table, err := gobus.NewTable(config.Dispatcher)
-	if err != nil {
-		return nil, err
-	}
-	dispatcher := gobus.NewDispatcher(table)
 	return &Platform{
-		dispatcher: dispatcher,
-		config:     config,
-		replacer:   strings.NewReplacer(`"place":{},`, "", `"time":{"begin_at":{}},`, ""),
+		config:   config,
+		replacer: strings.NewReplacer(`"place":{},`, "", `"time":{"begin_at":{}},`, ""),
 	}, nil
 }
 

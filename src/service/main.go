@@ -9,10 +9,10 @@ import (
 	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/googollee/go-rest"
-	"gobus"
 	"iom"
 	"logger"
 	"model"
+	"net/http"
 	"notifier"
 	"os"
 	"routex"
@@ -93,14 +93,7 @@ func main() {
 	addr := fmt.Sprintf("%s:%d", config.ExfeService.Addr, config.ExfeService.Port)
 	logger.NOTICE("start at %s", addr)
 
-	bus, err := gobus.NewServer(addr)
-	if err != nil {
-		logger.ERROR("gobus launch failed: %s", err)
-		os.Exit(-1)
-		return
-	}
 	r := rest.New()
-	bus.RegisterFallback(r)
 
 	reg := func(name string, service interface{}, err error) {
 		if err != nil {
@@ -190,7 +183,7 @@ func main() {
 		re := recover()
 		logger.ERROR("crashed: %s", re)
 	}()
-	err = bus.ListenAndServe()
+	err = http.ListenAndServe(addr, r)
 	if err != nil {
 		logger.ERROR("gobus launch failed: %s", err)
 		os.Exit(-1)

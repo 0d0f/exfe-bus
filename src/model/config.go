@@ -58,8 +58,6 @@ type Config struct {
 		Key string `json:"key"`
 	} `json:"auto_navi"`
 
-	Dispatcher map[string]map[string]string `json:"dispatcher"`
-
 	ExfeService struct {
 		Addr     string `json:"addr"`
 		Port     uint   `json:"port"`
