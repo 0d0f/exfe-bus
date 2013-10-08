@@ -65,16 +65,8 @@ func (m RouteMap) UpdateBreadcrums(ctx rest.Context, breadcrumbs []rmodel.Simple
 		return
 	}
 
-	ctx.Request().URL.RawQuery += fmt.Sprintf("&user_id=%d", token.UserId)
-	m.UpdateBreadcrumsInner(ctx, breadcrumbs)
-}
-
-func (m RouteMap) UpdateBreadcrumsInner(ctx rest.Context, breadcrumbs []rmodel.SimpleLocation) {
-	var ret BreadcrumbOffset
-	var userId int64
 	var coordinate string
 
-	ctx.Bind("user_id", &userId)
 	ctx.Bind("coordinate", &coordinate)
 	if err := ctx.BindError(); err != nil {
 		ctx.Return(http.StatusBadRequest, err)
@@ -82,6 +74,7 @@ func (m RouteMap) UpdateBreadcrumsInner(ctx rest.Context, breadcrumbs []rmodel.S
 	}
 	breadcrumb := breadcrumbs[0]
 	mars, earth := breadcrumb, breadcrumb
+	userId := token.UserId
 
 	if coordinate == "mars" {
 		breadcrumb.ToEarth(m.conversion)
@@ -135,13 +128,77 @@ func (m RouteMap) UpdateBreadcrumsInner(ctx rest.Context, breadcrumbs []rmodel.S
 		}
 	}
 
-	ret = BreadcrumbOffset{
+	ret := BreadcrumbOffset{
 		Latitude:  mars.GPS[0] - earth.GPS[0],
 		Longitude: mars.GPS[1] - earth.GPS[1],
 	}
 
 	route := m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{breadcrumb})
 	route.Action = action
+	for _, cross := range crossIds {
+		m.pubsub.Publish(m.publicName(cross), route)
+	}
+	ctx.Render(ret)
+}
+
+func (m RouteMap) UpdateBreadcrumsInner(ctx rest.Context, breadcrumbs []rmodel.SimpleLocation) {
+	var token rmodel.Token
+	token, ok := m.auth(ctx)
+	if !ok {
+		ctx.Return(http.StatusUnauthorized, "invalid token")
+		return
+	}
+
+	var coordinate string
+
+	ctx.Bind("coordinate", &coordinate)
+	if err := ctx.BindError(); err != nil {
+		ctx.Return(http.StatusBadRequest, err)
+		return
+	}
+	breadcrumb := breadcrumbs[0]
+	mars, earth := breadcrumb, breadcrumb
+	userId := token.UserId
+
+	if coordinate == "mars" {
+		breadcrumb.ToEarth(m.conversion)
+		earth = breadcrumb
+	} else {
+		mars.ToMars(m.conversion)
+	}
+	lat, lng, acc := breadcrumb.GPS[0], breadcrumb.GPS[1], breadcrumb.GPS[2]
+	if acc <= 0 {
+		ctx.Return(http.StatusBadRequest, "invalid accuracy: %f", acc)
+		return
+	}
+
+	breadcrumb.Timestamp = time.Now().Unix()
+	distance := float64(-1)
+	if acc <= 70 {
+		distance = 100
+		if last, err := m.breadcrumbCache.Load(userId); err == nil {
+			lastLat, lastLng := last.GPS[0], last.GPS[1]
+			distance = Distance(lat, lng, lastLat, lastLng)
+		}
+	}
+
+	logger.INFO("routex", "user", userId, "breadcrumb", fmt.Sprintf("%.7f", lat), fmt.Sprintf("%.7f", lng), acc, "distance", fmt.Sprintf("%.2f", distance), "nosave")
+	crossIds, err := m.breadcrumbCache.SaveCross(userId, breadcrumb)
+	if err != nil {
+		logger.ERROR("can't save cache %d: %s with %+v", userId, err, breadcrumb)
+		ctx.Return(http.StatusInternalServerError, err)
+		return
+	}
+	if err := m.breadcrumbCache.Save(userId, breadcrumb); err != nil {
+		logger.ERROR("can't save cache %d: %s with %+v", userId, err, breadcrumb)
+	}
+
+	ret := BreadcrumbOffset{
+		Latitude:  mars.GPS[0] - earth.GPS[0],
+		Longitude: mars.GPS[1] - earth.GPS[1],
+	}
+
+	route := m.breadcrumbsToGeomark(userId, 1, []rmodel.SimpleLocation{breadcrumb})
 	for _, cross := range crossIds {
 		m.pubsub.Publish(m.publicName(cross), route)
 	}
